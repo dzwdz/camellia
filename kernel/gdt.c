@@ -46,67 +46,63 @@ enum {
 
 	SEG_end    
 };
-static struct gdt_entry GDT[6];
+static struct gdt_entry GDT[SEG_end];
 static struct tss_entry TSS;
 static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
 
 static void gdt_prepare();
 static void gdt_load();
+static void gdt_check();
 
 
 static void gdt_prepare() {
-	// null segment
-	GDT[0].present = 0;
+	GDT[SEG_null].present = 0;
 
-	// ring0 data
-	GDT[1].limit_low  = 0xFFFF;
-	GDT[1].limit_high = 0xF;
-	GDT[1].gran       = 1; // 4KB * 0xFFFFF = (almost) 4GB
-
-	GDT[1].base_low   = 0;
-	GDT[1].base_high  = 0;
-	GDT[1].accessed   = 0;
-	GDT[1].rw         = 1;
-	GDT[1].conforming = 0;
-	GDT[1].code       = 0;
-	GDT[1].codeordata = 1;
-	GDT[1].ring       = 0;
-	GDT[1].present    = 1;
-	GDT[1].long_mode  = 0; // ???
-	GDT[1].available  = 1; // ???
-	GDT[1].x32        = 1;
+	GDT[SEG_r0data].limit_low  = 0xFFFF;
+	GDT[SEG_r0data].limit_high = 0xF;
+	GDT[SEG_r0data].gran       = 1; // 4KB * 0xFFFFF = (almost) 4GB
+	GDT[SEG_r0data].base_low   = 0;
+	GDT[SEG_r0data].base_high  = 0;
+	GDT[SEG_r0data].accessed   = 0;
+	GDT[SEG_r0data].rw         = 1;
+	GDT[SEG_r0data].conforming = 0;
+	GDT[SEG_r0data].code       = 0;
+	GDT[SEG_r0data].codeordata = 1;
+	GDT[SEG_r0data].ring       = 0;
+	GDT[SEG_r0data].present    = 1;
+	GDT[SEG_r0data].long_mode  = 0; // ???
+	GDT[SEG_r0data].available  = 1; // ???
+	GDT[SEG_r0data].x32        = 1;
 
 	// copy to r0 code
-	GDT[2] = GDT[1];
-	GDT[2].code = 1;
+	GDT[SEG_r0code] = GDT[SEG_r0data];
+	GDT[SEG_r0code].code = SEG_r0data;
 
-	// r3 data & code
-	GDT[3] = GDT[1];
-	GDT[3].ring = 3;
-	GDT[4] = GDT[2];
-	GDT[3].ring = 3;
+	GDT[SEG_r3data] = GDT[SEG_r0data];
+	GDT[SEG_r3data].ring = 3;
+	GDT[SEG_r3code] = GDT[SEG_r0code];
+	GDT[SEG_r3data].ring = 3;
 
-	{ // tss
-		// TODO memset(&TSS, 0, sizeof(TSS));
-		TSS.ss0 = 1 << 3; // kernel data segment
-		TSS.esp0 = (uint32_t) &stack_top;
+	// tss
+	// TODO memset(&TSS, 0, sizeof(TSS));
+	TSS.ss0 = SEG_r0data << SEG_r3data; // kernel data segment
+	TSS.esp0 = (uint32_t) &stack_top;
 
-		GDT[5].limit_low  = sizeof(TSS);
-		GDT[5].base_low   = (uint32_t) &TSS;
-		GDT[5].accessed   = 1; // 0 for TSS
-		GDT[5].rw         = 0; // 1 busy / 0 not busy
-		GDT[5].conforming = 0; // 0 for TSS
-		GDT[5].code       = 1; // 32bit
-		GDT[5].codeordata = 0; // is a system entry
-		GDT[5].ring       = 3;
-		GDT[5].present    = 1;
-		GDT[5].limit_high = (sizeof(TSS) >> 16) & 0xf;
-		GDT[5].available  = 0; // 0 for TSS
-		GDT[5].long_mode  = 0;
-		GDT[5].x32        = 0; // idk
-		GDT[5].gran       = 0;
-		GDT[5].base_high  = (((uint32_t) &TSS) >> 24) & 0xff;
-	}
+	GDT[SEG_TSS].limit_low  = sizeof(TSS);
+	GDT[SEG_TSS].base_low   = (uint32_t) &TSS;
+	GDT[SEG_TSS].accessed   = 1; // 1 for TSS
+	GDT[SEG_TSS].rw         = 0; // 1 busy / 0 not busy
+	GDT[SEG_TSS].conforming = 0; // 0 for TSS
+	GDT[SEG_TSS].code       = 1; // 32bit
+	GDT[SEG_TSS].codeordata = 0; // is a system entry
+	GDT[SEG_TSS].ring       = 3;
+	GDT[SEG_TSS].present    = 1;
+	GDT[SEG_TSS].limit_high = (sizeof(TSS) >> 16) & 0xf;
+	GDT[SEG_TSS].available  = 0; // 0 for TSS
+	GDT[SEG_TSS].long_mode  = 0;
+	GDT[SEG_TSS].x32        = 0; // idk
+	GDT[SEG_TSS].gran       = 0;
+	GDT[SEG_TSS].base_high  = (((uint32_t) &TSS) >> 24) & 0xff;
 }
 
 static void gdt_load() {
@@ -115,13 +111,15 @@ static void gdt_load() {
 	asm("lgdt (%0)" : : "b" (&lgdt_arg));
 }
 
+static void gdt_check() {
+	tty_write("checking gdt...", 15);
+	asm("mov %0, %%ds;"
+	    : : "r" (SEG_r0data << 3));
+	tty_write("ok", 2);
+}
+
 void gdt_init() {
 	gdt_prepare();
 	gdt_load();
-	// check if the GDT was set up correctly
-	tty_write("checking gdt...", 15);
-	asm("mov $8, %%eax;"
-	    "mov %%eax, %%ds;"
-	    : : : "%eax");
-	tty_write("ok", 2);
+	gdt_check();
 }
