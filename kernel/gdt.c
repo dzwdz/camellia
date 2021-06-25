@@ -1,4 +1,6 @@
+#include <kernel/gdt.h>
 #include <kernel/tty.h>
+#include <kernel/util.h>
 #include <stdint.h>
 
 extern void stack_top; // platform/boot.s
@@ -36,16 +38,6 @@ struct lgdt_arg {
 	uint32_t base;
 } __attribute__((packed));
 
-enum {
-	SEG_null,
-	SEG_r0data,
-	SEG_r0code,
-	SEG_r3data,
-	SEG_r3code,
-	SEG_TSS,
-
-	SEG_end    
-};
 static struct gdt_entry GDT[SEG_end];
 static struct tss_entry TSS;
 static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
@@ -84,7 +76,7 @@ static void gdt_prepare() {
 	GDT[SEG_r3data].ring = 3;
 
 	// tss
-	// TODO memset(&TSS, 0, sizeof(TSS));
+	memset(&TSS, 0, sizeof(TSS));
 	TSS.ss0 = SEG_r0data << SEG_r3data; // kernel data segment
 	TSS.esp0 = (uint32_t) &stack_top;
 
@@ -108,13 +100,15 @@ static void gdt_prepare() {
 static void gdt_load() {
 	lgdt_arg.limit = sizeof(GDT) - 1;
 	lgdt_arg.base = (uint32_t) &GDT;
-	asm("lgdt (%0)" : : "b" (&lgdt_arg));
+	asm("lgdt (%0)" : : "r" (&lgdt_arg) : "memory");
+
+	asm("ltr %%ax" : : "a" (SEG_TSS << 3 | 3) : "memory");
 }
 
 static void gdt_check() {
 	tty_write("checking gdt...", 15);
 	asm("mov %0, %%ds;"
-	    : : "r" (SEG_r0data << 3));
+	    : : "r" (SEG_r0data << 3) : "memory");
 	tty_write("ok", 2);
 }
 

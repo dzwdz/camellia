@@ -3,9 +3,9 @@ CC      = i686-elf-gcc
 CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 CFLAGS += -I.
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
-QFLAGS  = -no-reboot -d guest_errors
+QFLAGS  = -no-reboot -d guest_errors,int,pcall,cpu_reset
 
-OBJ  = platform/boot.o
+OBJ  = $(patsubst %.s,%.o,$(wildcard platform/*.s))
 OBJ += $(patsubst %.c,%.o,$(wildcard kernel/*.c))
 
 
@@ -27,7 +27,7 @@ kernel.bin: $(OBJ)
 	$(CC) $(LFLAGS) -T linker.ld $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-platform/boot.o: platform/boot.s
+platform/%.o: platform/%.s
 	$(AS) $^ -o $@
 
 %.o: %.c
