@@ -106,10 +106,10 @@ static void gdt_load() {
 }
 
 static void gdt_check() {
-	tty_write("checking gdt...", 15);
+	tty_const("checking gdt...");
 	asm("mov %0, %%ds;"
 	    : : "r" (SEG_r0data << 3) : "memory");
-	tty_write("ok", 2);
+	tty_const("ok ");
 }
 
 void gdt_init() {

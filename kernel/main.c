@@ -12,13 +12,13 @@ void kmain()
 	gdt_init();
 	sysenter_setup();
 
-	tty_write("user...", 7);
+	tty_const("jumping to ring3...");
 	sysexit(r3_test, &stack_top);
 }
 
 void r3_test() {
-	tty_write("in ring3", 8);
+	tty_const("ok");
 	asm("cli"); // privileged instruction, should cause a GP
-	tty_write(" oh no", 6); // shouldn't happen
+	tty_const(" this shouldn't happen");
 	for (;;) {}
 }
