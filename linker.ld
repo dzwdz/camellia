@@ -21,4 +21,5 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
+	_kernel_end = (. + 0xFFF) & ~0xFFF; /* aligned to 4K */
 }

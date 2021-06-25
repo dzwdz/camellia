@@ -1,8 +1,8 @@
 #include <kernel/gdt.h>
+#include <kernel/mem.h>
+#include <kernel/proc.h>
 #include <kernel/tty.h>
 #include <platform/sysenter.h>
-
-extern void stack_top;
 
 void r3_test();
 
@@ -11,9 +11,12 @@ void kmain()
 	tty_clear();
 	gdt_init();
 	sysenter_setup();
+	mem_init();
 
-	tty_const("jumping to ring3...");
-	sysexit(r3_test, &stack_top);
+	tty_const("creating process...");
+	struct process *proc = process_new(r3_test);
+	tty_const("switching...");
+	process_switch(proc);
 }
 
 void r3_test() {
