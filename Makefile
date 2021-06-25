@@ -3,14 +3,20 @@ CC      = i686-elf-gcc
 CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 CFLAGS += -I.
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
+QFLAGS  = -no-reboot -d guest_errors
 
 OBJ  = platform/boot.o
 OBJ += $(patsubst %.c,%.o,$(wildcard kernel/*.c))
 
 
-.PHONY: boot clean
+.PHONY: boot debug clean
 boot: kernel.bin
-	qemu-system-i386 -kernel kernel.bin
+	qemu-system-i386 -kernel kernel.bin $(QFLAGS) -no-shutdown
+
+debug: kernel.bin
+	qemu-system-i386 -kernel kernel.bin $(QFLAGS) -s -S &
+	sleep 1
+	gdb
 
 clean:
 	rm -vf kernel.bin

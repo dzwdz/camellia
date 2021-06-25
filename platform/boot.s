@@ -12,6 +12,8 @@
 
 /* a lil stack */
 .section .bss
+.global stack_top
+.type stack_top, @object
 .align 16
 stack_bottom:
 .skip 16384

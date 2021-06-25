@@ -30,3 +30,9 @@ void tty_write(const char *buf, size_t len)
 		tty_putchar(buf[i]);
 	}
 }
+
+void tty_clear() {
+	for (size_t i = 0; i < vga_len; i++)
+		vga[i].c = ' ';
+	vga_pos = 0;
+}
