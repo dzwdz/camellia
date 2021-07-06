@@ -6,10 +6,8 @@ struct process *process_current;
 
 struct process *process_new(void *eip) {
 	struct process *proc;
-	proc = malloc(sizeof(struct process));
-
-	// should allocate an actual page. TODO
-	proc->stack_top = proc->esp = malloc(4096);
+	proc = page_alloc(1); // TODO kmalloc
+	proc->stack_top = proc->esp = page_alloc(1) + 1 * PAGE_SIZE;
 	proc->eip = eip;
 
 	return proc;

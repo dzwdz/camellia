@@ -1,19 +1,19 @@
 #include <kernel/mem.h>
 
 extern void *_kernel_end;
-static void *highest;
+static void *highest_page;
 
 void mem_init() {
-	highest = &_kernel_end;
+	highest_page = &_kernel_end;
 }
 
-// should always succeed, there are no error checks anywhere
-void *malloc(size_t size) {
-	void *block = highest;
-	highest += size;
-	return block;
+void *page_alloc(size_t pages) {
+	void *bottom = highest_page;
+	highest_page += pages * PAGE_SIZE;
+	return bottom;
 }
 
-void free(void *ptr) {
+// frees `pages` consecutive pages starting from *first
+void page_free(void *first, size_t pages) {
 	// not implemented
 }
