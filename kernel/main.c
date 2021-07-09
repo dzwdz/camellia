@@ -1,4 +1,5 @@
 #include <kernel/gdt.h>
+#include <kernel/idt.h>
 #include <kernel/mem.h>
 #include <kernel/proc.h>
 #include <kernel/tty.h>
@@ -10,6 +11,7 @@ void kmain()
 {
 	tty_clear();
 	gdt_init();
+	idt_init();
 	sysenter_setup();
 	mem_init();
 
