@@ -27,7 +27,10 @@ _start:
 	mov $stack_top, %esp
 	call kmain
 
-	cli /* disable interrupts */
+.global halt_cpu
+.type halt_cpu, @function
+halt_cpu:
+	cli
 1:	hlt
 	jmp 1b
 
