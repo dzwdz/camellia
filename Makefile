@@ -22,6 +22,13 @@ clean:
 	rm -vf kernel.bin
 	rm -vf **/*.o
 
+boot.iso: kernel.bin grub.cfg
+	mkdir iso_tmp
+	mkdir -p iso_tmp/boot/grub
+	cp kernel.bin iso_tmp/boot
+	cp grub.cfg   iso_tmp/boot/grub
+	grub-mkrescue -o $@ iso_tmp
+	rm -rv iso_tmp
 
 kernel.bin: $(OBJ)
 	$(CC) $(LFLAGS) -T linker.ld $^ -o $@
