@@ -1,7 +1,7 @@
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
 #include <kernel/isr.h>
-#include <kernel/tty.h> // used only for the selftest
+#include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -64,10 +64,7 @@ static void idt_load() {
 
 static void idt_test() {
 	asm("int $0x34" : : : "memory");
-	if (!isr_test_interrupt_called) {
-		tty_const("IDT self test failed");
-		for(;;);
-	}
+	if (!isr_test_interrupt_called) panic();
 }
 
 void idt_init() {

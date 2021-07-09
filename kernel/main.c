@@ -11,9 +11,13 @@ void r3_test();
 void kmain()
 {
 	tty_clear();
+	tty_const("gdt...");
 	gdt_init();
+	tty_const("idt...");
 	idt_init();
+	tty_const("sysenter...");
 	sysenter_setup();
+	tty_const("mem...");
 	mem_init();
 
 	tty_const("creating process...");
