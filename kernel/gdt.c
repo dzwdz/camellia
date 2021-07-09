@@ -68,7 +68,7 @@ static void gdt_prepare() {
 
 	// copy to r0 code
 	GDT[SEG_r0code] = GDT[SEG_r0data];
-	GDT[SEG_r0code].code = SEG_r0data;
+	GDT[SEG_r0code].code = 1;
 
 	GDT[SEG_r3data] = GDT[SEG_r0data];
 	GDT[SEG_r3data].ring = 3;
@@ -106,6 +106,8 @@ static void gdt_load() {
 }
 
 static void gdt_check() {
+	// note: this only checks the r0data segment,
+	//       it's far from a comprehensive test
 	tty_const("checking gdt...");
 	asm("mov %0, %%ds;"
 	    : : "r" (SEG_r0data << 3) : "memory");
