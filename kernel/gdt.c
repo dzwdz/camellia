@@ -72,11 +72,11 @@ static void gdt_prepare() {
 	GDT[SEG_r3data] = GDT[SEG_r0data];
 	GDT[SEG_r3data].ring = 3;
 	GDT[SEG_r3code] = GDT[SEG_r0code];
-	GDT[SEG_r3data].ring = 3;
+	GDT[SEG_r3code].ring = 3;
 
 	// tss
 	memset(&TSS, 0, sizeof(TSS));
-	TSS.ss0 = SEG_r0data << SEG_r3data; // kernel data segment
+	TSS.ss0 = SEG_r0data << 3; // kernel data segment
 	TSS.esp0 = (uint32_t) &stack_top;
 
 	GDT[SEG_TSS].limit_low  = sizeof(TSS);
