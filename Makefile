@@ -9,20 +9,6 @@ QFLAGS  = -no-reboot -d guest_errors,int,pcall,cpu_reset
 OBJ  = $(patsubst src/%.s,out/obj/%.s.o,$(shell find src/ -type f -name '*.s'))
 OBJ += $(patsubst src/%.c,out/obj/%.c.o,$(shell find src/ -type f -name '*.c'))
 
-
-.PHONY: boot debug clean
-boot: out/fs/boot/kernel.bin
-	qemu-system-i386 -kernel $< $(QFLAGS) -no-shutdown
-
-debug: kernel.bin
-	qemu-system-i386 -kernel $< $(QFLAGS) -s -S &
-	sleep 1
-	gdb
-
-clean:
-	rm -rv out/
-
-
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg
 	grub-mkrescue -o $@ out/fs/
 
@@ -42,3 +28,16 @@ out/obj/%.s.o: src/%.s
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $^ -o $@
+
+
+.PHONY: boot debug clean
+boot: out/fs/boot/kernel.bin
+	qemu-system-i386 -kernel $< $(QFLAGS) -no-shutdown
+
+debug: kernel.bin
+	qemu-system-i386 -kernel $< $(QFLAGS) -s -S &
+	sleep 1
+	gdb
+
+clean:
+	rm -rv out/
