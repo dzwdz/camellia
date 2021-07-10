@@ -1,13 +1,3 @@
-/* a lil stack TODO move to linker.ld */
-.section .bss
-.global stack_top
-.type stack_top, @object
-.align 16
-stack_bottom:
-.skip 16384
-stack_top:
-
-
 .section .text
 .global _start
 .type _start, @function

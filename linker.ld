@@ -20,6 +20,10 @@ SECTIONS
 	{
 		*(COMMON)
 		*(.bss)
+
+		stack_bottom = .;
+		. += 16K;
+		stack_top    = .;
 	}
 	_kernel_end = (. + 0xFFF) & ~0xFFF; /* aligned to 4K */
 }
