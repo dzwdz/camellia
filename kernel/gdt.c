@@ -43,7 +43,6 @@ static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
 
 static void gdt_prepare();
 static void gdt_load();
-static void gdt_check();
 
 
 static void gdt_prepare() {
@@ -96,23 +95,27 @@ static void gdt_prepare() {
 	GDT[SEG_TSS].base_high  = (((uint32_t) &TSS) >> 24) & 0xff;
 }
 
+void change_cs(int seg); // temporary
+
 static void gdt_load() {
 	lgdt_arg.limit = sizeof(GDT) - 1;
 	lgdt_arg.base = (uint32_t) &GDT;
-	asm("lgdt (%0)" : : "r" (&lgdt_arg) : "memory");
+	asm("lgdt (%0)" 
+	    : : "r" (&lgdt_arg) : "memory");
+	asm("ltr %%ax"
+	    : : "a" (SEG_TSS << 3 | 3) : "memory");
 
-	asm("ltr %%ax" : : "a" (SEG_TSS << 3 | 3) : "memory");
-}
-
-static void gdt_check() {
-	// note: this only checks the r0data segment,
-	//       it's far from a comprehensive test
+	// update all segment registers
+	change_cs(SEG_r0code << 3);
 	asm("mov %0, %%ds;"
+	    "mov %0, %%ss;"
+	    "mov %0, %%es;"
+	    "mov %0, %%fs;"
+	    "mov %0, %%gs;"
 	    : : "r" (SEG_r0data << 3) : "memory");
 }
 
 void gdt_init() {
 	gdt_prepare();
 	gdt_load();
-	gdt_check();
 }

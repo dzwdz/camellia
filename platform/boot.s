@@ -34,4 +34,14 @@ halt_cpu:
 1:	hlt
 	jmp 1b
 
+// temporary, will be moved to another file soon
+.global change_cs
+.type change_cs, @function
+change_cs:
+	/* retf pops off the return address and code segment off the stack.
+	 * it turns out that in the i386 cdecl calling convention they're in
+	 * the correct place already.
+	 */
+	retf
+
 .size _start, . - _start
