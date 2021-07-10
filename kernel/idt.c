@@ -53,6 +53,7 @@ static void idt_prepare() {
 		IDT[i].present = 0;
 
 	idt_add(0x08, false, isr_double_fault);
+	idt_add(0x0d, false, isr_general_protection_fault);
 	idt_add(0x34, false, isr_test_interrupt);
 }
 
