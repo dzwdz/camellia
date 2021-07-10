@@ -1,6 +1,6 @@
-#include <kernel/isr.h>
+#include <arch/i386/interrupts/isr.h>
+#include <arch/i386/tty.h>
 #include <kernel/panic.h>
-#include <kernel/tty.h>
 #include <stdbool.h>
 #include <stdint.h>
 

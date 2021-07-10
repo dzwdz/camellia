@@ -1,8 +1,6 @@
 #pragma once
 #include <stddef.h>
 
-#define PAGE_SIZE 4096
-
 void mem_init();
 
 // allocates `pages` consecutive pages

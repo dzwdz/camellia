@@ -1,3 +1,4 @@
+#include <arch/generic.h>
 #include <kernel/mem.h>
 
 extern void *_kernel_end;

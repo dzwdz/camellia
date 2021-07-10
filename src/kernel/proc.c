@@ -1,6 +1,6 @@
+#include <arch/generic.h>
 #include <kernel/mem.h>
 #include <kernel/proc.h>
-#include <platform/asm.h>
 
 struct process *process_current;
 

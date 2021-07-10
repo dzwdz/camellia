@@ -1,8 +1,8 @@
-#include <kernel/gdt.h>
+#include <arch/generic.h>
+#include <arch/i386/gdt.h>
 #include <kernel/util.h>
 #include <stdint.h>
 
-extern void stack_top; // platform/boot.s
 
 struct gdt_entry {
 	uint64_t limit_low  : 16;
@@ -95,8 +95,6 @@ static void gdt_prepare() {
 	GDT[SEG_TSS].base_high  = (((uint32_t) &TSS) >> 24) & 0xff;
 }
 
-void change_cs(int seg); // temporary
-
 static void gdt_load() {
 	lgdt_arg.limit = sizeof(GDT) - 1;
 	lgdt_arg.base = (uint32_t) &GDT;
@@ -106,7 +104,7 @@ static void gdt_load() {
 	    : : "a" (SEG_TSS << 3 | 3) : "memory");
 
 	// update all segment registers
-	change_cs(SEG_r0code << 3);
+	gdt_farjump(SEG_r0code << 3);
 	asm("mov %0, %%ds;"
 	    "mov %0, %%ss;"
 	    "mov %0, %%es;"

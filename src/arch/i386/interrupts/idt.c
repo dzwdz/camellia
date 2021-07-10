@@ -1,6 +1,6 @@
-#include <kernel/gdt.h>
-#include <kernel/idt.h>
-#include <kernel/isr.h>
+#include <arch/i386/gdt.h>
+#include <arch/i386/interrupts/idt.h>
+#include <arch/i386/interrupts/isr.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>

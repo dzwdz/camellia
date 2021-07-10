@@ -1,6 +1,6 @@
 #pragma once
-#include <kernel/tty.h>
-#include <platform/asm.h>
+#include <arch/generic.h>
+#include <arch/i386/tty.h> // TODO abstract away
 
 // dumb c shit
 #define panic_tostr2(x) #x

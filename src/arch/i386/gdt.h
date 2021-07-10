@@ -13,3 +13,4 @@ enum {
 };
 
 void gdt_init();
+void gdt_farjump(int segment);

@@ -1,4 +1,4 @@
-/* kernel/gdt.c */
+/* arch/i386/gdt.c */
 .set SEG_r0code, 1
 .set SEG_r3code, 3
 .set SEG_r3data, 4

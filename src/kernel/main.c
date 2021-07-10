@@ -1,22 +1,11 @@
-#include <kernel/gdt.h>
-#include <kernel/idt.h>
+#include <arch/generic.h>
 #include <kernel/mem.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/tty.h>
-#include <platform/asm.h>
 
 void r3_test();
 
-void kmain()
-{
-	tty_clear();
-	tty_const("gdt...");
-	gdt_init();
-	tty_const("idt...");
-	idt_init();
-	tty_const("sysenter...");
-	sysenter_setup();
+void kmain() {
 	tty_const("mem...");
 	mem_init();
 
