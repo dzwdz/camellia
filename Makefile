@@ -34,7 +34,7 @@ out/obj/%.c.o: src/%.c
 boot: out/fs/boot/kernel.bin
 	qemu-system-i386 -kernel $< $(QFLAGS) -no-shutdown
 
-debug: kernel.bin
+debug: out/fs/boot/kernel.bin
 	qemu-system-i386 -kernel $< $(QFLAGS) -s -S &
 	sleep 1
 	gdb
