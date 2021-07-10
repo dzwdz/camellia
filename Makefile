@@ -30,7 +30,7 @@ out/obj/%.c.o: src/%.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 
-.PHONY: boot debug clean
+.PHONY: boot debug lint clean
 boot: out/fs/boot/kernel.bin
 	qemu-system-i386 -kernel $< $(QFLAGS) -no-shutdown
 
@@ -38,6 +38,9 @@ debug: out/fs/boot/kernel.bin
 	qemu-system-i386 -kernel $< $(QFLAGS) -s -S &
 	sleep 1
 	gdb
+
+lint:
+	@tools/linter/main.rb
 
 clean:
 	rm -rv out/
