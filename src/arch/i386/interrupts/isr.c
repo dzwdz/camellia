@@ -1,5 +1,5 @@
 #include <arch/i386/interrupts/isr.h>
-#include <arch/i386/tty.h>
+#include <arch/log.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -8,13 +8,13 @@ bool isr_test_interrupt_called = false;
 
 __attribute__((interrupt))
 void isr_double_fault(struct interrupt_frame *frame) {
-	tty_const("#DF");
+	log_const("#DF");
 	panic();
 }
 
 __attribute__((interrupt))
 void isr_general_protection_fault(struct interrupt_frame *frame) {
-	tty_const("#GP");
+	log_const("#GP");
 	panic();
 }
 

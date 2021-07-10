@@ -6,17 +6,17 @@
 void r3_test();
 
 void kmain() {
-	tty_const("mem...");
+	log_const("mem...");
 	mem_init();
 
-	tty_const("creating process...");
+	log_const("creating process...");
 	struct process *proc = process_new(r3_test);
-	tty_const("switching...");
+	log_const("switching...");
 	process_switch(proc);
 }
 
 void r3_test() {
-	tty_const("ok");
+	log_const("ok");
 	asm("cli");
 	panic();
 }

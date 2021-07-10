@@ -1,5 +1,7 @@
 #pragma once
 
+#include <arch/log.h>
+
 // i have no idea where else to put it
 #define PAGE_SIZE 4096
 

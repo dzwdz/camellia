@@ -1,3 +1,4 @@
+#include <arch/generic.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/interrupts/idt.h>
 #include <arch/i386/sysenter.h>
@@ -6,11 +7,11 @@
 
 void kmain_early() {
 	tty_clear();
-	tty_const("gdt...");
+	log_const("gdt...");
 	gdt_init();
-	tty_const("idt...");
+	log_const("idt...");
 	idt_init();
-	tty_const("sysenter...");
+	log_const("sysenter...");
 	sysenter_setup();
 	kmain();
 }
