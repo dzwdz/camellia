@@ -15,5 +15,5 @@ multiboot_header:
 	.long multiboot_header // header_addr
 	.long multiboot_header // load_addr
 	.long _data_end        // load_end_addr
-	.long _kernel_end      // bss_end_addr
+	.long _bss_end         // bss_end_addr
 	.long _start           // entry_addr

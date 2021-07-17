@@ -1,11 +1,11 @@
 #include <arch/generic.h>
 #include <kernel/mem.h>
 
-extern void *_kernel_end;
+extern void *_bss_end;
 static void *highest_page;
 
 void mem_init() {
-	highest_page = &_kernel_end;
+	highest_page = &_bss_end;
 }
 
 void *page_alloc(size_t pages) {
