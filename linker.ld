@@ -16,6 +16,7 @@ SECTIONS
 	{
 		*(.data)
 	}
+	_data_end = .;
 	.bss BLOCK(4K) : ALIGN(4K)
 	{
 		*(COMMON)
