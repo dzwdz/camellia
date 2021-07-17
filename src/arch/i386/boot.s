@@ -3,6 +3,7 @@
 .type _start, @function
 _start:
 	mov $stack_top, %esp
+	push %ebx // address of the Multiboot struct
 	call kmain_early
 
 .global halt_cpu

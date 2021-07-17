@@ -9,10 +9,14 @@ QFLAGS  = -no-reboot -d guest_errors,int,pcall,cpu_reset
 OBJ  = $(patsubst src/%.s,out/obj/%.s.o,$(shell find src/ -type f -name '*.s'))
 OBJ += $(patsubst src/%.c,out/obj/%.c.o,$(shell find src/ -type f -name '*.c'))
 
-out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg
+out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
 	grub-mkrescue -o $@ out/fs/
 
 out/fs/boot/grub/grub.cfg: grub.cfg
+	@mkdir -p $(@D)
+	cp $< $@
+
+out/fs/boot/init: src/test_module
 	@mkdir -p $(@D)
 	cp $< $@
 

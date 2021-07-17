@@ -1,11 +1,13 @@
 #include <arch/generic.h>
+#include <kernel/main.h>
 #include <kernel/mem.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 
 void r3_test();
 
-void kmain() {
+void kmain(struct kmain_info info) {
+	log_write(info.init.at, info.init.size);
 	log_const("mem...");
 	mem_init();
 
