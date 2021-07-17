@@ -9,7 +9,7 @@ void r3_test();
 void kmain(struct kmain_info info) {
 	log_write(info.init.at, info.init.size);
 	log_const("mem...");
-	mem_init();
+	mem_init(&info);
 
 	log_const("creating process...");
 	struct process *proc = process_new(r3_test);

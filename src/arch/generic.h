@@ -3,6 +3,7 @@
 #include <arch/log.h>
 
 // i have no idea where else to put it
+// some code assumes that it's a power of 2
 #define PAGE_SIZE 4096
 
 // src/arch/i386/boot.s
