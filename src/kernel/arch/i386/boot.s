@@ -2,7 +2,7 @@
 .global _start
 .type _start, @function
 _start:
-	mov $stack_top, %esp
+	mov $_bss_end, %esp // the stack is at the top of bss
 	push %ebx // address of the Multiboot struct
 	call kmain_early
 

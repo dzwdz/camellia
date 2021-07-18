@@ -22,9 +22,8 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 
-		stack_bottom = .;
+		_stack_bottom = .;
 		. += 16K;
-		stack_top    = .;
 	}
 	_bss_end = (. + 0xFFF) & ~0xFFF; /* aligned to 4K */
 }

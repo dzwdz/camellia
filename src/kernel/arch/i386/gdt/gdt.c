@@ -80,7 +80,7 @@ static void gdt_prepare() {
 	// tss
 	memset(&TSS, 0, sizeof(TSS));
 	TSS.ss0 = SEG_r0data << 3; // kernel data segment
-	TSS.esp0 = (uintptr_t) &stack_top;
+	TSS.esp0 = (uintptr_t) &_bss_end;
 
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),

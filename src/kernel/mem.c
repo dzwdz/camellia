@@ -6,7 +6,6 @@ static void *highest_page;
 
 void mem_init(struct kmain_info *info) {
 	// finds the highest used page, and starts allocating pages above it
-	extern char _bss_end;
 	void *highest = &_bss_end;
 	size_t page_mask = PAGE_SIZE - 1;
 
