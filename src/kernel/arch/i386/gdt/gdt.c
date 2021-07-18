@@ -1,5 +1,5 @@
-#include <arch/generic.h>
-#include <arch/i386/gdt.h>
+#include <kernel/arch/generic.h>
+#include <kernel/arch/i386/gdt.h>
 #include <kernel/util.h>
 #include <stdbool.h>
 #include <stdint.h>

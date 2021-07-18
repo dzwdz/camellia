@@ -1,5 +1,5 @@
 #pragma once
-#include <arch/generic.h>
+#include <kernel/arch/generic.h>
 
 // dumb c shit
 #define panic_tostr2(x) #x

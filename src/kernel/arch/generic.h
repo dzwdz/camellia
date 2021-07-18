@@ -1,6 +1,6 @@
 #pragma once
 
-#include <arch/log.h>
+#include <kernel/arch/log.h>
 
 // i have no idea where else to put it
 // some code assumes that it's a power of 2

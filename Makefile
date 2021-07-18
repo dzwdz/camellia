@@ -22,7 +22,7 @@ out/fs/boot/init: src/test_module
 	@mkdir -p $(@D)
 	cp $< $@
 
-out/fs/boot/kernel.bin: $(call from_sources, src/)
+out/fs/boot/kernel.bin: $(call from_sources, src/kernel/)
 	@mkdir -p $(@D)
 	$(CC) $(LFLAGS) -T linker.ld $^ -o $@
 	grub-file --is-x86-multiboot $@

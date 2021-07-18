@@ -1,4 +1,4 @@
-#include <arch/generic.h>
+#include <kernel/arch/generic.h>
 #include <kernel/main.h>
 #include <kernel/mem.h>
 #include <kernel/panic.h>

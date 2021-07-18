@@ -1,9 +1,9 @@
-#include <arch/generic.h>
-#include <arch/i386/gdt.h>
-#include <arch/i386/interrupts/idt.h>
-#include <arch/i386/multiboot.h>
-#include <arch/i386/sysenter.h>
-#include <arch/i386/tty.h>
+#include <kernel/arch/generic.h>
+#include <kernel/arch/i386/gdt.h>
+#include <kernel/arch/i386/interrupts/idt.h>
+#include <kernel/arch/i386/multiboot.h>
+#include <kernel/arch/i386/sysenter.h>
+#include <kernel/arch/i386/tty.h>
 #include <kernel/main.h>
 #include <kernel/panic.h>
 
