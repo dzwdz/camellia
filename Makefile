@@ -11,29 +11,32 @@ define from_sources
   $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f -name '*.c'))
 endef
 
+
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
+	@echo
 	grub-mkrescue -o $@ out/fs/
-
-out/fs/boot/grub/grub.cfg: grub.cfg
-	@mkdir -p $(@D)
-	cp $< $@
-
-out/fs/boot/init: src/test_module
-	@mkdir -p $(@D)
-	cp $< $@
 
 out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/)
 	@mkdir -p $(@D)
 	$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
+out/fs/boot/init: src/test_module
+	@mkdir -p $(@D)
+	@cp $< $@
+
+out/fs/boot/grub/grub.cfg: grub.cfg
+	@mkdir -p $(@D)
+	@cp $< $@
+
+
 out/obj/%.s.o: src/%.s
 	@mkdir -p $(@D)
-	$(AS) $^ -o $@
+	@$(AS) $^ -o $@
 
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $^ -o $@
+	@$(CC) $(CFLAGS) -c $^ -o $@
 
 
 .PHONY: boot debug lint clean
@@ -42,7 +45,7 @@ boot: out/boot.iso
 
 debug: out/boot.iso
 	qemu-system-i386 $< $(QFLAGS) -s -S &
-	sleep 1
+	@sleep 1
 	gdb
 
 lint:
