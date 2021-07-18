@@ -6,8 +6,10 @@ CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
 QFLAGS  = -no-reboot -d guest_errors,int,pcall,cpu_reset
 
-OBJ  = $(patsubst src/%.s,out/obj/%.s.o,$(shell find src/ -type f -name '*.s'))
-OBJ += $(patsubst src/%.c,out/obj/%.c.o,$(shell find src/ -type f -name '*.c'))
+define from_sources
+  $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
+  $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f -name '*.c'))
+endef
 
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
 	grub-mkrescue -o $@ out/fs/
@@ -20,7 +22,7 @@ out/fs/boot/init: src/test_module
 	@mkdir -p $(@D)
 	cp $< $@
 
-out/fs/boot/kernel.bin: $(OBJ)
+out/fs/boot/kernel.bin: $(call from_sources, src/)
 	@mkdir -p $(@D)
 	$(CC) $(LFLAGS) -T linker.ld $^ -o $@
 	grub-file --is-x86-multiboot $@
