@@ -4,21 +4,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define UNUSED __attribute__((unused))
+
 bool isr_test_interrupt_called = false;
 
 __attribute__((interrupt))
-void isr_double_fault(struct interrupt_frame *frame) {
+void isr_double_fault(UNUSED struct interrupt_frame *frame) {
 	log_const("#DF");
 	panic();
 }
 
 __attribute__((interrupt))
-void isr_general_protection_fault(struct interrupt_frame *frame) {
+void isr_general_protection_fault(UNUSED struct interrupt_frame *frame) {
 	log_const("#GP");
 	panic();
 }
 
 __attribute__((interrupt))
-void isr_test_interrupt(struct interrupt_frame *frame) {
+void isr_test_interrupt(UNUSED struct interrupt_frame *frame) {
 	isr_test_interrupt_called = true;
 }

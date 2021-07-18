@@ -10,7 +10,7 @@ static struct vga_cell *vga     = (void*) 0xB8000;
 static size_t           vga_pos = 0;
 
 static void tty_scroll() {
-	for (int i = 0; i < vga_len - 80; i++) {
+	for (size_t i = 0; i < vga_len - 80; i++) {
 		vga[i] = vga[i + 80];
 	}
 	vga_pos -= 80;

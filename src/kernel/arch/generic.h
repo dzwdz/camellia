@@ -7,7 +7,7 @@
 #define PAGE_SIZE 4096
 
 // src/arch/i386/boot.s
-extern void stack_top;
+extern char stack_top;
 
 __attribute__((noreturn))
 void halt_cpu();
