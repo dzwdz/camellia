@@ -21,6 +21,12 @@ void isr_general_protection_fault(UNUSED struct interrupt_frame *frame) {
 }
 
 __attribute__((interrupt))
+void isr_page_fault(UNUSED struct interrupt_frame *frame) {
+	log_const("#PF");
+	panic();
+}
+
+__attribute__((interrupt))
 void isr_test_interrupt(UNUSED struct interrupt_frame *frame) {
 	isr_test_interrupt_called = true;
 }
