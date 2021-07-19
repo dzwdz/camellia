@@ -8,9 +8,25 @@
 
 void r3_test();
 
+static void setup_paging() {
+	struct pagedir *dir = pagedir_new();
+
+	// map VGA
+	pagedir_map(dir, 0xB8000, 0xB8000, true, true);
+
+	// map the kernel
+	for (size_t p = 0x100000; p < &_bss_end; p += PAGE_SIZE)
+		pagedir_map(dir, p, p, false, true); // yes, .text is writeable too
+
+	pagedir_use(dir);
+}
+
 void kmain(struct kmain_info info) {
 	log_const("mem...");
 	mem_init(&info);
+
+	log_const("paging...");
+	setup_paging();
 
 	log_const("creating process...");
 
