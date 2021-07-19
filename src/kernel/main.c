@@ -6,8 +6,6 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
-void r3_test();
-
 static void setup_paging() {
 	struct pagedir *dir = pagedir_new();
 
@@ -36,10 +34,4 @@ void kmain(struct kmain_info info) {
 	struct process *proc = process_new(init_addr);
 	log_const("switching...");
 	process_switch(proc);
-}
-
-void r3_test() {
-	log_const("ok");
-	asm("cli");
-	panic();
 }
