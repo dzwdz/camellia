@@ -16,7 +16,7 @@ static void setup_paging() {
 	for (size_t p = 0x100000; p < &_bss_end; p += PAGE_SIZE)
 		pagedir_map(dir, p, p, false, true); // yes, .text is writeable too
 
-	pagedir_use(dir);
+	pagedir_switch(dir);
 }
 
 void kmain(struct kmain_info info) {

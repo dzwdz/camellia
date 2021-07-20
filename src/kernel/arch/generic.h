@@ -22,4 +22,4 @@ void sysenter_setup();
 struct pagedir *pagedir_new();
 void pagedir_map(struct pagedir *dir, void *virt, void *phys,
                  bool user, bool writeable);
-void pagedir_use(struct pagedir *);
+void pagedir_switch(struct pagedir *);
