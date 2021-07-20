@@ -7,13 +7,12 @@ static void *highest_page;
 void mem_init(struct kmain_info *info) {
 	// finds the highest used page, and starts allocating pages above it
 	void *highest = &_bss_end;
-	size_t page_mask = PAGE_SIZE - 1;
 
 	if (highest < info->init.at + info->init.size)
 		highest = info->init.at + info->init.size;
 
 	// align up to PAGE_SIZE
-	highest_page = (void*)(((uintptr_t)highest + page_mask) & ~page_mask);
+	highest_page = (void*)(((uintptr_t)highest + PAGE_MASK) & ~PAGE_MASK);
 }
 
 void *page_alloc(size_t pages) {
