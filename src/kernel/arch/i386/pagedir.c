@@ -89,10 +89,5 @@ void pagedir_map(struct pagedir *dir, void *virt, void *phys,
 }
 
 void pagedir_use(struct pagedir *dir) {
-	asm volatile("mov %0, %%cr3;"
-
-	    "mov %%cr0, %%eax;"
-	    "or $0x80000001, %%eax;"
-	    "mov %%eax, %%cr0;"
-	    : : "r" (dir) : "eax");
+	asm volatile("mov %0, %%cr3;" : : "r" (dir) : "memory");
 }
