@@ -1,5 +1,4 @@
 .set MAGIC, 0x1BADB002
-/* TODO set bss_end_addr, so the init module doesn't get overriden by the stack */
 
 /* 1<<0  - align modules on page boundaries.
    1<<16 - enable manual addressing */
