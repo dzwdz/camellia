@@ -6,32 +6,29 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
-static void setup_paging() {
-	struct pagedir *dir = pagedir_new();
+static void run_init(struct kmain_info *info) {
+	struct process *proc = process_new();
+	void *init_base = (void*) 0x200000;
 
-	// map VGA
-	pagedir_map(dir, 0xB8000, 0xB8000, true, true);
+	// map VGA for testing
+	pagedir_map(proc->pages, 0xB8000, 0xB8000, true, true);
 
-	// map the kernel
-	for (size_t p = 0x100000; p < &_bss_end; p += PAGE_SIZE)
-		pagedir_map(dir, p, p, false, true); // yes, .text is writeable too
+	// map the module as rw
+	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
+		pagedir_map(proc->pages, init_base + off, info->init.at + off,
+		            true, true);
+	proc->eip = init_base;
 
-	pagedir_switch(dir);
+	log_const("switching...");
+	process_switch(proc);
 }
 
 void kmain(struct kmain_info info) {
 	log_const("mem...");
 	mem_init(&info);
 
-	log_const("paging...");
-	setup_paging();
+	log_const("loading init...");
+	run_init(&info);
 
-	log_const("creating process...");
-
-	void *init_addr = (void*)0x200000;
-	memcpy(init_addr, info.init.at, info.init.size);
-
-	struct process *proc = process_new(init_addr);
-	log_const("switching...");
-	process_switch(proc);
+	panic();
 }

@@ -6,5 +6,8 @@ int main() {
 	uint8_t *vga = (void*) 0xB8000;
 	for (int i = 0; i < 80 * 25; i++)
 		vga[(i << 1) + 1] = 0x4e;
-	for (;;);
+
+	// try to mess with kernel memory
+	uint8_t *kernel = (void*) 0x100000;
+	*kernel = 0; // should segfault
 }
