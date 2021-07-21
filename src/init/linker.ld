@@ -6,6 +6,7 @@ SECTIONS
 	. = 2M;
 	.text BLOCK(4K) : ALIGN(4K)
 	{
+		*(.text.startup)
 		*(.text)
 	}
 	.rodata BLOCK(4K) : ALIGN(4K)

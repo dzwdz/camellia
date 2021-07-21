@@ -1,6 +1,10 @@
 #include <stdint.h>
 
+void _syscall();
+
 int main() {
+	_syscall();
+
 	// change the colors of VGA text
 	// doesn't require a lot of code, but still shows that it's working
 	uint8_t *vga = (void*) 0xB8000;
