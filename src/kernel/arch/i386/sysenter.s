@@ -9,8 +9,8 @@
 .global sysexit
 .type sysexit, @function
 sysexit:
-	pop %ecx
-	pop %edx
+	mov 4(%esp), %edx
+	mov 8(%esp), %ecx
 
 	mov $(SEG_r3data << 3 | 3), %ax
 	mov %ax, %ds
