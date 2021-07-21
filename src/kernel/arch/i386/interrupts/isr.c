@@ -4,29 +4,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define UNUSED __attribute__((unused))
+#define log_n_panic(x) {log_const(x); panic();}
 
 bool isr_test_interrupt_called = false;
 
-__attribute__((interrupt))
-void isr_double_fault(UNUSED struct interrupt_frame *frame) {
-	log_const("#DF");
-	panic();
-}
+void isr_stage3(int interrupt) {
+	switch (interrupt) {
+		case 0x08: log_n_panic("#DF"); // double fault
+		case 0x0D: log_n_panic("#GP"); // general protection fault
+		case 0x0E: log_n_panic("#PF"); // page fault
 
-__attribute__((interrupt))
-void isr_general_protection_fault(UNUSED struct interrupt_frame *frame) {
-	log_const("#GP");
-	panic();
-}
+		case 0x34:
+			isr_test_interrupt_called = true;
+			return;
 
-__attribute__((interrupt))
-void isr_page_fault(UNUSED struct interrupt_frame *frame) {
-	log_const("#PF");
-	panic();
-}
-
-__attribute__((interrupt))
-void isr_test_interrupt(UNUSED struct interrupt_frame *frame) {
-	isr_test_interrupt_called = true;
+		default:
+			log_const("unknown interrupt");
+			panic();
+	}
 }

@@ -27,14 +27,14 @@ struct lidt_arg {
 static struct idt_entry IDT[256];
 static struct lidt_arg lidt_arg;
 
-static inline void idt_add(uint8_t num, bool user, void (*isr));
+static inline void idt_add(uint8_t num, bool user);
 static void idt_prepare();
 static void idt_load();
 static void idt_test();
 
 
-static inline void idt_add(uint8_t num, bool user, void (*isr)) {
-	uintptr_t offset = (uintptr_t) isr;
+static inline void idt_add(uint8_t num, bool user) {
+	uintptr_t offset = (uintptr_t) &_isr_stubs + 8 * num;
 
 	IDT[num] = (struct idt_entry) {
 		.offset_low  = offset,
@@ -52,10 +52,10 @@ static void idt_prepare() {
 	for (int i = 0; i < 256; i++)
 		IDT[i].present = 0;
 
-	idt_add(0x08, false, isr_double_fault);
-	idt_add(0x0d, false, isr_general_protection_fault);
-	idt_add(0x0e, false, isr_page_fault);
-	idt_add(0x34, false, isr_test_interrupt);
+	idt_add(0x08, false);
+	idt_add(0x0d, false);
+	idt_add(0x0e, false);
+	idt_add(0x34, false);
 }
 
 static void idt_load() {
