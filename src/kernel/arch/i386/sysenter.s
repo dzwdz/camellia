@@ -49,6 +49,10 @@ sysenter_setup:
 
 sysenter_handler:
 	pushal
+	push %edi
+	push %esi
+	push %ebx
+	push %eax
 
 	mov %cr0, %eax
 	and $0x7FFFFFFF, %eax  // disable paging
@@ -56,9 +60,14 @@ sysenter_handler:
 
 	call syscall_handler
 
+	// save the return value
+	mov %eax, 44(%esp) // 16 [top of eflags] + 7*4 [skip until EAX]
+	mov %edx, 32(%esp) // 16                 + 4*4 [skip until EBX]
+
 	mov %cr0, %eax
 	or  $0x80000000, %eax  // enable paging
 	mov %eax, %cr0
 
+	add $16, %esp
 	popal
 	sysexit
