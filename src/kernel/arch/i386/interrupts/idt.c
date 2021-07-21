@@ -27,35 +27,27 @@ struct lidt_arg {
 static struct idt_entry IDT[256];
 static struct lidt_arg lidt_arg;
 
-static inline void idt_add(uint8_t num, bool user);
 static void idt_prepare();
 static void idt_load();
 static void idt_test();
 
 
-static inline void idt_add(uint8_t num, bool user) {
-	uintptr_t offset = (uintptr_t) &_isr_stubs + 8 * num;
-
-	IDT[num] = (struct idt_entry) {
-		.offset_low  = offset,
-		.offset_high = offset >> 16,
-		.code_seg    = SEG_r0code << 3,
-		.zero        = 0,
-		.present     = 1,
-		.ring        = user ? 3 : 0,
-		.storage     = 0,
-		.type        = 0xE, // 32-bit interrupt gate
-	};
-}
-
 static void idt_prepare() {
-	for (int i = 0; i < 256; i++)
-		IDT[i].present = 0;
+	uintptr_t offset;
+	for (int i = 0; i < 256; i++) {
+		offset = (uintptr_t) &_isr_stubs + i * 8;
 
-	idt_add(0x08, false);
-	idt_add(0x0d, false);
-	idt_add(0x0e, false);
-	idt_add(0x34, false);
+		IDT[i] = (struct idt_entry) {
+			.offset_low  = offset,
+			.offset_high = offset >> 16,
+			.code_seg    = SEG_r0code << 3,
+			.zero        = 0,
+			.present     = 1,
+			.ring        = 0,
+			.storage     = 0,
+			.type        = 0xE, // 32-bit interrupt gate
+		};
+	}
 }
 
 static void idt_load() {
