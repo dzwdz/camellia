@@ -91,3 +91,30 @@ void pagedir_map(struct pagedir *dir, void *virt, void *phys,
 void pagedir_switch(struct pagedir *dir) {
 	asm volatile("mov %0, %%cr3;" : : "r" (dir) : "memory");
 }
+
+void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
+                        bool user, bool writeable)
+{
+	uintptr_t virt_casted = (uintptr_t) virt;
+	uintptr_t phys;
+	uint32_t pd_idx = virt_casted >> 22;
+	uint32_t pt_idx = virt_casted >> 12 & 0x03FF;
+	struct pagetable_entry *pagetable, page;
+
+	/* DOESN'T CHECK PERMISSIONS ON PAGE DIRS, TODO
+	 * while i don't currently see a reason to set permissions
+	 * directly on page dirs, i might see one in the future.
+	 * leaving this as-is would be a security bug */
+	if (!dir->e[pd_idx].present) return 0;
+
+	pagetable = (void*)(dir->e[pd_idx].address << 11);
+	page      = pagetable[pt_idx];
+
+	if (!page.present)                return 0;
+	if (user      && !page.user)      return 0;
+	if (writeable && !page.writeable) return 0;
+
+	phys  = page.address << 11;
+	phys |= (uintptr_t)virt & 0xFFF;
+	return (void*)phys;
+}

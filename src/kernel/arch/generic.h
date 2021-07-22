@@ -24,3 +24,7 @@ struct pagedir *pagedir_new();
 void pagedir_map(struct pagedir *dir, void *virt, void *phys,
                  bool user, bool writeable);
 void pagedir_switch(struct pagedir *);
+
+// return 0 on failure
+void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
+                        bool user, bool writeable);

@@ -1,15 +1,29 @@
 #include <kernel/arch/generic.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
+#include <kernel/syscalls.h>
+#include <stdint.h>
 
-int syscall_handler(int a, int b, int c, int d) {
-	// verify that the parameters get passed correctly
-	if (a != 1) panic();
-	if (b != 2) panic();
-	if (c != 3) panic();
-	if (d != 4) panic();
+int sc_debuglog(const char *msg, size_t len) {
+	struct pagedir *pages = process_current->pages;
+	void *phys = pagedir_virt2phys(pages, msg, true, false);
 
-	log_const("in a syscall!");
+	// page overrun check
+	if (((uintptr_t)msg & PAGE_MASK) + len > PAGE_SIZE)
+		len = PAGE_SIZE - ((uintptr_t)msg & PAGE_MASK);
+	if (((uintptr_t)msg & PAGE_MASK) + len > PAGE_SIZE)
+		panic(); // just in case I made an off by 1 error
 
-	// used to check if the return value gets passed correctly
-	return 0x4e;
+	log_write(phys, len);
+	return len;
+}
+
+int syscall_handler(int num, int a, int b, int c) {
+	switch (num) {
+		case SC_DEBUGLOG:
+			return sc_debuglog((void*)a, b);
+		default:
+			log_const("unknown syscall ");
+			panic();
+	}
 }
