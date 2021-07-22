@@ -16,10 +16,19 @@ _isr_stage2:
 	pop %eax
 	add $-_isr_stubs, %eax
 	shr $3, %eax
-	push %eax
 
+		// disable paging, if present
+		// it's done here so the stuff on the stack is in the right order
+		mov %cr0, %ebx
+		push %ebx
+		and $0x7FFFFFFF, %ebx
+		mov %ebx, %cr0
+
+	push %eax       // push the vector nr
 	call isr_stage3
-	add $4, %esp
+	add $4, %esp    // "pop" the vector nr
+	pop %eax        // restore old cr0
+	mov %eax, %cr0
 
 	popal
 	iret
