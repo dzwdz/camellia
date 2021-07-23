@@ -17,7 +17,7 @@ void halt_cpu();
 // src/arch/i386/sysenter.s
 void sysexit(void (*fun)(), void *stack_top);
 void sysenter_setup();
-int syscall_handler(int, int, int, int);
+int syscall_handler(int, int, int, int, void *stack, void *eip);
 
 // all of those can allocate memory
 struct pagedir *pagedir_new();

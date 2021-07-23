@@ -18,7 +18,10 @@ int sc_debuglog(const char *msg, size_t len) {
 	return len;
 }
 
-int syscall_handler(int num, int a, int b, int c) {
+int syscall_handler(int num, int a, int b, int c, void *stack, void *eip) {
+	process_current->esp = stack;
+	process_current->eip = eip;
+
 	switch (num) {
 		case SC_DEBUGLOG:
 			return sc_debuglog((void*)a, b);
