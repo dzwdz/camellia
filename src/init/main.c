@@ -4,6 +4,11 @@
 
 int _syscall(int, int, int, int);
 
+void exit(const char *msg, size_t len) {
+	_syscall(SC_EXIT, (void*)msg, len, 0);
+	__builtin_unreachable();
+}
+
 int debuglog(const char *msg, size_t len) {
 	return _syscall(SC_DEBUGLOG, (void*)msg, len, 0);
 }
@@ -13,7 +18,6 @@ int main() {
 	debuglog("hello from init! ",
 	  sizeof("hello from init! ") - 1);
 
-	// try to mess with kernel memory
-	uint8_t *kernel = (void*) 0x100000;
-	*kernel = 0; // should segfault
+	exit(    "bye from init! ",
+	  sizeof("bye from init! ") - 1);
 }
