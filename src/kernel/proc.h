@@ -10,4 +10,4 @@ struct process {
 extern struct process *process_current;
 
 struct process *process_new();
-void process_switch(struct process *proc);
+_Noreturn void process_switch(struct process *proc);

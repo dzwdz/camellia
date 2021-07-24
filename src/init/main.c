@@ -4,13 +4,13 @@
 
 int _syscall(int, int, int, int);
 
-void exit(const char *msg, size_t len) {
-	_syscall(SC_EXIT, (void*)msg, len, 0);
+_Noreturn void exit(const char *msg, size_t len) {
+	_syscall(SC_EXIT, (int)msg, len, 0);
 	__builtin_unreachable();
 }
 
 int debuglog(const char *msg, size_t len) {
-	return _syscall(SC_DEBUGLOG, (void*)msg, len, 0);
+	return _syscall(SC_DEBUGLOG, (int)msg, len, 0);
 }
 
 

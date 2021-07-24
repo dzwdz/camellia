@@ -14,7 +14,7 @@ static void run_init(struct kmain_info *info) {
 	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
 		pagedir_map(proc->pages, init_base + off, info->init.at + off,
 		            true, true);
-	proc->regs.eip = init_base;
+	proc->regs.eip = (int) init_base;
 
 	log_const("switching...");
 	process_switch(proc);

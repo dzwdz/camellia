@@ -10,6 +10,7 @@ void sysexit(struct registers regs) {
 	_sysexit_regs.ecx = regs.esp;
 	_sysexit_regs.edx = regs.eip;
 	_sysexit_real();
+	__builtin_unreachable();
 }
 
 _Noreturn void sysenter_stage2() {
