@@ -26,5 +26,5 @@ struct process *process_new() {
 void process_switch(struct process *proc) {
 	process_current = proc;
 	pagedir_switch(proc->pages);
-	sysexit(proc->regs.eip, proc->regs.esp);
+	sysexit(proc->regs);
 }

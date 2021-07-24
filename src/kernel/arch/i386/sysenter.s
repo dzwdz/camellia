@@ -8,12 +8,9 @@
 .set IA32_SYSENTER_EIP, 0x176
 
 .section .text
-.global sysexit
-.type sysexit, @function
-sysexit:
-	mov 4(%esp), %edx
-	mov 8(%esp), %ecx
-
+.global _sysexit_real
+.type _sysexit_real, @function
+_sysexit_real:
 	mov $(SEG_r3data << 3 | 3), %ax
 	mov %ax, %ds
 	mov %ax, %es
@@ -25,6 +22,9 @@ sysexit:
 	or $0x80000000, %eax
 	mov %eax, %cr0
 
+	// restore the registers
+	mov $_sysexit_regs, %esp
+	popal // probably a bad idea
 	sysexit
 
 

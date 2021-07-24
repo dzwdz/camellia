@@ -16,7 +16,7 @@ __attribute__((noreturn))
 void halt_cpu();
 
 // src/arch/i386/sysenter.s
-void sysexit(void (*fun)(), void *stack_top);
+void sysexit(struct registers);
 int syscall_handler(int, int, int, int);
 
 // all of those can allocate memory
