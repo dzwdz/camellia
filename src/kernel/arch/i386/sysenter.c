@@ -6,19 +6,9 @@ struct registers _sysexit_regs; // a hack
 extern void _sysexit_real();
 
 void sysexit(struct registers regs) {
-	_sysexit_regs = (struct registers) {
-		.eax = regs.eax,
-		.ebx = regs.ebx,
-		.ebp = regs.ebp,
-		.esi = regs.esi,
-		.edi = regs.edi,
-
-		// sysexit args
-		.ecx = regs.esp,
-		.edx = regs.eip,
-
-		// ESP doesn't matter
-	};
+	_sysexit_regs = regs;
+	_sysexit_regs.ecx = regs.esp;
+	_sysexit_regs.edx = regs.eip;
 	_sysexit_real();
 }
 
