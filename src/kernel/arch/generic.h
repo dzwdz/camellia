@@ -1,5 +1,6 @@
 #pragma once
 
+#include <kernel/arch/i386/registers.h>
 #include <kernel/arch/log.h>
 #include <stdbool.h>
 
@@ -17,7 +18,7 @@ void halt_cpu();
 // src/arch/i386/sysenter.s
 void sysexit(void (*fun)(), void *stack_top);
 void sysenter_setup();
-int syscall_handler(int, int, int, int, void *stack, void *eip);
+int syscall_handler(int, int, int, int);
 
 // all of those can allocate memory
 struct pagedir *pagedir_new();

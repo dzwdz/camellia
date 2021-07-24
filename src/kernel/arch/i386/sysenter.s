@@ -42,34 +42,17 @@ sysenter_setup:
 	wrmsr
 
 	mov $IA32_SYSENTER_EIP, %ecx
-	mov $sysenter_handler, %eax
+	mov $sysenter_stage1, %eax
 	wrmsr
 
 	ret
 
-sysenter_handler:
-	pushal
-	push %edx
-	push %ecx
-	push %edi
-	push %esi
-	push %ebx
-	push %eax
+sysenter_stage1:
+	pushal // register dump
 
 	mov %cr0, %eax
 	and $0x7FFFFFFF, %eax  // disable paging
 	mov %eax, %cr0
 
-	call syscall_handler
-
-	// save the return value
-	mov %eax, 52(%esp) // 24 [top of eflags] + 7*4 [skip until EAX]
-	mov %edx, 40(%esp) // 24                 + 4*4 [skip until EBX]
-
-	mov %cr0, %eax
-	or  $0x80000000, %eax  // enable paging
-	mov %eax, %cr0
-
-	add $24, %esp
-	popal
-	sysexit
+	call sysenter_stage2
+	jmp halt_cpu

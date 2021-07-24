@@ -3,10 +3,8 @@
 
 struct process {
 	void *stack_top;
-	void *esp;
-	void *eip;
-
 	struct pagedir *pages;
+	struct registers regs;
 };
 
 extern struct process *process_current;
