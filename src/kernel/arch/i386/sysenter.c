@@ -1,12 +1,12 @@
 #include <kernel/arch/generic.h>
 #include <kernel/proc.h>
 
-struct registers_pushad _sysexit_regs; // a hack
+struct registers _sysexit_regs; // a hack
 
 extern void _sysexit_real();
 
 void sysexit(struct registers regs) {
-	_sysexit_regs = (struct registers_pushad) {
+	_sysexit_regs = (struct registers) {
 		.eax = regs.eax,
 		.ebx = regs.ebx,
 		.ebp = regs.ebp,

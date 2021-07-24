@@ -1,15 +1,13 @@
 #pragma once
 #include <stdint.h>
 
-// TODO merge registers and registers_pushad
-
 struct registers {
-	uint32_t eax, ebx, ecx, edx, esi, edi;
-	void *ebp, *esp, *eip;
-};
-
-struct registers_pushad {
+	/* those are in the order of pushad/popad - so you can load/save this
+	 * struct in (almost) one instruction */
 	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+
+	// not part of pushad/popad, but still useful
+	uint32_t eip;
 } __attribute__((__packed__));
 
 // saves a return value according to the SysV ABI
