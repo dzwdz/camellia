@@ -13,17 +13,16 @@ endef
 
 
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
-	@echo
-	grub-mkrescue -o $@ out/fs/
+	@grub-mkrescue -o $@ out/fs/ > /dev/null 2>&1
 
 out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/)
 	@mkdir -p $(@D)
-	$(CC) $(LFLAGS) -T $^ -o $@
+	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
 out/fs/boot/init: src/init/linker.ld $(call from_sources, src/init/)
 	@mkdir -p $(@D)
-	$(CC) $(LFLAGS) -T $^ -o $@
+	@$(CC) $(LFLAGS) -T $^ -o $@
 
 out/fs/boot/grub/grub.cfg: grub.cfg
 	@mkdir -p $(@D)
