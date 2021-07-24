@@ -24,7 +24,7 @@ _sysexit_real:
 
 	// restore the registers
 	mov $_sysexit_regs, %esp
-	popal // probably a bad idea
+	popal
 	sysexit
 
 
@@ -48,11 +48,17 @@ sysenter_setup:
 	ret
 
 sysenter_stage1:
-	pushal // register dump
+	//   disable paging
+	// I don't want to damage any of the registers passed in by the user,
+	// so i'm using ESP as a temporary register. At this point there's nothing
+	// useful in it, it's == _bss_end.
+	mov %cr0, %esp
+	and $0x7FFFFFFF, %esp  // disable paging
+	mov %esp, %cr0
 
-	mov %cr0, %eax
-	and $0x7FFFFFFF, %eax  // disable paging
-	mov %eax, %cr0
+	// save the registers
+	mov $(_sysexit_regs + 32), %esp
+	pushal
 
-	call sysenter_stage2
-	jmp halt_cpu
+	mov $_bss_end, %esp
+	jmp sysenter_stage2
