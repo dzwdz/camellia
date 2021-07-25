@@ -21,6 +21,8 @@ static void run_init(struct kmain_info *info) {
 }
 
 void kmain(struct kmain_info info) {
+	log_const("\x03 ");
+
 	log_const("mem...");
 	mem_init(&info);
 
