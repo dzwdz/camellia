@@ -18,7 +18,8 @@ struct process {
 extern struct process *process_first;
 extern struct process *process_current;
 
-struct process *process_new();
+// creates the root process
+struct process *process_seed();
 struct process *process_clone(struct process *orig);
 _Noreturn void process_switch(struct process *proc);
 

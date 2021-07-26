@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 static void run_init(struct kmain_info *info) {
-	struct process *proc = process_new();
+	struct process *proc = process_seed();
 	void *init_base = (void*) 0x200000;
 
 	// map the module as rw

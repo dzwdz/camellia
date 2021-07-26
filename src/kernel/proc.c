@@ -7,7 +7,7 @@
 struct process *process_first;
 struct process *process_current;
 
-struct process *process_new() {
+struct process *process_seed() {
 	struct process *proc = page_alloc(1); // TODO kmalloc
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
