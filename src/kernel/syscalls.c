@@ -4,9 +4,7 @@
 #include <kernel/syscalls.h>
 #include <stdint.h>
 
-int sc_exit(const char *msg, size_t len) {
-	// the message is currently ignored
-	
+_Noreturn void sc_exit(const char *msg, size_t len) {
 	log_const("last process returned. ");
 	panic();
 }
@@ -29,7 +27,6 @@ int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case SC_EXIT:
 			sc_exit((void*)a, b);
-			panic(); // sc_exit should never return
 		case SC_DEBUGLOG:
 			return sc_debuglog((void*)a, b);
 		default:
