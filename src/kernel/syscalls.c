@@ -5,6 +5,12 @@
 #include <stdint.h>
 
 _Noreturn void sc_exit(const char *msg, size_t len) {
+	process_current->state = PS_DEAD;
+
+	process_current = process_find(PS_RUNNING);
+	if (process_current)
+		process_switch(process_current);
+
 	log_const("last process returned. ");
 	panic();
 }

@@ -4,11 +4,16 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
+struct process *process_first;
 struct process *process_current;
 
 struct process *process_new() {
 	struct process *proc = page_alloc(1); // TODO kmalloc
 	proc->pages = pagedir_new();
+	proc->state = PS_RUNNING;
+	proc->next = NULL;
+
+	process_first = proc;
 
 	// map the stack to the last page in memory
 	pagedir_map(proc->pages, (void*)~PAGE_MASK, page_alloc(1), true, true);
@@ -24,10 +29,11 @@ struct process *process_new() {
 	return proc;
 }
 
-struct process *process_clone(const struct process *orig) {
+struct process *process_clone(struct process *orig) {
 	struct process *clone = page_alloc(1);
 	memcpy(clone, orig, sizeof(struct process));
 	clone->pages = pagedir_copy(orig->pages);
+	orig->next = clone;
 
 	return clone;
 }
@@ -36,4 +42,11 @@ void process_switch(struct process *proc) {
 	process_current = proc;
 	pagedir_switch(proc->pages);
 	sysexit(proc->regs);
+}
+
+struct process *process_find(enum process_state target) {
+	struct process *iter = process_first;
+	while (iter && (iter->state != target))
+		iter = iter->next;
+	return iter;
 }

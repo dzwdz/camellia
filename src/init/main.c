@@ -20,6 +20,9 @@ int main() {
 
 	_syscall(SC_FORK, 0, 0, 0);
 
+	debuglog("i got forked. ",
+	  sizeof("i got forked. ") - 1);
+
 	exit(    "bye from init! ",
 	  sizeof("bye from init! ") - 1);
 }
