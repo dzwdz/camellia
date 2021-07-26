@@ -9,6 +9,12 @@ _Noreturn void sc_exit(const char *msg, size_t len) {
 	panic();
 }
 
+int sc_fork() {
+	struct process *orig = process_current;
+	process_current = process_clone(orig);
+	process_switch(process_current);
+}
+
 int sc_debuglog(const char *msg, size_t len) {
 	struct pagedir *pages = process_current->pages;
 	void *phys = pagedir_virt2phys(pages, msg, true, false);
@@ -27,6 +33,8 @@ int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case SC_EXIT:
 			sc_exit((void*)a, b);
+		case SC_FORK:
+			return sc_fork();
 		case SC_DEBUGLOG:
 			return sc_debuglog((void*)a, b);
 		default:

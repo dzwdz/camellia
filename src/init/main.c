@@ -18,6 +18,8 @@ int main() {
 	debuglog("hello from init! ",
 	  sizeof("hello from init! ") - 1);
 
+	_syscall(SC_FORK, 0, 0, 0);
+
 	exit(    "bye from init! ",
 	  sizeof("bye from init! ") - 1);
 }

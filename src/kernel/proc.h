@@ -10,4 +10,5 @@ struct process {
 extern struct process *process_current;
 
 struct process *process_new();
+struct process *process_clone(const struct process *orig);
 _Noreturn void process_switch(struct process *proc);

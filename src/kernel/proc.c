@@ -1,6 +1,7 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem.h>
 #include <kernel/proc.h>
+#include <kernel/util.h>
 #include <stdint.h>
 
 struct process *process_current;
@@ -21,6 +22,14 @@ struct process *process_new() {
 
 	// the kernel still has to load the executable code and set EIP
 	return proc;
+}
+
+struct process *process_clone(const struct process *orig) {
+	struct process *clone = page_alloc(1);
+	memcpy(clone, orig, sizeof(struct process));
+	clone->pages = pagedir_copy(orig->pages);
+
+	return clone;
 }
 
 void process_switch(struct process *proc) {

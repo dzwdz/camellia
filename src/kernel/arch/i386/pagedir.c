@@ -1,5 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem.h>
+#include <kernel/util.h>
 #include <stdint.h>
 
 /* <heat> nitpick: I highly recommend you dont use bitfields for paging
@@ -90,6 +91,38 @@ void pagedir_map(struct pagedir *dir, void *virt, void *phys,
 
 void pagedir_switch(struct pagedir *dir) {
 	asm volatile("mov %0, %%cr3;" : : "r" (dir) : "memory");
+}
+
+// creates a new pagedir with exact copies of the user pages
+struct pagedir *pagedir_copy(const struct pagedir *orig) {
+	struct pagedir *clone = page_alloc(1);
+	struct pagetable_entry *orig_pt, *clone_pt;
+	void *orig_page, *clone_page;
+
+	for (int i = 0; i < 1024; i++) {
+		clone->e[i] = orig->e[i];
+		if (!orig->e[i].present) continue;
+		if (!orig->e[i].user)    continue; // not really needed
+
+		orig_pt = (void*)(orig->e[i].address << 11);
+		clone_pt = page_alloc(1);
+		clone->e[i].address = (uintptr_t) clone_pt >> 11;
+
+		for (int j = 0; j < 1024; j++) {
+			clone_pt[j] = orig_pt[j];
+			if (!orig_pt[j].present) continue;
+			if (!orig_pt[j].user)    continue;
+			// i could use .global?
+
+			orig_page = (void*)(orig_pt[j].address << 11);
+			clone_page = page_alloc(1);
+			clone_pt[j].address = (uintptr_t) clone_page >> 11;
+
+			memcpy(clone_page, orig_page, PAGE_SIZE);
+		}
+	}
+
+	return clone;
 }
 
 void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
