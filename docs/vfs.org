@@ -1,0 +1,27 @@
+#+title: The VFS
+* intro
+  In Camellia, all resources will be accessed through the VFS. This doesn't only include "normal" files, but also networking, hardware, the kernel state - pretty much everything. This probably sounds like plan9, but there's one important difference - there's no way to elevate your privileges. If a program doesn't have access to e.g. your ~, it will never have it. Thus, it can be used for access control / privilege separation. Also, this means that every part of the VFS can be emulated - so you won't ever need Camellia VMs on a Camellia host.
+** goals
+*** simple "broad" access control
+    For example: if you want a program to only access the internet over port 80, you can just only expose ~/net/80~ in its namespace. If you want to prevent a program from accessing your ssh keys, you can mount a null fs over ~~/.ssh~.
+*** simple fine-grained access control
+    Since filesystems are handled in userspace, you can overlay any part of the filesystem with something which restricts access to resources based on some advanced criteria. For example, you could mount a program over ~/net/80~ which scans packets and disallows using HTTP proxies.
+*** be the only abstraction for accessing resources / access control
+    I don't really know how to explain this well (TODO). In short: the less shit there is to manage, the easier it is to manage.
+* operations
+** creating filesystems
+   ~fs_t create_fs(struct fs_impl);~
+   ~fs_impl~ contains a bunch of function pointers to the implementations of the basic filesystem operations - so, all the functions mentioned in the file IO section.
+
+   ~fs_t create_bind(path_t path);~
+   Creates a filesystem which is just a view of the current process' VFS at ~path~. Can be used for bind mounts.
+   note: This can be implemented fully in userland, using only ~create_fs()~. That doesn't mean that it's a good idea, the performance would be awful.
+** mounting
+   ~void mount(path_t path, fs_t fs);~
+   Mounts ~fs~ over ~path~ (which doesn't have to be a real directory/file!). The files that were previously accessible on ~path~ will NOT be accessible anymore. The calls to ~fs~ won't include the ~path~. ~path~
+** file IO
+   ~fd_t open(path_t path);~
+   Find the last filesystem mounted which is a prefix of ~path~, and passes the ~open()~ call to it, stripping its prefix in the process. If the call succeeds, you get a file descriptor which you can ~read()~, ~write()~, ~close()~, you get the idea.
+* considerations
+** ~path_t~ preprocessing
+   The path format will need to be restricted to prevent programs from bypassing mounts. The current idea is to disallow empty directory names (e.g. ~//~), and to resolve ~.~ and ~..~ before resolving mounts.
