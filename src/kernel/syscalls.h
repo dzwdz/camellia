@@ -1,9 +1,15 @@
+// note: this file gets included in both kernel and userland
 #pragma once
+#include <stddef.h>
 
-// not caring about stable syscall numbers just yet
 enum {
-	SC_EXIT,
-	SC_FORK,
-	
-	SC_DEBUGLOG
+	// idc about stable syscall numbers just yet
+	_SYSCALL_EXIT,
+	_SYSCALL_FORK,
+
+	_SYSCALL_DEBUGLOG
 };
+
+_Noreturn void _syscall_exit(const char *msg, size_t len);
+int _syscall_fork();
+int _syscall_debuglog(const char *msg, size_t len);

@@ -4,7 +4,7 @@
 #include <kernel/syscalls.h>
 #include <stdint.h>
 
-_Noreturn void sc_exit(const char *msg, size_t len) {
+_Noreturn void _syscall_exit(const char *msg, size_t len) {
 	process_current->state = PS_DEAD;
 
 	process_current = process_find(PS_RUNNING);
@@ -15,13 +15,13 @@ _Noreturn void sc_exit(const char *msg, size_t len) {
 	panic();
 }
 
-int sc_fork() {
+int _syscall_fork() {
 	struct process *orig = process_current;
 	process_current = process_clone(orig);
 	process_switch(process_current);
 }
 
-int sc_debuglog(const char *msg, size_t len) {
+int _syscall_debuglog(const char *msg, size_t len) {
 	struct pagedir *pages = process_current->pages;
 	void *phys = pagedir_virt2phys(pages, msg, true, false);
 
@@ -37,12 +37,12 @@ int sc_debuglog(const char *msg, size_t len) {
 
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
-		case SC_EXIT:
-			sc_exit((void*)a, b);
-		case SC_FORK:
-			return sc_fork();
-		case SC_DEBUGLOG:
-			return sc_debuglog((void*)a, b);
+		case _SYSCALL_EXIT:
+			_syscall_exit((void*)a, b);
+		case _SYSCALL_FORK:
+			return _syscall_fork();
+		case _SYSCALL_DEBUGLOG:
+			return _syscall_debuglog((void*)a, b);
 		default:
 			log_const("unknown syscall ");
 			panic();
