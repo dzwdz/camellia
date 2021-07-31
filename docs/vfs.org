@@ -11,16 +11,21 @@
 * operations
 ** creating filesystems
    ~fs_t create_fs(struct fs_impl);~
+   
    ~fs_impl~ contains a bunch of function pointers to the implementations of the basic filesystem operations - so, all the functions mentioned in the file IO section.
 
+   
    ~fs_t create_bind(path_t path);~
+   
    Creates a filesystem which is just a view of the current process' VFS at ~path~. Can be used for bind mounts.
    note: This can be implemented fully in userland, using only ~create_fs()~. That doesn't mean that it's a good idea, the performance would be awful.
 ** mounting
    ~void mount(path_t path, fs_t fs);~
+   
    Mounts ~fs~ over ~path~ (which doesn't have to be a real directory/file!). The files that were previously accessible on ~path~ will NOT be accessible anymore. The calls to ~fs~ won't include the ~path~. ~path~
 ** file IO
    ~fd_t open(path_t path);~
+   
    Find the last filesystem mounted which is a prefix of ~path~, and passes the ~open()~ call to it, stripping its prefix in the process. If the call succeeds, you get a file descriptor which you can ~read()~, ~write()~, ~close()~, you get the idea.
 * considerations
 ** ~path_t~ preprocessing
