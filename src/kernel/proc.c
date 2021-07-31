@@ -8,7 +8,7 @@ struct process *process_first;
 struct process *process_current;
 
 struct process *process_seed() {
-	struct process *proc = page_alloc(1); // TODO kmalloc
+	struct process *proc = kmalloc(sizeof(struct process));
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
 	proc->next = NULL;
@@ -30,7 +30,7 @@ struct process *process_seed() {
 }
 
 struct process *process_clone(struct process *orig) {
-	struct process *clone = page_alloc(1);
+	struct process *clone = kmalloc(sizeof(struct process));
 	memcpy(clone, orig, sizeof(struct process));
 	clone->pages = pagedir_copy(orig->pages);
 	orig->next = clone;

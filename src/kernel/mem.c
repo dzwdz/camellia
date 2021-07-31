@@ -25,3 +25,13 @@ void *page_alloc(size_t pages) {
 void page_free(void *first, size_t pages) {
 	// not implemented
 }
+
+
+void *kmalloc(size_t len) {
+	// extremely inefficient, but this is only temporary anyways
+	return page_alloc(len / PAGE_SIZE + 1);
+}
+
+void kfree(void *ptr) {
+	// unimplemented
+}
