@@ -10,6 +10,17 @@ enum {
 	_SYSCALL_DEBUGLOG
 };
 
+/** Kills the current process.
+ * TODO: what happens to the children?
+ */
 _Noreturn void _syscall_exit(const char *msg, size_t len);
+
+/** Creates a copy of the current process, and executes it.
+ * All user memory pages get copied too. Doesn't return anything useful.. yet.
+ */
 int _syscall_fork();
+
+/** Prints a message to the debug console.
+ * @return the amount of bytes written (can be less than len)
+ */
 int _syscall_debuglog(const char *msg, size_t len);
