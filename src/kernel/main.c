@@ -3,6 +3,7 @@
 #include <kernel/mem.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
+#include <kernel/tests/tests.h>
 #include <kernel/util.h>
 #include <stdint.h>
 
@@ -25,6 +26,9 @@ void kmain(struct kmain_info info) {
 
 	log_const("mem...");
 	mem_init(&info);
+
+	log_const("tests...");
+	tests_all();
 
 	log_const("loading init...");
 	run_init(&info);
