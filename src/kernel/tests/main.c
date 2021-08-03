@@ -13,6 +13,7 @@ void tests_all() {
 	_did_tests_fail = false;
 
 	TEST_RUN(basic_math);
+	tests_utils();
 
 	if (_did_tests_fail)
 		panic();
