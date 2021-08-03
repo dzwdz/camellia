@@ -3,9 +3,9 @@
 
 TEST(memcmp) {
 	// basic equality checks
-	TEST_IF(0 == memcmp("some", "thing", 0))
-	TEST_IF(0 != memcmp("some", "thing", 1))
-	TEST_IF(0 != memcmp("some", "thing", 4))
+	TEST_IF(0 == memcmp("some", "thing", 0));
+	TEST_IF(0 != memcmp("some", "thing", 1));
+	TEST_IF(0 != memcmp("some", "thing", 4));
 
 	TEST_IF(0 == memcmp("test", "tennis",  0));
 	TEST_IF(0 == memcmp("test", "tennis",  1));
