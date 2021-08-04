@@ -8,6 +8,7 @@ void tests_all() {
 	_did_tests_fail = false;
 
 	tests_utils();
+	tests_vfs();
 
 	if (_did_tests_fail)
 		panic();
