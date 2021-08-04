@@ -14,10 +14,10 @@ extern bool _did_tests_fail;
 #define TEST_RUN(name) \
 	__test_##name();
 
-#define TEST_IF(cond)                             \
+#define TEST_COND(cond)                           \
 	if (!(cond)) {                                \
 		_did_tests_fail = true;                   \
-		log_const("TEST_IF failed at "            \
+		log_const("test failed at "               \
 		          __FILE__ ":" NUM2STR(__LINE__)  \
 		                                    " "); \
 	}
