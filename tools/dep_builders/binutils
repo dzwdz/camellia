@@ -1,0 +1,43 @@
+#!/bin/sh
+
+TOOL="binutils"
+VER="2.37"
+# this is ugly
+{ HASHES=$(cat) ; } <<'HASHES'
+c44968b97cd86499efbc4b4ab7d98471f673e5414c554ef54afa930062dbbfcb  toolchain/cache/binutils-2.37.tar.gz
+HASHES
+
+export PREFIX="$(pwd)/toolchain/$TOOL-$VER/"
+export TARGET=i686-elf
+
+
+# ensure that we're in the repo root
+if [ ! -d .git ]; then
+	echo please cd to the repo\'s main directory
+	exit
+fi
+
+mkdir -p $PREFIX/build
+
+
+echo "downloading missing files..."
+tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER.tar.gz"
+tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER.tar.gz.sig"
+tools/dep_builders/dl "https://ftp.gnu.org/gnu/gnu-keyring.gpg"
+
+echo "verifying signatures..."
+if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg toolchain/cache/$TOOL-$VER.tar.gz.sig
+then
+	echo "THE SIGNATURE COULDN'T BE VERIFIED. something's fishy."
+	exit
+fi
+echo "$HASHES" | sha256sum --check || exit
+
+echo "unpacking the tarball..."
+tar xf toolchain/cache/$TOOL-$VER.tar.gz -C toolchain/cache
+
+echo "building..."
+cd $PREFIX/build
+../../cache/$TOOL-$VER/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
+make
+make install
