@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 TOOL="binutils"
 VER="2.37"
