@@ -8,9 +8,10 @@ VER="11.2.0"
 f0837f1bf8244a5cc23bd96ff6366712a791cfae01df8e25b137698aca26efc1  toolchain/cache/gcc-11.2.0.tar.gz
 HASHES
 
-export PREFIX="$(pwd)/toolchain/$TOOL-$VER/"
+export PREFIX="$(pwd)/toolchain/"
+export CACHE="$(pwd)/toolchain/cache/"
+export PATH="$(pwd)/toolchain/bin/:$PATH"
 export TARGET=i686-elf
-export PATH="$(pwd)/toolchain/binutils-2.37/bin/:$PATH"
 
 
 # ensure that we're in the repo root
@@ -19,8 +20,7 @@ if [ ! -d .git ]; then
 	exit
 fi
 
-mkdir -p $PREFIX/build
-
+mkdir -p $PREFIX
 
 echo "downloading missing files..."
 tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER/$TOOL-$VER.tar.gz"
@@ -28,7 +28,7 @@ tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER/$TOOL-$VER.tar.g
 tools/dep_builders/dl "https://ftp.gnu.org/gnu/gnu-keyring.gpg"
 
 echo "verifying signatures..."
-if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg toolchain/cache/$TOOL-$VER.tar.gz.sig
+if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg $CACHE/$TOOL-$VER.tar.gz.sig
 then
 	echo "THE SIGNATURE COULDN'T BE VERIFIED. something's fishy."
 	exit
@@ -36,17 +36,18 @@ fi
 echo "$HASHES" | sha256sum --check || exit
 
 echo "unpacking the tarball..."
-tar xf toolchain/cache/$TOOL-$VER.tar.gz -C toolchain/cache
-UNPACKED="$(pwd)/toolchain/cache/$TOOL-$VER/"
+tar xf toolchain/cache/$TOOL-$VER.tar.gz -C $CACHE
 
 echo "downloading required libraries..."
-cd $UNPACKED
+cd $CACHE/$TOOL-$VER
 ./contrib/download_prerequisites
 
 echo "building..."
-cd $PREFIX/build
+rm -rf $CACHE/$TOOL-$VER/builddir
+mkdir $CACHE/$TOOL-$VER/builddir
+cd $CACHE/$TOOL-$VER/builddir
 
-$UNPACKED/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c --without-headers
+../configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c --without-headers
 make all-gcc
 make all-target-libgcc
 make install-gcc

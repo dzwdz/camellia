@@ -1,4 +1,4 @@
-PATH   := $(shell pwd)/toolchain/binutils-2.37/bin/:$(shell pwd)/toolchain/gcc-11.2.0/bin/:$(PATH)
+PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 
 AS      = i686-elf-as
 CC      = i686-elf-gcc

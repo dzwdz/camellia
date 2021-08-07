@@ -8,7 +8,9 @@ VER="2.37"
 c44968b97cd86499efbc4b4ab7d98471f673e5414c554ef54afa930062dbbfcb  toolchain/cache/binutils-2.37.tar.gz
 HASHES
 
-export PREFIX="$(pwd)/toolchain/$TOOL-$VER/"
+export PREFIX="$(pwd)/toolchain/"
+export CACHE="$(pwd)/toolchain/cache/"
+export PATH="$(pwd)/toolchain/bin/:$PATH"
 export TARGET=i686-elf
 
 
@@ -18,8 +20,7 @@ if [ ! -d .git ]; then
 	exit
 fi
 
-mkdir -p $PREFIX/build
-
+mkdir -p $PREFIX
 
 echo "downloading missing files..."
 tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER.tar.gz"
@@ -27,7 +28,7 @@ tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER.tar.gz.sig"
 tools/dep_builders/dl "https://ftp.gnu.org/gnu/gnu-keyring.gpg"
 
 echo "verifying signatures..."
-if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg toolchain/cache/$TOOL-$VER.tar.gz.sig
+if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg $CACHE/$TOOL-$VER.tar.gz.sig
 then
 	echo "THE SIGNATURE COULDN'T BE VERIFIED. something's fishy."
 	exit
@@ -38,7 +39,9 @@ echo "unpacking the tarball..."
 tar xf toolchain/cache/$TOOL-$VER.tar.gz -C toolchain/cache
 
 echo "building..."
-cd $PREFIX/build
-../../cache/$TOOL-$VER/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
+rm -rf $CACHE/$TOOL-$VER/builddir
+mkdir $CACHE/$TOOL-$VER/builddir
+cd $CACHE/$TOOL-$VER/builddir
+../configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
 make
 make install
