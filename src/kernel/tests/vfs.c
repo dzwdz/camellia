@@ -3,31 +3,48 @@
 #include <kernel/vfs/path.h>
 
 TEST(path_simplify) {
+#define TEST_WRAPPER(argument, result) do { \
+		int len = path_simplify(argument, buf, sizeof(argument) - 1); \
+		if (result == 0) { \
+			TEST_COND(len < 0); \
+		} else { \
+			TEST_COND(len > 0); \
+			/* TODO check equality */ \
+		} \
+	} while (0)
+
 	char buf[256];
 
-	// some easy valid cases
-	TEST_COND( path_simplify("/asdf", buf, 5));
-	TEST_COND( path_simplify("/asd/", buf, 5));
-	TEST_COND( path_simplify("/a/./", buf, 5));
-	TEST_COND( path_simplify("/a/..", buf, 5));
-	TEST_COND( path_simplify("/a//.", buf, 5));
+	// some easy cases first
+	TEST_WRAPPER("/",         "/");
+	TEST_WRAPPER("/asdf",     "/asdf");
+	TEST_WRAPPER("/asdf/",    "/asdf/");
+	TEST_WRAPPER("/asdf//",   "/asdf/");
+	TEST_WRAPPER("/asdf/./",  "/asdf/");
+	TEST_WRAPPER("/a/./b",    "/a/b");
+	TEST_WRAPPER("/a/./b/",   "/a/b/");
 
-	// .. going under the root or close to it
-	TEST_COND(!path_simplify("/../123456", buf, 10));
-	TEST_COND(!path_simplify("/./a/../..", buf, 10));
-	TEST_COND( path_simplify("/a/a/../..", buf, 10));
-	TEST_COND(!path_simplify("/////../..", buf, 10));
-	TEST_COND(!path_simplify("//a//../..", buf, 10));
+	// some slightly less easy cases
+	TEST_WRAPPER("/asdf/..",  "/");
+	TEST_WRAPPER("/asdf/../", "/");
+	TEST_WRAPPER("/asdf/.",   "/asdf/");
+	TEST_WRAPPER("/asdf//.",  "/asdf/");
+
+	// going under the root or close to it
+	TEST_WRAPPER("/../asdf",   0);
+	TEST_WRAPPER("/../asdf/",  0);
+	TEST_WRAPPER("/./a/../..", 0);
+	TEST_WRAPPER("/a/a/../..", "/");
+	TEST_WRAPPER("/////../..", 0);
+	TEST_WRAPPER("//a//../..", 0);
 
 	// relative paths aren't allowed
-	TEST_COND(!path_simplify("apath", buf, 5));
-	TEST_COND(!path_simplify("a/pth", buf, 5));
-	TEST_COND(!path_simplify("../th", buf, 5));
-
-	// this includes empty paths
-	TEST_COND(!path_simplify("", buf, 1));
-
-	// TODO test if the paths are simplified correctly
+	TEST_WRAPPER("relative",   0);
+	TEST_WRAPPER("some/stuff", 0);
+	TEST_WRAPPER("./stuff",    0);
+	TEST_WRAPPER("../stuff",   0);
+	TEST_WRAPPER("",           0);
+#undef TEST_WRAPPER
 }
 
 void tests_vfs() {

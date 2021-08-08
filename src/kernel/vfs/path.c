@@ -1,9 +1,9 @@
 #include <kernel/vfs/path.h>
 #include <kernel/panic.h>
 
-bool path_simplify(const char *in, char *out, size_t len) {
-	if (len == 0)     return false; // empty paths are invalid
-	if (in[0] != '/') return false; // so are relative paths
+int path_simplify(const char *in, char *out, size_t len) {
+	if (len == 0)     return -1; // empty paths are invalid
+	if (in[0] != '/') return -1; // so are relative paths
 
 	int depth = 0;
 	int seg_len; // the length of the current path segment
@@ -33,12 +33,12 @@ bool path_simplify(const char *in, char *out, size_t len) {
 		} else if (seg_len == 2 && in[i + 1] == '.' && in[i + 2] == '.') {
 			// the segment is /../
 			if (--depth < 0)
-				return false;
+				return -1;
 		} else {
 			// normal segment
 			depth++;
 		}
 	}
 
-	return true;
+	return 1; // TODO
 }

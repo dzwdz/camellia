@@ -6,6 +6,6 @@
  * *in and *out can't overlap unless they're equal. Then, the path is modified
  * in-place.
  *
- * @return Was the path valid? If this is false, *out is undefined
+ * @return length of the string in *out, always less than len. Negative if the path was invalid.
  */
-bool path_simplify(const char *in, char *out, size_t len);
+int path_simplify(const char *in, char *out, size_t len);
