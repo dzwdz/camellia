@@ -1,0 +1,9 @@
+#!/bin/sh
+# downloads a file to toolchain/cache unless it's already present there
+
+mkdir -p toolchain/cache
+OUT="toolchain/cache/$(basename $1)"
+
+[ -e "$OUT" ] && exit
+echo "downloading $1..."
+curl "$1" > $OUT

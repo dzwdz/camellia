@@ -1,3 +1,5 @@
+PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
+
 AS      = i686-elf-as
 CC      = i686-elf-gcc
 CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
