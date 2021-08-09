@@ -1,18 +1,8 @@
 #include <kernel/arch/i386/tty/serial.h>
+#include <kernel/arch/i386/port_io.h>
 #include <stdint.h>
 
 const int COM1 = 0x3f8;
-
-// TODO move to some header file
-inline void port_outb(uint16_t port, uint8_t val) {
-	asm volatile("outb %0, %1" : : "a" (val), "Nd" (port));
-}
-
-inline uint8_t port_inb(uint16_t port) {
-	uint8_t val;
-	asm volatile("inb %1, %0" : "=a" (val) : "Nd" (port));
-	return val;
-}
 
 void serial_init() {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
