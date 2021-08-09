@@ -5,6 +5,10 @@
 void tty_init() {
 	vga_clear();
 	serial_init();
+
+	// write hearts
+	vga_write("\x03 ", 2);
+	serial_write("<3 ", 3);
 }
 
 void tty_write(const char *buf, size_t len) {

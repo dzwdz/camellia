@@ -22,8 +22,6 @@ static void run_init(struct kmain_info *info) {
 }
 
 void kmain(struct kmain_info info) {
-	tty_const("\x03 ");
-
 	tty_const("mem...");
 	mem_init(&info);
 
