@@ -6,7 +6,7 @@ CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
-QFLAGS  = -no-reboot -serial stdio
+QFLAGS  = -no-reboot -serial stdio -display none
 
 define from_sources
   $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
