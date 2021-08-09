@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define log_n_panic(x) {log_const(x); panic();}
+#define log_n_panic(x) {tty_const(x); panic();}
 
 bool isr_test_interrupt_called = false;
 
@@ -18,8 +18,6 @@ void isr_stage3(int interrupt) {
 			isr_test_interrupt_called = true;
 			return;
 
-		default:
-			log_const("unknown interrupt");
-			panic();
+		default:   log_n_panic("unknown interrupt");
 	}
 }

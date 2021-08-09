@@ -17,20 +17,20 @@ static void run_init(struct kmain_info *info) {
 		            true, true);
 	proc->regs.eip = (int) init_base;
 
-	log_const("switching...");
+	tty_const("switching...");
 	process_switch(proc);
 }
 
 void kmain(struct kmain_info info) {
-	log_const("\x03 ");
+	tty_const("\x03 ");
 
-	log_const("mem...");
+	tty_const("mem...");
 	mem_init(&info);
 
-	log_const("tests...");
+	tty_const("tests...");
 	tests_all();
 
-	log_const("loading init...");
+	tty_const("loading init...");
 	run_init(&info);
 
 	panic();

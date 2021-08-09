@@ -17,7 +17,7 @@ extern bool _did_tests_fail;
 #define TEST_COND(cond)                           \
 	if (!(cond)) {                                \
 		_did_tests_fail = true;                   \
-		log_const("test failed at "               \
+		tty_const("test failed at "               \
 		          __FILE__ ":" NUM2STR(__LINE__)  \
 		                                    " "); \
 	}

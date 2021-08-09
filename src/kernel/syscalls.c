@@ -11,7 +11,7 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	if (process_current)
 		process_switch(process_current);
 
-	log_const("last process returned. ");
+	tty_const("last process returned. ");
 	panic();
 }
 
@@ -31,7 +31,7 @@ int _syscall_debuglog(const char *msg, size_t len) {
 	if (((uintptr_t)msg & PAGE_MASK) + len > PAGE_SIZE)
 		panic(); // just in case I made an off by 1 error
 
-	log_write(phys, len);
+	tty_write(phys, len);
 	return len;
 }
 
@@ -44,7 +44,7 @@ int syscall_handler(int num, int a, int b, int c) {
 		case _SYSCALL_DEBUGLOG:
 			return _syscall_debuglog((void*)a, b);
 		default:
-			log_const("unknown syscall ");
+			tty_const("unknown syscall ");
 			panic();
 	}
 }
