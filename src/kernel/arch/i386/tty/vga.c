@@ -1,4 +1,4 @@
-#include <kernel/arch/i386/tty.h>
+#include <kernel/arch/i386/tty/vga.h>
 
 struct vga_cell {
 	unsigned char c;

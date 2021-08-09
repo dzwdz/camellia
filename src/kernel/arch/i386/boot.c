@@ -3,7 +3,7 @@
 #include <kernel/arch/i386/interrupts/idt.h>
 #include <kernel/arch/i386/multiboot.h>
 #include <kernel/arch/i386/sysenter.h>
-#include <kernel/arch/i386/tty.h>
+#include <kernel/arch/i386/tty/vga.h>
 #include <kernel/main.h>
 #include <kernel/panic.h>
 
