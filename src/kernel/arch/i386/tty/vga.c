@@ -15,7 +15,7 @@ static void vga_scroll() {
 	vga_pos -= 80;
 }
 
-void vga_putchar(char c) {
+static void vga_putchar(char c) {
 	if (vga_pos >= vga_len - 80)
 		vga_scroll();
 	vga[vga_pos++].c = c;
