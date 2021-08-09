@@ -8,8 +8,11 @@ TEST(path_simplify) {
 		if (result == 0) { \
 			TEST_COND(len < 0); \
 		} else { \
-			TEST_COND(len > 0); \
-			/* TODO check equality */ \
+			if (len == sizeof(result) - 1) { \
+				TEST_COND(0 == memcmp(result, buf, len)); \
+			} else { \
+				TEST_COND(false); \
+			} \
 		} \
 	} while (0)
 
@@ -17,6 +20,8 @@ TEST(path_simplify) {
 
 	// some easy cases first
 	TEST_WRAPPER("/",         "/");
+	TEST_WRAPPER("/.",        "/");
+	TEST_WRAPPER("//",        "/");
 	TEST_WRAPPER("/asdf",     "/asdf");
 	TEST_WRAPPER("/asdf/",    "/asdf/");
 	TEST_WRAPPER("/asdf//",   "/asdf/");
@@ -31,10 +36,15 @@ TEST(path_simplify) {
 	TEST_WRAPPER("/asdf//.",  "/asdf/");
 
 	// going under the root or close to it
+	TEST_WRAPPER("/..",        0);
 	TEST_WRAPPER("/../asdf",   0);
 	TEST_WRAPPER("/../asdf/",  0);
 	TEST_WRAPPER("/./a/../..", 0);
 	TEST_WRAPPER("/a/a/../..", "/");
+	TEST_WRAPPER("/a/../a/..", "/");
+	TEST_WRAPPER("/a/../../a", 0);
+	TEST_WRAPPER("/../a/../a", 0);
+	TEST_WRAPPER("/../../a/a", 0);
 	TEST_WRAPPER("/////../..", 0);
 	TEST_WRAPPER("//a//../..", 0);
 
