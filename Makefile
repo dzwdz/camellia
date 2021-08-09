@@ -6,7 +6,7 @@ CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
-QFLAGS  = -no-reboot -d guest_errors,int,pcall,cpu_reset
+QFLAGS  = -no-reboot
 
 define from_sources
   $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
@@ -42,10 +42,10 @@ out/obj/%.c.o: src/%.c
 
 .PHONY: boot debug lint clean
 boot: out/boot.iso
-	qemu-system-i386 $< $(QFLAGS) -no-shutdown
+	qemu-system-i386 -cdrom $< $(QFLAGS) -no-shutdown
 
 debug: out/boot.iso
-	qemu-system-i386 $< $(QFLAGS) -s -S &
+	qemu-system-i386 -cdrom $< $(QFLAGS) -s -S &
 	@sleep 1
 	gdb
 
