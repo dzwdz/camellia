@@ -26,4 +26,4 @@ inline void _tty_hex(const char *buf, size_t len) {
 
 // very hacky, shouldn't be actually used - only for debugging
 // prints backwards
-#define _tty_var(var) tty_hex((void*)&var, sizeof(var))
+#define _tty_var(var) _tty_hex((void*)&var, sizeof(var))
