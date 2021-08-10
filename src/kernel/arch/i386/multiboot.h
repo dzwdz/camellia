@@ -1,7 +1,8 @@
 #pragma once
 #include <stdint.h>
 
-// TODO assert that pointers have 4 bytes.
+_Static_assert(sizeof(void*) == 4,
+		"this code assumes that pointers have 4 bytes");
 
 struct multiboot_mod {
 	void *start;
