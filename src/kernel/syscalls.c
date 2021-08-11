@@ -23,15 +23,27 @@ int _syscall_fork() {
 
 int _syscall_debuglog(const char *msg, size_t len) {
 	struct pagedir *pages = process_current->pages;
-	void *phys = pagedir_virt2phys(pages, msg, true, false);
+	size_t remaining = len;
 
-	// page overrun check
-	if (((uintptr_t)msg & PAGE_MASK) + len > PAGE_SIZE)
-		len = PAGE_SIZE - ((uintptr_t)msg & PAGE_MASK);
-	if (((uintptr_t)msg & PAGE_MASK) + len > PAGE_SIZE)
-		panic(); // just in case I made an off by 1 error
+	while (remaining > 0) {
+		/* note: While i'm pretty sure that this should always work, this
+		 * was only tested in cases where the pages were consecutive both in
+		 * virtual and physical memory, which might not always be the case.
+		 * TODO test this */
 
-	tty_write(phys, len);
+		void *phys = pagedir_virt2phys(pages, msg, true, false);
+		size_t partial = remaining;
+
+		// don't read past the page
+		if (((uintptr_t)msg & PAGE_MASK) + remaining > PAGE_SIZE)
+			partial = PAGE_SIZE - ((uintptr_t)msg & PAGE_MASK);
+
+		tty_write(phys, partial);
+
+		remaining -= partial;
+		msg       += partial;
+	}
+
 	return len;
 }
 
