@@ -35,3 +35,46 @@ void *kmalloc(size_t len) {
 void kfree(void *ptr) {
 	// unimplemented
 }
+
+
+// TODO move to some shared file in kernel/arch/
+void virt_iter_new(
+		struct virt_iter *iter, void *virt, size_t length,
+		struct pagedir *pages, bool user, bool writeable)
+{
+	iter->frag       = 0;
+	iter->error      = false;
+	iter->_virt      = virt;
+	iter->_remaining = length;
+	iter->_pages     = pages;
+	iter->_user      = user;
+	iter->_writeable = writeable;
+}
+
+bool virt_iter_next(struct virt_iter *iter) {
+	/* note: While i'm pretty sure that this should always work, this
+	 * was only tested in cases where the pages were consecutive both in
+	 * virtual and physical memory, which might not always be the case.
+	 * TODO test this */
+
+	uintptr_t virt = (uintptr_t) iter->_virt;
+	size_t partial = iter->_remaining;
+	if (partial <= 0) return false;
+
+	// don't read past the page
+	if ((virt & PAGE_MASK) + partial > PAGE_SIZE)
+		partial = PAGE_SIZE - (virt & PAGE_MASK);
+
+	iter->frag = pagedir_virt2phys(iter->_pages,
+			iter->_virt, iter->_user, iter->_writeable);
+
+	if (iter->frag == 0) {
+		iter->error = true;
+		return false;
+	}
+
+	iter->frag_len    = partial;
+	iter->_remaining -= partial;
+	iter->_virt      += partial;
+	return true;
+}

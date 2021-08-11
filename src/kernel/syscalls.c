@@ -1,4 +1,5 @@
 #include <kernel/arch/generic.h>
+#include <kernel/mem.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/syscalls.h>
@@ -22,29 +23,15 @@ int _syscall_fork() {
 }
 
 int _syscall_debuglog(const char *msg, size_t len) {
-	struct pagedir *pages = process_current->pages;
-	size_t remaining = len;
+	struct virt_iter iter;
+	size_t written;
 
-	while (remaining > 0) {
-		/* note: While i'm pretty sure that this should always work, this
-		 * was only tested in cases where the pages were consecutive both in
-		 * virtual and physical memory, which might not always be the case.
-		 * TODO test this */
-
-		void *phys = pagedir_virt2phys(pages, msg, true, false);
-		size_t partial = remaining;
-
-		// don't read past the page
-		if (((uintptr_t)msg & PAGE_MASK) + remaining > PAGE_SIZE)
-			partial = PAGE_SIZE - ((uintptr_t)msg & PAGE_MASK);
-
-		tty_write(phys, partial);
-
-		remaining -= partial;
-		msg       += partial;
+	virt_iter_new(&iter, msg, len, process_current->pages, true, false);
+	while (virt_iter_next(&iter)) {
+		tty_write(iter.frag, iter.frag_len);
+		written += iter.frag_len;
 	}
-
-	return len;
+	return written;
 }
 
 int syscall_handler(int num, int a, int b, int c) {
