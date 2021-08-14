@@ -1,15 +1,23 @@
 #include <kernel/syscalls.h>
+#include <stdint.h>
 
-#define STR_64  "This string has exactly 64 characters. It'll be repeated a bunch"
-#define STR_256 STR_64  STR_64  STR_64  STR_64
-#define STR_1K  STR_256 STR_256 STR_256 STR_256
-#define STR_4K  STR_1K  STR_1K  STR_1K  STR_1K
-#define STR_LNG "start " STR_4K STR_4K " finished! "
+// takes a cstring and copies it right before a page boundary
+const char *multipageify(const char *str) {
+	static char buf[0x2000] __attribute__((section("text")));
+
+	char *out = ((uintptr_t)buf & ~0xFFF) + 0xFFF;
+	char *cur = out;
+	do {
+		*cur++ = *str;
+	} while (*str++ != '\0');
+	return out;
+}
 
 int main() {
-	// try to print a string which is longer than a page
-	_syscall_debuglog(STR_LNG,
-	           sizeof(STR_LNG) - 1);
+	// try to print a string crossing page boundaries
+	_syscall_debuglog(
+		multipageify("I cross pages. "),
+		      sizeof("I cross pages. ") - 1);
 
 	_syscall_exit("bye from init! ",
 	       sizeof("bye from init! ") - 1);
