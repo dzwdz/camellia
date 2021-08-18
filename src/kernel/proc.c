@@ -6,6 +6,7 @@
 
 struct process *process_first;
 struct process *process_current;
+uint32_t next_pid = 0;
 
 struct process *process_seed() {
 	struct process *proc = kmalloc(sizeof(struct process));
@@ -14,6 +15,7 @@ struct process *process_seed() {
 	proc->sibling = NULL;
 	proc->child   = NULL;
 	proc->parent  = NULL;
+	proc->id      = next_pid++;
 
 	process_first = proc;
 
@@ -40,6 +42,8 @@ struct process *process_fork(struct process *parent) {
 	child->child   = NULL;
 	child->parent  = parent;
 	parent->child  = child;
+
+	child->id      = next_pid++;
 
 	return child;
 }

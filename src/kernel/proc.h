@@ -15,6 +15,8 @@ struct process {
 	struct process *sibling;
 	struct process *child;
 	struct process *parent;
+
+	uint32_t id; // only for debugging, don't expose to userland
 };
 
 extern struct process *process_first;
