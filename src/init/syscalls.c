@@ -12,6 +12,10 @@ int _syscall_fork() {
 	return _syscall(_SYSCALL_FORK, 0, 0, 0);
 }
 
+int _syscall_await(char *buf, int *len) {
+	return _syscall(_SYSCALL_AWAIT, (int)buf, (int)len, 0);
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	return _syscall(_SYSCALL_DEBUGLOG, (int)msg, len, 0);
 }

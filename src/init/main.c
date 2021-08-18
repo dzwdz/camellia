@@ -22,6 +22,10 @@ int main() {
 	if (_syscall_fork() > 0) {
 		_syscall_debuglog("parent ",
 		           sizeof("parent ") - 1);
+
+		_syscall_await(NULL, NULL);
+		_syscall_debuglog("death ",
+		           sizeof("death ") - 1);
 	} else {
 		_syscall_debuglog("child ",
 		           sizeof("child ") - 1);
