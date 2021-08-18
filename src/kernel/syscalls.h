@@ -16,7 +16,8 @@ enum {
 _Noreturn void _syscall_exit(const char *msg, size_t len);
 
 /** Creates a copy of the current process, and executes it.
- * All user memory pages get copied too. Doesn't return anything useful.. yet.
+ * All user memory pages get copied too.
+ * @return 0 in the child, a meaningless positive value in the parent.
  */
 int _syscall_fork();
 

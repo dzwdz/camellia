@@ -19,10 +19,13 @@ int main() {
 		multipageify("I cross pages. "),
 		      sizeof("I cross pages. ") - 1);
 
-	_syscall_fork();
-
-	_syscall_debuglog("fork ",
-	           sizeof("fork ") - 1);
+	if (_syscall_fork() > 0) {
+		_syscall_debuglog("parent ",
+		           sizeof("parent ") - 1);
+	} else {
+		_syscall_debuglog("child ",
+		           sizeof("child ") - 1);
+	}
 
 	_syscall_exit("bye from init! ",
 	       sizeof("bye from init! ") - 1);

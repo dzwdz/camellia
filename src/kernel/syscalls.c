@@ -17,9 +17,9 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 }
 
 int _syscall_fork() {
-	struct process *orig = process_current;
-	process_current = process_fork(orig);
-	process_switch(process_current);
+	struct process *child = process_fork(process_current);
+	regs_savereturn(&child->regs, 0);
+	return 1;
 }
 
 int _syscall_debuglog(const char *msg, size_t len) {
