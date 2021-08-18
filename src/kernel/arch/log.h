@@ -4,7 +4,7 @@
 void tty_init();
 void tty_write(const char *buf, size_t len);
 
-inline void _tty_hex(const char *buf, size_t len) {
+static inline void _tty_hex(const char *buf, size_t len) {
 	char hex[2];
 	for (size_t i = 0; i < len; i++) {
 		hex[0] = (buf[i] & 0xF0) >> 4;
