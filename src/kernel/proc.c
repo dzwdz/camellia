@@ -30,7 +30,7 @@ struct process *process_seed() {
 	return proc;
 }
 
-struct process *process_clone(struct process *parent) {
+struct process *process_fork(struct process *parent) {
 	struct process *child = kmalloc(sizeof(struct process));
 	memcpy(child, parent, sizeof(struct process));
 

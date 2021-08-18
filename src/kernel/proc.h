@@ -21,7 +21,7 @@ extern struct process *process_current;
 
 // creates the root process
 struct process *process_seed();
-struct process *process_clone(struct process *orig);
+struct process *process_fork(struct process *parent);
 _Noreturn void process_switch(struct process *proc);
 
 struct process *process_find(enum process_state);
