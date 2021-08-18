@@ -19,6 +19,11 @@ int main() {
 		multipageify("I cross pages. "),
 		      sizeof("I cross pages. ") - 1);
 
+	_syscall_fork();
+
+	_syscall_debuglog("fork ",
+	           sizeof("fork ") - 1);
+
 	_syscall_exit("bye from init! ",
 	       sizeof("bye from init! ") - 1);
 }

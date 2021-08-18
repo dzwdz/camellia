@@ -11,7 +11,8 @@ struct process *process_seed() {
 	struct process *proc = kmalloc(sizeof(struct process));
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
-	proc->next = NULL;
+	proc->sibling = NULL;
+	proc->child = NULL;
 
 	process_first = proc;
 
@@ -29,13 +30,16 @@ struct process *process_seed() {
 	return proc;
 }
 
-struct process *process_clone(struct process *orig) {
-	struct process *clone = kmalloc(sizeof(struct process));
-	memcpy(clone, orig, sizeof(struct process));
-	clone->pages = pagedir_copy(orig->pages);
-	orig->next = clone;
+struct process *process_clone(struct process *parent) {
+	struct process *child = kmalloc(sizeof(struct process));
+	memcpy(child, parent, sizeof(struct process));
 
-	return clone;
+	child->pages = pagedir_copy(parent->pages);
+	child->sibling = parent->child;
+	child->child   = NULL;
+	parent->child  = child;
+
+	return child;
 }
 
 void process_switch(struct process *proc) {
@@ -44,9 +48,24 @@ void process_switch(struct process *proc) {
 	sysexit(proc->regs);
 }
 
+// TODO there's no check for going past the stack - VULN
+struct process *_process_find_recursive(
+		enum process_state target, struct process *iter) {
+	struct process *in;
+	while (iter) {
+		if (iter->state == target)
+			return iter;
+
+		// DFS
+		in = _process_find_recursive(target, iter->child);
+		if (in)
+			return in;
+
+		iter = iter->sibling;
+	}
+	return NULL;
+}
+
 struct process *process_find(enum process_state target) {
-	struct process *iter = process_first;
-	while (iter && (iter->state != target))
-		iter = iter->next;
-	return iter;
+	return _process_find_recursive(target, process_first);
 }

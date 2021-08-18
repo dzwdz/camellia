@@ -12,7 +12,8 @@ struct process {
 	struct registers regs;
 	enum process_state state;
 
-	struct process *next;
+	struct process *sibling;
+	struct process *child;
 };
 
 extern struct process *process_first;
