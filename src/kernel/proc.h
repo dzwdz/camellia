@@ -14,6 +14,7 @@ struct process {
 
 	struct process *sibling;
 	struct process *child;
+	struct process *parent;
 };
 
 extern struct process *process_first;

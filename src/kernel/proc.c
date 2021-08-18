@@ -12,7 +12,8 @@ struct process *process_seed() {
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
 	proc->sibling = NULL;
-	proc->child = NULL;
+	proc->child   = NULL;
+	proc->parent  = NULL;
 
 	process_first = proc;
 
@@ -37,6 +38,7 @@ struct process *process_fork(struct process *parent) {
 	child->pages = pagedir_copy(parent->pages);
 	child->sibling = parent->child;
 	child->child   = NULL;
+	child->parent  = parent;
 	parent->child  = child;
 
 	return child;
