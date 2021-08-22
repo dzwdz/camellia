@@ -5,7 +5,7 @@
 const char *multipageify(const char *str) {
 	static char buf[0x2000] __attribute__((section("text")));
 
-	char *out = ((uintptr_t)buf & ~0xFFF) + 0xFFF;
+	char *out = (void*)((uintptr_t)buf & ~0xFFF) + 0xFFF;
 	char *cur = out;
 	do {
 		*cur++ = *str;

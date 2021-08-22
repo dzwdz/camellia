@@ -26,7 +26,7 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 
 _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	process_current->state = PS_DEAD;
-	process_current->saved_addr = msg;
+	process_current->saved_addr = (void*)msg; // discard const
 	process_current->saved_len  = len;
 
 	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
@@ -72,9 +72,9 @@ int _syscall_fork() {
 
 int _syscall_debuglog(const char *msg, size_t len) {
 	struct virt_iter iter;
-	size_t written;
+	size_t written = 0;
 
-	virt_iter_new(&iter, msg, len, process_current->pages, true, false);
+	virt_iter_new(&iter, (void*)msg, len, process_current->pages, true, false);
 	while (virt_iter_next(&iter)) {
 		tty_write(iter.frag, iter.frag_len);
 		written += iter.frag_len;
@@ -87,7 +87,7 @@ int syscall_handler(int num, int a, int b, int c) {
 		case _SYSCALL_EXIT:
 			_syscall_exit((void*)a, b);
 		case _SYSCALL_AWAIT:
-			return _syscall_await((void*)a, (void*)b);
+			return _syscall_await((void*)a, b);
 		case _SYSCALL_FORK:
 			return _syscall_fork();
 		case _SYSCALL_DEBUGLOG:

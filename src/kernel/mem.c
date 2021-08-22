@@ -87,8 +87,8 @@ bool virt_user_cpy(
 	struct virt_iter dest_iter, src_iter;
 	size_t min;
 
-	virt_iter_new(&dest_iter, dest, length, dest_pages, true, true);
-	virt_iter_new( &src_iter,  src, length,  src_pages, true, false);
+	virt_iter_new(&dest_iter,       dest, length, dest_pages, true, true);
+	virt_iter_new( &src_iter, (void*)src, length,  src_pages, true, false);
 	dest_iter.frag_len = 0;
 	src_iter.frag_len  = 0;
 

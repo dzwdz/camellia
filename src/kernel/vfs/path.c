@@ -10,12 +10,12 @@ int path_simplify(const char *in, char *out, size_t len) {
 	int out_pos = 0;
 	bool directory = 0;
 
-	for (int i = 0; i < len; i += seg_len + 1) {
+	for (size_t i = 0; i < len; i += seg_len + 1) {
 		assert(in[i] == '/');
 
 		seg_len = 0;
 		directory = false;
-		for (int j = i + 1; j < len; j++) {
+		for (size_t j = i + 1; j < len; j++) {
 			if (in[j] == '/') {
 				directory = true;
 				break;
