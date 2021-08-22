@@ -33,7 +33,7 @@ int _syscall_await(char *buf, int len);
  */
 int _syscall_fork();
 
-fd_t _syscall_fs_open(const char *path, size_t len);
+fd_t _syscall_fs_open(const char *path, int len);
 int _syscall_mount(const char *path, int len, fd_t fd);
 
 /** Prints a message to the debug console.

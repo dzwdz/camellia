@@ -65,7 +65,7 @@ int _syscall_fork() {
 	return 1;
 }
 
-fd_t _syscall_fs_open(const char *path, size_t len) {
+fd_t _syscall_fs_open(const char *path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount = process_current->mount;
 	static char buffer[PATH_MAX]; // holds the path
