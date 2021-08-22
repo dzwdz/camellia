@@ -1,5 +1,6 @@
 #pragma once
 #include <kernel/arch/generic.h>
+#include <kernel/vfs/mount.h>
 
 enum process_state {
 	PS_RUNNING,
@@ -25,6 +26,8 @@ struct process {
 	// PS_WAITS4CHILDDEATH - buffer for said message
 	void  *saved_addr;
 	size_t saved_len;
+
+	struct vfs_mount *mount;
 };
 
 extern struct process *process_first;

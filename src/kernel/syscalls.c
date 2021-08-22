@@ -67,12 +67,13 @@ int _syscall_fork() {
 
 fd_t _syscall_fs_open(const char *path, size_t len) {
 	struct virt_iter iter;
-	static char buffer[PATH_MAX]; // holds the simplified path
+	struct vfs_mount *mount = process_current->mount;
+	static char buffer[PATH_MAX]; // holds the path
 	size_t pos = 0;
 
 	if (len > PATH_MAX) return -1;
 
-	// copy the path to buffer
+	// copy the path to the kernel
 	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
 	while (virt_iter_next(&iter)) {
 		memcpy(buffer + pos, iter.frag, iter.frag_len);
@@ -83,7 +84,55 @@ fd_t _syscall_fs_open(const char *path, size_t len) {
 	len = path_simplify(buffer, buffer, len);
 	if (len < 0) return -1;
 
+	// find mount
+	for (mount = process_current->mount; mount; mount = mount->prev) {
+		if (mount->prefix_len > len)
+			continue;
+		if (memcmp(mount->prefix, buffer, mount->prefix_len) == 0)
+			break;
+	}
+
 	tty_write(buffer, len);
+	tty_const(" from mount ");
+	if (mount)
+		tty_write(mount->prefix, mount->prefix_len);
+	else
+		tty_const("[none]");
+
+	return -1;
+}
+
+int _syscall_mount(const char *path, int len, fd_t fd) {
+	struct virt_iter iter;
+	struct vfs_mount *mount;
+	char *path_buf;
+	size_t pos = 0;
+
+	if (len > PATH_MAX) return -1;
+
+	// copy the path to the kernel
+	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
+	path_buf = kmalloc(len);
+	while (virt_iter_next(&iter)) { // TODO abstract away
+		memcpy(path_buf + pos, iter.frag, iter.frag_len);
+		pos += iter.frag_len;
+	}
+	if (iter.error) goto fail;
+
+	// simplify it
+	len = path_simplify(path_buf, path_buf, len);
+	if (len < 0) goto fail;
+	// TODO remove trailing slash
+
+	// append to mount list
+	mount = kmalloc(sizeof(struct vfs_mount));
+	mount->prev = process_current->mount;
+	mount->prefix = path_buf;
+	mount->prefix_len = len;
+	process_current->mount = mount;
+	return 0;
+fail:
+	kfree(path_buf);
 	return -1;
 }
 
@@ -109,6 +158,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fork();
 		case _SYSCALL_FS_OPEN:
 			return _syscall_fs_open((void*)a, b);
+		case _SYSCALL_MOUNT:
+			return _syscall_mount((void*)a, b, c);
 		case _SYSCALL_DEBUGLOG:
 			return _syscall_debuglog((void*)a, b);
 		default:

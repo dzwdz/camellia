@@ -16,6 +16,7 @@ struct process *process_seed() {
 	proc->sibling = NULL;
 	proc->child   = NULL;
 	proc->parent  = NULL;
+	proc->mount   = NULL;
 	proc->id      = next_pid++;
 
 	process_first = proc;

@@ -20,6 +20,10 @@ fd_t _syscall_fs_open(const char *path, size_t len) {
 	return _syscall(_SYSCALL_FS_OPEN, (int)path, len, 0);
 }
 
+int _syscall_mount(const char *path, int len, fd_t fd) {
+	return _syscall(_SYSCALL_MOUNT, (int)path, len, fd);
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	return _syscall(_SYSCALL_DEBUGLOG, (int)msg, len, 0);
 }

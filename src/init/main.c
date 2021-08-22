@@ -13,10 +13,16 @@ const char *multipageify(const char *str) {
 	return out;
 }
 
+#define mount(path) _syscall_mount(path, sizeof(path)-1, 0)
+
 int main() {
+	mount("/");
+	mount("/some/where");
+	mount("/some");
+
 	_syscall_fs_open(
-			multipageify("/some/../path"),
-			      sizeof("/some/../path") - 1);
+			multipageify("/some/where/file"),
+			      sizeof("/some/where/file") - 1);
 
 	_syscall_exit("bye from init! ",
 	       sizeof("bye from init! ") - 1);

@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 typedef int fd_t;
+typedef int fs_handle_t;
 
 enum {
 	// idc about stable syscall numbers just yet
@@ -11,6 +12,7 @@ enum {
 	_SYSCALL_FORK,
 
 	_SYSCALL_FS_OPEN,
+	_SYSCALL_MOUNT,
 
 	_SYSCALL_DEBUGLOG
 };
@@ -32,6 +34,7 @@ int _syscall_await(char *buf, int len);
 int _syscall_fork();
 
 fd_t _syscall_fs_open(const char *path, size_t len);
+int _syscall_mount(const char *path, int len, fd_t fd);
 
 /** Prints a message to the debug console.
  * @return the amount of bytes written (can be less than len)
