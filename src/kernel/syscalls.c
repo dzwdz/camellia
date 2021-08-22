@@ -69,16 +69,13 @@ fd_t _syscall_fs_open(const char *path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount = process_current->mount;
 	static char buffer[PATH_MAX]; // holds the path
-	size_t pos = 0;
 
 	if (len > PATH_MAX) return -1;
 
 	// copy the path to the kernel
 	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
-	while (virt_iter_next(&iter)) {
-		memcpy(buffer + pos, iter.frag, iter.frag_len);
-		pos += iter.frag_len;
-	}
+	while (virt_iter_next(&iter))
+		memcpy(buffer + iter.prior, iter.frag, iter.frag_len);
 	if (iter.error) return -1;
 
 	len = path_simplify(buffer, buffer, len);
@@ -106,17 +103,14 @@ int _syscall_mount(const char *path, int len, fd_t fd) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	char *path_buf;
-	size_t pos = 0;
 
 	if (len > PATH_MAX) return -1;
 
 	// copy the path to the kernel
-	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
 	path_buf = kmalloc(len);
-	while (virt_iter_next(&iter)) { // TODO abstract away
-		memcpy(path_buf + pos, iter.frag, iter.frag_len);
-		pos += iter.frag_len;
-	}
+	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
+	while (virt_iter_next(&iter))
+		memcpy(path_buf + iter.prior, iter.frag, iter.frag_len);
 	if (iter.error) goto fail;
 
 	// simplify it
@@ -138,14 +132,10 @@ fail:
 
 int _syscall_debuglog(const char *msg, size_t len) {
 	struct virt_iter iter;
-	size_t written = 0;
-
 	virt_iter_new(&iter, (void*)msg, len, process_current->pages, true, false);
-	while (virt_iter_next(&iter)) {
+	while (virt_iter_next(&iter))
 		tty_write(iter.frag, iter.frag_len);
-		written += iter.frag_len;
-	}
-	return written;
+	return iter.prior;
 }
 
 int syscall_handler(int num, int a, int b, int c) {

@@ -44,6 +44,8 @@ void virt_iter_new(
 		struct pagedir *pages, bool user, bool writeable)
 {
 	iter->frag       = 0;
+	iter->frag_len   = 0;
+	iter->prior      = 0;
 	iter->error      = false;
 	iter->_virt      = virt;
 	iter->_remaining = length;
@@ -60,6 +62,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 
 	uintptr_t virt = (uintptr_t) iter->_virt;
 	size_t partial = iter->_remaining;
+	iter->prior   += iter->frag_len;
 	if (partial <= 0) return false;
 
 	// don't read past the page

@@ -19,6 +19,7 @@ void kfree(void *ptr);
 struct virt_iter {
 	void *frag;
 	size_t frag_len;
+	size_t prior; // sum of all prior frag_lens
 	bool error;
 
 	void *_virt;
