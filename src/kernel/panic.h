@@ -8,3 +8,5 @@
 	tty_const(" (" __FILE__ ":" NUM2STR(__LINE__) ") "); \
 	halt_cpu(); \
 } while (0)
+
+#define assert(stmt) do { if (!(stmt)) panic(); } while (0)

@@ -11,8 +11,7 @@ int path_simplify(const char *in, char *out, size_t len) {
 	bool directory = 0;
 
 	for (int i = 0; i < len; i += seg_len + 1) {
-		// TODO implement assert
-		if (in[i] != '/') panic();
+		assert(in[i] == '/');
 
 		seg_len = 0;
 		directory = false;

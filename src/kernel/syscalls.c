@@ -9,8 +9,8 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 	size_t len;
 	bool res;
 
-	if (    dead->state != PS_DEAD            ) panic();
-	if (listener->state != PS_WAITS4CHILDDEATH) panic();
+	assert(dead->state == PS_DEAD);
+	assert(listener->state == PS_WAITS4CHILDDEATH);
 	dead->state = PS_DEADER;
 	listener->state = PS_RUNNING;
 

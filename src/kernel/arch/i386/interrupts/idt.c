@@ -58,7 +58,7 @@ static void idt_load() {
 
 static void idt_test() {
 	asm("int $0x34" : : : "memory");
-	if (!isr_test_interrupt_called) panic();
+	assert(isr_test_interrupt_called);
 }
 
 void idt_init() {
