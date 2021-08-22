@@ -19,7 +19,7 @@ _Noreturn void _syscall_exit(const char *msg, size_t len);
 /** Waits for a child to exit, putting its exit message into *buf.
  * @return the length of the message
  */
-int _syscall_await(char *buf, int *len);
+int _syscall_await(char *buf, int len);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.

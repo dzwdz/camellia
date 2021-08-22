@@ -40,7 +40,7 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	panic();
 }
 
-int _syscall_await(char *buf, int *len) {
+int _syscall_await(char *buf, int len) {
 	process_current->state = PS_WAITS4CHILDDEATH;
 	process_current->saved_addr = buf;
 	process_current->saved_len  = len;

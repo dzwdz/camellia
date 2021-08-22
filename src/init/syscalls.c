@@ -12,7 +12,7 @@ int _syscall_fork() {
 	return _syscall(_SYSCALL_FORK, 0, 0, 0);
 }
 
-int _syscall_await(char *buf, int *len) {
+int _syscall_await(char *buf, int len) {
 	return _syscall(_SYSCALL_AWAIT, (int)buf, (int)len, 0);
 }
 
