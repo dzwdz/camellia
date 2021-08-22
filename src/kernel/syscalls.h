@@ -2,11 +2,15 @@
 #pragma once
 #include <stddef.h>
 
+typedef int fd_t;
+
 enum {
 	// idc about stable syscall numbers just yet
 	_SYSCALL_EXIT,
 	_SYSCALL_AWAIT,
 	_SYSCALL_FORK,
+
+	_SYSCALL_FS_OPEN,
 
 	_SYSCALL_DEBUGLOG
 };
@@ -26,6 +30,8 @@ int _syscall_await(char *buf, int len);
  * @return 0 in the child, a meaningless positive value in the parent.
  */
 int _syscall_fork();
+
+fd_t _syscall_fs_open(const char *path, size_t len);
 
 /** Prints a message to the debug console.
  * @return the amount of bytes written (can be less than len)

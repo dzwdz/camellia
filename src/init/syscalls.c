@@ -16,6 +16,10 @@ int _syscall_await(char *buf, int len) {
 	return _syscall(_SYSCALL_AWAIT, (int)buf, (int)len, 0);
 }
 
+fd_t _syscall_fs_open(const char *path, size_t len) {
+	return _syscall(_SYSCALL_FS_OPEN, (int)path, len, 0);
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	return _syscall(_SYSCALL_DEBUGLOG, (int)msg, len, 0);
 }

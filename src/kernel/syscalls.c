@@ -3,6 +3,7 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/syscalls.h>
+#include <kernel/vfs/path.h>
 #include <stdint.h>
 
 _Noreturn static void await_finish(struct process *dead, struct process *listener) {
@@ -64,6 +65,28 @@ int _syscall_fork() {
 	return 1;
 }
 
+fd_t _syscall_fs_open(const char *path, size_t len) {
+	struct virt_iter iter;
+	static char buffer[PATH_MAX]; // holds the simplified path
+	size_t pos = 0;
+
+	if (len > PATH_MAX) return -1;
+
+	// copy the path to buffer
+	virt_iter_new(&iter, (void*)path, len, process_current->pages, true, false);
+	while (virt_iter_next(&iter)) {
+		memcpy(buffer + pos, iter.frag, iter.frag_len);
+		pos += iter.frag_len;
+	}
+	if (iter.error) return -1;
+
+	len = path_simplify(buffer, buffer, len);
+	if (len < 0) return -1;
+
+	tty_write(buffer, len);
+	return -1;
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	struct virt_iter iter;
 	size_t written = 0;
@@ -84,6 +107,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_await((void*)a, b);
 		case _SYSCALL_FORK:
 			return _syscall_fork();
+		case _SYSCALL_FS_OPEN:
+			return _syscall_fs_open((void*)a, b);
 		case _SYSCALL_DEBUGLOG:
 			return _syscall_debuglog((void*)a, b);
 		default:
