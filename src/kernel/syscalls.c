@@ -36,8 +36,7 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	if (process_current)
 		process_switch(process_current);
 
-	tty_const("last process returned. ");
-	panic();
+	process_switch_any();
 }
 
 int _syscall_await(char *buf, int len) {
@@ -55,13 +54,8 @@ int _syscall_await(char *buf, int len) {
 
 	// no dead children yet
 	// TODO check if the process even has children
-
-	process_current = process_find(PS_RUNNING);
-	if (process_current)
-		process_switch(process_current);
-
-	tty_const("this error will be fixed in the next commit."); // TODO
-	panic();
+	
+	process_switch_any();
 }
 
 int _syscall_fork() {

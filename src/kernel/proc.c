@@ -1,5 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem.h>
+#include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
 #include <stdint.h>
@@ -52,6 +53,15 @@ void process_switch(struct process *proc) {
 	process_current = proc;
 	pagedir_switch(proc->pages);
 	sysexit(proc->regs);
+}
+
+_Noreturn void process_switch_any() {
+	struct process *found = process_find(PS_RUNNING);
+	if (found)
+		process_switch(found);
+
+	tty_const(" no running processes left...");
+	panic();
 }
 
 // TODO there's no check for going past the stack - VULN
