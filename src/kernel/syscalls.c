@@ -5,16 +5,32 @@
 #include <kernel/syscalls.h>
 #include <stdint.h>
 
+_Noreturn static void await_finish(struct process *dead, struct process *listener) {
+	size_t len;
+	bool res;
+
+	if (    dead->state != PS_DEAD            ) panic();
+	if (listener->state != PS_WAITS4CHILDDEATH) panic();
+	dead->state = PS_DEADER;
+	listener->state = PS_RUNNING;
+
+	len = listener->saved_len < dead->saved_len
+	    ? listener->saved_len : dead->saved_len;
+	res = virt_user_cpy(
+			listener->pages, listener->saved_addr,
+			dead->pages, dead->saved_addr, len);
+	regs_savereturn(&listener->regs, res ? len : -1);
+	process_switch(listener);
+}
+
+
 _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	process_current->state = PS_DEAD;
+	process_current->saved_addr = msg;
+	process_current->saved_len  = len;
 
-	// check if our parent is awaiting our death
-	if (process_current->parent->state == PS_WAITS4CHILDDEATH) {
-		// how cruel
-		process_current->state = PS_DEADER;
-		process_current->parent->state = PS_RUNNING;
-		process_switch(process_current->parent);
-	}
+	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
+		await_finish(process_current, process_current->parent);
 
 	process_current = process_find(PS_RUNNING);
 	if (process_current)
@@ -25,20 +41,21 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 }
 
 int _syscall_await(char *buf, int *len) {
+	process_current->state = PS_WAITS4CHILDDEATH;
+	process_current->saved_addr = buf;
+	process_current->saved_len  = len;
+
 	// find any already dead children
 	for (struct process *iter = process_current->child;
-			iter; iter = iter->sibling) {
-		if (iter->state == PS_DEAD) {
-			iter->state = PS_DEADER;
-			// TODO copy return message
-			return 0;
-		}
+			iter; iter = iter->sibling)
+	{
+		if (iter->state == PS_DEAD)
+			await_finish(iter, process_current); // doesn't return
 	}
 
 	// no dead children yet
 	// TODO check if the process even has children
 
-	process_current->state = PS_WAITS4CHILDDEATH;
 	process_current = process_find(PS_RUNNING);
 	if (process_current)
 		process_switch(process_current);

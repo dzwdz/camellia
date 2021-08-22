@@ -1,5 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem.h>
+#include <kernel/util.h>
 #include <stdint.h>
 
 static void *highest_page;
@@ -77,4 +78,35 @@ bool virt_iter_next(struct virt_iter *iter) {
 	iter->_remaining -= partial;
 	iter->_virt      += partial;
 	return true;
+}
+
+bool virt_user_cpy(
+		struct pagedir *dest_pages,       void *dest,
+		struct pagedir  *src_pages, const void *src, size_t length)
+{
+	struct virt_iter dest_iter, src_iter;
+	size_t min;
+
+	virt_iter_new(&dest_iter, dest, length, dest_pages, true, true);
+	virt_iter_new( &src_iter,  src, length,  src_pages, true, false);
+	dest_iter.frag_len = 0;
+	src_iter.frag_len  = 0;
+
+	for (;;) {
+		if (dest_iter.frag_len <= 0)
+			if (!virt_iter_next(&dest_iter)) break;
+		if ( src_iter.frag_len <= 0)
+			if (!virt_iter_next( &src_iter)) break;
+
+		min = src_iter.frag_len < dest_iter.frag_len
+		    ? src_iter.frag_len : dest_iter.frag_len;
+		memcpy(dest_iter.frag, src_iter.frag, min);
+
+		dest_iter.frag_len -= min;
+		dest_iter.frag     += min;
+		src_iter.frag_len  -= min;
+		src_iter.frag      += min;
+	}
+
+	return !(dest_iter.error || src_iter.error);
 }

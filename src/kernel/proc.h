@@ -19,6 +19,12 @@ struct process {
 	struct process *parent;
 
 	uint32_t id; // only for debugging, don't expose to userland
+
+	// meaning changes depending on the state
+	// PS_DEAD - death message
+	// PS_WAITS4CHILDDEATH - buffer for said message
+	void  *saved_addr;
+	size_t saved_len;
 };
 
 extern struct process *process_first;

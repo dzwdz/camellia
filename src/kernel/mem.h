@@ -33,3 +33,7 @@ void virt_iter_new(
 		struct pagedir *pages, bool user, bool writeable);
 
 bool virt_iter_next(struct virt_iter *);
+
+bool virt_user_cpy(
+		struct pagedir *dest_pages,       void *dest,
+		struct pagedir  *src_pages, const void *src, size_t length);
