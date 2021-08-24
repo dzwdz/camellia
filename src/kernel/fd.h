@@ -20,4 +20,4 @@ enum fdop { // describes the operations which can be done on file descriptors
 	FDOP_CLOSE,
 };
 
-int fdop_dispatch(enum fdop fdop, fd_t fd, void *ptr, size_t len);
+int fdop_dispatch(enum fdop fdop, struct fd *fd, void *ptr, size_t len);

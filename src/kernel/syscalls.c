@@ -131,15 +131,18 @@ fail:
 }
 
 int _syscall_fd_read(fd_t fd, char *buf, int len) {
-	return fdop_dispatch(FDOP_READ, fd, buf, len);
+	if (fd < 0 || fd >= FD_MAX) return -1;
+	return fdop_dispatch(FDOP_READ, &process_current->fds[fd], buf, len);
 }
 
 int _syscall_fd_write(fd_t fd, char *buf, int len) {
-	return fdop_dispatch(FDOP_WRITE, fd, buf, len);
+	if (fd < 0 || fd >= FD_MAX) return -1;
+	return fdop_dispatch(FDOP_WRITE, &process_current->fds[fd], buf, len);
 }
 
 int _syscall_fd_close(fd_t fd) {
-	return fdop_dispatch(FDOP_CLOSE, fd, 0, 0);
+	if (fd < 0 || fd >= FD_MAX) return -1;
+	return fdop_dispatch(FDOP_CLOSE, &process_current->fds[fd], 0, 0);
 }
 
 int _syscall_debuglog(const char *msg, size_t len) {
