@@ -2,7 +2,7 @@ PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 
 AS      = i686-elf-as
 CC      = i686-elf-gcc
-CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-declaration -Wold-style-definition
+CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
