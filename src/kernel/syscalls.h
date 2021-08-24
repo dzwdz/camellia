@@ -17,8 +17,6 @@ enum {
 	_SYSCALL_FD_READ,
 	_SYSCALL_FD_WRITE,
 	_SYSCALL_FD_CLOSE,
-
-	_SYSCALL_DEBUGLOG
 };
 
 /** Kills the current process.
@@ -43,8 +41,3 @@ int _syscall_mount(const char *path, int len, fd_t fd);
 int _syscall_fd_read(fd_t fd, char *buf, int len);
 int _syscall_fd_write(fd_t fd, char *buf, int len);
 int _syscall_fd_close(fd_t fd);
-
-/** Prints a message to the debug console.
- * @return the amount of bytes written (can be less than len)
- */
-int _syscall_debuglog(const char *msg, size_t len);

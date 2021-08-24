@@ -145,14 +145,6 @@ int _syscall_fd_close(fd_t fd) {
 	return fdop_dispatch(FDOP_CLOSE, &process_current->fds[fd], 0, 0);
 }
 
-int _syscall_debuglog(const char *msg, size_t len) {
-	struct virt_iter iter;
-	virt_iter_new(&iter, (void*)msg, len, process_current->pages, true, false);
-	while (virt_iter_next(&iter))
-		tty_write(iter.frag, iter.frag_len);
-	return iter.prior;
-}
-
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case _SYSCALL_EXIT:
@@ -171,8 +163,6 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fd_write(a, (void*)b, c);
 		case _SYSCALL_FD_CLOSE:
 			return _syscall_fd_close(a);
-		case _SYSCALL_DEBUGLOG:
-			return _syscall_debuglog((void*)a, b);
 		default:
 			tty_const("unknown syscall ");
 			panic();

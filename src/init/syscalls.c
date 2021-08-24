@@ -35,7 +35,3 @@ int _syscall_fd_write(fd_t fd, char *buf, int len) {
 int _syscall_fd_close(fd_t fd) {
 	return _syscall(_SYSCALL_FD_CLOSE, fd, 0, 0);
 }
-
-int _syscall_debuglog(const char *msg, size_t len) {
-	return _syscall(_SYSCALL_DEBUGLOG, (int)msg, len, 0);
-}
