@@ -7,6 +7,7 @@ typedef int fd_t; // TODO duplicated in syscalls.h
 
 enum fd_type {
 	FD_EMPTY,
+	FD_SPECIAL_TTY,
 };
 
 struct fd {

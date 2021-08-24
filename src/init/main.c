@@ -1,4 +1,5 @@
 #include <kernel/syscalls.h>
+#include <shared/magic.h>
 #include <stdint.h>
 
 // takes a cstring and copies it right before a page boundary
@@ -23,6 +24,10 @@ int main() {
 	_syscall_fs_open(
 			multipageify("/some/where/file"),
 			      sizeof("/some/where/file") - 1);
+
+	_syscall_fd_write(FD_STDOUT, "fd test ", 8);
+	_syscall_fd_close(FD_STDOUT);
+	_syscall_fd_write(FD_STDOUT, "fd test ", 8); // should fail
 
 	_syscall_exit("bye from init! ",
 	       sizeof("bye from init! ") - 1);
