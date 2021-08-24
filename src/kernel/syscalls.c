@@ -2,8 +2,8 @@
 #include <kernel/mem.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/syscalls.h>
 #include <kernel/vfs/path.h>
+#include <shared/syscalls.h>
 #include <stdint.h>
 
 _Noreturn static void await_finish(struct process *dead, struct process *listener) {

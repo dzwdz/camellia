@@ -1,4 +1,3 @@
-// note: this file gets included in both kernel and userland
 #pragma once
 #include <stddef.h>
 

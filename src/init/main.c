@@ -1,5 +1,5 @@
-#include <kernel/syscalls.h>
 #include <shared/magic.h>
+#include <shared/syscalls.h>
 #include <stdint.h>
 
 // takes a cstring and copies it right before a page boundary
