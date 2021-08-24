@@ -24,6 +24,18 @@ int _syscall_mount(const char *path, int len, fd_t fd) {
 	return _syscall(_SYSCALL_MOUNT, (int)path, len, fd);
 }
 
+int _syscall_fd_read(fd_t fd, char *buf, int len) {
+	return _syscall(_SYSCALL_FD_READ, fd, (int)buf, len);
+}
+
+int _syscall_fd_write(fd_t fd, char *buf, int len) {
+	return _syscall(_SYSCALL_FD_WRITE, fd, (int)buf, len);
+}
+
+int _syscall_fd_close(fd_t fd) {
+	return _syscall(_SYSCALL_FD_CLOSE, fd, 0, 0);
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	return _syscall(_SYSCALL_DEBUGLOG, (int)msg, len, 0);
 }

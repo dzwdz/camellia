@@ -130,6 +130,18 @@ fail:
 	return -1;
 }
 
+int _syscall_fd_read(fd_t fd, char *buf, int len) {
+	return fdop_dispatch(FDOP_READ, fd, buf, len);
+}
+
+int _syscall_fd_write(fd_t fd, char *buf, int len) {
+	return fdop_dispatch(FDOP_WRITE, fd, buf, len);
+}
+
+int _syscall_fd_close(fd_t fd) {
+	return fdop_dispatch(FDOP_CLOSE, fd, 0, 0);
+}
+
 int _syscall_debuglog(const char *msg, size_t len) {
 	struct virt_iter iter;
 	virt_iter_new(&iter, (void*)msg, len, process_current->pages, true, false);
@@ -150,6 +162,12 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fs_open((void*)a, b);
 		case _SYSCALL_MOUNT:
 			return _syscall_mount((void*)a, b, c);
+		case _SYSCALL_FD_READ:
+			return _syscall_fd_read(a, (void*)b, c);
+		case _SYSCALL_FD_WRITE:
+			return _syscall_fd_write(a, (void*)b, c);
+		case _SYSCALL_FD_CLOSE:
+			return _syscall_fd_close(a);
 		case _SYSCALL_DEBUGLOG:
 			return _syscall_debuglog((void*)a, b);
 		default:
