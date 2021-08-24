@@ -40,7 +40,7 @@ void kfree(void *ptr) {
 
 // TODO move to some shared file in kernel/arch/
 void virt_iter_new(
-		struct virt_iter *iter, void *virt, size_t length,
+		struct virt_iter *iter, user_ptr virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable)
 {
 	iter->frag       = 0;
@@ -60,7 +60,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 	 * virtual and physical memory, which might not always be the case.
 	 * TODO test this */
 
-	uintptr_t virt = (uintptr_t) iter->_virt;
+	user_ptr virt = iter->_virt;
 	size_t partial = iter->_remaining;
 	iter->prior   += iter->frag_len;
 	if (partial <= 0) return false;
@@ -84,14 +84,14 @@ bool virt_iter_next(struct virt_iter *iter) {
 }
 
 bool virt_user_cpy(
-		struct pagedir *dest_pages,       void *dest,
-		struct pagedir  *src_pages, const void *src, size_t length)
+		struct pagedir *dest_pages,       user_ptr dest,
+		struct pagedir  *src_pages, const user_ptr src, size_t length)
 {
 	struct virt_iter dest_iter, src_iter;
 	size_t min;
 
-	virt_iter_new(&dest_iter,       dest, length, dest_pages, true, true);
-	virt_iter_new( &src_iter, (void*)src, length,  src_pages, true, false);
+	virt_iter_new(&dest_iter, dest, length, dest_pages, true, true);
+	virt_iter_new( &src_iter, src, length,  src_pages, true, false);
 	dest_iter.frag_len = 0;
 	src_iter.frag_len  = 0;
 

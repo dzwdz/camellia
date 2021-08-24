@@ -1,4 +1,5 @@
 #pragma once
+#include <kernel/types.h>
 #include <stddef.h>
 
 #define FD_MAX 16
@@ -21,4 +22,4 @@ enum fdop { // describes the operations which can be done on file descriptors
 	FDOP_CLOSE,
 };
 
-int fdop_dispatch(enum fdop fdop, struct fd *fd, void *ptr, size_t len);
+int fdop_dispatch(enum fdop fdop, struct fd *fd, user_ptr ptr, size_t len);

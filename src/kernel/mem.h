@@ -1,6 +1,7 @@
 #pragma once
 #include <kernel/arch/generic.h>
 #include <kernel/main.h>
+#include <kernel/types.h>
 #include <stddef.h>
 
 void mem_init(struct kmain_info *);
@@ -22,7 +23,7 @@ struct virt_iter {
 	size_t prior; // sum of all prior frag_lens
 	bool error;
 
-	void *_virt;
+	user_ptr _virt;
 	size_t _remaining;
 	struct pagedir *_pages;
 	bool _user;
@@ -30,11 +31,11 @@ struct virt_iter {
 };
 
 void virt_iter_new(
-		struct virt_iter *iter, void *virt, size_t length,
+		struct virt_iter *iter, user_ptr virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable);
 
 bool virt_iter_next(struct virt_iter *);
 
 bool virt_user_cpy(
-		struct pagedir *dest_pages,       void *dest,
-		struct pagedir  *src_pages, const void *src, size_t length);
+		struct pagedir *dest_pages,       user_ptr dest,
+		struct pagedir  *src_pages, const user_ptr src, size_t length);

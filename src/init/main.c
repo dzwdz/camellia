@@ -1,3 +1,4 @@
+#include <init/types.h>
 #include <shared/magic.h>
 #include <shared/syscalls.h>
 #include <stdint.h>

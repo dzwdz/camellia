@@ -11,7 +11,7 @@ enum process_state {
 };
 
 struct process {
-	void *stack_top;
+	user_ptr stack_top;
 	struct pagedir *pages;
 	struct registers regs;
 	enum process_state state;
@@ -25,7 +25,7 @@ struct process {
 	// meaning changes depending on the state
 	// PS_DEAD - death message
 	// PS_WAITS4CHILDDEATH - buffer for said message
-	void  *saved_addr;
+	user_ptr saved_addr;
 	size_t saved_len;
 
 	struct vfs_mount *mount;

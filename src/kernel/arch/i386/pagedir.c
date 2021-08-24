@@ -46,12 +46,11 @@ struct pagedir *pagedir_new(void) {
 	return dir;
 }
 
-void pagedir_map(struct pagedir *dir, void *virt, void *phys,
+void pagedir_map(struct pagedir *dir, user_ptr virt, void *phys,
                  bool user, bool writeable)
 {
-	uintptr_t virt_casted = (uintptr_t) virt;
-	uint32_t pd_idx = virt_casted >> 22;
-	uint32_t pt_idx = virt_casted >> 12 & 0x03FF;
+	uint32_t pd_idx = virt >> 22;
+	uint32_t pt_idx = virt >> 12 & 0x03FF;
 	struct pagetable_entry *pagetable;
 
 	if (dir->e[pd_idx].present) {
@@ -125,13 +124,12 @@ struct pagedir *pagedir_copy(const struct pagedir *orig) {
 	return clone;
 }
 
-void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
+void *pagedir_virt2phys(struct pagedir *dir, const user_ptr virt,
                         bool user, bool writeable)
 {
-	uintptr_t virt_casted = (uintptr_t) virt;
 	uintptr_t phys;
-	uint32_t pd_idx = virt_casted >> 22;
-	uint32_t pt_idx = virt_casted >> 12 & 0x03FF;
+	uint32_t pd_idx = virt >> 22;
+	uint32_t pt_idx = virt >> 12 & 0x03FF;
 	struct pagetable_entry *pagetable, page;
 
 	/* DOESN'T CHECK PERMISSIONS ON PAGE DIRS, TODO
@@ -148,6 +146,6 @@ void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
 	if (writeable && !page.writeable) return 0;
 
 	phys  = page.address << 11;
-	phys |= (uintptr_t)virt & 0xFFF;
+	phys |= virt & 0xFFF;
 	return (void*)phys;
 }

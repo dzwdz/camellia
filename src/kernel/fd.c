@@ -3,9 +3,9 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 
-static int fdop_special_tty(enum fdop fdop, struct fd *fd, void *ptr, size_t len);
+static int fdop_special_tty(enum fdop fdop, struct fd *fd, user_ptr ptr, size_t len);
 
-int fdop_dispatch(enum fdop fdop, struct fd *fd, void *ptr, size_t len) {
+int fdop_dispatch(enum fdop fdop, struct fd *fd, user_ptr ptr, size_t len) {
 	switch(fd->type) {
 		case FD_EMPTY:
 			return -1;
@@ -16,15 +16,14 @@ int fdop_dispatch(enum fdop fdop, struct fd *fd, void *ptr, size_t len) {
 	}
 }
 
-static int fdop_special_tty(enum fdop fdop, struct fd *fd, void *ptr, size_t len) {
+static int fdop_special_tty(enum fdop fdop, struct fd *fd, user_ptr ptr, size_t len) {
 	switch(fdop) {
 		case FDOP_READ:
 			return -1; // input not implemented yet
 
 		case FDOP_WRITE: {
 			 struct virt_iter iter;
-			 virt_iter_new(&iter, (void*)ptr, len,
-					 process_current->pages, true, false);
+			 virt_iter_new(&iter, ptr, len, process_current->pages, true, false);
 			 while (virt_iter_next(&iter))
 				 tty_write(iter.frag, iter.frag_len);
 			 return iter.prior;

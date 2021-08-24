@@ -1,5 +1,6 @@
 #pragma once
 
+#include <kernel/types.h>
 #include <kernel/arch/i386/registers.h>
 #include <kernel/arch/log.h>
 #include <stdbool.h>
@@ -22,11 +23,11 @@ int syscall_handler(int, int, int, int);
 // all of those can allocate memory
 struct pagedir *pagedir_new(void);
 struct pagedir *pagedir_copy(const struct pagedir *orig);
-void pagedir_map(struct pagedir *dir, void *virt, void *phys,
+void pagedir_map(struct pagedir *dir, user_ptr virt, void *phys,
                  bool user, bool writeable);
 
 void pagedir_switch(struct pagedir *);
 
 // return 0 on failure
-void *pagedir_virt2phys(struct pagedir *dir, const void *virt,
+void *pagedir_virt2phys(struct pagedir *dir, const user_ptr virt,
                         bool user, bool writeable);
