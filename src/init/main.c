@@ -16,7 +16,7 @@ const char *multipageify(const char *str) {
 
 #define mount(path) _syscall_mount(path, sizeof(path)-1, 0)
 
-int main() {
+int main(void) {
 	mount("/");
 	mount("/some/where");
 	mount("/some");

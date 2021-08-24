@@ -59,7 +59,7 @@ int _syscall_await(char *buf, int len) {
 	process_switch_any();
 }
 
-int _syscall_fork() {
+int _syscall_fork(void) {
 	struct process *child = process_fork(process_current);
 	regs_savereturn(&child->regs, 0);
 	return 1;

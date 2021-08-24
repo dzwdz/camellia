@@ -1,2 +1,1 @@
 don't use pointer types for useland pointers
-replace () with (void)

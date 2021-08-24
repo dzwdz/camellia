@@ -12,5 +12,5 @@ enum {
 	SEG_end
 };
 
-void gdt_init();
+void gdt_init(void);
 void gdt_farjump(int segment);

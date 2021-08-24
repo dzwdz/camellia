@@ -1,7 +1,7 @@
 #pragma once
 #include <stddef.h>
 
-void tty_init();
+void tty_init(void);
 void tty_write(const char *buf, size_t len);
 
 static inline void _tty_hex(const char *buf, size_t len) {

@@ -42,8 +42,8 @@ static struct tss_entry TSS;
 static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
 
 static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code);
-static void gdt_prepare();
-static void gdt_load();
+static void gdt_prepare(void);
+static void gdt_load(void);
 
 
 static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
@@ -69,7 +69,7 @@ static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
 	};
 }
 
-static void gdt_prepare() {
+static void gdt_prepare(void) {
 	GDT[SEG_null].present = 0;
 
 	gdt_fillout(&GDT[SEG_r0code], 0, true);
@@ -102,7 +102,7 @@ static void gdt_prepare() {
 	};
 }
 
-static void gdt_load() {
+static void gdt_load(void) {
 	lgdt_arg.limit = sizeof(GDT) - 1;
 	lgdt_arg.base = (uintptr_t) &GDT;
 	asm("lgdt (%0)" 
@@ -121,7 +121,7 @@ static void gdt_load() {
 	    : : "r" (SEG_r0data << 3) : "memory");
 }
 
-void gdt_init() {
+void gdt_init(void) {
 	gdt_prepare();
 	gdt_load();
 }

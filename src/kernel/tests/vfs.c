@@ -57,6 +57,6 @@ TEST(path_simplify) {
 #undef TEST_WRAPPER
 }
 
-void tests_vfs() {
+void tests_vfs(void) {
 	TEST_RUN(path_simplify);
 }

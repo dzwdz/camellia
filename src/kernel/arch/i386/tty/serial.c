@@ -4,7 +4,7 @@
 
 const int COM1 = 0x3f8;
 
-void serial_init() {
+void serial_init(void) {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
 
 	port_outb(COM1 + 1, 0x00); // disable interrupts, we won't be using them

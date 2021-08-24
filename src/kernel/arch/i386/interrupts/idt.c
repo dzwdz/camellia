@@ -27,12 +27,12 @@ struct lidt_arg {
 static struct idt_entry IDT[256];
 static struct lidt_arg lidt_arg;
 
-static void idt_prepare();
-static void idt_load();
-static void idt_test();
+static void idt_prepare(void);
+static void idt_load(void);
+static void idt_test(void);
 
 
-static void idt_prepare() {
+static void idt_prepare(void) {
 	uintptr_t offset;
 	for (int i = 0; i < 256; i++) {
 		offset = (uintptr_t) &_isr_stubs + i * 8;
@@ -50,18 +50,18 @@ static void idt_prepare() {
 	}
 }
 
-static void idt_load() {
+static void idt_load(void) {
 	lidt_arg.limit = sizeof(IDT) - 1;
 	lidt_arg.base = (uintptr_t) &IDT;
 	asm("lidt (%0)" : : "r" (&lidt_arg) : "memory");
 }
 
-static void idt_test() {
+static void idt_test(void) {
 	asm("int $0x34" : : : "memory");
 	assert(isr_test_interrupt_called);
 }
 
-void idt_init() {
+void idt_init(void) {
 	idt_prepare();
 	idt_load();
 	idt_test();

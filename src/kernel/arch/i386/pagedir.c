@@ -39,7 +39,7 @@ struct pagedir {
 } __attribute__((packed));
 
 
-struct pagedir *pagedir_new() {
+struct pagedir *pagedir_new(void) {
 	struct pagedir *dir = page_alloc(1);
 	for (int i = 0; i < 1024; i++)
 		dir->e[i].present = 0;

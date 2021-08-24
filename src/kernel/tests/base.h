@@ -9,7 +9,7 @@ extern bool _did_tests_fail;
 #pragma GCC diagnostic error "-Wunused-function"
 
 #define TEST(name) \
-	static void __test_##name()
+	static void __test_##name(void)
 
 #define TEST_RUN(name) \
 	__test_##name();

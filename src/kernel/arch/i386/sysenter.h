@@ -1,2 +1,2 @@
 #pragma once
-void sysenter_setup();
+void sysenter_setup(void);

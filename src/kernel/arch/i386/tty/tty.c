@@ -2,7 +2,7 @@
 #include <kernel/arch/i386/tty/vga.h>
 #include <kernel/arch/log.h>
 
-void tty_init() {
+void tty_init(void) {
 	vga_clear();
 	serial_init();
 

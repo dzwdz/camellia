@@ -3,7 +3,7 @@
 
 struct registers _sysexit_regs; // a hack
 
-extern void _sysexit_real();
+extern void _sysexit_real(void);
 
 void sysexit(struct registers regs) {
 	_sysexit_regs = regs;
@@ -13,7 +13,7 @@ void sysexit(struct registers regs) {
 	__builtin_unreachable();
 }
 
-_Noreturn void sysenter_stage2() {
+_Noreturn void sysenter_stage2(void) {
 	uint64_t val;
 	struct registers *regs = &process_current->regs;
 

@@ -9,7 +9,7 @@ static const size_t     vga_len = 80 * 25;
 static struct vga_cell *vga     = (void*) 0xB8000;
 static size_t           vga_pos = 0;
 
-static void vga_scroll() {
+static void vga_scroll(void) {
 	for (size_t i = 0; i < vga_len - 80; i++)
 		vga[i] = vga[i + 80];
 	vga_pos -= 80;
@@ -26,7 +26,7 @@ void vga_write(const char *buf, size_t len) {
 		vga_putchar(buf[i]);
 }
 
-void vga_clear() {
+void vga_clear(void) {
 	for (size_t i = 0; i < vga_len; i++)
 		vga[i].c = ' ';
 	vga_pos = 0;

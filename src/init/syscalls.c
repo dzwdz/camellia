@@ -8,7 +8,7 @@ _Noreturn void _syscall_exit(const char *msg, size_t len) {
 	__builtin_unreachable();
 }
 
-int _syscall_fork() {
+int _syscall_fork(void) {
 	return _syscall(_SYSCALL_FORK, 0, 0, 0);
 }
 

@@ -33,7 +33,7 @@ TEST(static_strcmp) {
 	TEST_COND(0 < static_strcmp("654", "555"));
 }
 
-void tests_utils() {
+void tests_utils(void) {
 	TEST_RUN(memcmp);
 	TEST_RUN(static_strcmp);
 }

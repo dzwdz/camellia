@@ -10,7 +10,7 @@ struct process *process_first;
 struct process *process_current;
 uint32_t next_pid = 0;
 
-struct process *process_seed() {
+struct process *process_seed(void) {
 	struct process *proc = kmalloc(sizeof(struct process));
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
@@ -61,7 +61,7 @@ void process_switch(struct process *proc) {
 	sysexit(proc->regs);
 }
 
-_Noreturn void process_switch_any() {
+_Noreturn void process_switch_any(void) {
 	struct process *found = process_find(PS_RUNNING);
 	if (found)
 		process_switch(found);

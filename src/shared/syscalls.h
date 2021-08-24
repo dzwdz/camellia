@@ -32,7 +32,7 @@ int _syscall_await(char *buf, int len);
  * All user memory pages get copied too.
  * @return 0 in the child, a meaningless positive value in the parent.
  */
-int _syscall_fork();
+int _syscall_fork(void);
 
 fd_t _syscall_fs_open(const char *path, int len);
 int _syscall_mount(const char *path, int len, fd_t fd);
