@@ -3,6 +3,7 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
+#include <kernel/vfs/mount.h>
 #include <shared/magic.h>
 #include <stdint.h>
 
@@ -17,7 +18,7 @@ struct process *process_seed(void) {
 	proc->sibling = NULL;
 	proc->child   = NULL;
 	proc->parent  = NULL;
-	proc->mount   = NULL;
+	proc->mount   = vfs_mount_seed();
 	proc->id      = next_pid++;
 
 	process_first = proc;
