@@ -133,17 +133,28 @@ fail:
 
 int _syscall_fd_read(fd_t fd, user_ptr buf, int len) {
 	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch(FDOP_READ, &process_current->fds[fd], buf, len);
+	return fdop_dispatch((struct fdop_args){
+			.type = FDOP_READ, 
+			.fd = &process_current->fds[fd], 
+			.rw = {buf, len}
+		});
 }
 
 int _syscall_fd_write(fd_t fd, user_ptr buf, int len) {
 	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch(FDOP_WRITE, &process_current->fds[fd], buf, len);
+	return fdop_dispatch((struct fdop_args){
+			.type = FDOP_WRITE, 
+			.fd = &process_current->fds[fd], 
+			.rw = {buf, len}
+		});
 }
 
 int _syscall_fd_close(fd_t fd) {
 	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch(FDOP_CLOSE, &process_current->fds[fd], 0, 0);
+	return fdop_dispatch((struct fdop_args){
+			.type = FDOP_CLOSE, 
+			.fd = &process_current->fds[fd], 
+		});
 }
 
 int syscall_handler(int num, int a, int b, int c) {

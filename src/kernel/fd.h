@@ -22,4 +22,15 @@ enum fdop { // describes the operations which can be done on file descriptors
 	FDOP_CLOSE,
 };
 
-int fdop_dispatch(enum fdop fdop, struct fd *fd, user_ptr ptr, size_t len);
+struct fdop_args {
+	enum fdop type;
+	struct fd *fd;
+	union {
+		struct { // FDOP_READ, FDOP_WRITE
+			user_ptr ptr;
+			size_t len;
+		} rw;
+	};
+};
+
+int fdop_dispatch(struct fdop_args args);
