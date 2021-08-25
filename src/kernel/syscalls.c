@@ -70,8 +70,16 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount = process_current->mount;
 	static char buffer[PATH_MAX]; // holds the path
+	int fd, res;
 
 	if (len > PATH_MAX) return -1;
+
+	// find the first free fd
+	for (fd = 0; fd < FD_MAX; fd++) {
+		if (process_current->fds[fd].type == FD_EMPTY)
+			break;
+	}
+	if (fd == FD_MAX) return -1;
 
 	// copy the path to the kernel
 	virt_iter_new(&iter, path, len, process_current->pages, true, false);
@@ -90,14 +98,28 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 			break;
 	}
 
-	tty_write(buffer, len);
+	tty_write(buffer + mount->prefix_len, len - mount->prefix_len);
 	tty_const(" from mount ");
 	if (mount)
 		tty_write(mount->prefix, mount->prefix_len);
 	else
 		tty_const("[none]");
 
-	return -1;
+	if (!mount) return -1;
+
+	res = fdop_dispatch((struct fdop_args){
+			.type = FDOP_OPEN,
+			.fd = &mount->fd,
+			.open = {
+				.target = &process_current->fds[fd],
+				.path   = &buffer[mount->prefix_len],
+				.len    = len - mount->prefix_len,
+			}
+		});
+	if (res < 0)
+		return res;
+	else
+		return fd;
 }
 
 int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {

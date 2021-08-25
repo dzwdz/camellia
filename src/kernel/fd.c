@@ -24,6 +24,16 @@ static int fdop_special_tty(struct fdop_args *args) {
 		case FDOP_MOUNT:
 			return 0; // no special action needed
 
+		case FDOP_OPEN:
+			/* don't allow anything after the mount point
+			 * this is a file, not a directory
+			 * for example: open("/tty") is allowed. open("/tty/smth") isn't */
+			if (args->open.len == 0) {
+				args->open.target->type = FD_SPECIAL_TTY;
+				return 0;
+			}
+			return -1;
+
 		case FDOP_READ:
 			return -1; // input not implemented yet
 

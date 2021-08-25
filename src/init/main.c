@@ -30,6 +30,7 @@ int main(void) {
 	fd = _syscall_fs_open(
 			multipageify("/tty"),
 			      sizeof("/tty") - 1);
+	// TODO don't dispatch /ttywhatever to the tty driver
 
 	if (fd < 0) {
 		_syscall_exit("couldn't open tty",
