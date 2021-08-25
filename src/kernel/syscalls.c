@@ -104,8 +104,10 @@ int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	char *path_buf;
+	int res;
 
 	if (len > PATH_MAX) return -1;
+	if (fd < 0 || fd >= FD_MAX) return -1;
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
@@ -124,10 +126,19 @@ int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
+	memcpy(&mount->fd, &process_current->fds[fd], sizeof(struct fd));
+
+	res = fdop_dispatch((struct fdop_args){
+			.type = FDOP_MOUNT,
+			.fd = &process_current->fds[fd],
+			.mnt = {mount},
+		});
+	if (res < 0) goto fail;
 	process_current->mount = mount;
 	return 0;
 fail:
 	kfree(path_buf);
+	kfree(mount);
 	return -1;
 }
 

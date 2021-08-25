@@ -7,8 +7,11 @@ static int fdop_special_tty(struct fdop_args *args);
 
 int fdop_dispatch(struct fdop_args args) {
 	switch(args.fd->type) {
-		case FD_EMPTY:
+		case FD_EMPTY: {
+			if (args.type == FDOP_MOUNT) // mounting an empty fd is allowed
+				return 0;
 			return -1;
+		}
 		case FD_SPECIAL_TTY:
 			return fdop_special_tty(&args);
 		default:
@@ -18,6 +21,9 @@ int fdop_dispatch(struct fdop_args args) {
 
 static int fdop_special_tty(struct fdop_args *args) {
 	switch(args->type) {
+		case FDOP_MOUNT:
+			return 0; // no special action needed
+
 		case FDOP_READ:
 			return -1; // input not implemented yet
 
