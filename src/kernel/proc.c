@@ -4,7 +4,6 @@
 #include <kernel/proc.h>
 #include <kernel/util.h>
 #include <kernel/vfs/mount.h>
-#include <shared/magic.h>
 #include <stdint.h>
 
 struct process *process_first;
@@ -25,7 +24,6 @@ struct process *process_seed(void) {
 
 	for (int i = 0; i < FD_MAX; i++)
 		proc->fds[i].type = FD_EMPTY;
-	proc->fds[FD_STDOUT].type = FD_SPECIAL_TTY;
 
 	// map the stack to the last page in memory
 	pagedir_map(proc->pages, ~PAGE_MASK, page_alloc(1), true, true);
