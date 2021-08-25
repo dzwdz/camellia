@@ -21,8 +21,8 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	return _syscall(_SYSCALL_FS_OPEN, (int)path, len, 0);
 }
 
-int _syscall_mount(const user_ptr path, int len, fd_t fd) {
-	return _syscall(_SYSCALL_MOUNT, (int)path, len, fd);
+int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
+	return _syscall(_SYSCALL_FD_MOUNT, fd, (int)path, len);
 }
 
 int _syscall_fd_read(fd_t fd, user_ptr buf, int len) {

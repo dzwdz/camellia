@@ -15,12 +15,12 @@ const char *multipageify(const char *str) {
 	return out;
 }
 
-#define mount(path) _syscall_mount(path, sizeof(path)-1, 0)
+#define mount(fd, path) _syscall_fd_mount(fd, path, sizeof(path)-1)
 
 int main(void) {
-	mount("/");
-	mount("/some/where");
-	mount("/some");
+	mount(0, "/");
+	mount(0, "/some/where");
+	mount(0, "/some");
 
 	_syscall_fs_open(
 			multipageify("/some/where/file"),

@@ -100,7 +100,7 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	return -1;
 }
 
-int _syscall_mount(const user_ptr path, int len, fd_t fd) {
+int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	char *path_buf;
@@ -156,8 +156,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fork();
 		case _SYSCALL_FS_OPEN:
 			return _syscall_fs_open(a, b);
-		case _SYSCALL_MOUNT:
-			return _syscall_mount(a, b, c);
+		case _SYSCALL_FD_MOUNT:
+			return _syscall_fd_mount(a, b, c);
 		case _SYSCALL_FD_READ:
 			return _syscall_fd_read(a, b, c);
 		case _SYSCALL_FD_WRITE:

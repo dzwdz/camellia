@@ -13,7 +13,7 @@ enum {
 	_SYSCALL_FORK,
 
 	_SYSCALL_FS_OPEN,
-	_SYSCALL_MOUNT,
+	_SYSCALL_FD_MOUNT,
 
 	_SYSCALL_FD_READ,
 	_SYSCALL_FD_WRITE,
@@ -37,8 +37,8 @@ int _syscall_await(user_ptr buf, int len);
 int _syscall_fork(void);
 
 fd_t _syscall_fs_open(const user_ptr path, int len);
-int _syscall_mount(const user_ptr path, int len, fd_t fd);
 
+int _syscall_fd_mount(fd_t fd, const user_ptr path, int len);
 int _syscall_fd_read(fd_t fd, user_ptr buf, int len);
 int _syscall_fd_write(fd_t fd, user_ptr buf, int len);
 int _syscall_fd_close(fd_t fd);
