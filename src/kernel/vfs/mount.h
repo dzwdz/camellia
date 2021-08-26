@@ -10,3 +10,6 @@ struct vfs_mount {
 
 // prepares init's filesystem view
 struct vfs_mount *vfs_mount_seed(void);
+struct vfs_mount *vfs_mount_resolve(
+		struct vfs_mount *top, const char *path, size_t path_len);
+

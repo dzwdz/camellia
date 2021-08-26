@@ -1,4 +1,5 @@
 #include <kernel/mem.h>
+#include <kernel/util.h>
 #include <kernel/vfs/mount.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
@@ -12,4 +13,16 @@ struct vfs_mount *vfs_mount_seed(void) {
 		},
 	};
 	return mount;
+}
+
+struct vfs_mount *vfs_mount_resolve(
+		struct vfs_mount *top, const char *path, size_t path_len)
+{
+	for (; top; top = top->prev) {
+		if (top->prefix_len > path_len)
+			continue;
+		if (memcmp(top->prefix, path, top->prefix_len) == 0)
+			break;
+	}
+	return top;
 }

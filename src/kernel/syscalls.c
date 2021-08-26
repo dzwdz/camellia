@@ -68,7 +68,7 @@ int _syscall_fork(void) {
 
 fd_t _syscall_fs_open(const user_ptr path, int len) {
 	struct virt_iter iter;
-	struct vfs_mount *mount = process_current->mount;
+	struct vfs_mount *mount;
 	static char buffer[PATH_MAX]; // holds the path
 	int fd, res;
 
@@ -90,21 +90,7 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	len = path_simplify(buffer, buffer, len);
 	if (len < 0) return -1;
 
-	// find mount
-	for (mount = process_current->mount; mount; mount = mount->prev) {
-		if (mount->prefix_len > len)
-			continue;
-		if (memcmp(mount->prefix, buffer, mount->prefix_len) == 0)
-			break;
-	}
-
-	tty_write(buffer + mount->prefix_len, len - mount->prefix_len);
-	tty_const(" from mount ");
-	if (mount)
-		tty_write(mount->prefix, mount->prefix_len);
-	else
-		tty_const("[none]");
-
+	mount = vfs_mount_resolve(process_current->mount, buffer, len);
 	if (!mount) return -1;
 
 	res = fdop_dispatch((struct fdop_args){
