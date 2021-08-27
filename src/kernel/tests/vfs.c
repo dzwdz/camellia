@@ -70,7 +70,7 @@ TEST(vfs_mount_resolve) {
 		mount = mount2; \
 	} while (0)
 
-	ADD_MOUNT("/");
+	ADD_MOUNT(""); // root mount
 	ADD_MOUNT("/dir/shadowed");
 	ADD_MOUNT("/dir");
 
@@ -82,10 +82,10 @@ TEST(vfs_mount_resolve) {
 		       && (0 == memcmp(mount2->prefix, expected, mount2->prefix_len))); \
 	} while (0)
 
-	TEST_WRAPPER("/",              "/");
-	TEST_WRAPPER("/test",          "/");
+	TEST_WRAPPER("/",              "");
+	TEST_WRAPPER("/test",          "");
 	TEST_WRAPPER("/dir",           "/dir");
-	TEST_WRAPPER("/dirry",         "/");
+	TEST_WRAPPER("/dirry",         "");
 	TEST_WRAPPER("/dir/",          "/dir");
 	TEST_WRAPPER("/dir/shadowed",  "/dir");
 	TEST_WRAPPER("/dir/shadowed/", "/dir");

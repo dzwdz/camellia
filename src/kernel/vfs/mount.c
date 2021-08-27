@@ -21,7 +21,16 @@ struct vfs_mount *vfs_mount_resolve(
 	for (; top; top = top->prev) {
 		if (top->prefix_len > path_len)
 			continue;
-		if (memcmp(top->prefix, path, top->prefix_len) == 0)
+		if (memcmp(top->prefix, path, top->prefix_len) != 0)
+			continue;
+
+		/* ensure that there's no garbage after the match
+		 * recognize that e.g. /thisasdf doesn't get recognized as mounted under
+		 * /this */
+		
+		if (top->prefix_len == path_len) // can't happen if prefix == path
+			break;
+		if (path[top->prefix_len] == '/')
 			break;
 	}
 	return top;

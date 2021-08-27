@@ -15,8 +15,6 @@ const char *multipageify(const char *str);
 #define mount(fd, path) _syscall_fd_mount(fd, path, sizeof(path)-1)
 
 int main(void) {
-	// TODO don't dispatch /ttywhatever to the tty driver
-
 	tty_fd = _syscall_fs_open("/tty", sizeof("/tty") - 1);
 	if (tty_fd < 0)
 		_syscall_exit(argify("couldn't open tty"));
