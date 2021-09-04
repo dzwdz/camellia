@@ -89,16 +89,19 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	mount = vfs_mount_resolve(process_current->mount, buffer, len);
 	if (!mount) return -1;
 
-	res = -1; // TODO pass to filesystem
-	if (res < 0)
-		return res;
-	else
-		return handle;
+	vfs_backend_dispatch(mount->backend, (struct vfs_op) {
+			.type = VFSOP_OPEN,
+			.open = {
+				.path     = &buffer[mount->prefix_len],
+				.path_len = len - mount->prefix_len,
+			}
+		});
+	// doesn't return. TODO mark as noreturn
 }
 
 int _syscall_fd_mount(handle_t handle, const user_ptr path, int len) {
 	struct virt_iter iter;
-	struct vfs_mount *mount;
+	struct vfs_mount *mount = NULL;
 	char *path_buf;
 	int res;
 
