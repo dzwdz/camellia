@@ -75,11 +75,7 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	if (len > PATH_MAX) return -1;
 
 	// find the first free handle
-	for (handle = 0; handle < HANDLE_MAX; handle++) {
-		if (process_current->handles[handle].type == HANDLE_EMPTY)
-			break;
-	}
-	if (handle == HANDLE_MAX) return -1;
+	handle = process_find_handle(process_current);
 
 	// copy the path to the kernel
 	virt_iter_new(&iter, path, len, process_current->pages, true, false);

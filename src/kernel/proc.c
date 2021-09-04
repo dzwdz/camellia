@@ -90,3 +90,13 @@ struct process *_process_find_recursive(
 struct process *process_find(enum process_state target) {
 	return _process_find_recursive(target, process_first);
 }
+
+handle_t process_find_handle(struct process *proc) {
+	handle_t handle;
+	for (handle = 0; handle < HANDLE_MAX; handle++) {
+		if (proc->handles[handle].type == HANDLE_EMPTY)
+			break;
+	}
+	if (handle == HANDLE_MAX) handle = -1;
+	return handle;
+}

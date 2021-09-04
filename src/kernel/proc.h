@@ -43,3 +43,4 @@ _Noreturn void process_switch(struct process *proc);
 _Noreturn void process_switch_any(void); // switches to any running process
 
 struct process *process_find(enum process_state);
+handle_t process_find_handle(struct process *proc); // finds the first free handle
