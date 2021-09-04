@@ -66,20 +66,20 @@ int _syscall_fork(void) {
 	return 1;
 }
 
-fd_t _syscall_fs_open(const user_ptr path, int len) {
+handle_t _syscall_fs_open(const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	static char buffer[PATH_MAX]; // holds the path
-	int fd, res;
+	int handle, res;
 
 	if (len > PATH_MAX) return -1;
 
-	// find the first free fd
-	for (fd = 0; fd < FD_MAX; fd++) {
-		if (process_current->fds[fd].type == FD_EMPTY)
+	// find the first free handle
+	for (handle = 0; handle < HANDLE_MAX; handle++) {
+		if (process_current->handles[handle].type == HANDLE_EMPTY)
 			break;
 	}
-	if (fd == FD_MAX) return -1;
+	if (handle == HANDLE_MAX) return -1;
 
 	// copy the path to the kernel
 	virt_iter_new(&iter, path, len, process_current->pages, true, false);
@@ -93,11 +93,11 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	mount = vfs_mount_resolve(process_current->mount, buffer, len);
 	if (!mount) return -1;
 
-	res = fdop_dispatch((struct fdop_args){
-			.type = FDOP_OPEN,
-			.fd = &mount->fd,
+	res = handleop_dispatch((struct handleop_args){
+			.type = HANDLEOP_OPEN,
+			.handle = &mount->handle,
 			.open = {
-				.target = &process_current->fds[fd],
+				.target = &process_current->handles[handle],
 				.path   = &buffer[mount->prefix_len],
 				.len    = len - mount->prefix_len,
 			}
@@ -105,17 +105,17 @@ fd_t _syscall_fs_open(const user_ptr path, int len) {
 	if (res < 0)
 		return res;
 	else
-		return fd;
+		return handle;
 }
 
-int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
+int _syscall_fd_mount(handle_t handle, const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	char *path_buf;
 	int res;
 
 	if (len > PATH_MAX) return -1;
-	if (fd < 0 || fd >= FD_MAX) return -1;
+	if (handle < 0 || handle >= HANDLE_MAX) return -1;
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
@@ -134,11 +134,11 @@ int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
-	memcpy(&mount->fd, &process_current->fds[fd], sizeof(struct fd));
+	memcpy(&mount->handle, &process_current->handles[handle], sizeof(struct handle));
 
-	res = fdop_dispatch((struct fdop_args){
-			.type = FDOP_MOUNT,
-			.fd = &process_current->fds[fd],
+	res = handleop_dispatch((struct handleop_args){
+			.type = HANDLEOP_MOUNT,
+			.handle = &process_current->handles[handle],
 			.mnt = {mount},
 		});
 	if (res < 0) goto fail;
@@ -150,29 +150,29 @@ fail:
 	return -1;
 }
 
-int _syscall_fd_read(fd_t fd, user_ptr buf, int len) {
-	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch((struct fdop_args){
-			.type = FDOP_READ, 
-			.fd = &process_current->fds[fd], 
+int _syscall_fd_read(handle_t handle, user_ptr buf, int len) {
+	if (handle < 0 || handle >= HANDLE_MAX) return -1;
+	return handleop_dispatch((struct handleop_args){
+			.type = HANDLEOP_READ, 
+			.handle = &process_current->handles[handle], 
 			.rw = {buf, len}
 		});
 }
 
-int _syscall_fd_write(fd_t fd, user_ptr buf, int len) {
-	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch((struct fdop_args){
-			.type = FDOP_WRITE, 
-			.fd = &process_current->fds[fd], 
+int _syscall_fd_write(handle_t handle, user_ptr buf, int len) {
+	if (handle < 0 || handle >= HANDLE_MAX) return -1;
+	return handleop_dispatch((struct handleop_args){
+			.type = HANDLEOP_WRITE, 
+			.handle = &process_current->handles[handle], 
 			.rw = {buf, len}
 		});
 }
 
-int _syscall_fd_close(fd_t fd) {
-	if (fd < 0 || fd >= FD_MAX) return -1;
-	return fdop_dispatch((struct fdop_args){
-			.type = FDOP_CLOSE, 
-			.fd = &process_current->fds[fd], 
+int _syscall_fd_close(handle_t handle) {
+	if (handle < 0 || handle >= HANDLE_MAX) return -1;
+	return handleop_dispatch((struct handleop_args){
+			.type = HANDLEOP_CLOSE, 
+			.handle = &process_current->handles[handle], 
 		});
 }
 

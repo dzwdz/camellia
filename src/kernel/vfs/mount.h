@@ -1,11 +1,11 @@
 #pragma once
-#include <kernel/fd.h>
+#include <kernel/handle.h>
 
 struct vfs_mount {
 	struct vfs_mount *prev;
 	char *prefix;
 	size_t prefix_len;
-	struct fd fd;
+	struct handle handle;
 };
 
 // prepares init's filesystem view

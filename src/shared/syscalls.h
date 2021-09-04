@@ -3,8 +3,7 @@
 #pragma once
 #include <stddef.h>
 
-typedef int fd_t;
-typedef int fs_handle_t;
+typedef int handle_t;
 
 enum {
 	// idc about stable syscall numbers just yet
@@ -36,9 +35,9 @@ int _syscall_await(user_ptr buf, int len);
  */
 int _syscall_fork(void);
 
-fd_t _syscall_fs_open(const user_ptr path, int len);
+handle_t _syscall_fs_open(const user_ptr path, int len);
 
-int _syscall_fd_mount(fd_t fd, const user_ptr path, int len);
-int _syscall_fd_read(fd_t fd, user_ptr buf, int len);
-int _syscall_fd_write(fd_t fd, user_ptr buf, int len);
-int _syscall_fd_close(fd_t fd);
+int _syscall_fd_mount(handle_t, const user_ptr path, int len);
+int _syscall_fd_read(handle_t, user_ptr buf, int len);
+int _syscall_fd_write(handle_t, user_ptr buf, int len);
+int _syscall_fd_close(handle_t);

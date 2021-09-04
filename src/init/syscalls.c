@@ -17,22 +17,22 @@ int _syscall_await(user_ptr buf, int len) {
 	return _syscall(_SYSCALL_AWAIT, (int)buf, (int)len, 0);
 }
 
-fd_t _syscall_fs_open(const user_ptr path, int len) {
+handle_t _syscall_fs_open(const user_ptr path, int len) {
 	return _syscall(_SYSCALL_FS_OPEN, (int)path, len, 0);
 }
 
-int _syscall_fd_mount(fd_t fd, const user_ptr path, int len) {
-	return _syscall(_SYSCALL_FD_MOUNT, fd, (int)path, len);
+int _syscall_fd_mount(handle_t handle, const user_ptr path, int len) {
+	return _syscall(_SYSCALL_FD_MOUNT, handle, (int)path, len);
 }
 
-int _syscall_fd_read(fd_t fd, user_ptr buf, int len) {
-	return _syscall(_SYSCALL_FD_READ, fd, (int)buf, len);
+int _syscall_fd_read(handle_t handle, user_ptr buf, int len) {
+	return _syscall(_SYSCALL_FD_READ, handle, (int)buf, len);
 }
 
-int _syscall_fd_write(fd_t fd, user_ptr buf, int len) {
-	return _syscall(_SYSCALL_FD_WRITE, fd, (int)buf, len);
+int _syscall_fd_write(handle_t handle, user_ptr buf, int len) {
+	return _syscall(_SYSCALL_FD_WRITE, handle, (int)buf, len);
 }
 
-int _syscall_fd_close(fd_t fd) {
-	return _syscall(_SYSCALL_FD_CLOSE, fd, 0, 0);
+int _syscall_fd_close(handle_t handle) {
+	return _syscall(_SYSCALL_FD_CLOSE, handle, 0, 0);
 }

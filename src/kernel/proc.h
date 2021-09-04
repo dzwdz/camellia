@@ -1,6 +1,6 @@
 #pragma once
 #include <kernel/arch/generic.h>
-#include <kernel/fd.h>
+#include <kernel/handle.h>
 #include <kernel/vfs/mount.h>
 
 enum process_state {
@@ -30,7 +30,7 @@ struct process {
 
 	struct vfs_mount *mount;
 
-	struct fd fds[FD_MAX];
+	struct handle handles[HANDLE_MAX];
 };
 
 extern struct process *process_first;

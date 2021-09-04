@@ -22,8 +22,8 @@ struct process *process_seed(void) {
 
 	process_first = proc;
 
-	for (int i = 0; i < FD_MAX; i++)
-		proc->fds[i].type = FD_EMPTY;
+	for (int i = 0; i < HANDLE_MAX; i++)
+		proc->handles[i].type = HANDLE_EMPTY;
 
 	// map the stack to the last page in memory
 	pagedir_map(proc->pages, ~PAGE_MASK, page_alloc(1), true, true);

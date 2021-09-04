@@ -8,8 +8,8 @@ struct vfs_mount *vfs_mount_seed(void) {
 		.prev = NULL,
 		.prefix = "/tty",
 		.prefix_len = 4,
-		.fd = {
-			.type = FD_SPECIAL_TTY,
+		.handle = {
+			.type = HANDLE_SPECIAL_TTY,
 		},
 	};
 	return mount;
