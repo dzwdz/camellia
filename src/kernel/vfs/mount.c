@@ -3,7 +3,7 @@
 #include <kernel/vfs/mount.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
-	struct vfs_mount *mount = kmalloc(sizeof(struct vfs_mount));
+	struct vfs_mount *mount = NULL; /*kmalloc(sizeof(struct vfs_mount));
 	*mount = (struct vfs_mount){
 		.prev = NULL,
 		.prefix = "/tty",
@@ -11,7 +11,7 @@ struct vfs_mount *vfs_mount_seed(void) {
 		.handle = {
 			.type = HANDLE_SPECIAL_TTY,
 		},
-	};
+	};*/
 	return mount;
 }
 

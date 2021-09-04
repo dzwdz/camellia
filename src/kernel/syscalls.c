@@ -93,15 +93,7 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	mount = vfs_mount_resolve(process_current->mount, buffer, len);
 	if (!mount) return -1;
 
-	res = handleop_dispatch((struct handleop_args){
-			.type = HANDLEOP_OPEN,
-			.handle = &mount->handle,
-			.open = {
-				.target = &process_current->handles[handle],
-				.path   = &buffer[mount->prefix_len],
-				.len    = len - mount->prefix_len,
-			}
-		});
+	res = -1; // TODO pass to filesystem
 	if (res < 0)
 		return res;
 	else
@@ -134,13 +126,8 @@ int _syscall_fd_mount(handle_t handle, const user_ptr path, int len) {
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
-	memcpy(&mount->handle, &process_current->handles[handle], sizeof(struct handle));
 
-	res = handleop_dispatch((struct handleop_args){
-			.type = HANDLEOP_MOUNT,
-			.handle = &process_current->handles[handle],
-			.mnt = {mount},
-		});
+	res = -1; // TODO pass to filesystem
 	if (res < 0) goto fail;
 	process_current->mount = mount;
 	return 0;
@@ -152,28 +139,17 @@ fail:
 
 int _syscall_fd_read(handle_t handle, user_ptr buf, int len) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
-	return handleop_dispatch((struct handleop_args){
-			.type = HANDLEOP_READ, 
-			.handle = &process_current->handles[handle], 
-			.rw = {buf, len}
-		});
+	return -1;
 }
 
 int _syscall_fd_write(handle_t handle, user_ptr buf, int len) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
-	return handleop_dispatch((struct handleop_args){
-			.type = HANDLEOP_WRITE, 
-			.handle = &process_current->handles[handle], 
-			.rw = {buf, len}
-		});
+	return -1;
 }
 
 int _syscall_fd_close(handle_t handle) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
-	return handleop_dispatch((struct handleop_args){
-			.type = HANDLEOP_CLOSE, 
-			.handle = &process_current->handles[handle], 
-		});
+	return -1;
 }
 
 int syscall_handler(int num, int a, int b, int c) {

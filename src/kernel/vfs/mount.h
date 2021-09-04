@@ -5,7 +5,6 @@ struct vfs_mount {
 	struct vfs_mount *prev;
 	char *prefix;
 	size_t prefix_len;
-	struct handle handle;
 };
 
 // prepares init's filesystem view
