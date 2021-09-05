@@ -17,6 +17,7 @@ struct virt_iter {
 	bool _writeable;
 };
 
+/* if pages == NULL, create an iterator over physical memory. */
 void virt_iter_new(
 		struct virt_iter *iter, user_ptr virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable);

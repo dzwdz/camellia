@@ -23,21 +23,25 @@ bool virt_iter_next(struct virt_iter *iter) {
 	 * virtual and physical memory, which might not always be the case.
 	 * TODO test this */
 
-	user_ptr virt = iter->_virt;
 	size_t partial = iter->_remaining;
 	iter->prior   += iter->frag_len;
 	if (partial <= 0) return false;
 
-	// don't read past the page
-	if ((virt & PAGE_MASK) + partial > PAGE_SIZE)
-		partial = PAGE_SIZE - (virt & PAGE_MASK);
+	if (iter->_pages) { // if iterating over virtual memory
+		// don't read past the page
+		if ((iter->_virt & PAGE_MASK) + partial > PAGE_SIZE)
+			partial = PAGE_SIZE - (iter->_virt & PAGE_MASK);
 
-	iter->frag = pagedir_virt2phys(iter->_pages,
-			iter->_virt, iter->_user, iter->_writeable);
+		iter->frag = pagedir_virt2phys(iter->_pages,
+				iter->_virt, iter->_user, iter->_writeable);
 
-	if (iter->frag == 0) {
-		iter->error = true;
-		return false;
+		if (iter->frag == 0) {
+			iter->error = true;
+			return false;
+		}
+	} else {
+		// "iterate" over physical memory
+		iter->frag = iter->_virt;
 	}
 
 	iter->frag_len    = partial;

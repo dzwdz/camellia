@@ -68,36 +68,37 @@ int _syscall_fork(void) {
 }
 
 handle_t _syscall_open(const user_ptr path, int len) {
-	struct virt_iter iter;
 	struct vfs_mount *mount;
-	static char buffer[PATH_MAX]; // holds the path
+	static char path_buf[PATH_MAX];
 
-	if (len > PATH_MAX) return -1;
+	if (len > PATH_MAX)
+		return -1;
 
 	// fail if there are no handles left
 	if (process_find_handle(process_current) < 0)
 		return -1;
 
 	// copy the path to the kernel
-	virt_iter_new(&iter, path, len, process_current->pages, true, false);
-	while (virt_iter_next(&iter))
-		memcpy(buffer + iter.prior, iter.frag, iter.frag_len);
-	if (iter.error) return -1;
+	// note: the cast is necessary because the function usually accepts user_ptrs
+	//       it can handle copies to physical memory too, though
+	if (!virt_user_cpy(NULL, (uintptr_t)path_buf,
+				process_current->pages, path, len))
+		return -1;
 
-	len = path_simplify(buffer, buffer, len);
+	len = path_simplify(path_buf, path_buf, len);
 	if (len < 0) return -1;
 
-	mount = vfs_mount_resolve(process_current->mount, buffer, len);
+	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
 	if (!mount) return -1;
 
 	vfs_backend_dispatch(mount->backend, (struct vfs_op) {
 			.type = VFSOP_OPEN,
 			.open = {
-				.path     = &buffer[mount->prefix_len],
+				.path     = &path_buf[mount->prefix_len],
 				.path_len = len - mount->prefix_len,
 			}
 		});
-	// doesn't return. TODO mark as noreturn
+	// doesn't return
 }
 
 int _syscall_mount(handle_t handle, const user_ptr path, int len) {
@@ -111,10 +112,9 @@ int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
-	virt_iter_new(&iter, path, len, process_current->pages, true, false);
-	while (virt_iter_next(&iter))
-		memcpy(path_buf + iter.prior, iter.frag, iter.frag_len);
-	if (iter.error) goto fail;
+	if (!virt_user_cpy(NULL, (uintptr_t)path_buf,
+				process_current->pages, path, len))
+		goto fail;
 
 	// simplify it
 	len = path_simplify(path_buf, path_buf, len);
