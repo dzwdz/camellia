@@ -1,4 +1,4 @@
-#include <kernel/mem.h>
+#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/types.h>

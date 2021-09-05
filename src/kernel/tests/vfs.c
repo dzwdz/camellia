@@ -1,4 +1,4 @@
-#include <kernel/mem.h>
+#include <kernel/mem/alloc.h>
 #include <kernel/tests/base.h>
 #include <kernel/util.h>
 #include <kernel/vfs/mount.h>

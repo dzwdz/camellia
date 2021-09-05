@@ -1,22 +1,9 @@
+/* contains utilities for interacting with virtual memory */
 #pragma once
-#include <kernel/arch/generic.h>
-#include <kernel/main.h>
 #include <kernel/types.h>
+#include <stdbool.h>
 #include <stddef.h>
 
-void mem_init(struct kmain_info *);
-
-// allocates `pages` consecutive pages
-void *page_alloc(size_t pages);
-
-// frees `pages` consecutive pages starting from *first
-void page_free(void *first, size_t pages);
-
-void *kmalloc(size_t len);
-void kfree(void *ptr);
-
-
-// used for iterating through some part of a process' memory
 struct virt_iter {
 	void *frag;
 	size_t frag_len;

@@ -1,5 +1,5 @@
 #include <kernel/arch/generic.h>
-#include <kernel/mem.h>
+#include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
