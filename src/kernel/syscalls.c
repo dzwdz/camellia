@@ -70,12 +70,13 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	static char buffer[PATH_MAX]; // holds the path
-	int handle, res;
+	int res;
 
 	if (len > PATH_MAX) return -1;
 
-	// find the first free handle
-	handle = process_find_handle(process_current);
+	// fail if there are no handles left
+	if (process_find_handle(process_current) < 0)
+		return -1;
 
 	// copy the path to the kernel
 	virt_iter_new(&iter, path, len, process_current->pages, true, false);
