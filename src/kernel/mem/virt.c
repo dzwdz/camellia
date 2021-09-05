@@ -41,7 +41,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 		}
 	} else {
 		// "iterate" over physical memory
-		iter->frag = iter->_virt;
+		iter->frag = (void*) iter->_virt;
 	}
 
 	iter->frag_len    = partial;

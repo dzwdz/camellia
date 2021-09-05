@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 _Noreturn static void await_finish(struct process *dead, struct process *listener) {
-	size_t len;
+	int len;
 	bool res;
 
 	assert(dead->state == PS_DEAD);
@@ -102,7 +102,6 @@ handle_t _syscall_open(const user_ptr path, int len) {
 }
 
 int _syscall_mount(handle_t handle, const user_ptr path, int len) {
-	struct virt_iter iter;
 	struct vfs_mount *mount = NULL;
 	char *path_buf;
 	int res;
