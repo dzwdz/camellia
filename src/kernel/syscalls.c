@@ -70,7 +70,6 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	static char buffer[PATH_MAX]; // holds the path
-	int res;
 
 	if (len > PATH_MAX) return -1;
 
