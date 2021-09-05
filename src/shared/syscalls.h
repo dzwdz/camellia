@@ -1,7 +1,9 @@
-// requires the user_ptr type from kernel/types.h or init/types.h
-
 #pragma once
 #include <stddef.h>
+
+#ifndef TYPES_INCLUDED
+#  error "please include <kernel/types.h> or <init/types.h> before this file"
+#endif
 
 typedef int handle_t;
 

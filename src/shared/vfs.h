@@ -1,7 +1,8 @@
-// requires the user_ptr type from kernel/types.h or init/types.h
-// TODO add some macro magic which prints an error when it isn't defined
-
 #pragma once
+
+#ifndef TYPES_INCLUDED
+#  error "please include <kernel/types.h> or <init/types.h> before this file"
+#endif
 
 enum vfs_op_types {
 	VFSOP_OPEN,
