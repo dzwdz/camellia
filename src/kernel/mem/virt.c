@@ -50,7 +50,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 	return true;
 }
 
-bool virt_user_cpy(
+bool virt_cpy(
 		struct pagedir *dest_pages,       user_ptr dest,
 		struct pagedir  *src_pages, const user_ptr src, size_t length)
 {

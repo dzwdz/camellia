@@ -19,7 +19,7 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 
 	len = listener->saved_len < dead->saved_len
 	    ? listener->saved_len : dead->saved_len;
-	res = virt_user_cpy(
+	res = virt_cpy(
 			listener->pages, listener->saved_addr,
 			dead->pages, dead->saved_addr, len);
 	regs_savereturn(&listener->regs, res ? len : -1);
@@ -81,7 +81,7 @@ handle_t _syscall_open(const user_ptr path, int len) {
 	// copy the path to the kernel
 	// note: the cast is necessary because the function usually accepts user_ptrs
 	//       it can handle copies to physical memory too, though
-	if (!virt_user_cpy(NULL, (uintptr_t)path_buf,
+	if (!virt_cpy(NULL, (uintptr_t)path_buf,
 				process_current->pages, path, len))
 		return -1;
 
@@ -112,7 +112,7 @@ int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
-	if (!virt_user_cpy(NULL, (uintptr_t)path_buf,
+	if (!virt_cpy(NULL, (uintptr_t)path_buf,
 				process_current->pages, path, len))
 		goto fail;
 
