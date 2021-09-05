@@ -11,12 +11,12 @@ enum {
 	_SYSCALL_AWAIT,
 	_SYSCALL_FORK,
 
-	_SYSCALL_FS_OPEN,
-	_SYSCALL_FD_MOUNT,
+	_SYSCALL_OPEN,
+	_SYSCALL_MOUNT,
 
-	_SYSCALL_FD_READ,
-	_SYSCALL_FD_WRITE,
-	_SYSCALL_FD_CLOSE,
+	_SYSCALL_READ,
+	_SYSCALL_WRITE,
+	_SYSCALL_CLOSE,
 };
 
 /** Kills the current process.
@@ -35,9 +35,9 @@ int _syscall_await(user_ptr buf, int len);
  */
 int _syscall_fork(void);
 
-handle_t _syscall_fs_open(const user_ptr path, int len);
+handle_t _syscall_open(const user_ptr path, int len);
 
-int _syscall_fd_mount(handle_t, const user_ptr path, int len);
-int _syscall_fd_read(handle_t, user_ptr buf, int len);
-int _syscall_fd_write(handle_t, user_ptr buf, int len);
-int _syscall_fd_close(handle_t);
+int _syscall_mount(handle_t, const user_ptr path, int len);
+int _syscall_read(handle_t, user_ptr buf, int len);
+int _syscall_write(handle_t, user_ptr buf, int len);
+int _syscall_close(handle_t);

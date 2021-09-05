@@ -66,7 +66,7 @@ int _syscall_fork(void) {
 	return 1;
 }
 
-handle_t _syscall_fs_open(const user_ptr path, int len) {
+handle_t _syscall_open(const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount;
 	static char buffer[PATH_MAX]; // holds the path
@@ -99,7 +99,7 @@ handle_t _syscall_fs_open(const user_ptr path, int len) {
 	// doesn't return. TODO mark as noreturn
 }
 
-int _syscall_fd_mount(handle_t handle, const user_ptr path, int len) {
+int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 	struct virt_iter iter;
 	struct vfs_mount *mount = NULL;
 	char *path_buf;
@@ -136,12 +136,12 @@ fail:
 	return -1;
 }
 
-int _syscall_fd_read(handle_t handle, user_ptr buf, int len) {
+int _syscall_read(handle_t handle, user_ptr buf, int len) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
 	return -1;
 }
 
-int _syscall_fd_write(handle_t handle_num, user_ptr buf, int len) {
+int _syscall_write(handle_t handle_num, user_ptr buf, int len) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -156,7 +156,7 @@ int _syscall_fd_write(handle_t handle_num, user_ptr buf, int len) {
 	return -1;
 }
 
-int _syscall_fd_close(handle_t handle) {
+int _syscall_close(handle_t handle) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
 	return -1;
 }
@@ -169,16 +169,16 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_await(a, b);
 		case _SYSCALL_FORK:
 			return _syscall_fork();
-		case _SYSCALL_FS_OPEN:
-			return _syscall_fs_open(a, b);
-		case _SYSCALL_FD_MOUNT:
-			return _syscall_fd_mount(a, b, c);
-		case _SYSCALL_FD_READ:
-			return _syscall_fd_read(a, b, c);
-		case _SYSCALL_FD_WRITE:
-			return _syscall_fd_write(a, b, c);
-		case _SYSCALL_FD_CLOSE:
-			return _syscall_fd_close(a);
+		case _SYSCALL_OPEN:
+			return _syscall_open(a, b);
+		case _SYSCALL_MOUNT:
+			return _syscall_mount(a, b, c);
+		case _SYSCALL_READ:
+			return _syscall_read(a, b, c);
+		case _SYSCALL_WRITE:
+			return _syscall_write(a, b, c);
+		case _SYSCALL_CLOSE:
+			return _syscall_close(a);
 		default:
 			tty_const("unknown syscall ");
 			panic();

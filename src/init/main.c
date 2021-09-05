@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #define argify(str) str, sizeof(str) - 1
-#define log(str) _syscall_fd_write(tty_fd, argify(str))
+#define log(str) _syscall_write(tty_fd, argify(str))
 
 __attribute__((section("text")))
 int tty_fd;
@@ -12,10 +12,10 @@ void misc_tests(void);
 // takes a cstring and copies it right before a page boundary
 const char *multipageify(const char *str);
 
-#define mount(fd, path) _syscall_fd_mount(fd, path, sizeof(path)-1)
+#define mount(fd, path) _syscall_mount(fd, path, sizeof(path)-1)
 
 int main(void) {
-	tty_fd = _syscall_fs_open("/tty", sizeof("/tty") - 1);
+	tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
 	if (tty_fd < 0)
 		_syscall_exit(argify("couldn't open tty"));
 	log(" opened /tty ");
@@ -27,9 +27,9 @@ int main(void) {
 
 void misc_tests(void) {
 	int res;
-	res = _syscall_fs_open(argify("/tty/nonexistant"));
+	res = _syscall_open(argify("/tty/nonexistant"));
 	if (res >= 0) log("test failed ");
-	res = _syscall_fs_open(argify("/ttynonexistant"));
+	res = _syscall_open(argify("/ttynonexistant"));
 	if (res >= 0) log("test failed ");
 	log("the \"tests\" went ok");
 }
