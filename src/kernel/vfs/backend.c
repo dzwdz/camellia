@@ -8,6 +8,7 @@ _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op o
 	struct vfs_op_request req = {
 		.op = op,
 		.caller = process_current,
+		.backend = backend,
 	};
 	switch (backend->type) {
 		case VFS_BACK_ROOT:

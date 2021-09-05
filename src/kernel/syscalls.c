@@ -141,8 +141,18 @@ int _syscall_fd_read(handle_t handle, user_ptr buf, int len) {
 	return -1;
 }
 
-int _syscall_fd_write(handle_t handle, user_ptr buf, int len) {
-	if (handle < 0 || handle >= HANDLE_MAX) return -1;
+int _syscall_fd_write(handle_t handle_num, user_ptr buf, int len) {
+	struct handle *handle = &process_current->handles[handle_num];
+	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
+	if (handle->type != HANDLE_FILE) return -1;
+	vfs_backend_dispatch(handle->file.backend, (struct vfs_op) {
+			.type = VFSOP_WRITE,
+			.rw = {
+				.buf = buf,
+				.buf_len = len,
+				.id = handle->file.id,
+			}
+		});
 	return -1;
 }
 
