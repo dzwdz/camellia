@@ -28,8 +28,10 @@ int main(void) {
 }
 
 void fs_test(void) {
-	handle_t front, back;
+	handle_t front, back, file;
 	front = _syscall_fs_create((void*)&back); // TODO change user_ptr to void*
+	_syscall_mount(front, argify("/mnt"));
+	file = _syscall_open(argify("/mnt/test"));
 }
 
 void misc_tests(void) {

@@ -104,10 +104,11 @@ handle_t _syscall_open(const user_ptr path, int len) {
 int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 	struct vfs_mount *mount = NULL;
 	char *path_buf;
-	int res;
 
 	if (len > PATH_MAX) return -1;
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
+	if (process_current->handles[handle].type != HANDLE_FS_FRONT)
+		return -1;
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
@@ -125,11 +126,8 @@ int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
-
-	res = -1; // TODO pass to filesystem
-	if (res < 0) goto fail;
+	mount->backend = process_current->handles[handle].fs.backend;
 	process_current->mount = mount;
-	return 0;
 fail:
 	kfree(path_buf);
 	kfree(mount);
@@ -179,7 +177,7 @@ handle_t _syscall_fs_create(user_ptr back_user) {
 			NULL, (uintptr_t)&back, sizeof(handle_t)))
 		goto fail;
 
-	backend = kmalloc(sizeof(struct vfs_backend));
+	backend = kmalloc(sizeof(struct vfs_backend)); // TODO never freed
 	backend->type = VFS_BACK_USER;
 	process_current->handles[front].fs.backend = backend;
 	process_current->handles[back ].fs.backend = backend;
