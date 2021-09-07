@@ -10,6 +10,9 @@ typedef int handle_t; // TODO duplicated in syscalls.h
 enum handle_type {
 	HANDLE_EMPTY,
 	HANDLE_FILE,
+
+	HANDLE_FS_FRONT,
+	HANDLE_FS_BACK,
 };
 
 struct handle {
@@ -19,5 +22,8 @@ struct handle {
 			struct vfs_backend *backend;
 			int id;
 		} file;
+		struct {
+			struct vfs_backend *backend;
+		} fs;
 	};
 };

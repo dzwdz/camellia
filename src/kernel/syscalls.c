@@ -161,6 +161,38 @@ int _syscall_close(handle_t handle) {
 	return -1;
 }
 
+handle_t _syscall_fs_create(user_ptr back_user) {
+	handle_t front, back = 0;
+	struct vfs_backend *backend;
+
+	front = process_find_handle(process_current);
+	if (front < 0) goto fail;
+	// the type needs to be set here so process_find_handle skips this handle
+	process_current->handles[front].type = HANDLE_FS_FRONT;
+
+	back  = process_find_handle(process_current);
+	if (back < 0) goto fail;
+	process_current->handles[back].type = HANDLE_FS_BACK;
+
+	// copy the back handle to back_user
+	if (!virt_cpy(process_current->pages, back_user,
+			NULL, (uintptr_t)&back, sizeof(handle_t)))
+		goto fail;
+
+	backend = kmalloc(sizeof(struct vfs_backend));
+	backend->type = VFS_BACK_USER;
+	process_current->handles[front].fs.backend = backend;
+	process_current->handles[back ].fs.backend = backend;
+
+	return front;
+fail:
+	if (front >= 0)
+		process_current->handles[front].type = HANDLE_EMPTY;
+	if (back >= 0)
+		process_current->handles[back].type = HANDLE_EMPTY;
+	return -1;
+}
+
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case _SYSCALL_EXIT:
@@ -179,6 +211,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_write(a, b, c);
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
+		case _SYSCALL_FS_CREATE:
+			return _syscall_fs_create(a);
 		default:
 			tty_const("unknown syscall ");
 			panic();

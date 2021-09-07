@@ -9,6 +9,7 @@ __attribute__((section("text")))
 int tty_fd;
 
 void misc_tests(void);
+void fs_test(void);
 // takes a cstring and copies it right before a page boundary
 const char *multipageify(const char *str);
 
@@ -21,8 +22,14 @@ int main(void) {
 	log(" opened /tty ");
 
 	misc_tests();
+	fs_test();
 
 	_syscall_exit(argify("my job here is done."));
+}
+
+void fs_test(void) {
+	handle_t front, back;
+	front = _syscall_fs_create((void*)&back); // TODO change user_ptr to void*
 }
 
 void misc_tests(void) {

@@ -3,6 +3,7 @@
 
 enum vfs_backend_type {
 	VFS_BACK_ROOT,
+	VFS_BACK_USER,
 };
 
 // describes something which can acts as an access function

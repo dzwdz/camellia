@@ -36,3 +36,7 @@ int _syscall_write(handle_t handle, user_ptr buf, int len) {
 int _syscall_close(handle_t handle) {
 	return _syscall(_SYSCALL_CLOSE, handle, 0, 0);
 }
+
+handle_t _syscall_fs_create(user_ptr back) {
+	return _syscall(_SYSCALL_FS_CREATE, (int)back, 0, 0);
+}

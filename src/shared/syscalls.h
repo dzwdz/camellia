@@ -19,6 +19,8 @@ enum {
 	_SYSCALL_READ,
 	_SYSCALL_WRITE,
 	_SYSCALL_CLOSE,
+
+	_SYSCALL_FS_CREATE,
 };
 
 /** Kills the current process.
@@ -43,3 +45,8 @@ int _syscall_mount(handle_t, const user_ptr path, int len);
 int _syscall_read(handle_t, user_ptr buf, int len);
 int _syscall_write(handle_t, user_ptr buf, int len);
 int _syscall_close(handle_t);
+
+/** Creates a pair of front/back filesystem handles.
+ * @param back a pointer to a handle_t which will store the back pointer
+ */
+handle_t _syscall_fs_create(user_ptr back);
