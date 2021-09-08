@@ -14,6 +14,20 @@ _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op o
 		case VFS_BACK_ROOT:
 			int ret = vfs_root_handler(&req);
 			vfs_backend_finish(&req, ret);
+		case VFS_BACK_USER:
+			process_current->state = PS_WAITS4FS;
+			if (backend->handler == NULL) { // backend not ready yet
+				if (backend->queue == NULL) {
+					backend->queue = process_current;
+					process_switch_any();
+				} else {
+					panic(); // TODO implement a proper queue
+				}
+			} else {
+				if (backend->handler->state != PS_WAITS4REQUEST)
+					panic(); // invalid state
+				panic(); // TODO
+			}
 		default:
 			panic();
 	}

@@ -179,6 +179,9 @@ handle_t _syscall_fs_create(user_ptr back_user) {
 
 	backend = kmalloc(sizeof(struct vfs_backend)); // TODO never freed
 	backend->type = VFS_BACK_USER;
+	backend->handler = NULL;
+	backend->queue = NULL;
+
 	process_current->handles[front].fs.backend = backend;
 	process_current->handles[back ].fs.backend = backend;
 

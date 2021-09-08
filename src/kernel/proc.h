@@ -8,6 +8,8 @@ enum process_state {
 	PS_DEAD,    // return message wasn't collected
 	PS_DEADER,  // return message was collected
 	PS_WAITS4CHILDDEATH,
+	PS_WAITS4FS,
+	PS_WAITS4REQUEST,
 };
 
 struct process {

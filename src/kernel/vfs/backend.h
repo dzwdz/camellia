@@ -6,9 +6,13 @@ enum vfs_backend_type {
 	VFS_BACK_USER,
 };
 
-// describes something which can acts as an access function
+// describes something which can act as an access function
 struct vfs_backend {
 	enum vfs_backend_type type;
+
+	// only used with VFS_BACK_USER
+	struct process *handler;
+	struct process *queue;
 };
 
 // describes an in-progress vfs call
