@@ -69,7 +69,7 @@ int _syscall_fork(void) {
 
 handle_t _syscall_open(const user_ptr path, int len) {
 	struct vfs_mount *mount;
-	static char path_buf[PATH_MAX];
+	char *path_buf = NULL;
 
 	if (len > PATH_MAX)
 		return -1;
@@ -81,15 +81,17 @@ handle_t _syscall_open(const user_ptr path, int len) {
 	// copy the path to the kernel
 	// note: the cast is necessary because the function usually accepts user_ptrs
 	//       it can handle copies to physical memory too, though
+	// note 2: path_buf gets freed in vfs_backend_finish
+	path_buf = kmalloc(len);
 	if (!virt_cpy(NULL, (uintptr_t)path_buf,
 				process_current->pages, path, len))
-		return -1;
+		goto fail;
 
 	len = path_simplify(path_buf, path_buf, len);
-	if (len < 0) return -1;
+	if (len < 0) goto fail;
 
 	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
-	if (!mount) return -1;
+	if (!mount) goto fail;
 
 	vfs_backend_dispatch(mount->backend, (struct vfs_op) {
 			.type = VFSOP_OPEN,
@@ -98,7 +100,11 @@ handle_t _syscall_open(const user_ptr path, int len) {
 				.path_len = len - mount->prefix_len,
 			}
 		});
-	// doesn't return
+	// doesn't return / fallthrough to fail
+
+fail:
+	kfree(path_buf);
+	return -1;
 }
 
 int _syscall_mount(handle_t handle, const user_ptr path, int len) {

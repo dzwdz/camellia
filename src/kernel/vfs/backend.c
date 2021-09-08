@@ -1,3 +1,4 @@
+#include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/backend.h>
@@ -49,7 +50,10 @@ _Noreturn void vfs_backend_finish(struct vfs_op_request *req, int ret) {
 			},
 		};
 		ret = handle;
-	} 
+	}
+
+	if (req->op.type == VFSOP_OPEN)
+		kfree(req->op.open.path);
 
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);

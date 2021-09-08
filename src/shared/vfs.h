@@ -16,7 +16,7 @@ struct vfs_op {
 	enum vfs_op_types type;
 	union {
 		struct {
-			const char *path;
+			char *path;
 			int path_len;
 		} open;
 		struct {
