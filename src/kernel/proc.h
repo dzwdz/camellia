@@ -24,11 +24,13 @@ struct process {
 
 	uint32_t id; // only for debugging, don't expose to userland
 
-	// meaning changes depending on the state
-	// PS_DEAD - death message
-	// PS_WAITS4CHILDDEATH - buffer for said message
-	user_ptr saved_addr;
-	size_t saved_len;
+	// saved value, meaning depends on .state
+	union {
+		struct { // PS_DEAD, PS_WAITS4CHILDDEATH
+			user_ptr buf;
+			size_t len;
+		} death_msg;
+	};
 
 	struct vfs_mount *mount;
 

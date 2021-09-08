@@ -17,11 +17,11 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 	dead->state = PS_DEADER;
 	listener->state = PS_RUNNING;
 
-	len = listener->saved_len < dead->saved_len
-	    ? listener->saved_len : dead->saved_len;
+	len = listener->death_msg.len < dead->death_msg.len
+	    ? listener->death_msg.len : dead->death_msg.len;
 	res = virt_cpy(
-			listener->pages, listener->saved_addr,
-			dead->pages, dead->saved_addr, len);
+			listener->pages, listener->death_msg.buf,
+			dead->pages, dead->death_msg.buf, len);
 	regs_savereturn(&listener->regs, res ? len : -1);
 	process_switch(listener);
 }
@@ -29,8 +29,8 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 
 _Noreturn void _syscall_exit(const user_ptr msg, size_t len) {
 	process_current->state = PS_DEAD;
-	process_current->saved_addr = msg;
-	process_current->saved_len  = len;
+	process_current->death_msg.buf = msg;
+	process_current->death_msg.len = len;
 
 	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
 		await_finish(process_current, process_current->parent);
@@ -44,8 +44,8 @@ _Noreturn void _syscall_exit(const user_ptr msg, size_t len) {
 
 int _syscall_await(user_ptr buf, int len) {
 	process_current->state = PS_WAITS4CHILDDEATH;
-	process_current->saved_addr = buf;
-	process_current->saved_len  = len;
+	process_current->death_msg.buf = buf;
+	process_current->death_msg.len = len;
 
 	// find any already dead children
 	for (struct process *iter = process_current->child;
