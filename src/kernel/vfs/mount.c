@@ -3,8 +3,8 @@
 #include <kernel/vfs/mount.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
-	struct vfs_mount   *mount   = kmalloc(sizeof(struct vfs_mount));
-	struct vfs_backend *backend = kmalloc(sizeof(struct vfs_backend));
+	struct vfs_mount   *mount   = kmalloc(sizeof *mount);
+	struct vfs_backend *backend = kmalloc(sizeof *backend);
 	backend->type = VFS_BACK_ROOT;
 	*mount = (struct vfs_mount){
 		.prev = NULL,

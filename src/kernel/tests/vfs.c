@@ -63,7 +63,7 @@ TEST(vfs_mount_resolve) {
 	struct vfs_mount *mount = NULL;
 
 #define ADD_MOUNT(path) do { \
-		struct vfs_mount *mount2 = kmalloc(sizeof(struct vfs_mount)); \
+		struct vfs_mount *mount2 = kmalloc(sizeof *mount2); \
 		mount2->prefix = path; \
 		mount2->prefix_len = sizeof(path) - 1; \
 		mount2->prev = mount; \

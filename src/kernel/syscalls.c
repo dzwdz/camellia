@@ -128,7 +128,7 @@ int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 	// TODO remove trailing slash
 
 	// append to mount list
-	mount = kmalloc(sizeof(struct vfs_mount));
+	mount = kmalloc(sizeof *mount);
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
@@ -183,7 +183,7 @@ handle_t _syscall_fs_create(user_ptr back_user) {
 			NULL, (uintptr_t)&back, sizeof(handle_t)))
 		goto fail;
 
-	backend = kmalloc(sizeof(struct vfs_backend)); // TODO never freed
+	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
 	backend->handler = NULL;
 	backend->queue = NULL;

@@ -11,7 +11,7 @@ struct process *process_current;
 uint32_t next_pid = 0;
 
 struct process *process_seed(void) {
-	struct process *proc = kmalloc(sizeof(struct process));
+	struct process *proc = kmalloc(sizeof *proc);
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
 	proc->sibling = NULL;
@@ -40,8 +40,8 @@ struct process *process_seed(void) {
 }
 
 struct process *process_fork(struct process *parent) {
-	struct process *child = kmalloc(sizeof(struct process));
-	memcpy(child, parent, sizeof(struct process));
+	struct process *child = kmalloc(sizeof *child);
+	memcpy(child, parent, sizeof *child);
 
 	child->pages = pagedir_copy(parent->pages);
 	child->sibling = parent->child;
