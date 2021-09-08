@@ -6,27 +6,28 @@
 
 // dispatches a VFS operation to the correct process
 _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op op) {
-	struct vfs_op_request req = {
+	struct vfs_op_request *req = kmalloc(sizeof *req); // freed in vfs_backend_finish
+	*req = (struct vfs_op_request) {
 		.op = op,
 		.caller = process_current,
 		.backend = backend,
 	};
+
 	switch (backend->type) {
 		case VFS_BACK_ROOT:
-			int ret = vfs_root_handler(&req);
-			vfs_backend_finish(&req, ret);
+			int ret = vfs_root_handler(req);
+			vfs_backend_finish(req, ret);
 		case VFS_BACK_USER:
 			process_current->state = PS_WAITS4FS;
-			if (backend->handler == NULL) { // backend not ready yet
-				if (backend->queue == NULL) {
-					backend->queue = process_current;
-					process_switch_any();
-				} else {
-					panic(); // TODO implement a proper queue
-				}
+			if (backend->handler == NULL) { 
+				// backend isn't ready yet, join the queue
+				assert(backend->queue == NULL); // TODO implement a proper queue
+
+				backend->queue = process_current;
+				process_current->pending_req = req;
+				process_switch_any();
 			} else {
-				if (backend->handler->state != PS_WAITS4REQUEST)
-					panic(); // invalid state
+				assert(backend->handler->state == PS_WAITS4REQUEST);
 				panic(); // TODO
 			}
 		default:
@@ -36,6 +37,8 @@ _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op o
 
 // returns from a VFS operation to the calling process
 _Noreturn void vfs_backend_finish(struct vfs_op_request *req, int ret) {
+	struct process *caller = req->caller;
+
 	if (req->op.type == VFSOP_OPEN && ret >= 0) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to
@@ -57,5 +60,6 @@ _Noreturn void vfs_backend_finish(struct vfs_op_request *req, int ret) {
 
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);
-	process_switch(req->caller);
+	kfree(req);
+	process_switch(caller);
 }
