@@ -27,12 +27,20 @@ _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op o
 				process_current->pending_req = req;
 				process_switch_any();
 			} else {
-				assert(backend->handler->state == PS_WAITS4REQUEST);
-				panic(); // TODO
+				vfs_request_pass2handler(req);
 			}
 		default:
 			panic();
 	}
+}
+
+_Noreturn void vfs_request_pass2handler(struct vfs_op_request *req) {
+	assert(req->backend->handler);
+	assert(req->backend->handler->state == PS_WAITS4REQUEST);
+
+	req->backend->handler->state = PS_RUNNING;
+	// TODO pass the request to the process
+	process_switch(req->backend->handler);
 }
 
 // returns from a VFS operation to the calling process

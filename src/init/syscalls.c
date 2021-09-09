@@ -40,3 +40,7 @@ int _syscall_close(handle_t handle) {
 handle_t _syscall_fs_create(user_ptr back) {
 	return _syscall(_SYSCALL_FS_CREATE, (int)back, 0, 0);
 }
+
+int _syscall_fs_wait(handle_t back, user_ptr info) {
+	return _syscall(_SYSCALL_FS_WAIT, back, info, 0);
+}

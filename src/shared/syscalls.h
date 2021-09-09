@@ -21,6 +21,7 @@ enum {
 	_SYSCALL_CLOSE,
 
 	_SYSCALL_FS_CREATE,
+	_SYSCALL_FS_WAIT,
 };
 
 /** Kills the current process.
@@ -50,3 +51,5 @@ int _syscall_close(handle_t);
  * @param back a pointer to a handle_t which will store the back pointer
  */
 handle_t _syscall_fs_create(user_ptr back);
+
+int _syscall_fs_wait(handle_t back, user_ptr info);

@@ -25,4 +25,5 @@ struct vfs_op_request {
 
 // these can switch processes
 _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op op);
+_Noreturn void vfs_request_pass2handler(struct vfs_op_request *);
 _Noreturn void vfs_backend_finish(struct vfs_op_request *, int ret);

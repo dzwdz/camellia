@@ -200,6 +200,27 @@ fail:
 	return -1;
 }
 
+int _syscall_fs_wait(handle_t back, user_ptr info) {
+	struct handle *back_handle;
+
+	if (back < 0 || back >= HANDLE_MAX) return -1;
+	back_handle = &process_current->handles[back];
+	if (back_handle->type != HANDLE_FS_BACK)
+		return -1;
+
+	process_current->state = PS_WAITS4REQUEST;
+	back_handle->fs.backend->handler = process_current;
+
+	if (back_handle->fs.backend->queue) {
+		// handle queued requests
+		struct process *queued = back_handle->fs.backend->queue;
+		back_handle->fs.backend->queue = NULL; // TODO get the next queued proc
+		vfs_request_pass2handler(queued->pending_req);
+	} else {
+		process_switch_any();
+	}
+}
+
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case _SYSCALL_EXIT:
@@ -220,6 +241,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_close(a);
 		case _SYSCALL_FS_CREATE:
 			return _syscall_fs_create(a);
+		case _SYSCALL_FS_WAIT:
+			return _syscall_fs_wait(a, b);
 		default:
 			tty_const("unknown syscall ");
 			panic();

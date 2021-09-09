@@ -30,8 +30,18 @@ int main(void) {
 void fs_test(void) {
 	handle_t front, back, file;
 	front = _syscall_fs_create((void*)&back); // TODO change user_ptr to void*
-	_syscall_mount(front, argify("/mnt"));
-	file = _syscall_open(argify("/mnt/test"));
+
+	if (_syscall_fork()) {
+		// child: is the fs server
+		log("fs_wait started. ");
+		_syscall_fs_wait(back, NULL);
+		log("fs_wait returned. ");
+	} else {
+		// parent: accesses the fs
+		_syscall_mount(front, argify("/mnt"));
+		log("requesting file. ");
+		file = _syscall_open(argify("/mnt/test"));
+	}
 }
 
 void misc_tests(void) {
