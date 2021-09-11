@@ -83,8 +83,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 	//       it can handle copies to physical memory too, though
 	// note 2: path_buf gets freed in vfs_backend_finish
 	path_buf = kmalloc(len);
-	if (!virt_cpy(NULL, path_buf,
-				process_current->pages, path, len))
+	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
 		goto fail;
 
 	len = path_simplify(path_buf, path_buf, len);
@@ -118,8 +117,7 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
-	if (!virt_cpy(NULL, path_buf,
-				process_current->pages, path, len))
+	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
 		goto fail;
 
 	// simplify it
@@ -179,8 +177,7 @@ handle_t _syscall_fs_create(handle_t __user *back_user) {
 	process_current->handles[back].type = HANDLE_FS_BACK;
 
 	// copy the back handle to back_user
-	if (!virt_cpy(process_current->pages, back_user,
-			NULL, &back, sizeof(handle_t)))
+	if (!virt_cpy_to(process_current->pages, back_user, &back, sizeof(back)))
 		goto fail;
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
