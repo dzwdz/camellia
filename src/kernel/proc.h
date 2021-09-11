@@ -13,7 +13,7 @@ enum process_state {
 };
 
 struct process {
-	user_ptr stack_top;
+	void __user *stack_top;
 	struct pagedir *pages;
 	struct registers regs;
 	enum process_state state;
@@ -27,7 +27,7 @@ struct process {
 	// saved value, meaning depends on .state
 	union {
 		struct { // PS_DEAD, PS_WAITS4CHILDDEATH
-			user_ptr buf;
+			char __user *buf;
 			size_t len;
 		} death_msg;
 		struct vfs_op_request *pending_req; // PS_WAITS4FS

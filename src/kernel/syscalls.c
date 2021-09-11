@@ -27,9 +27,9 @@ _Noreturn static void await_finish(struct process *dead, struct process *listene
 }
 
 
-_Noreturn void _syscall_exit(const user_ptr msg, size_t len) {
+_Noreturn void _syscall_exit(const char __user *msg, size_t len) {
 	process_current->state = PS_DEAD;
-	process_current->death_msg.buf = msg;
+	process_current->death_msg.buf = (userptr_t) msg; // discarding const
 	process_current->death_msg.len = len;
 
 	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
@@ -42,7 +42,7 @@ _Noreturn void _syscall_exit(const user_ptr msg, size_t len) {
 	process_switch_any();
 }
 
-int _syscall_await(user_ptr buf, int len) {
+int _syscall_await(char __user *buf, int len) {
 	process_current->state = PS_WAITS4CHILDDEATH;
 	process_current->death_msg.buf = buf;
 	process_current->death_msg.len = len;
@@ -67,7 +67,7 @@ int _syscall_fork(void) {
 	return 1;
 }
 
-handle_t _syscall_open(const user_ptr path, int len) {
+handle_t _syscall_open(const char __user *path, int len) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
@@ -83,7 +83,7 @@ handle_t _syscall_open(const user_ptr path, int len) {
 	//       it can handle copies to physical memory too, though
 	// note 2: path_buf gets freed in vfs_backend_finish
 	path_buf = kmalloc(len);
-	if (!virt_cpy(NULL, (uintptr_t)path_buf,
+	if (!virt_cpy(NULL, path_buf,
 				process_current->pages, path, len))
 		goto fail;
 
@@ -107,7 +107,7 @@ fail:
 	return -1;
 }
 
-int _syscall_mount(handle_t handle, const user_ptr path, int len) {
+int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	struct vfs_mount *mount = NULL;
 	char *path_buf;
 
@@ -118,7 +118,7 @@ int _syscall_mount(handle_t handle, const user_ptr path, int len) {
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
-	if (!virt_cpy(NULL, (uintptr_t)path_buf,
+	if (!virt_cpy(NULL, path_buf,
 				process_current->pages, path, len))
 		goto fail;
 
@@ -140,19 +140,19 @@ fail:
 	return -1;
 }
 
-int _syscall_read(handle_t handle, user_ptr buf, int len) {
+int _syscall_read(handle_t handle, char __user *buf, int len) {
 	if (handle < 0 || handle >= HANDLE_MAX) return -1;
 	return -1;
 }
 
-int _syscall_write(handle_t handle_num, user_ptr buf, int len) {
+int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
 	vfs_backend_dispatch(handle->file.backend, (struct vfs_op) {
 			.type = VFSOP_WRITE,
 			.rw = {
-				.buf = buf,
+				.buf = (userptr_t) buf,
 				.buf_len = len,
 				.id = handle->file.id,
 			}
@@ -165,7 +165,7 @@ int _syscall_close(handle_t handle) {
 	return -1;
 }
 
-handle_t _syscall_fs_create(user_ptr back_user) {
+handle_t _syscall_fs_create(handle_t __user *back_user) {
 	handle_t front, back = 0;
 	struct vfs_backend *backend;
 
@@ -180,7 +180,7 @@ handle_t _syscall_fs_create(user_ptr back_user) {
 
 	// copy the back handle to back_user
 	if (!virt_cpy(process_current->pages, back_user,
-			NULL, (uintptr_t)&back, sizeof(handle_t)))
+			NULL, &back, sizeof(handle_t)))
 		goto fail;
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
@@ -200,7 +200,7 @@ fail:
 	return -1;
 }
 
-int _syscall_fs_wait(handle_t back, user_ptr info) {
+int _syscall_fs_wait(handle_t back, void __user *info) {
 	struct handle *back_handle;
 
 	if (back < 0 || back >= HANDLE_MAX) return -1;
@@ -224,25 +224,25 @@ int _syscall_fs_wait(handle_t back, user_ptr info) {
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case _SYSCALL_EXIT:
-			_syscall_exit(a, b);
+			_syscall_exit((userptr_t)a, b);
 		case _SYSCALL_AWAIT:
-			return _syscall_await(a, b);
+			return _syscall_await((userptr_t)a, b);
 		case _SYSCALL_FORK:
 			return _syscall_fork();
 		case _SYSCALL_OPEN:
-			return _syscall_open(a, b);
+			return _syscall_open((userptr_t)a, b);
 		case _SYSCALL_MOUNT:
-			return _syscall_mount(a, b, c);
+			return _syscall_mount(a, (userptr_t)b, c);
 		case _SYSCALL_READ:
-			return _syscall_read(a, b, c);
+			return _syscall_read(a, (userptr_t)b, c);
 		case _SYSCALL_WRITE:
-			return _syscall_write(a, b, c);
+			return _syscall_write(a, (userptr_t)b, c);
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
 		case _SYSCALL_FS_CREATE:
-			return _syscall_fs_create(a);
+			return _syscall_fs_create((userptr_t)a);
 		case _SYSCALL_FS_WAIT:
-			return _syscall_fs_wait(a, b);
+			return _syscall_fs_wait(a, (userptr_t)b);
 		default:
 			tty_const("unknown syscall ");
 			panic();

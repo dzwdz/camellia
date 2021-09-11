@@ -3,7 +3,7 @@
 #include <kernel/util.h>
 
 void virt_iter_new(
-		struct virt_iter *iter, user_ptr virt, size_t length,
+		struct virt_iter *iter, void __user *virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable)
 {
 	iter->frag       = 0;
@@ -29,8 +29,8 @@ bool virt_iter_next(struct virt_iter *iter) {
 
 	if (iter->_pages) { // if iterating over virtual memory
 		// don't read past the page
-		if ((iter->_virt & PAGE_MASK) + partial > PAGE_SIZE)
-			partial = PAGE_SIZE - (iter->_virt & PAGE_MASK);
+		if (((uintptr_t)iter->_virt & PAGE_MASK) + partial > PAGE_SIZE)
+			partial = PAGE_SIZE - ((uintptr_t)iter->_virt & PAGE_MASK);
 
 		iter->frag = pagedir_virt2phys(iter->_pages,
 				iter->_virt, iter->_user, iter->_writeable);
@@ -51,14 +51,14 @@ bool virt_iter_next(struct virt_iter *iter) {
 }
 
 bool virt_cpy(
-		struct pagedir *dest_pages,       user_ptr dest,
-		struct pagedir  *src_pages, const user_ptr src, size_t length)
+		struct pagedir *dest_pages,       void __user *dest,
+		struct pagedir  *src_pages, const void __user *src, size_t length)
 {
 	struct virt_iter dest_iter, src_iter;
 	size_t min;
 
-	virt_iter_new(&dest_iter, dest, length, dest_pages, true, true);
-	virt_iter_new( &src_iter, src, length,  src_pages, true, false);
+	virt_iter_new(&dest_iter,           dest, length, dest_pages, true, true);
+	virt_iter_new( &src_iter, (userptr_t)src, length,  src_pages, true, false);
 	dest_iter.frag_len = 0;
 	src_iter.frag_len  = 0;
 

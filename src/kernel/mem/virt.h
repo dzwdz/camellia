@@ -10,7 +10,7 @@ struct virt_iter {
 	size_t prior; // sum of all prior frag_lens
 	bool error;
 
-	user_ptr _virt;
+	void __user *_virt;
 	size_t _remaining;
 	struct pagedir *_pages;
 	bool _user;
@@ -19,11 +19,11 @@ struct virt_iter {
 
 /* if pages == NULL, create an iterator over physical memory. */
 void virt_iter_new(
-		struct virt_iter *iter, user_ptr virt, size_t length,
+		struct virt_iter *iter, void __user *virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable);
 
 bool virt_iter_next(struct virt_iter *);
 
 bool virt_cpy(
-		struct pagedir *dest_pages,       user_ptr dest,
-		struct pagedir  *src_pages, const user_ptr src, size_t length);
+		struct pagedir *dest_pages,       void __user *dest,
+		struct pagedir  *src_pages, const void __user *src, size_t length);

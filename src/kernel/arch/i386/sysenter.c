@@ -7,8 +7,8 @@ extern void _sysexit_real(void);
 
 void sysexit(struct registers regs) {
 	_sysexit_regs = regs;
-	_sysexit_regs.ecx = regs.esp;
-	_sysexit_regs.edx = regs.eip;
+	_sysexit_regs.ecx = (uintptr_t) regs.esp;
+	_sysexit_regs.edx = (uintptr_t) regs.eip;
 	_sysexit_real();
 	__builtin_unreachable();
 }
@@ -18,8 +18,8 @@ _Noreturn void sysenter_stage2(void) {
 	struct registers *regs = &process_current->regs;
 
 	*regs = _sysexit_regs; // save the registers
-	regs->esp = regs->ecx; // fix them up
-	regs->eip = regs->edx;
+	regs->esp = (userptr_t) regs->ecx; // fix them up
+	regs->eip = (userptr_t) regs->edx;
 
 	val = syscall_handler(regs->eax, regs->ebx,
 	                      regs->esi, regs->edi);

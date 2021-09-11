@@ -23,11 +23,11 @@ int syscall_handler(int, int, int, int);
 // all of those can allocate memory
 struct pagedir *pagedir_new(void);
 struct pagedir *pagedir_copy(const struct pagedir *orig);
-void pagedir_map(struct pagedir *dir, user_ptr virt, void *phys,
+void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable);
 
 void pagedir_switch(struct pagedir *);
 
 // return 0 on failure
-void *pagedir_virt2phys(struct pagedir *dir, const user_ptr virt,
+void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
                         bool user, bool writeable);

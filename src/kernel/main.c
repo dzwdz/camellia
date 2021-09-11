@@ -9,7 +9,7 @@
 
 static void run_init(struct kmain_info *info) {
 	struct process *proc = process_seed();
-	user_ptr init_base = 0x200000;
+	void __user *init_base = (userptr_t)0x200000;
 
 	// map the module as rw
 	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)

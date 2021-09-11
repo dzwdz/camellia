@@ -1,13 +1,16 @@
 #pragma once
+#include <kernel/types.h>
 #include <stdint.h>
 
 struct registers {
 	/* those are in the order of pushad/popad - so you can load/save this
 	 * struct in (almost) one instruction */
-	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+	uint32_t edi, esi;
+	userptr_t ebp, esp;
+	uint32_t ebx, edx, ecx, eax;
 
 	// not part of pushad/popad, but still useful
-	uint32_t eip;
+	userptr_t eip;
 } __attribute__((__packed__));
 
 // saves a return value according to the SysV ABI

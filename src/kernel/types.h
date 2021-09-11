@@ -2,4 +2,11 @@
 #include <stdint.h>
 
 #define TYPES_INCLUDED
-typedef uintptr_t user_ptr;
+
+#ifdef __CHECKER__
+#  define __user __attribute__((noderef, address_space(__user)))
+#else
+#  define __user
+#endif
+
+typedef void __user * userptr_t;

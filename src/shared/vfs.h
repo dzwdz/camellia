@@ -20,7 +20,7 @@ struct vfs_op {
 			int path_len;
 		} open;
 		struct {
-			user_ptr buf;
+			char __user *buf;
 			int buf_len;
 			int id; // filled in by the kernel
 		} rw;
