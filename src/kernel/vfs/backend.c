@@ -7,6 +7,7 @@
 // dispatches a VFS operation to the correct process
 _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op op) {
 	struct vfs_op_request *req = kmalloc(sizeof *req); // freed in vfs_backend_finish
+	int ret;
 	*req = (struct vfs_op_request) {
 		.op = op,
 		.caller = process_current,
@@ -15,7 +16,7 @@ _Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op o
 
 	switch (backend->type) {
 		case VFS_BACK_ROOT:
-			int ret = vfs_root_handler(req);
+			ret = vfs_root_handler(req);
 			vfs_backend_finish(req, ret);
 		case VFS_BACK_USER:
 			process_current->state = PS_WAITS4FS;

@@ -1,8 +1,10 @@
 #pragma once
 #include <stdint.h>
 
+#ifndef __CHECKER__
 _Static_assert(sizeof(void*) == 4,
 		"this code assumes that pointers have 4 bytes");
+#endif
 
 struct multiboot_mod {
 	void *start;
