@@ -2,6 +2,7 @@ PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 
 AS      = i686-elf-as
 CC      = i686-elf-gcc
+CHECK   = sparse
 CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
@@ -13,6 +14,8 @@ define from_sources
   $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f -name '*.c'))
 endef
 
+.PHONY: all
+all: out/boot.iso check
 
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
 	@grub-mkrescue -o $@ out/fs/ > /dev/null 2>&1
@@ -40,7 +43,7 @@ out/obj/%.c.o: src/%.c
 	@$(CC) $(CFLAGS) -c $^ -o $@
 
 
-.PHONY: boot debug lint clean
+.PHONY: boot debug lint check clean
 boot: out/boot.iso
 	qemu-system-i386 -cdrom $< $(QFLAGS) -no-shutdown
 
@@ -51,6 +54,9 @@ debug: out/boot.iso
 
 lint:
 	@tools/linter/main.rb
+
+check: $(shell find src/kernel/ -type f -name *.c)
+	@echo $^ | xargs -n 1 sparse $(CFLAGS) -Wno-non-pointer-null -Wno-decl
 
 clean:
 	rm -rv out/
