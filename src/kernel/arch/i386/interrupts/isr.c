@@ -12,7 +12,13 @@ void isr_stage3(int interrupt) {
 	switch (interrupt) {
 		case 0x08: log_n_panic("#DF"); // double fault
 		case 0x0D: log_n_panic("#GP"); // general protection fault
-		case 0x0E: log_n_panic("#PF"); // page fault
+		case 0x0E: { // page fault
+			int cr2;
+			tty_const("#PF at ");
+			asm ("mov %%cr2, %0;" : "=r"(cr2) ::);
+			_tty_var(cr2);
+			panic();
+		}
 
 		case 0x34:
 			isr_test_interrupt_called = true;
