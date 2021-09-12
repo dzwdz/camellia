@@ -13,6 +13,7 @@ int tty_fd;
 
 void fs_test(void);
 
+__attribute__((section(".text.startup")))
 int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
