@@ -22,17 +22,24 @@ enum vfs_operation {
 // describes an in-process vfs call
 struct vfs_request {
 	enum vfs_operation type;
-	union {
-		struct {
-			char *path;
-			int path_len;
-		} open;
-		struct {
+	struct { // TODO maybe this should be a separate type
+		bool kern; // if false: use .buf ; if true: use .buf_kern
+		union {
 			char __user *buf;
-			int buf_len;
-			int id; // filled in by the kernel
-		} rw;
-	};
+			char *buf_kern;
+		};
+		int len;
+	} input;
+	struct {
+		bool kern; // if false: use .buf ; if true: use .buf_kern
+		union {
+			char __user *buf;
+			char *buf_kern;
+		};
+		int len;
+	} output;
+
+	int id; // handle.file.id
 
 	struct process *caller;
 	struct vfs_backend *backend;

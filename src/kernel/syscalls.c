@@ -88,11 +88,11 @@ handle_t _syscall_open(const char __user *path, int len) {
 
 	vfs_request_create((struct vfs_request) {
 			.type = VFSOP_OPEN,
-			.open = {
-				.path     = &path_buf[mount->prefix_len],
-				.path_len = len - mount->prefix_len,
+			.input = {
+				.kern = true,
+				.buf_kern = &path_buf[mount->prefix_len], // TODO this is unfreeable
+				.len = len - mount->prefix_len,
 			},
-
 			.caller = process_current,
 			.backend = mount->backend,
 		});
@@ -146,11 +146,11 @@ int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
 	if (handle->type != HANDLE_FILE) return -1;
 	vfs_request_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
-			.rw = {
+			.input = {
 				.buf = (userptr_t) buf,
-				.buf_len = len,
-				.id = handle->file.id,
+				.len = len,
 			},
+			.id = handle->file.id,
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});

@@ -57,8 +57,8 @@ _Noreturn void vfs_request_finish(struct vfs_request *req, int ret) {
 		ret = handle;
 	}
 
-	if (req->type == VFSOP_OPEN)
-		kfree(req->open.path);
+	if (req->input.kern)  kfree(req->input.buf_kern);
+	if (req->output.kern) kfree(req->output.buf_kern);
 
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);
