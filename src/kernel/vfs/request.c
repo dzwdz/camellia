@@ -6,7 +6,7 @@
 #include <kernel/vfs/root.h>
 
 // dispatches a VFS operation to the correct process
-_Noreturn void vfs_request_create(struct vfs_request req_) {
+int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
 	int ret;
 	process_current->state = PS_WAITS4FS;
@@ -18,7 +18,8 @@ _Noreturn void vfs_request_create(struct vfs_request req_) {
 	switch (req->backend->type) {
 		case VFS_BACK_ROOT:
 			ret = vfs_root_handler(req);
-			vfs_request_finish(req, ret);
+			ret = vfs_request_finish(req, ret);
+			return ret;
 		case VFS_BACK_USER:
 			if (req->backend->handler == NULL) {
 				// backend isn't ready yet, join the queue
@@ -69,8 +70,7 @@ fail:
 	panic(); // TODO
 }
 
-// returns from a VFS operation to the calling process
-_Noreturn void vfs_request_finish(struct vfs_request *req, int ret) {
+int vfs_request_finish(struct vfs_request *req, int ret) {
 	struct process *caller = req->caller;
 
 	if (req->type == VFSOP_OPEN && ret >= 0) {
@@ -95,5 +95,5 @@ _Noreturn void vfs_request_finish(struct vfs_request *req, int ret) {
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);
 	kfree(req);
-	process_switch(caller);
+	return ret;
 }

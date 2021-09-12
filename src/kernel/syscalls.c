@@ -87,7 +87,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
 	if (!mount) goto fail;
 
-	vfs_request_create((struct vfs_request) {
+	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_OPEN,
 			.input = {
 				.kern = true,
@@ -97,7 +97,6 @@ handle_t _syscall_open(const char __user *path, int len) {
 			.caller = process_current,
 			.backend = mount->backend,
 		});
-	// doesn't return / fallthrough to fail
 
 fail:
 	kfree(path_buf);
@@ -145,7 +144,7 @@ int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
-	vfs_request_create((struct vfs_request) {
+	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
 			.input = {
 				.buf = (userptr_t) buf,
@@ -155,7 +154,6 @@ int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});
-	return -1;
 }
 
 int _syscall_close(handle_t handle) {

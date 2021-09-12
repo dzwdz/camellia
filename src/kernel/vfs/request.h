@@ -45,6 +45,8 @@ struct vfs_request {
 	struct vfs_backend *backend;
 };
 
-_Noreturn void vfs_request_create(struct vfs_request);
+/** Assigns the vfs_request to the caller, and calls the backend. Might not
+ * return - can switch processes! */
+int vfs_request_create(struct vfs_request);
 _Noreturn void vfs_request_pass2handler(struct vfs_request *);
-_Noreturn void vfs_request_finish(struct vfs_request *, int ret);
+int vfs_request_finish(struct vfs_request *, int ret);
