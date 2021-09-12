@@ -1,41 +1,34 @@
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/vfs/backend.h>
+#include <kernel/vfs/request.h>
 #include <kernel/vfs/root.h>
 
 // dispatches a VFS operation to the correct process
-_Noreturn void vfs_backend_dispatch(struct vfs_backend *backend, struct vfs_op op) {
-	struct vfs_op_request *req = kmalloc(sizeof *req); // freed in vfs_backend_finish
+_Noreturn void vfs_request_create(struct vfs_request req) {
 	int ret;
-	*req = (struct vfs_op_request) {
-		.op = op,
-		.caller = process_current,
-		.backend = backend,
-	};
-
-	switch (backend->type) {
+	switch (req.backend->type) {
 		case VFS_BACK_ROOT:
-			ret = vfs_root_handler(req);
-			vfs_backend_finish(req, ret);
+			ret = vfs_root_handler(&req);
+			vfs_request_finish(&req, ret);
 		case VFS_BACK_USER:
 			process_current->state = PS_WAITS4FS;
-			if (backend->handler == NULL) { 
+			if (req.backend->handler == NULL) { 
 				// backend isn't ready yet, join the queue
-				assert(backend->queue == NULL); // TODO implement a proper queue
+				assert(req.backend->queue == NULL); // TODO implement a proper queue
 
-				backend->queue = process_current;
+				req.backend->queue = process_current;
 				process_current->pending_req = req;
 				process_switch_any();
 			} else {
-				vfs_request_pass2handler(req);
+				vfs_request_pass2handler(&req);
 			}
 		default:
 			panic();
 	}
 }
 
-_Noreturn void vfs_request_pass2handler(struct vfs_op_request *req) {
+_Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	assert(req->backend->handler);
 	assert(req->backend->handler->state == PS_WAITS4REQUEST);
 
@@ -45,10 +38,10 @@ _Noreturn void vfs_request_pass2handler(struct vfs_op_request *req) {
 }
 
 // returns from a VFS operation to the calling process
-_Noreturn void vfs_backend_finish(struct vfs_op_request *req, int ret) {
+_Noreturn void vfs_request_finish(struct vfs_request *req, int ret) {
 	struct process *caller = req->caller;
 
-	if (req->op.type == VFSOP_OPEN && ret >= 0) {
+	if (req->type == VFSOP_OPEN && ret >= 0) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to
 		// the client
@@ -64,8 +57,8 @@ _Noreturn void vfs_backend_finish(struct vfs_op_request *req, int ret) {
 		ret = handle;
 	}
 
-	if (req->op.type == VFSOP_OPEN)
-		kfree(req->op.open.path);
+	if (req->type == VFSOP_OPEN)
+		kfree(req->open.path);
 
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);

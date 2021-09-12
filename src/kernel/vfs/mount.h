@@ -1,5 +1,5 @@
 #pragma once
-#include <kernel/vfs/backend.h>
+#include <kernel/vfs/request.h>
 #include <stddef.h>
 
 struct vfs_mount {

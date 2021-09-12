@@ -30,7 +30,7 @@ struct process {
 			char __user *buf;
 			size_t len;
 		} death_msg;
-		struct vfs_op_request *pending_req; // PS_WAITS4FS
+		struct vfs_request pending_req; // PS_WAITS4FS
 	};
 
 	struct vfs_mount *mount;
