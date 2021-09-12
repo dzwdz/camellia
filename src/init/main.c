@@ -6,28 +6,28 @@
 #define argify(str) str, sizeof(str) - 1
 #define log(str) _syscall_write(tty_fd, argify(str))
 
-__attribute__((section("text")))
-int tty_fd;
+extern char _bss_start; // provided by the linker
+extern char _bss_end;
 
-int test;
+int tty_fd;
 
 void fs_test(void);
 
 int main(void) {
+	// allocate bss
+	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
+
 	tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
 	if (tty_fd < 0)
 		_syscall_exit(argify("couldn't open tty"));
 	log(" opened /tty ");
-
-	_syscall_memflag(&test, sizeof(int), MEMFLAG_PRESENT);
-	test = 0; // would cause a pagefault without the memflag call
 
 	fs_test();
 	_syscall_exit(argify("my job here is done."));
 }
 
 void fs_test(void) {
-	static char buf[64] __attribute__((section("text")));
+	static char buf[64];
 	int len = 64;
 	handle_t front, back, file;
 	front = _syscall_fs_create(&back);
