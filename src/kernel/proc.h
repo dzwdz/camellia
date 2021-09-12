@@ -36,6 +36,7 @@ struct process {
 			int  __user *len;
 		} awaited_req; // PS_WAITS4REQUEST
 	};
+	struct vfs_request *handled_req;
 
 	struct vfs_mount *mount;
 

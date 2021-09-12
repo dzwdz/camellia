@@ -222,6 +222,17 @@ int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len) {
 	}
 }
 
+int _syscall_fs_respond(int ret, char __user *buf, int len) {
+	struct vfs_request *req = process_current->handled_req;
+	if (!req) return -1;
+
+	// TODO copy buffer
+
+	process_current->handled_req = NULL;
+	vfs_request_finish(req, ret);
+	return 0;
+}
+
 int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	userptr_t goal = addr + len;
 	struct pagedir *pages = process_current->pages;
@@ -263,6 +274,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fs_create((userptr_t)a);
 		case _SYSCALL_FS_WAIT:
 			return _syscall_fs_wait(a, (userptr_t)b, (userptr_t)c);
+		case _SYSCALL_FS_RESPOND:
+			return _syscall_fs_respond(a, (userptr_t)b, c);
 		case _SYSCALL_MEMFLAG:
 			return _syscall_memflag((userptr_t)a, b, c);
 		default:

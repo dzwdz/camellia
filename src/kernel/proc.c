@@ -19,6 +19,7 @@ struct process *process_seed(void) {
 	proc->parent  = NULL;
 	proc->mount   = vfs_mount_seed();
 	proc->id      = next_pid++;
+	proc->handled_req = NULL;
 
 	process_first = proc;
 

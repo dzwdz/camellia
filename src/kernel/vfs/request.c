@@ -6,23 +6,27 @@
 #include <kernel/vfs/root.h>
 
 // dispatches a VFS operation to the correct process
-_Noreturn void vfs_request_create(struct vfs_request req) {
+_Noreturn void vfs_request_create(struct vfs_request req_) {
+	struct vfs_request *req;
 	int ret;
-	switch (req.backend->type) {
-		case VFS_BACK_ROOT:
-			ret = vfs_root_handler(&req);
-			vfs_request_finish(&req, ret);
-		case VFS_BACK_USER:
-			process_current->state = PS_WAITS4FS;
-			if (req.backend->handler == NULL) { 
-				// backend isn't ready yet, join the queue
-				assert(req.backend->queue == NULL); // TODO implement a proper queue
+	process_current->state = PS_WAITS4FS;
 
-				req.backend->queue = process_current;
-				process_current->pending_req = req;
+	// the request is owned by the caller
+	process_current->pending_req = req_;
+	req = &process_current->pending_req;
+
+	switch (req->backend->type) {
+		case VFS_BACK_ROOT:
+			ret = vfs_root_handler(req);
+			vfs_request_finish(req, ret);
+		case VFS_BACK_USER:
+			if (req->backend->handler == NULL) {
+				// backend isn't ready yet, join the queue
+				assert(req->backend->queue == NULL); // TODO implement a proper queue
+				req->backend->queue = process_current;
 				process_switch_any();
 			} else {
-				vfs_request_pass2handler(&req);
+				vfs_request_pass2handler(req);
 			}
 		default:
 			panic();
@@ -34,7 +38,9 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	int len;
 	assert(handler);
 	assert(handler->state == PS_WAITS4REQUEST);
+	assert(!handler->handled_req);
 	handler->state = PS_RUNNING;
+	handler->handled_req = req;
 
 	if (!virt_cpy_from(handler->pages,
 				&len, handler->awaited_req.len, sizeof len))

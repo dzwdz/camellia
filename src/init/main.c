@@ -39,10 +39,12 @@ void fs_test(void) {
 		_syscall_fs_wait(back, buf, &len);
 		log("fs_wait returned. ");
 		_syscall_write(tty_fd, buf, len);
+		_syscall_fs_respond(0, NULL, 0);
 	} else {
 		// parent: accesses the fs
 		_syscall_mount(front, argify("/mnt"));
 		log("requesting file. ");
 		file = _syscall_open(argify("/mnt/test"));
+		log("open returned. ");
 	}
 }
