@@ -58,7 +58,7 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 			goto fail; // can't copy buffer
 	} else {
 		if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
-					req->caller->pages, req->input.buf_kern, len))
+					req->caller->pages, req->input.buf, len))
 			goto fail; // can't copy buffer
 	}
 
