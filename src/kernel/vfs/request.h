@@ -1,4 +1,5 @@
 #pragma once
+#include <shared/flags.h>
 
 enum vfs_backend_type {
 	VFS_BACK_ROOT,
@@ -12,11 +13,6 @@ struct vfs_backend {
 	// only used with VFS_BACK_USER
 	struct process *handler;
 	struct process *queue;
-};
-
-enum vfs_operation {
-	VFSOP_OPEN,
-	VFSOP_WRITE,
 };
 
 // describes an in-process vfs call
