@@ -14,8 +14,27 @@ define from_sources
   $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f -name '*.c'))
 endef
 
-.PHONY: all
+
+.PHONY: all boot debug lint check clean
 all: out/boot.iso check
+
+boot: all
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -no-shutdown
+
+debug: all
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -s -S &
+	@sleep 1
+	gdb
+
+lint:
+	@tools/linter/main.rb
+
+check: $(shell find src/kernel/ -type f -name *.c)
+	@echo $^ | xargs -n 1 sparse $(CFLAGS) -Wno-non-pointer-null -Wno-decl
+
+clean:
+	rm -rv out/
+
 
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
 	@grub-mkrescue -o $@ out/fs/ > /dev/null 2>&1
@@ -41,22 +60,3 @@ out/obj/%.s.o: src/%.s
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
-
-
-.PHONY: boot debug lint check clean
-boot: out/boot.iso
-	qemu-system-i386 -cdrom $< $(QFLAGS) -no-shutdown
-
-debug: out/boot.iso
-	qemu-system-i386 -cdrom $< $(QFLAGS) -s -S &
-	@sleep 1
-	gdb
-
-lint:
-	@tools/linter/main.rb
-
-check: $(shell find src/kernel/ -type f -name *.c)
-	@echo $^ | xargs -n 1 sparse $(CFLAGS) -Wno-non-pointer-null -Wno-decl
-
-clean:
-	rm -rv out/
