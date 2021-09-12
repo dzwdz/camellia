@@ -5,6 +5,7 @@
 #include <kernel/proc.h>
 #include <kernel/types.h>
 #include <kernel/vfs/path.h>
+#include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
 
@@ -221,6 +222,25 @@ int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len) {
 	}
 }
 
+int _syscall_memflag(void __user *addr, size_t len, int flags) {
+	userptr_t goal = addr + len;
+	struct pagedir *pages = process_current->pages;
+	if (flags != MEMFLAG_PRESENT) panic(); // currently only allocation is implemented
+
+	addr = (userptr_t)((int)addr & ~PAGE_MASK); // align to page boundary
+	for (; addr < goal; addr += PAGE_SIZE) {
+		if (pagedir_virt2phys(pages, addr, false, false)) {
+			// allocated page, currently a no-op
+			// if you'll be changing this - remember to check if the pages are owned by the kernel!
+		} else {
+			// allocate the new pages
+			pagedir_map(pages, addr, page_alloc(1), true, true);
+		}
+	}
+
+	return -1;
+}
+
 int syscall_handler(int num, int a, int b, int c) {
 	switch (num) {
 		case _SYSCALL_EXIT:
@@ -243,6 +263,8 @@ int syscall_handler(int num, int a, int b, int c) {
 			return _syscall_fs_create((userptr_t)a);
 		case _SYSCALL_FS_WAIT:
 			return _syscall_fs_wait(a, (userptr_t)b, (userptr_t)c);
+		case _SYSCALL_MEMFLAG:
+			return _syscall_memflag((userptr_t)a, b, c);
 		default:
 			tty_const("unknown syscall ");
 			panic();

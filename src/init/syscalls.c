@@ -44,3 +44,7 @@ handle_t _syscall_fs_create(handle_t __user *back) {
 int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len) {
 	return _syscall(_SYSCALL_FS_WAIT, back, (int)buf, (int)len);
 }
+
+int _syscall_memflag(void __user *addr, size_t len, int flags) {
+	return _syscall(_SYSCALL_MEMFLAG, (int)addr, len, flags);
+}

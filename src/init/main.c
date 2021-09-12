@@ -1,4 +1,5 @@
 #include <init/types.h>
+#include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
 
@@ -8,6 +9,8 @@
 __attribute__((section("text")))
 int tty_fd;
 
+int test;
+
 void fs_test(void);
 
 int main(void) {
@@ -15,6 +18,9 @@ int main(void) {
 	if (tty_fd < 0)
 		_syscall_exit(argify("couldn't open tty"));
 	log(" opened /tty ");
+
+	_syscall_memflag(&test, sizeof(int), MEMFLAG_PRESENT);
+	test = 0; // would cause a pagefault without the memflag call
 
 	fs_test();
 	_syscall_exit(argify("my job here is done."));
