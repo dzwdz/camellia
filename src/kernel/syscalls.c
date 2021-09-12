@@ -35,10 +35,6 @@ _Noreturn void _syscall_exit(const char __user *msg, size_t len) {
 	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
 		await_finish(process_current, process_current->parent);
 
-	process_current = process_find(PS_RUNNING);
-	if (process_current)
-		process_switch(process_current);
-
 	process_switch_any();
 }
 
