@@ -55,6 +55,6 @@ int _syscall_close(handle_t);
  */
 handle_t _syscall_fs_create(handle_t __user *back);
 int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len);
-int _syscall_fs_respond(int ret, char __user *buf, int len);
+int _syscall_fs_respond(char __user *buf, int ret);
 
 int _syscall_memflag(void __user *addr, size_t len, int flags);

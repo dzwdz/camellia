@@ -54,7 +54,7 @@ void fs_server(handle_t back) {
 			case VFSOP_OPEN:
 				_syscall_write(tty_fd, buf, len);
 				log(" was opened. ");
-				_syscall_fs_respond(0, NULL, 0); // doesn't check the path yet
+				_syscall_fs_respond(NULL, 0); // doesn't check the path yet
 				break;
 
 			case VFSOP_WRITE:
@@ -62,7 +62,7 @@ void fs_server(handle_t back) {
 				for (int i = 0; i < len; i++) buf[i] &= ~32;
 				// and passthrough to tty
 				_syscall_write(tty_fd, buf, len);
-				_syscall_fs_respond(len, NULL, 0); // return the amt of bytes written
+				_syscall_fs_respond(NULL, len); // return the amt of bytes written
 				break;
 
 			default:

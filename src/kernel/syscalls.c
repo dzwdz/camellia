@@ -220,7 +220,7 @@ int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len) {
 	}
 }
 
-int _syscall_fs_respond(int ret, char __user *buf, int len) {
+int _syscall_fs_respond(char __user *buf, int ret) {
 	struct vfs_request *req = process_current->handled_req;
 	if (!req) return -1;
 
@@ -273,7 +273,7 @@ int syscall_handler(int num, int a, int b, int c) {
 		case _SYSCALL_FS_WAIT:
 			return _syscall_fs_wait(a, (userptr_t)b, (userptr_t)c);
 		case _SYSCALL_FS_RESPOND:
-			return _syscall_fs_respond(a, (userptr_t)b, c);
+			return _syscall_fs_respond((userptr_t)a, b);
 		case _SYSCALL_MEMFLAG:
 			return _syscall_memflag((userptr_t)a, b, c);
 		default:
