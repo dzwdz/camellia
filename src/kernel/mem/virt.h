@@ -29,12 +29,12 @@ bool virt_cpy(
 		struct pagedir  *src_pages, const void __user *src, size_t length);
 
 
-inline bool virt_cpy_to(struct pagedir *dest_pages, // physical -> virtual
+static inline bool virt_cpy_to(struct pagedir *dest_pages, // physical -> virtual
 		void __user *dest, const void *src, size_t length) {
 	return virt_cpy(dest_pages, dest, NULL, (userptr_t)src, length);
 }
 
-inline bool virt_cpy_from(struct pagedir *src_pages, // virtual -> physical
+static inline bool virt_cpy_from(struct pagedir *src_pages, // virtual -> physical
 		void *dest, const void __user *src, size_t length) {
 	return virt_cpy(NULL, (userptr_t)dest, src_pages, src, length);
 }

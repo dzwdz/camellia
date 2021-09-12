@@ -14,7 +14,7 @@ struct registers {
 } __attribute__((__packed__));
 
 // saves a return value according to the SysV ABI
-inline void regs_savereturn(struct registers *regs, uint64_t value) {
+static inline void regs_savereturn(struct registers *regs, uint64_t value) {
 	regs->eax = value;
 	regs->edx = value >> 32;
 }
