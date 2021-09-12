@@ -196,7 +196,7 @@ fail:
 	return -1;
 }
 
-int _syscall_fs_wait(handle_t back, void __user *info) {
+int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len) {
 	struct handle *back_handle;
 
 	if (back < 0 || back >= HANDLE_MAX) return -1;
@@ -206,6 +206,10 @@ int _syscall_fs_wait(handle_t back, void __user *info) {
 
 	process_current->state = PS_WAITS4REQUEST;
 	back_handle->fs.backend->handler = process_current;
+	/* checking the validity of those pointers here would make
+	 * vfs_request_pass2handler simpler. TODO? */
+	process_current->awaited_req.buf = buf;
+	process_current->awaited_req.len = len;
 
 	if (back_handle->fs.backend->queue) {
 		// handle queued requests
@@ -238,7 +242,7 @@ int syscall_handler(int num, int a, int b, int c) {
 		case _SYSCALL_FS_CREATE:
 			return _syscall_fs_create((userptr_t)a);
 		case _SYSCALL_FS_WAIT:
-			return _syscall_fs_wait(a, (userptr_t)b);
+			return _syscall_fs_wait(a, (userptr_t)b, (userptr_t)c);
 		default:
 			tty_const("unknown syscall ");
 			panic();

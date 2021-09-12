@@ -52,4 +52,4 @@ int _syscall_close(handle_t);
  */
 handle_t _syscall_fs_create(handle_t __user *back);
 
-int _syscall_fs_wait(handle_t back, void __user *info);
+int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len);

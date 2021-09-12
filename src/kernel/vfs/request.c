@@ -1,4 +1,5 @@
 #include <kernel/mem/alloc.h>
+#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
@@ -29,12 +30,37 @@ _Noreturn void vfs_request_create(struct vfs_request req) {
 }
 
 _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
-	assert(req->backend->handler);
-	assert(req->backend->handler->state == PS_WAITS4REQUEST);
+	struct process *handler = req->backend->handler;
+	int len;
+	assert(handler);
+	assert(handler->state == PS_WAITS4REQUEST);
+	handler->state = PS_RUNNING;
 
-	req->backend->handler->state = PS_RUNNING;
-	// TODO pass the request to the process
-	process_switch(req->backend->handler);
+	if (!virt_cpy_from(handler->pages,
+				&len, handler->awaited_req.len, sizeof len))
+		goto fail; // can't read buffer length
+	if (len > req->input.len) {
+		// input bigger than buffer
+		// TODO what should be done during e.g. open() calls? truncating doesn't seem right
+		len = req->input.len;
+	}
+
+	if (req->input.kern) {
+		if (!virt_cpy_to(handler->pages,
+					handler->awaited_req.buf, req->input.buf_kern, len))
+			goto fail; // can't copy buffer
+	} else {
+		panic(); // TODO
+	}
+
+	if (!virt_cpy_to(handler->pages,
+				handler->awaited_req.len, &len, sizeof len))
+		goto fail; // can't copy new length
+
+	regs_savereturn(&handler->regs, req->type);
+	process_switch(handler);
+fail:
+	panic(); // TODO
 }
 
 // returns from a VFS operation to the calling process
