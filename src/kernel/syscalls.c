@@ -79,9 +79,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 		return -1;
 
 	// copy the path to the kernel
-	// note: the cast is necessary because the function usually accepts user_ptrs
-	//       it can handle copies to physical memory too, though
-	// note 2: path_buf gets freed in vfs_backend_finish
+	// path_buf gets freed in vfs_backend_finish
 	path_buf = kmalloc(len);
 	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
 		goto fail;
