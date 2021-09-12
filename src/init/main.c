@@ -42,6 +42,7 @@ void fs_test(void) {
 	log("requesting file. ");
 	file = _syscall_open(argify("/mnt/tty"));
 	log("open returned. ");
+	_syscall_write(file, argify("hello"));
 }
 
 void fs_server(handle_t back) {
@@ -55,6 +56,15 @@ void fs_server(handle_t back) {
 				log(" was opened. ");
 				_syscall_fs_respond(0, NULL, 0); // doesn't check the path yet
 				break;
+
+			case VFSOP_WRITE:
+				// uppercase the buffer
+				for (int i = 0; i < len; i++) buf[i] &= ~32;
+				// and passthrough to tty
+				_syscall_write(tty_fd, buf, len);
+				_syscall_fs_respond(len, NULL, 0); // return the amt of bytes written
+				break;
+
 			default:
 				log("fuck");
 				break;
