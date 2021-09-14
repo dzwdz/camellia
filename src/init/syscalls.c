@@ -2,8 +2,6 @@
 #include <init/types.h>
 #include <shared/syscalls.h>
 
-int _syscall(int, int, int, int, int);
-
 _Noreturn void _syscall_exit(const char __user *msg, size_t len) {
 	_syscall(_SYSCALL_EXIT, (int)msg, len, 0, 0);
 	__builtin_unreachable();

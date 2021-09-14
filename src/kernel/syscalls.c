@@ -250,7 +250,7 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	return -1;
 }
 
-int syscall_handler(int num, int a, int b, int c, int d) {
+int _syscall(int num, int a, int b, int c, int d) {
 	switch (num) {
 		case _SYSCALL_EXIT:
 			_syscall_exit((userptr_t)a, b);

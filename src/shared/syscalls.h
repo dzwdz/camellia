@@ -27,6 +27,8 @@ enum {
 	_SYSCALL_MEMFLAG,
 };
 
+int _syscall(int, int, int, int, int);
+
 /** Kills the current process.
  * TODO: what happens to the children?
  */
