@@ -5,16 +5,19 @@ _syscall:
 	push %ebx // preserve registers
 	push %esi
 	push %edi
+	push %ebp
 
 //  note: i could squeeze out another parameter out of %ebp
-	mov 16(%esp), %eax
-	mov 20(%esp), %ebx
+	mov 20(%esp), %eax
+	mov 24(%esp), %ebx
 	mov %esp, %ecx
 	mov $_syscall_ret, %edx
-	mov 24(%esp), %esi
-	mov 28(%esp), %edi
+	mov 28(%esp), %esi
+	mov 32(%esp), %edi
+	mov 36(%esp), %ebp
 	sysenter
 _syscall_ret:
+	pop %ebp
 	pop %edi
 	pop %esi
 	pop %ebx

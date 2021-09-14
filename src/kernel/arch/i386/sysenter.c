@@ -22,7 +22,7 @@ _Noreturn void sysenter_stage2(void) {
 	regs->eip = (userptr_t) regs->edx;
 
 	val = syscall_handler(regs->eax, regs->ebx,
-	                      regs->esi, regs->edi);
+	                      regs->esi, regs->edi, (uintptr_t)regs->ebp);
 	regs_savereturn(&process_current->regs, val);
 
 	process_switch(process_current); // TODO process_resume
