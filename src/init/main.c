@@ -47,19 +47,19 @@ void fs_test(void) {
 
 void fs_server(handle_t back) {
 	static char buf[64];
-	int len;
+	int len, id;
 	for (;;) {
 		len = 64;
-		switch (_syscall_fs_wait(back, buf, &len)) {
+		switch (_syscall_fs_wait(back, buf, &len, &id)) {
 			case VFSOP_OPEN:
 				_syscall_write(tty_fd, buf, len);
 				log(" was opened. ");
-				_syscall_fs_respond(NULL, 0); // doesn't check the path yet
+				_syscall_fs_respond(NULL, 32); // doesn't check the path yet
 				break;
 
 			case VFSOP_WRITE:
 				// uppercase the buffer
-				for (int i = 0; i < len; i++) buf[i] &= ~32;
+				for (int i = 0; i < len; i++) buf[i] &= ~id; // id == 32
 				// and passthrough to tty
 				_syscall_write(tty_fd, buf, len);
 				_syscall_fs_respond(NULL, len); // return the amt of bytes written

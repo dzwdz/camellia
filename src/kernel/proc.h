@@ -34,6 +34,7 @@ struct process {
 		struct {
 			char __user *buf;
 			int  __user *len;
+			int  __user *id;
 		} awaited_req; // PS_WAITS4REQUEST
 	};
 	struct vfs_request *handled_req;

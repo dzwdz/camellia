@@ -66,6 +66,10 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 				handler->awaited_req.len, &len, sizeof len))
 		goto fail; // can't copy new length
 
+	if (!virt_cpy_to(handler->pages,
+				handler->awaited_req.id, &req->id, sizeof req->id))
+		goto fail; // can't copy id
+
 	regs_savereturn(&handler->regs, req->type);
 	process_switch(handler);
 fail:
