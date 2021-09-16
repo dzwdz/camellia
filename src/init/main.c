@@ -43,6 +43,14 @@ void fs_test(void) {
 	file = _syscall_open(argify("/mnt/tty"));
 	log("open returned. ");
 	_syscall_write(file, argify("hello"));
+
+	// try reading
+	char buf[8];
+	int len;
+	for (int i = 0; i < 8; i++)
+		buf[i] = '.';
+	len = _syscall_read(file, buf, len);
+	_syscall_write(tty_fd, buf, len + 1); // read 1 byte past, should be a dot
 }
 
 void fs_server(handle_t back) {
@@ -55,6 +63,11 @@ void fs_server(handle_t back) {
 				_syscall_write(tty_fd, buf, len);
 				log(" was opened. ");
 				_syscall_fs_respond(NULL, 32); // doesn't check the path yet
+				break;
+
+			case VFSOP_READ:
+				// all reads output "world"
+				_syscall_fs_respond("world", 5);
 				break;
 
 			case VFSOP_WRITE:
