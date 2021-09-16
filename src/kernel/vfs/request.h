@@ -18,7 +18,7 @@ struct vfs_backend {
 // describes an in-process vfs call
 struct vfs_request {
 	enum vfs_operation type;
-	struct { // TODO maybe this should be a separate type
+	struct {
 		bool kern; // if false: use .buf ; if true: use .buf_kern
 		union {
 			char __user *buf;
@@ -27,11 +27,7 @@ struct vfs_request {
 		int len;
 	} input;
 	struct {
-		bool kern; // if false: use .buf ; if true: use .buf_kern
-		union {
-			char __user *buf;
-			char *buf_kern;
-		};
+		char __user *buf;
 		int len;
 	} output;
 

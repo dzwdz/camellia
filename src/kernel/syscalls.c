@@ -236,7 +236,16 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 	struct vfs_request *req = process_current->handled_req;
 	if (!req) return -1;
 
-	// TODO copy buffer
+	if (req->output.len > 0 && ret > 0) {
+		// if this vfsop outputs data and ret is positive, it's the length of the buffer
+		// TODO document
+		if (ret > req->output.len)
+			ret = req->output.len; // i'm not handling this in a special way - the fs server can prevent this on its own
+		if (!virt_cpy(req->caller->pages, req->output.buf,
+					process_current->pages, buf, ret)) {
+			// how should this error even be handled? TODO
+		}
+	}
 
 	process_current->handled_req = NULL;
 	vfs_request_finish(req, ret);

@@ -46,7 +46,7 @@ void fs_test(void) {
 
 	// try reading
 	char buf[8];
-	int len;
+	int len = 8;
 	for (int i = 0; i < 8; i++)
 		buf[i] = '.';
 	len = _syscall_read(file, buf, len);
