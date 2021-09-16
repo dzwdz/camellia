@@ -17,6 +17,10 @@ SECTIONS
 	{
 		*(.data)
 	}
+
+	_initrd = .; /* is just appended onto the end of the binary */
+	. += 2M;
+
 	_bss_start = .;
 	.bss BLOCK(4K) : ALIGN(4K)
 	{

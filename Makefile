@@ -44,9 +44,13 @@ out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-out/fs/boot/init: src/init/linker.ld $(call from_sources, src/init/)
+out/raw_init: src/init/linker.ld $(call from_sources, src/init/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
+
+out/fs/boot/init: out/raw_init fake_initrd.txt
+	@mkdir -p $(@D)
+	@cat $^ > $@
 
 out/fs/boot/grub/grub.cfg: grub.cfg
 	@mkdir -p $(@D)

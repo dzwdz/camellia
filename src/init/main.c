@@ -8,6 +8,7 @@
 
 extern char _bss_start; // provided by the linker
 extern char _bss_end;
+extern char _initrd;
 
 int tty_fd;
 
@@ -24,6 +25,8 @@ int main(void) {
 		_syscall_exit(argify("couldn't open tty"));
 
 	fs_test();
+
+	_syscall_write(tty_fd, &_initrd, 23);
 	_syscall_exit(argify("my job here is done."));
 }
 
