@@ -104,12 +104,10 @@ fail:
 
 int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	struct vfs_mount *mount = NULL;
-	char *path_buf;
+	struct vfs_backend *backend = NULL;
+	char *path_buf = NULL;
 
 	if (len > PATH_MAX) return -1;
-	if (handle < 0 || handle >= HANDLE_MAX) return -1;
-	if (process_current->handles[handle].type != HANDLE_FS_FRONT)
-		return -1;
 
 	// copy the path to the kernel
 	path_buf = kmalloc(len);
@@ -121,6 +119,14 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	if (len < 0) goto fail;
 	// TODO remove trailing slash
 
+	if (handle >= 0) { // mounting a real backend
+		if (handle >= HANDLE_MAX)
+			goto fail;
+		if (process_current->handles[handle].type != HANDLE_FS_FRONT)
+			goto fail;
+		backend = process_current->handles[handle].fs.backend;
+	} // otherwise backend == NULL
+
 	// append to mount list
 	mount = kmalloc(sizeof *mount);
 	mount->prev = process_current->mount;
@@ -128,6 +134,8 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	mount->prefix_len = len;
 	mount->backend = process_current->handles[handle].fs.backend;
 	process_current->mount = mount;
+	return 0;
+
 fail:
 	kfree(path_buf);
 	kfree(mount);

@@ -15,6 +15,9 @@ int vfs_request_create(struct vfs_request req_) {
 	process_current->pending_req = req_;
 	req = &process_current->pending_req;
 
+	if (!req->backend)
+		return vfs_request_finish(req, -1);
+
 	switch (req->backend->type) {
 		case VFS_BACK_ROOT:
 			ret = vfs_root_handler(req);
