@@ -48,7 +48,10 @@ out/raw_init: src/init/linker.ld $(call from_sources, src/init/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
-out/fs/boot/init: out/raw_init fake_initrd.txt
+out/initrd.tar: $(shell find initrd/)
+	tar cf $@ initrd/
+
+out/fs/boot/init: out/raw_init out/initrd.tar
 	@mkdir -p $(@D)
 	@cat $^ > $@
 

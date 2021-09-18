@@ -1,3 +1,4 @@
+#include <init/tar.h>
 #include <init/types.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
@@ -25,8 +26,8 @@ int main(void) {
 		_syscall_exit(argify("couldn't open tty"));
 
 	fs_test();
+	tar_driver(&_initrd);
 
-	_syscall_write(tty_fd, &_initrd, 23);
 	_syscall_exit(argify("my job here is done."));
 }
 
