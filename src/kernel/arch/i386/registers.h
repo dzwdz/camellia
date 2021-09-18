@@ -1,5 +1,5 @@
 #pragma once
-#include <kernel/types.h>
+#include <shared/types.h>
 #include <stdint.h>
 
 struct registers {

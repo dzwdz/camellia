@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-#define TYPES_INCLUDED
-
 #ifdef __CHECKER__
 #  define __user __attribute__((noderef, address_space(__user)))
 #else

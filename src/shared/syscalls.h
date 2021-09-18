@@ -1,9 +1,6 @@
 #pragma once
+#include <shared/types.h>
 #include <stddef.h>
-
-#ifndef TYPES_INCLUDED
-#  error "please include <kernel/types.h> or <init/types.h> before this file"
-#endif
 
 typedef int handle_t;
 

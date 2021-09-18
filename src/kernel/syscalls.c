@@ -3,7 +3,6 @@
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/types.h>
 #include <kernel/vfs/path.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>

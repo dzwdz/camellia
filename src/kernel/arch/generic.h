@@ -1,8 +1,8 @@
 #pragma once
 
-#include <kernel/types.h>
 #include <kernel/arch/i386/registers.h>
 #include <kernel/arch/log.h>
+#include <shared/types.h>
 #include <stdbool.h>
 
 // i have no idea where else to put it

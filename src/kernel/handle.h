@@ -1,6 +1,6 @@
 #pragma once
-#include <kernel/types.h>
 #include <kernel/vfs/mount.h>
+#include <shared/types.h>
 #include <stddef.h>
 
 #define HANDLE_MAX 16

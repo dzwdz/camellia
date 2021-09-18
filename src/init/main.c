@@ -1,5 +1,4 @@
 #include <init/tar.h>
-#include <init/types.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>

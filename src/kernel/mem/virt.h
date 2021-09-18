@@ -1,6 +1,6 @@
 /* contains utilities for interacting with virtual memory */
 #pragma once
-#include <kernel/types.h>
+#include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
 
