@@ -49,7 +49,7 @@ out/raw_init: src/init/linker.ld $(call from_sources, src/init/)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
 out/initrd.tar: $(shell find initrd/)
-	tar cf $@ initrd/
+	cd initrd; tar cf ../$@ *
 
 out/fs/boot/init: out/raw_init out/initrd.tar
 	@mkdir -p $(@D)

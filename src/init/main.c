@@ -12,8 +12,8 @@ extern char _initrd;
 
 int tty_fd;
 
+void read_file(const char *path, size_t len);
 void fs_test(void);
-void fs_server(handle_t back);
 
 __attribute__((section(".text.startup")))
 int main(void) {
@@ -25,9 +25,26 @@ int main(void) {
 		_syscall_exit(argify("couldn't open tty"));
 
 	fs_test();
-	tar_driver(&_initrd);
 
 	_syscall_exit(argify("my job here is done."));
+}
+
+void read_file(const char *path, size_t len) {
+	int fd = _syscall_open(path, len);
+	static char buf[64];
+	int buf_len = 64;
+
+	_syscall_write(tty_fd, path, len);
+	log(": ");
+	if (fd < 0) {
+		log("couldn't open.\n");
+		return;
+	}
+
+	buf_len = _syscall_read(fd, buf, buf_len);
+	_syscall_write(tty_fd, buf, buf_len);
+
+	_syscall_close(fd);
 }
 
 void fs_test(void) {
@@ -36,55 +53,15 @@ void fs_test(void) {
 
 	if (_syscall_fork()) {
 		// child: is the fs server
-		fs_server(back);
+		tar_driver(back, &_initrd);
 		return;
 	}
 
 	// parent: accesses the fs
-	_syscall_mount(front, argify("/mnt"));
-	log("requesting file. ");
-	file = _syscall_open(argify("/mnt/tty"));
-	log("open returned. ");
-	_syscall_write(file, argify("hello"));
-
-	// try reading
-	char buf[8];
-	int len = 8;
-	for (int i = 0; i < 8; i++)
-		buf[i] = '.';
-	len = _syscall_read(file, buf, len);
-	_syscall_write(tty_fd, buf, len + 1); // read 1 byte past, should be a dot
-}
-
-void fs_server(handle_t back) {
-	static char buf[64];
-	int len, id;
-	for (;;) {
-		len = 64;
-		switch (_syscall_fs_wait(back, buf, &len, &id)) {
-			case VFSOP_OPEN:
-				_syscall_write(tty_fd, buf, len);
-				log(" was opened. ");
-				_syscall_fs_respond(NULL, 32); // doesn't check the path yet
-				break;
-
-			case VFSOP_READ:
-				// all reads output "world"
-				_syscall_fs_respond("world", 5);
-				break;
-
-			case VFSOP_WRITE:
-				// uppercase the buffer
-				for (int i = 0; i < len; i++) buf[i] &= ~id; // id == 32
-				// and passthrough to tty
-				_syscall_write(tty_fd, buf, len);
-				_syscall_fs_respond(NULL, len); // return the amt of bytes written
-				break;
-
-			default:
-				log("fuck");
-				break;
-		}
-	}
-
+	log("\n");
+	_syscall_mount(front, argify("/init"));
+	read_file(argify("/init/fake.txt"));
+	read_file(argify("/init/1.txt"));
+	read_file(argify("/init/2.txt"));
+	read_file(argify("/init/dir/3.txt"));
 }

@@ -1,12 +1,38 @@
 #include <init/stdlib.h>
+#include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
 
 extern int tty_fd;
 
+// TODO struct tar
+static int tar_open(const char *path, int len, void *base, size_t base_len);
+static int tar_size(void *sector);
+static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
 
-void tar_driver(void *base) {
+void tar_driver(handle_t back, void *base) {
+	static char buf[64];
+	int len;
+	void *id; // IDs usually are integers, but here i'm using them as pointers
+	          // to the metadata sectors
+	for (;;) {
+		len = 64;
+		switch (_syscall_fs_wait(back, buf, &len, (int*)&id)) {
+			case VFSOP_OPEN:
+				_syscall_fs_respond(NULL, tar_open(buf, len, base, ~0));
+				break;
+
+			case VFSOP_READ:
+				_syscall_fs_respond(id + 512, tar_size(id));
+				break;
+
+			default:
+				_syscall_fs_respond(NULL, -1); // unsupported
+				break;
+		}
+	}
+
 	// iterate over all sectors, printing filenames
 	while (0 == memcmp(base + 257, "ustar", 5)) {
 		int size = oct_parse(base + 124, 12);
@@ -19,6 +45,39 @@ void tar_driver(void *base) {
 		// TODO might pagefault if the last sector was at a page boundary
 	}
 	_syscall_write(tty_fd, "done.", 5);
+}
+
+static int tar_open(const char *path, int len, void *base, size_t base_len) {
+	void *ptr;
+
+	if (len <= 1) return -1;
+	path += 1; // skip the leading slash
+	len  -= 1;
+
+	ptr = tar_find(path, len, base, ~0);
+	if (!ptr) return -1;
+	return (int)ptr;
+}
+
+static int tar_size(void *sector) {
+	return oct_parse(sector + 124, 12);
+}
+
+static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len) {
+	int size;
+	if (path_len > 100) return NULL; // illegal path
+
+	for (size_t off = 0; off < base_len;) {
+		if (0 != memcmp(base + off + 257, "ustar", 5))
+			break; // not a metadata sector
+		if (0 == memcmp(base + off, path, path_len))
+			return base + off; // file found, quit
+
+		size = tar_size(base + off);
+		off += 512;                 // skip this metadata sector
+		off += (size + 511) & ~511; // skip the data sectors
+	}
+	return NULL;
 }
 
 static int oct_parse(char *str, size_t len) {
