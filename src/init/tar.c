@@ -1,11 +1,10 @@
+#include <init/stdlib.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
 
 extern int tty_fd;
 
 static int oct_parse(char *str, size_t len);
-int memcmp(const void *s1, const void *s2, size_t n); // TODO move to a dedicated file
-
 
 void tar_driver(void *base) {
 	// iterate over all sectors, printing filenames
@@ -29,15 +28,4 @@ static int oct_parse(char *str, size_t len) {
 		res += str[i] - '0'; // no format checking
 	}
 	return res;
-}
-
-int memcmp(const void *s1, const void *s2, size_t n) {
-	const unsigned char *c1 = s1, *c2 = s2;
-	for (size_t i = 0; i < n; i++) {
-		if (c1[i] != c2[i]) {
-			if (c1[i] < c2[i])  return -1;
-			else                return 1;
-		}
-	}
-	return 0;
 }
