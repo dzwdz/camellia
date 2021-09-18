@@ -28,7 +28,7 @@ struct process *process_seed(void) {
 
 	// map the stack to the last page in memory
 	pagedir_map(proc->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
-	proc->stack_top = proc->regs.esp = (userptr_t) ~0xF;
+	proc->regs.esp = (userptr_t) ~0xF;
 
 	// map the kernel
 	//   yup, .text is writeable too. the plan is to not map the kernel

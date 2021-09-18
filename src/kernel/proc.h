@@ -13,7 +13,6 @@ enum process_state {
 };
 
 struct process {
-	void __user *stack_top;
 	struct pagedir *pages;
 	struct registers regs;
 	enum process_state state;
