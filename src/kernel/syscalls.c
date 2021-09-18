@@ -132,7 +132,7 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	mount->prev = process_current->mount;
 	mount->prefix = path_buf;
 	mount->prefix_len = len;
-	mount->backend = process_current->handles[handle].fs.backend;
+	mount->backend = backend;
 	process_current->mount = mount;
 	return 0;
 
