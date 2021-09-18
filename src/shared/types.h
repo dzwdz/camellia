@@ -8,3 +8,4 @@
 #endif
 
 typedef void __user * userptr_t;
+typedef int handle_t;

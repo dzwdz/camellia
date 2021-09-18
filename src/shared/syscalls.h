@@ -2,8 +2,6 @@
 #include <shared/types.h>
 #include <stddef.h>
 
-typedef int handle_t;
-
 enum {
 	// idc about stable syscall numbers just yet
 	_SYSCALL_EXIT,
