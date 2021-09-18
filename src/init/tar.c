@@ -60,7 +60,7 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 }
 
 static int tar_size(void *sector) {
-	return oct_parse(sector + 124, 12);
+	return oct_parse(sector + 124, 11);
 }
 
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len) {
