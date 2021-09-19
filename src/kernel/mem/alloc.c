@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 static void *highest_page;
+static int malloc_balance = 0;
 
 void mem_init(struct kmain_info *info) {
 	// finds the highest used page, and starts allocating pages above it
@@ -14,6 +15,12 @@ void mem_init(struct kmain_info *info) {
 
 	// align up to PAGE_SIZE
 	highest_page = (void*)(((uintptr_t)highest + PAGE_MASK) & ~PAGE_MASK);
+}
+
+void mem_debugprint(void) {
+	tty_const("malloc balance: ");
+	_tty_var(malloc_balance);
+	tty_const(" ");
 }
 
 void *page_alloc(size_t pages) {
@@ -29,10 +36,12 @@ void page_free(void *first, size_t pages) {
 
 
 void *kmalloc(size_t len) {
+	malloc_balance++;
 	// extremely inefficient, but this is only temporary anyways
 	return page_alloc(len / PAGE_SIZE + 1);
 }
 
 void kfree(void *ptr) {
-	// unimplemented
+	if (ptr == NULL) return;
+	malloc_balance--;
 }

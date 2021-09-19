@@ -102,6 +102,5 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);
-	kfree(req);
 	return ret;
 }

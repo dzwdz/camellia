@@ -66,7 +66,7 @@ _Noreturn void process_switch_any(void) {
 	if (found)
 		process_switch(found);
 
-	tty_const(" no running processes left...");
+	mem_debugprint();
 	panic();
 }
 
