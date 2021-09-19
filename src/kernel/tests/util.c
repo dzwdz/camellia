@@ -21,19 +21,6 @@ TEST(memcmp) {
 	TEST_COND(0 < memcmp("654", "555", 3));
 }
 
-TEST(static_strcmp) {
-	TEST_COND(0 == static_strcmp("",      ""));
-	TEST_COND(0 == static_strcmp("same",  "same"));
-
-	TEST_COND(0 != static_strcmp("same",  "diff"));
-	TEST_COND(0 != static_strcmp("same!", "same"));
-	TEST_COND(0 != static_strcmp("same",  "same!"));
-
-	TEST_COND(0 > static_strcmp("555", "654"));
-	TEST_COND(0 < static_strcmp("654", "555"));
-}
-
 void tests_utils(void) {
 	TEST_RUN(memcmp);
-	TEST_RUN(static_strcmp);
 }
