@@ -67,16 +67,13 @@ handle_t _syscall_open(const char __user *path, int len) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
-	if (len > PATH_MAX)
+	if (PATH_MAX < len)
 		return -1;
-
-	// fail if there are no handles left
 	if (process_find_handle(process_current) < 0)
 		return -1;
 
-	// copy the path to the kernel
-	// path_buf gets freed in vfs_request_finish
-	path_buf = kmalloc(len);
+	// copy the path to the kernel, simplify it
+	path_buf = kmalloc(len); // gets freed in vfs_request_finish
 	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
 		goto fail;
 
@@ -96,7 +93,6 @@ handle_t _syscall_open(const char __user *path, int len) {
 			.caller = process_current,
 			.backend = mount->backend,
 		});
-
 fail:
 	kfree(path_buf);
 	return -1;
@@ -107,19 +103,17 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	struct vfs_backend *backend = NULL;
 	char *path_buf = NULL;
 
-	if (len > PATH_MAX) return -1;
+	if (PATH_MAX < len) return -1;
 
-	// copy the path to the kernel
+	// copy the path to the kernel to simplify it
 	path_buf = kmalloc(len);
 	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
 		goto fail;
-
-	// simplify it
 	len = path_simplify(path_buf, path_buf, len);
 	if (len < 0) goto fail;
 	// TODO remove trailing slash
 
-	if (handle >= 0) { // mounting a real backend
+	if (handle >= 0) { // mounting a real backend?
 		if (handle >= HANDLE_MAX)
 			goto fail;
 		if (process_current->handles[handle].type != HANDLE_FS_FRONT)
