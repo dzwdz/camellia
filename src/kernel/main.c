@@ -7,7 +7,7 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
-static void run_init(struct kmain_info *info) {
+_Noreturn static void run_init(struct kmain_info *info) {
 	struct process *proc = process_seed();
 	void __user *init_base = (userptr_t)0x200000;
 
@@ -30,6 +30,4 @@ void kmain(struct kmain_info info) {
 
 	tty_const("loading init...");
 	run_init(&info);
-
-	panic();
 }
