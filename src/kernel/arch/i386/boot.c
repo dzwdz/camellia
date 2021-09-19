@@ -2,7 +2,6 @@
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/interrupts/idt.h>
 #include <kernel/arch/i386/multiboot.h>
-#include <kernel/arch/i386/sysenter.h>
 #include <kernel/main.h>
 #include <kernel/panic.h>
 
@@ -15,8 +14,6 @@ void kmain_early(struct multiboot_info *multiboot) {
 	gdt_init();
 	tty_const("idt...");
 	idt_init();
-	tty_const("sysenter...");
-	sysenter_setup();
 	
 	{ // find the init module
 		struct multiboot_mod *module = &multiboot->mods[0];
