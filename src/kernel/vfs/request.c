@@ -78,8 +78,6 @@ fail:
 }
 
 int vfs_request_finish(struct vfs_request *req, int ret) {
-	struct process *caller = req->caller;
-
 	if (req->type == VFSOP_OPEN && ret >= 0) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to

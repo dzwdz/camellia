@@ -48,7 +48,7 @@ void read_file(const char *path, size_t len) {
 }
 
 void fs_test(void) {
-	handle_t front, back, file;
+	handle_t front, back;
 	front = _syscall_fs_create(&back);
 
 	if (_syscall_fork()) {
