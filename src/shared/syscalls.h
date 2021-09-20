@@ -51,7 +51,12 @@ int _syscall_close(handle_t);
  * @param back a pointer to a handle_t which will store the back pointer
  */
 handle_t _syscall_fs_create(handle_t __user *back);
-int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len, int __user *id);
+struct fs_wait_response {
+	int len; // how much was put in *buf
+	int id;  // file id (returned by the open handler, passed to other calls)
+};
+int _syscall_fs_wait(handle_t back, char __user *buf, int max_len,
+		struct fs_wait_response __user *res);
 int _syscall_fs_respond(char __user *buf, int ret);
 
 int _syscall_memflag(void __user *addr, size_t len, int flags);

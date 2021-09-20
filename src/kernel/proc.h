@@ -2,6 +2,7 @@
 #include <kernel/arch/generic.h>
 #include <kernel/handle.h>
 #include <kernel/vfs/mount.h>
+#include <shared/syscalls.h>
 
 enum process_state {
 	PS_RUNNING,
@@ -32,8 +33,8 @@ struct process {
 		struct vfs_request pending_req; // PS_WAITS4FS
 		struct {
 			char __user *buf;
-			int  __user *len;
-			int  __user *id;
+			int  max_len;
+			struct fs_wait_response __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
 	};
 	struct vfs_request *handled_req;

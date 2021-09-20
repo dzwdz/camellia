@@ -39,6 +39,7 @@ int vfs_request_create(struct vfs_request req_) {
 
 _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	struct process *handler = req->backend->handler;
+	struct fs_wait_response res = {0};
 	int len;
 	assert(handler);
 	assert(handler->state == PS_WAITS4REQUEST);
@@ -46,9 +47,7 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	handler->state = PS_RUNNING;
 	handler->handled_req = req;
 
-	if (!virt_cpy_from(handler->pages,
-				&len, handler->awaited_req.len, sizeof len))
-		goto fail; // can't read buffer length
+	len = handler->awaited_req.max_len;
 	if (len > req->input.len) {
 		// input bigger than buffer
 		// TODO what should be done during e.g. open() calls? truncating doesn't seem right
@@ -65,13 +64,12 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 			goto fail; // can't copy buffer
 	}
 
-	if (!virt_cpy_to(handler->pages,
-				handler->awaited_req.len, &len, sizeof len))
-		goto fail; // can't copy new length
+	res.len = len;
+	res.id = req->id;
 
 	if (!virt_cpy_to(handler->pages,
-				handler->awaited_req.id, &req->id, sizeof req->id))
-		goto fail; // can't copy id
+				handler->awaited_req.res, &res, sizeof res))
+		goto fail; // can't copy response struct
 
 	regs_savereturn(&handler->regs, req->type);
 	process_switch(handler);

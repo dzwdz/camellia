@@ -38,8 +38,9 @@ handle_t _syscall_fs_create(handle_t __user *back) {
 	return _syscall(_SYSCALL_FS_CREATE, (int)back, 0, 0, 0);
 }
 
-int _syscall_fs_wait(handle_t back, char __user *buf, int __user *len, int __user *id) {
-	return _syscall(_SYSCALL_FS_WAIT, back, (int)buf, (int)len, (int)id);
+int _syscall_fs_wait(handle_t back, char __user *buf, int max_len, 
+		struct fs_wait_response __user *res) {
+	return _syscall(_SYSCALL_FS_WAIT, back, (int)buf, max_len, (int)res);
 }
 
 int _syscall_fs_respond(char __user *buf, int ret) {

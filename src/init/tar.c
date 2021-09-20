@@ -3,6 +3,8 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
+#define BUF_SIZE 64
+
 extern int tty_fd;
 
 // TODO struct tar
@@ -12,20 +14,19 @@ static void *tar_find(const char *path, size_t path_len, void *base, size_t base
 static int oct_parse(char *str, size_t len);
 
 void tar_driver(handle_t back, void *base) {
-	static char buf[64];
-	int len;
-	void *id; // IDs usually are integers, but here i'm using them as pointers
-	          // to the metadata sectors
+	static char buf[BUF_SIZE];
+	struct fs_wait_response res;
 	for (;;) {
-		len = 64;
-		switch (_syscall_fs_wait(back, buf, &len, (int*)&id)) {
+		switch (_syscall_fs_wait(back, buf, BUF_SIZE, &res)) {
 			case VFSOP_OPEN:
-				_syscall_fs_respond(NULL, tar_open(buf, len, base, ~0));
+				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0));
 				break;
 
-			case VFSOP_READ:
-				_syscall_fs_respond(id + 512, tar_size(id));
+			case VFSOP_READ: {
+				void *meta = (void*)res.id;
+				_syscall_fs_respond(meta + 512, tar_size(meta));
 				break;
+			}
 
 			default:
 				_syscall_fs_respond(NULL, -1); // unsupported
