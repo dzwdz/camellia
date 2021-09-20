@@ -1,5 +1,7 @@
 #pragma once
 #include <shared/flags.h>
+#include <shared/types.h>
+#include <stdbool.h>
 
 enum vfs_backend_type {
 	VFS_BACK_ROOT,
