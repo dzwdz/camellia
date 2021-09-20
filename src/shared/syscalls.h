@@ -43,8 +43,8 @@ int _syscall_fork(void);
 handle_t _syscall_open(const char __user *path, int len);
 
 int _syscall_mount(handle_t, const char __user *path, int len);
-int _syscall_read(handle_t, char __user *buf, int len);
-int _syscall_write(handle_t, const char __user *buf, int len);
+int _syscall_read(handle_t, char __user *buf, int len, int offset);
+int _syscall_write(handle_t, const char __user *buf, int len, int offset);
 int _syscall_close(handle_t);
 
 /** Creates a pair of front/back filesystem handles.
@@ -54,6 +54,7 @@ handle_t _syscall_fs_create(handle_t __user *back);
 struct fs_wait_response {
 	int len; // how much was put in *buf
 	int id;  // file id (returned by the open handler, passed to other calls)
+	int offset;
 };
 int _syscall_fs_wait(handle_t back, char __user *buf, int max_len,
 		struct fs_wait_response __user *res);

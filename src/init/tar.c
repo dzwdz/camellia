@@ -24,7 +24,13 @@ void tar_driver(handle_t back, void *base) {
 
 			case VFSOP_READ: {
 				void *meta = (void*)res.id;
-				_syscall_fs_respond(meta + 512, tar_size(meta));
+				int size = tar_size(meta);
+				if (res.offset < 0 || res.offset > size) {
+					// TODO support negative offsets
+					_syscall_fs_respond(NULL, -1);
+				} else {
+					_syscall_fs_respond(meta + 512 + res.offset, size - res.offset);
+				}
 				break;
 			}
 
@@ -38,14 +44,14 @@ void tar_driver(handle_t back, void *base) {
 	while (0 == memcmp(base + 257, "ustar", 5)) {
 		int size = oct_parse(base + 124, 12);
 
-		_syscall_write(tty_fd, base, 100);
-		_syscall_write(tty_fd, " ", 1);
+		_syscall_write(tty_fd, base, 100, 0);
+		_syscall_write(tty_fd, " ", 1, 0);
 
 		base += 512;                 // skip metadata sector
 		base += (size + 511) & ~511; // skip file (size rounded up to 512)
 		// TODO might pagefault if the last sector was at a page boundary
 	}
-	_syscall_write(tty_fd, "done.", 5);
+	_syscall_write(tty_fd, "done.", 5, 0);
 }
 
 static int tar_open(const char *path, int len, void *base, size_t base_len) {

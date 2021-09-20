@@ -136,7 +136,7 @@ fail:
 	return -1;
 }
 
-int _syscall_read(handle_t handle_num, char __user *buf, int len) {
+int _syscall_read(handle_t handle_num, char __user *buf, int len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -147,12 +147,13 @@ int _syscall_read(handle_t handle_num, char __user *buf, int len) {
 				.len = len,
 			},
 			.id = handle->file.id,
+			.offset = offset,
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});
 }
 
-int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
+int _syscall_write(handle_t handle_num, const char __user *buf, int len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -163,6 +164,7 @@ int _syscall_write(handle_t handle_num, const char __user *buf, int len) {
 				.len = len,
 			},
 			.id = handle->file.id,
+			.offset = offset,
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});
@@ -286,9 +288,9 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_MOUNT:
 			return _syscall_mount(a, (userptr_t)b, c);
 		case _SYSCALL_READ:
-			return _syscall_read(a, (userptr_t)b, c);
+			return _syscall_read(a, (userptr_t)b, c, d);
 		case _SYSCALL_WRITE:
-			return _syscall_write(a, (userptr_t)b, c);
+			return _syscall_write(a, (userptr_t)b, c, d);
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
 		case _SYSCALL_FS_CREATE:

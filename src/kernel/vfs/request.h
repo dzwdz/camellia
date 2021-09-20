@@ -34,6 +34,7 @@ struct vfs_request {
 	} output;
 
 	int id; // handle.file.id
+	int offset;
 
 	struct process *caller;
 	struct vfs_backend *backend;

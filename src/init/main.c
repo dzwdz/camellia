@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define argify(str) str, sizeof(str) - 1
-#define log(str) _syscall_write(tty_fd, argify(str))
+#define log(str) _syscall_write(tty_fd, argify(str), 0)
 
 extern char _bss_start; // provided by the linker
 extern char _bss_end;
@@ -34,15 +34,15 @@ void read_file(const char *path, size_t len) {
 	static char buf[64];
 	int buf_len = 64;
 
-	_syscall_write(tty_fd, path, len);
+	_syscall_write(tty_fd, path, len, 0);
 	log(": ");
 	if (fd < 0) {
 		log("couldn't open.\n");
 		return;
 	}
 
-	buf_len = _syscall_read(fd, buf, buf_len);
-	_syscall_write(tty_fd, buf, buf_len);
+	buf_len = _syscall_read(fd, buf, buf_len, 0);
+	_syscall_write(tty_fd, buf, buf_len, 0);
 
 	_syscall_close(fd);
 }
