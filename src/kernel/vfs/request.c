@@ -33,7 +33,7 @@ int vfs_request_create(struct vfs_request req_) {
 				vfs_request_pass2handler(req);
 			}
 		default:
-			panic();
+			panic_invalid_state();
 	}
 }
 
@@ -75,7 +75,7 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	regs_savereturn(&handler->regs, req->type);
 	process_switch(handler);
 fail:
-	panic(); // TODO
+	panic_unimplemented(); // TODO
 }
 
 int vfs_request_finish(struct vfs_request *req, int ret) {
@@ -84,7 +84,8 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		// we need to wrap the id returned by the VFS in a handle passed to
 		// the client
 		handle_t handle = process_find_handle(req->caller);
-		if (handle < 0) panic();
+		if (handle < 0)
+			panic_invalid_state(); // we check for free handles before the open() call
 		req->caller->handles[handle] = (struct handle){
 			.type = HANDLE_FILE,
 			.file = {

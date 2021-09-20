@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define log_n_panic(x) {tty_const(x); panic();}
+#define log_n_panic(x) {tty_const(x); panic_unimplemented();} // TODO kill the current process instead of panicking
 
 bool isr_test_interrupt_called = false;
 
@@ -17,7 +17,7 @@ void isr_stage3(int interrupt) {
 			tty_const("#PF at ");
 			asm ("mov %%cr2, %0;" : "=r"(cr2) ::);
 			_tty_var(cr2);
-			panic();
+			panic_unimplemented();
 		}
 
 		case 0x34:

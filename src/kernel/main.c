@@ -1,7 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/main.h>
 #include <kernel/mem/alloc.h>
-#include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/tests/tests.h>
 #include <kernel/util.h>

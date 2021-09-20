@@ -25,8 +25,8 @@ int vfs_root_handler(struct vfs_request *req) {
 						tty_write(iter.frag, iter.frag_len);
 					return iter.prior;
 				}
-				default: panic();
+				default: panic_invalid_state();
 			}
-		default: panic();
+		default: panic_unimplemented(); // TODO
 	}
 }

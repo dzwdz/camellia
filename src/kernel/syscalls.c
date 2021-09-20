@@ -259,7 +259,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	userptr_t goal = addr + len;
 	struct pagedir *pages = process_current->pages;
-	if (flags != MEMFLAG_PRESENT) panic(); // currently only allocation is implemented
+	if (flags != MEMFLAG_PRESENT) panic_unimplemented(); // TODO
 
 	addr = (userptr_t)((int)addr & ~PAGE_MASK); // align to page boundary
 	for (; addr < goal; addr += PAGE_SIZE) {
@@ -303,6 +303,6 @@ int _syscall(int num, int a, int b, int c, int d) {
 			return _syscall_memflag((userptr_t)a, b, c);
 		default:
 			tty_const("unknown syscall ");
-			panic();
+			panic_unimplemented(); // TODO fail gracefully
 	}
 }

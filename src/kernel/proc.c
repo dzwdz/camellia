@@ -67,7 +67,7 @@ _Noreturn void process_switch_any(void) {
 		process_switch(found);
 
 	mem_debugprint();
-	panic();
+	panic_unimplemented(); // TODO shutdown();
 }
 
 // TODO there's no check for going past the stack - VULN

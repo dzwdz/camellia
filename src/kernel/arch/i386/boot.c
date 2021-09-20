@@ -19,7 +19,7 @@ void kmain_early(struct multiboot_info *multiboot) {
 		struct multiboot_mod *module = &multiboot->mods[0];
 		if (multiboot->mods_count < 1) {
 			tty_const("can't find init! ");
-			panic();
+			panic_invalid_state(); // no init
 		}
 		info.init.at   = module->start;
 		info.init.size = module->end - module->start;

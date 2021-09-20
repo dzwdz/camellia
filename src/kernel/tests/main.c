@@ -11,5 +11,5 @@ void tests_all(void) {
 	tests_vfs();
 
 	if (_did_tests_fail)
-		panic();
+		panic_invalid_state();
 }
