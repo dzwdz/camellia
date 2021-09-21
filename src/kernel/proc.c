@@ -1,5 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
+#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
@@ -100,4 +101,31 @@ handle_t process_find_handle(struct process *proc) {
 	}
 	if (handle == HANDLE_MAX) handle = -1;
 	return handle;
+}
+
+int process_try2collect(struct process *dead) {
+	struct process *parent = dead->parent;
+	int len, ret;
+	bool res;
+
+	assert(dead->state == PS_DEAD);
+
+	switch (parent->state) {
+		case PS_WAITS4CHILDDEATH:
+			dead->state = PS_DEADER;
+			parent->state = PS_RUNNING;
+
+			len = parent->death_msg.len < dead->death_msg.len
+				? parent->death_msg.len : dead->death_msg.len;
+			res = virt_cpy(
+					parent->pages, parent->death_msg.buf,
+					dead->pages, dead->death_msg.buf, len);
+
+			ret = res ? len : 0;
+			regs_savereturn(&parent->regs, ret);
+			return ret;
+
+		default:
+			return -1;
+	}
 }

@@ -8,33 +8,11 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
-_Noreturn static void await_finish(struct process *dead, struct process *listener) {
-	int len;
-	bool res;
-
-	assert(dead->state == PS_DEAD);
-	assert(listener->state == PS_WAITS4CHILDDEATH);
-	dead->state = PS_DEADER;
-	listener->state = PS_RUNNING;
-
-	len = listener->death_msg.len < dead->death_msg.len
-	    ? listener->death_msg.len : dead->death_msg.len;
-	res = virt_cpy(
-			listener->pages, listener->death_msg.buf,
-			dead->pages, dead->death_msg.buf, len);
-	regs_savereturn(&listener->regs, res ? len : -1);
-	process_switch(listener);
-}
-
-
 _Noreturn void _syscall_exit(const char __user *msg, size_t len) {
 	process_current->state = PS_DEAD;
 	process_current->death_msg.buf = (userptr_t) msg; // discarding const
 	process_current->death_msg.len = len;
-
-	if (process_current->parent->state == PS_WAITS4CHILDDEATH)
-		await_finish(process_current, process_current->parent);
-
+	process_try2collect(process_current);
 	process_switch_any();
 }
 
@@ -47,8 +25,11 @@ int _syscall_await(char __user *buf, int len) {
 	// find any already dead children
 	for (struct process *iter = process_current->child;
 			iter; iter = iter->sibling) {
-		if (iter->state == PS_DEAD)
-			await_finish(iter, process_current); // doesn't return
+		if (iter->state == PS_DEAD) {
+			int ret = process_try2collect(iter);
+			assert(ret >= 0);
+			return ret;
+		}
 		if (iter->state != PS_DEADER)
 			has_children = true;
 	}
