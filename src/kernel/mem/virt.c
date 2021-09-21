@@ -42,7 +42,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 	} else {
 		// "iterate" over physical memory
 		// the double cast supresses the warning about changing address spaces
-		iter->frag = (void*)(uintptr_t)iter->_virt;
+		iter->frag = (void* __force)iter->_virt;
 	}
 
 	iter->frag_len    = partial;

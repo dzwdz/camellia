@@ -261,7 +261,7 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	struct pagedir *pages = process_current->pages;
 	if (flags != MEMFLAG_PRESENT) panic_unimplemented(); // TODO
 
-	addr = (userptr_t)((int)addr & ~PAGE_MASK); // align to page boundary
+	addr = (userptr_t)((int __force)addr & ~PAGE_MASK); // align to page boundary
 	for (; addr < goal; addr += PAGE_SIZE) {
 		if (pagedir_virt2phys(pages, addr, false, false)) {
 			// allocated page, currently a no-op
