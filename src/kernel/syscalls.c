@@ -39,22 +39,26 @@ _Noreturn void _syscall_exit(const char __user *msg, size_t len) {
 }
 
 int _syscall_await(char __user *buf, int len) {
+	bool has_children = false;
 	process_current->state = PS_WAITS4CHILDDEATH;
 	process_current->death_msg.buf = buf;
 	process_current->death_msg.len = len;
 
 	// find any already dead children
 	for (struct process *iter = process_current->child;
-			iter; iter = iter->sibling)
-	{
+			iter; iter = iter->sibling) {
 		if (iter->state == PS_DEAD)
 			await_finish(iter, process_current); // doesn't return
+		if (iter->state != PS_DEADER)
+			has_children = true;
 	}
 
-	// no dead children yet
-	// TODO check if the process even has children
-	
-	process_switch_any();
+	if (has_children)
+		process_switch_any(); // wait until a child dies
+	else {
+		process_current->state = PS_RUNNING;
+		return -1; // error
+	}
 }
 
 int _syscall_fork(void) {

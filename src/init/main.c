@@ -80,16 +80,17 @@ void fs_test(void) {
 void test_await(void) {
 	char buf[16];
 	int len;
+
 	// the child immediately dies
 	if (!_syscall_fork())
 		_syscall_exit(argify("i'm dead"));
+	if (!_syscall_fork())
+		_syscall_exit(argify("i'm also dead"));
 
-	len = _syscall_await(buf, 16);
-	if (len < 0) {
-		log("await: negative len\n");
-	} else {
+	while ((len = _syscall_await(buf, 16)) >= 0) {
 		log("await returned: ");
 		_syscall_write(tty_fd, buf, len, 0);
 		log("\n");
 	}
+	log("await: negative len\n");
 }
