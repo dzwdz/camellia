@@ -6,7 +6,7 @@ void virt_iter_new(
 		struct virt_iter *iter, void __user *virt, size_t length,
 		struct pagedir *pages, bool user, bool writeable)
 {
-	iter->frag       = 0;
+	iter->frag       = NULL;
 	iter->frag_len   = 0;
 	iter->prior      = 0;
 	iter->error      = false;
@@ -35,7 +35,7 @@ bool virt_iter_next(struct virt_iter *iter) {
 		iter->frag = pagedir_virt2phys(iter->_pages,
 				iter->_virt, iter->_user, iter->_writeable);
 
-		if (iter->frag == 0) {
+		if (!iter->frag) {
 			iter->error = true;
 			return false;
 		}

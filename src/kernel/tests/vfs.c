@@ -8,7 +8,7 @@
 TEST(path_simplify) {
 #define TEST_WRAPPER(argument, result) do { \
 		int len = path_simplify(argument, buf, sizeof(argument) - 1); \
-		if (result == 0) { \
+		if (result == NULL) { \
 			TEST_COND(len < 0); \
 		} else { \
 			if (len == sizeof(result) - 1) { \
@@ -39,24 +39,24 @@ TEST(path_simplify) {
 	TEST_WRAPPER("/asdf//.",  "/asdf/");
 
 	// going under the root or close to it
-	TEST_WRAPPER("/..",        0);
-	TEST_WRAPPER("/../asdf",   0);
-	TEST_WRAPPER("/../asdf/",  0);
-	TEST_WRAPPER("/./a/../..", 0);
+	TEST_WRAPPER("/..",        NULL);
+	TEST_WRAPPER("/../asdf",   NULL);
+	TEST_WRAPPER("/../asdf/",  NULL);
+	TEST_WRAPPER("/./a/../..", NULL);
 	TEST_WRAPPER("/a/a/../..", "/");
 	TEST_WRAPPER("/a/../a/..", "/");
-	TEST_WRAPPER("/a/../../a", 0);
-	TEST_WRAPPER("/../a/../a", 0);
-	TEST_WRAPPER("/../../a/a", 0);
-	TEST_WRAPPER("/////../..", 0);
-	TEST_WRAPPER("//a//../..", 0);
+	TEST_WRAPPER("/a/../../a", NULL);
+	TEST_WRAPPER("/../a/../a", NULL);
+	TEST_WRAPPER("/../../a/a", NULL);
+	TEST_WRAPPER("/////../..", NULL);
+	TEST_WRAPPER("//a//../..", NULL);
 
 	// relative paths aren't allowed
-	TEST_WRAPPER("relative",   0);
-	TEST_WRAPPER("some/stuff", 0);
-	TEST_WRAPPER("./stuff",    0);
-	TEST_WRAPPER("../stuff",   0);
-	TEST_WRAPPER("",           0);
+	TEST_WRAPPER("relative",   NULL);
+	TEST_WRAPPER("some/stuff", NULL);
+	TEST_WRAPPER("./stuff",    NULL);
+	TEST_WRAPPER("../stuff",   NULL);
+	TEST_WRAPPER("",           NULL);
 #undef TEST_WRAPPER
 }
 

@@ -138,14 +138,14 @@ void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
 	 * while i don't currently see a reason to set permissions
 	 * directly on page dirs, i might see one in the future.
 	 * leaving this as-is would be a security bug */
-	if (!dir->e[pd_idx].present) return 0;
+	if (!dir->e[pd_idx].present) return NULL;
 
 	pagetable = (void*)(dir->e[pd_idx].address << 11);
 	page      = pagetable[pt_idx];
 
-	if (!page.present)                return 0;
-	if (user      && !page.user)      return 0;
-	if (writeable && !page.writeable) return 0;
+	if (!page.present)                return NULL;
+	if (user      && !page.user)      return NULL;
+	if (writeable && !page.writeable) return NULL;
 
 	phys  = page.address << 11;
 	phys |= virt_cast & 0xFFF;
