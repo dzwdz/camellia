@@ -47,12 +47,7 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	handler->state = PS_RUNNING;
 	handler->handled_req = req;
 
-	len = handler->awaited_req.max_len;
-	if (len > req->input.len) {
-		// input bigger than buffer
-		// TODO what should be done during e.g. open() calls? truncating doesn't seem right
-		len = req->input.len;
-	}
+	len = min(req->input.len, handler->awaited_req.max_len);
 
 	if (req->input.kern) {
 		if (!virt_cpy_to(handler->pages,

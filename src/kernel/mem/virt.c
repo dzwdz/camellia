@@ -28,9 +28,9 @@ bool virt_iter_next(struct virt_iter *iter) {
 	if (partial <= 0) return false;
 
 	if (iter->_pages) { // if iterating over virtual memory
-		// don't read past the page
-		if (((uintptr_t)iter->_virt & PAGE_MASK) + partial > PAGE_SIZE)
-			partial = PAGE_SIZE - ((uintptr_t)iter->_virt & PAGE_MASK);
+		// don't cross page boundaries
+		size_t to_page = PAGE_SIZE - ((uintptr_t)iter->_virt & PAGE_MASK);
+		partial = min(partial, to_page);
 
 		iter->frag = pagedir_virt2phys(iter->_pages,
 				iter->_virt, iter->_user, iter->_writeable);
@@ -56,7 +56,7 @@ bool virt_cpy(
 		struct pagedir  *src_pages, const void __user *src, size_t length)
 {
 	struct virt_iter dest_iter, src_iter;
-	size_t min;
+	size_t cur_len;
 
 	virt_iter_new(&dest_iter,           dest, length, dest_pages, true, true);
 	virt_iter_new( &src_iter, (userptr_t)src, length,  src_pages, true, false);
@@ -69,14 +69,13 @@ bool virt_cpy(
 		if ( src_iter.frag_len <= 0)
 			if (!virt_iter_next( &src_iter)) break;
 
-		min = src_iter.frag_len < dest_iter.frag_len
-		    ? src_iter.frag_len : dest_iter.frag_len;
-		memcpy(dest_iter.frag, src_iter.frag, min);
+		cur_len = min(src_iter.frag_len, dest_iter.frag_len);
+		memcpy(dest_iter.frag, src_iter.frag, cur_len);
 
-		dest_iter.frag_len -= min;
-		dest_iter.frag     += min;
-		src_iter.frag_len  -= min;
-		src_iter.frag      += min;
+		dest_iter.frag_len -= cur_len;
+		dest_iter.frag     += cur_len;
+		src_iter.frag_len  -= cur_len;
+		src_iter.frag      += cur_len;
 	}
 
 	return !(dest_iter.error || src_iter.error);

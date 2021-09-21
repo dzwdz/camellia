@@ -115,8 +115,7 @@ int process_try2collect(struct process *dead) {
 			dead->state = PS_DEADER;
 			parent->state = PS_RUNNING;
 
-			len = parent->death_msg.len < dead->death_msg.len
-				? parent->death_msg.len : dead->death_msg.len;
+			len = min(parent->death_msg.len, dead->death_msg.len);
 			res = virt_cpy(
 					parent->pages, parent->death_msg.buf,
 					dead->pages, dead->death_msg.buf, len);
