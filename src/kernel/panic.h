@@ -11,6 +11,6 @@
 
 #define panic_invalid_state() _panic("invalid state")
 #define panic_unimplemented() _panic("unimplemented")
-#define assert(stmt) do { if (!(stmt)) _panic(); } while (0)
+#define assert(stmt) do { if (!(stmt)) _panic("assert"); } while (0)
 
 #undef panic
