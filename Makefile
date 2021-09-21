@@ -30,7 +30,7 @@ lint:
 	@tools/linter/main.rb
 
 check: $(shell find src/kernel/ -type f -name *.c)
-	@echo $^ | xargs -n 1 sparse $(CFLAGS) -Wno-non-pointer-null -Wno-decl
+	@echo $^ | xargs -n 1 sparse $(CFLAGS) -Wno-non-pointer-null
 
 clean:
 	rm -rv out/

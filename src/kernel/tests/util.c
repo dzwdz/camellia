@@ -1,4 +1,5 @@
 #include <kernel/tests/base.h>
+#include <kernel/tests/tests.h>
 #include <kernel/util.h>
 
 TEST(memcmp) {

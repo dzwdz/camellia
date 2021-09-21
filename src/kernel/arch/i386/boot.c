@@ -1,4 +1,5 @@
 #include <kernel/arch/generic.h>
+#include <kernel/arch/i386/boot.h>
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/interrupts/idt.h>
 #include <kernel/arch/i386/multiboot.h>

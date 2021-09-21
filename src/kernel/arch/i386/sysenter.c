@@ -1,10 +1,9 @@
 #include <kernel/arch/generic.h>
+#include <kernel/arch/i386/sysenter.h>
 #include <kernel/proc.h>
 #include <shared/syscalls.h>
 
-struct registers _sysexit_regs; // a hack
-
-extern void _sysexit_real(void);
+struct registers _sysexit_regs;
 
 void sysexit(struct registers regs) {
 	_sysexit_regs = regs;

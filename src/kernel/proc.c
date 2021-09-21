@@ -9,7 +9,7 @@
 
 struct process *process_first;
 struct process *process_current;
-uint32_t next_pid = 0;
+static uint32_t next_pid = 0;
 
 struct process *process_seed(void) {
 	struct process *proc = kmalloc(sizeof *proc);
@@ -72,7 +72,7 @@ _Noreturn void process_switch_any(void) {
 }
 
 // TODO there's no check for going past the stack - VULN
-struct process *_process_find_recursive(
+static struct process *_process_find_recursive(
 		enum process_state target, struct process *iter) {
 	struct process *in;
 	while (iter) {

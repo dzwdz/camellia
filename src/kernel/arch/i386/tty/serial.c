@@ -2,7 +2,7 @@
 #include <kernel/arch/i386/port_io.h>
 #include <stdint.h>
 
-const int COM1 = 0x3f8;
+static const int COM1 = 0x3f8;
 
 void serial_init(void) {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
@@ -23,7 +23,7 @@ void serial_init(void) {
 	 * if i start using serial for input, TODO selftest */
 }
 
-void serial_putchar(char c) {
+static void serial_putchar(char c) {
 	while ((port_inb(COM1 + 5) & 0x20) == 0); // wait for THRE
 	port_outb(COM1, c);
 }
