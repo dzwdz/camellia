@@ -14,6 +14,7 @@ int tty_fd;
 
 void read_file(const char *path, size_t len);
 void fs_test(void);
+void test_await(void);
 
 __attribute__((section(".text.startup")))
 int main(void) {
@@ -25,6 +26,7 @@ int main(void) {
 		_syscall_exit(argify("couldn't open tty"));
 
 	fs_test();
+	test_await();
 
 	_syscall_exit(argify("my job here is done."));
 }
@@ -73,4 +75,21 @@ void fs_test(void) {
 	read_file(argify("/init/dir/3.txt"));
 
 	log("\n");
+}
+
+void test_await(void) {
+	char buf[16];
+	int len;
+	// the child immediately dies
+	if (!_syscall_fork())
+		_syscall_exit(argify("i'm dead"));
+
+	len = _syscall_await(buf, 16);
+	if (len < 0) {
+		log("await: negative len\n");
+	} else {
+		log("await returned: ");
+		_syscall_write(tty_fd, buf, len, 0);
+		log("\n");
+	}
 }
