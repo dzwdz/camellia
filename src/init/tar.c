@@ -39,19 +39,6 @@ void tar_driver(handle_t back, void *base) {
 				break;
 		}
 	}
-
-	// iterate over all sectors, printing filenames
-	while (0 == memcmp(base + 257, "ustar", 5)) {
-		int size = oct_parse(base + 124, 12);
-
-		_syscall_write(tty_fd, base, 100, 0);
-		_syscall_write(tty_fd, " ", 1, 0);
-
-		base += 512;                 // skip metadata sector
-		base += (size + 511) & ~511; // skip file (size rounded up to 512)
-		// TODO might pagefault if the last sector was at a page boundary
-	}
-	_syscall_write(tty_fd, "done.", 5, 0);
 }
 
 static int tar_open(const char *path, int len, void *base, size_t base_len) {
