@@ -3,6 +3,8 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
+#define MALLOC_MAGIC 0xACAB1312
+
 static void *highest_page;
 static int malloc_balance = 0;
 
@@ -36,12 +38,22 @@ void page_free(void *first, size_t pages) {
 
 
 void *kmalloc(size_t len) {
-	malloc_balance++;
+	void *addr;
+	len += sizeof(uint32_t); // add space for MALLOC_MAGIC
 	// extremely inefficient, but this is only temporary anyways
-	return page_alloc(len / PAGE_SIZE + 1);
+	addr = page_alloc(len / PAGE_SIZE + 1);
+	*(uint32_t*)addr = MALLOC_MAGIC;
+	malloc_balance++;
+	return addr + sizeof(uint32_t);
 }
 
 void kfree(void *ptr) {
 	if (ptr == NULL) return;
+	if (((uint32_t*)ptr)[-1] != MALLOC_MAGIC) {
+		// TODO add some kind of separate system log
+		tty_const("WARNING kfree() didn't find MALLOC_MAGIC, ptr == ");
+		_tty_var(ptr);
+		tty_const(" ");
+	}
 	malloc_balance--;
 }
