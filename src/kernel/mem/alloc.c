@@ -48,12 +48,16 @@ void *kmalloc(size_t len) {
 }
 
 void kfree(void *ptr) {
+	uint32_t *magic = &((uint32_t*)ptr)[-1];
 	if (ptr == NULL) return;
-	if (((uint32_t*)ptr)[-1] != MALLOC_MAGIC) {
+	if (*magic != MALLOC_MAGIC) {
 		// TODO add some kind of separate system log
 		tty_const("WARNING kfree() didn't find MALLOC_MAGIC, ptr == ");
 		_tty_var(ptr);
 		tty_const(" ");
+	} else {
+		// change the magic marker to detect double frees
+		*magic = 0xBADF2EED;
 	}
 	malloc_balance--;
 }
