@@ -68,12 +68,19 @@ handle_t _syscall_open(const char __user *path, int len) {
 	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
 	if (!mount) goto fail;
 
+	if (mount->prefix_len > 0) { // strip prefix
+		len -= mount->prefix_len;
+		// i can't just adjust path_buf, because it needs to be passed to free()
+		// later on
+		memcpy(path_buf, path_buf + mount->prefix_len, len);
+	}
+
 	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_OPEN,
 			.input = {
 				.kern = true,
-				.buf_kern = &path_buf[mount->prefix_len], // TODO this is unfreeable
-				.len = len - mount->prefix_len,
+				.buf_kern = path_buf,
+				.len = len,
 			},
 			.caller = process_current,
 			.backend = mount->backend,
