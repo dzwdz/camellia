@@ -92,6 +92,12 @@ TEST(vfs_mount_resolve) {
 	TEST_WRAPPER("/dir/shadowed/", "/dir");
 
 #undef TEST_WRAPPER
+
+	while (mount != NULL) {
+		struct vfs_mount *tmp = mount;
+		mount = mount->prev;
+		kfree(tmp);
+	}
 }
 
 void tests_vfs(void) {
