@@ -61,7 +61,8 @@ void fs_test(void) {
 
 	// parent: accesses the fs
 	log("\n\n");
-	_syscall_mount(front, argify("/init"));
+	// the trailing slash should be ignored by mount()
+	_syscall_mount(front, argify("/init/"));
 	read_file(argify("/init/fake.txt"));
 	read_file(argify("/init/1.txt"));
 	read_file(argify("/init/2.txt"));

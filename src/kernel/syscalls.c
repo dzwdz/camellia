@@ -103,7 +103,13 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 		goto fail;
 	len = path_simplify(path_buf, path_buf, len);
 	if (len < 0) goto fail;
-	// TODO remove trailing slash
+
+	// remove trailing slash
+	// mounting something under `/this` and `/this/` should be equalivent
+	if (path_buf[len - 1] == '/') {
+		if (len == 0) goto fail;
+		len--;
+	}
 
 	if (handle >= 0) { // mounting a real backend?
 		if (handle >= HANDLE_MAX)
