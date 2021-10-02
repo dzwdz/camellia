@@ -1,8 +1,16 @@
-#include <kernel/arch/i386/tty/serial.h>
 #include <kernel/arch/i386/port_io.h>
+#include <kernel/arch/i386/tty/serial.h>
+#include <kernel/panic.h>
 #include <stdint.h>
 
 static const int COM1 = 0x3f8;
+
+static void serial_selftest(void) {
+	char b = 0x69;
+	port_outb(COM1 + 4, 0b00011110); // enable loopback mode
+	port_outb(COM1, b);
+	assert(port_inb(COM1) == b);
+}
 
 void serial_init(void) {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
@@ -16,11 +24,10 @@ void serial_init(void) {
 
 	port_outb(COM1 + 3, 0b00000011); // 8 bits, no parity, one stop bit
 	port_outb(COM1 + 2, 0b11000111); // enable FIFO with 14-bit trigger level (???)
-	port_outb(COM1 + 4, 0b00001111); // enable everything in the MCR
 
-	/* the example on the OSDEV wiki does a selftest of the serial connection
-	 * i don't really see the point as long as i'm not using it for input?
-	 * if i start using serial for input, TODO selftest */
+	serial_selftest();
+
+	port_outb(COM1 + 4, 0b00001111); // enable everything in the MCR
 }
 
 static void serial_putchar(char c) {
