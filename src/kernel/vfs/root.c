@@ -13,10 +13,24 @@ int vfs_root_handler(struct vfs_request *req) {
 				return 0;
 			}
 			return -1;
-		case VFSOP_WRITE:
+
+		case VFSOP_READ:
 			switch (req->id) {
 				// every id corresponds to a special file type
 				// this is a shit way to do this but :shrug:
+				case 0: { // tty
+					struct virt_iter iter;
+					virt_iter_new(&iter, req->output.buf, req->output.len,
+							req->caller->pages, true, false);
+					while (virt_iter_next(&iter))
+						tty_read(iter.frag, iter.frag_len);
+					return iter.prior;
+				}
+				default: panic_invalid_state();
+			}
+
+		case VFSOP_WRITE:
+			switch (req->id) {
 				case 0: { // tty
 					struct virt_iter iter;
 					virt_iter_new(&iter, req->input.buf, req->input.len,

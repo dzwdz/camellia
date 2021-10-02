@@ -11,6 +11,11 @@ void tty_init(void) {
 	serial_write("<3 ", 3);
 }
 
+void tty_read(char *buf, size_t len) {
+	for (size_t i = 0; i < len; i++)
+		buf[i] = serial_read();
+}
+
 void tty_write(const char *buf, size_t len) {
 	vga_write(buf, len);
 	serial_write(buf, len);
