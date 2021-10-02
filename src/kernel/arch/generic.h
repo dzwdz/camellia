@@ -1,7 +1,7 @@
 #pragma once
 
 #include <kernel/arch/i386/registers.h>
-#include <kernel/arch/log.h>
+#include <kernel/arch/io.h>
 #include <shared/types.h>
 #include <stdbool.h>
 

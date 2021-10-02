@@ -1,5 +1,5 @@
 #include <kernel/arch/i386/interrupts/isr.h>
-#include <kernel/arch/log.h>
+#include <kernel/arch/io.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>

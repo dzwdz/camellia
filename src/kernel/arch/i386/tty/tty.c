@@ -1,6 +1,6 @@
 #include <kernel/arch/i386/tty/serial.h>
 #include <kernel/arch/i386/tty/vga.h>
-#include <kernel/arch/log.h>
+#include <kernel/arch/io.h>
 
 void tty_init(void) {
 	vga_clear();

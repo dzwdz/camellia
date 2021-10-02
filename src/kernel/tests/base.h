@@ -1,5 +1,5 @@
 #pragma once
-#include <kernel/arch/log.h>
+#include <kernel/arch/io.h>
 #include <kernel/util.h>
 #include <stdbool.h>
 
