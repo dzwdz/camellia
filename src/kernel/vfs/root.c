@@ -41,6 +41,6 @@ int vfs_root_handler(struct vfs_request *req) {
 				}
 				default: panic_invalid_state();
 			}
-		default: panic_unimplemented(); // TODO
+		default: panic_invalid_state();
 	}
 }
