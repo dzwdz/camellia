@@ -9,9 +9,7 @@
 #include <stdint.h>
 
 _Noreturn void _syscall_exit(int ret) {
-	process_current->state = PS_DEAD;
-	process_current->death_msg = ret;
-	process_try2collect(process_current);
+	process_kill(process_current, ret);
 	process_switch_any();
 }
 

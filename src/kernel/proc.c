@@ -103,6 +103,12 @@ handle_t process_find_handle(struct process *proc) {
 	return handle;
 }
 
+void process_kill(struct process *proc, int ret) {
+	proc->state = PS_DEAD;
+	proc->death_msg = ret;
+	process_try2collect(proc);
+}
+
 int process_try2collect(struct process *dead) {
 	struct process *parent = dead->parent;
 	int len, ret;

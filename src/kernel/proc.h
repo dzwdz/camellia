@@ -53,6 +53,8 @@ _Noreturn void process_switch_any(void); // switches to any running process
 struct process *process_find(enum process_state);
 handle_t process_find_handle(struct process *proc); // finds the first free handle
 
+void process_kill(struct process *proc, int ret);
+
 /** Tries to transistion from PS_DEAD to PS_DEADER.
  * @return a nonnegative length of the quit message if successful, a negative val otherwise*/
 int process_try2collect(struct process *dead);
