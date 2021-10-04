@@ -23,7 +23,7 @@ int main(void) {
 
 	tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
 	if (tty_fd < 0)
-		_syscall_exit(argify("couldn't open tty"));
+		_syscall_exit(1);
 
 	fs_test();
 	test_await();
@@ -32,7 +32,7 @@ int main(void) {
 	while (_syscall_read(tty_fd, &c, 1, 0))
 		_syscall_write(tty_fd, &c, 1, 0);
 
-	_syscall_exit(argify("my job here is done."));
+	_syscall_exit(0);
 }
 
 void read_file(const char *path, size_t len) {
@@ -83,19 +83,15 @@ void fs_test(void) {
 }
 
 void test_await(void) {
-	char buf[16];
-	int len;
+	int ret;
 
-	// the child immediately dies
-	if (!_syscall_fork())
-		_syscall_exit(argify("i'm dead"));
-	if (!_syscall_fork())
-		_syscall_exit(argify("i'm also dead"));
+	if (!_syscall_fork()) _syscall_exit(69);
+	if (!_syscall_fork()) _syscall_exit(420);
 
-	while ((len = _syscall_await(buf, 16)) >= 0) {
+	while ((ret = _syscall_await()) != ~0) {
 		log("await returned: ");
-		_syscall_write(tty_fd, buf, len, 0);
+		//_syscall_write(tty_fd, buf, len, 0); TODO printf
 		log("\n");
 	}
-	log("await: negative len\n");
+	log("await: no more children\n");
 }

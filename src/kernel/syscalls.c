@@ -8,28 +8,22 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
-_Noreturn void _syscall_exit(const char __user *msg, size_t len) {
+_Noreturn void _syscall_exit(int ret) {
 	process_current->state = PS_DEAD;
-	process_current->death_msg.buf = (userptr_t) msg; // discarding const
-	process_current->death_msg.len = len;
+	process_current->death_msg = ret;
 	process_try2collect(process_current);
 	process_switch_any();
 }
 
-int _syscall_await(char __user *buf, int len) {
+int _syscall_await(void) {
 	bool has_children = false;
 	process_current->state = PS_WAITS4CHILDDEATH;
-	process_current->death_msg.buf = buf;
-	process_current->death_msg.len = len;
 
 	// find any already dead children
 	for (struct process *iter = process_current->child;
 			iter; iter = iter->sibling) {
-		if (iter->state == PS_DEAD) {
-			int ret = process_try2collect(iter);
-			assert(ret >= 0);
-			return ret;
-		}
+		if (iter->state == PS_DEAD)
+			return process_try2collect(iter);
 		if (iter->state != PS_DEADER)
 			has_children = true;
 	}
@@ -38,7 +32,7 @@ int _syscall_await(char __user *buf, int len) {
 		process_switch_any(); // wait until a child dies
 	else {
 		process_current->state = PS_RUNNING;
-		return -1; // error
+		return ~0; // TODO errno
 	}
 }
 
@@ -276,9 +270,9 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 int _syscall(int num, int a, int b, int c, int d) {
 	switch (num) {
 		case _SYSCALL_EXIT:
-			_syscall_exit((userptr_t)a, b);
+			_syscall_exit(a);
 		case _SYSCALL_AWAIT:
-			return _syscall_await((userptr_t)a, b);
+			return _syscall_await();
 		case _SYSCALL_FORK:
 			return _syscall_fork();
 		case _SYSCALL_OPEN:

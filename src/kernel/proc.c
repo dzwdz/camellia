@@ -115,16 +115,12 @@ int process_try2collect(struct process *dead) {
 			dead->state = PS_DEADER;
 			parent->state = PS_RUNNING;
 
-			len = min(parent->death_msg.len, dead->death_msg.len);
-			res = virt_cpy(
-					parent->pages, parent->death_msg.buf,
-					dead->pages, dead->death_msg.buf, len);
-
-			ret = res ? len : 0;
+			ret = dead->death_msg;
 			regs_savereturn(&parent->regs, ret);
 			return ret;
 
 		default:
-			return -1;
+			return -1; // this return value isn't used anywhere
+			           // TODO enforce that, somehow? idk
 	}
 }
