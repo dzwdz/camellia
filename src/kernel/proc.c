@@ -111,8 +111,7 @@ void process_kill(struct process *proc, int ret) {
 
 int process_try2collect(struct process *dead) {
 	struct process *parent = dead->parent;
-	int len, ret;
-	bool res;
+	int ret;
 
 	assert(dead->state == PS_DEAD);
 
