@@ -85,8 +85,21 @@ void fs_test(void) {
 void test_await(void) {
 	int ret;
 
+	// regular exit()s
 	if (!_syscall_fork()) _syscall_exit(69);
 	if (!_syscall_fork()) _syscall_exit(420);
+
+	// faults
+	if (!_syscall_fork()) { // invalid memory access
+		asm volatile("movb $69, 0" ::: "memory");
+		log("this shouldn't happen");
+		_syscall_exit(-1);
+	}
+	if (!_syscall_fork()) { // #GP
+		asm volatile("hlt" ::: "memory");
+		log("this shouldn't happen");
+		_syscall_exit(-1);
+	}
 
 	while ((ret = _syscall_await()) != ~0) {
 		log("await returned: ");
