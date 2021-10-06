@@ -29,7 +29,7 @@ int main(void) {
 	fs_test();
 	test_await();
 
-	printf("%s\n", "printf test");
+	printf("%s %x\n", "printf test", 0xACAB1312);
 
 	char c;
 	while (_syscall_read(tty_fd, &c, 1, 0))

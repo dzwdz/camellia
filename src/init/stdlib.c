@@ -42,6 +42,21 @@ int printf(const char *fmt, ...) {
 						_syscall_write(0, s, strlen(s), 0);
 						total += strlen(s);
 						break;
+
+					case 'x':
+						unsigned int n = va_arg(argp, int);
+						size_t i = 4; // nibbles * 4
+						while (n >> i && i < (sizeof(int) * 8))
+							i += 4;
+
+						while (i > 0) {
+							i -= 4;
+							char h = '0' + ((n >> i) & 0xf);
+							if (h > '9') h += 'a' - '9' - 1;
+							_syscall_write(0, &h, 1, 0);
+							total++;
+						}
+						break;
 				}
 				seg = fmt;
 				break;
