@@ -19,7 +19,10 @@ endef
 all: out/boot.iso check
 
 boot: all
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -no-shutdown
+	touch out/disk # TODO this is temporary
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -no-shutdown \
+		-drive file=out/disk,format=raw,media=disk
+
 
 debug: all
 	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -s -S &
