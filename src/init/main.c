@@ -1,3 +1,4 @@
+#include <init/stdlib.h>
 #include <init/tar.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
@@ -27,6 +28,8 @@ int main(void) {
 
 	fs_test();
 	test_await();
+
+	printf("printf test\n");
 
 	char c;
 	while (_syscall_read(tty_fd, &c, 1, 0))

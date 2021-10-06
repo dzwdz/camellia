@@ -5,3 +5,5 @@
 //      stb-style header file
 
 int memcmp(const void *s1, const void *s2, size_t n);
+
+int printf(const char *fmt, ...);

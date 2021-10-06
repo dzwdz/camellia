@@ -1,4 +1,6 @@
 #include <init/stdlib.h>
+#include <shared/syscalls.h>
+#include <stdarg.h>
 
 int memcmp(const void *s1, const void *s2, size_t n) {
 	const unsigned char *c1 = s1, *c2 = s2;
@@ -9,4 +11,20 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 		}
 	}
 	return 0;
+}
+
+int printf(const char *fmt, ...) {
+	const char *seg = fmt; // beginning of the current segment
+	int total = 0;
+	va_list argp;
+	va_start(argp, fmt);
+	for (;;) {
+		char c = *fmt++;
+		switch (c) {
+			case '\0':
+				// TODO don't assume that stdout is @ fd 0
+				_syscall_write(0, seg, fmt - seg, 0);
+				return total + (fmt - seg);
+		}
+	}
 }
