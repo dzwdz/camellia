@@ -29,7 +29,7 @@ int main(void) {
 	fs_test();
 	test_await();
 
-	printf("printf test\n");
+	printf("%s\n", "printf test");
 
 	char c;
 	while (_syscall_read(tty_fd, &c, 1, 0))

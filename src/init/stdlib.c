@@ -29,8 +29,22 @@ int printf(const char *fmt, ...) {
 		switch (c) {
 			case '\0':
 				// TODO don't assume that stdout is @ fd 0
-				_syscall_write(0, seg, fmt - seg, 0);
-				return total + (fmt - seg);
+				_syscall_write(0, seg, fmt - seg - 1, 0);
+				return total + (fmt - seg - 1);
+
+			case '%':
+				_syscall_write(0, seg, fmt - seg - 1, 0);
+				total += fmt - seg - 1;
+				c = *fmt++;
+				switch (c) {
+					case 's':
+						const char *s = va_arg(argp, char*);
+						_syscall_write(0, s, strlen(s), 0);
+						total += strlen(s);
+						break;
+				}
+				seg = fmt;
+				break;
 		}
 	}
 }
