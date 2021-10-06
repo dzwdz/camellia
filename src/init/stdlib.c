@@ -13,6 +13,12 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 	return 0;
 }
 
+size_t strlen(const char *s) {
+	size_t c = 0;
+	while (*s++) c++;
+	return c;
+}
+
 int printf(const char *fmt, ...) {
 	const char *seg = fmt; // beginning of the current segment
 	int total = 0;
