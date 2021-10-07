@@ -14,7 +14,7 @@ static inline uint8_t port_in8(uint16_t port) {
 	return val;
 }
 
-static inline uint8_t port_in16(uint16_t port) {
+static inline uint16_t port_in16(uint16_t port) {
 	uint16_t val;
 	asm volatile("inw %1, %0" : "=a" (val) : "Nd" (port));
 	return val;
