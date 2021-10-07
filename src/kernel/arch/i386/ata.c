@@ -4,6 +4,10 @@
 
 #include <kernel/arch/io.h>
 
+static struct {
+	uint32_t sectors;
+} ata_drives[4];
+
 enum {
 	LBAlo  = 3,
 	LBAmid = 4,
@@ -29,7 +33,10 @@ static void ata_driveselect(int drive, int block) {
 
 static bool ata_identify(int drive) {
 	uint16_t iobase = ata_iobase(drive);
+	uint16_t data[256];
 	uint8_t v;
+
+	// TODO test for float
 
 	ata_driveselect(drive, 0);
 	for (int i = 2; i < 6; i++)
@@ -49,7 +56,9 @@ static bool ata_identify(int drive) {
 	while (!((v = port_in8(iobase + STATUS) & 0x9)));
 	if (v & 1) return false; /* ERR was set, bail */
 
-	// now I can read 512 bytes of data, TODO
+	for (int i = 0; i < 256; i++)
+		data[i] = port_in16(iobase);
+	ata_drives[drive].sectors = data[60] | (data[61] << 16);
 	return true;
 }
 
@@ -58,8 +67,11 @@ void ata_init(void) {
 	for (int i = 0; i < 4; i++) {
 		tty_const("probing drive ");
 		_tty_var(i);
-		if (ata_identify(i))
-			tty_const(" - exists");
+		if (ata_identify(i)) {
+			tty_const(" - ");
+			_tty_var(ata_drives[i].sectors);
+			tty_const(" sectors (512b)");
+		}
 		tty_const("\n");
 	}
 }
