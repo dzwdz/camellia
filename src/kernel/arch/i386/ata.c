@@ -24,7 +24,7 @@ static void ata_driveselect(int drive, int block) {
 	if (drive&1) // slave?
 		v |= 0x10; // set drive number bit
 	// TODO account for block
-	port_outb(ata_iobase(drive) + DRV, v);
+	port_out8(ata_iobase(drive) + DRV, v);
 }
 
 static bool ata_identify(int drive) {
@@ -33,20 +33,20 @@ static bool ata_identify(int drive) {
 
 	ata_driveselect(drive, 0);
 	for (int i = 2; i < 6; i++)
-		port_outb(iobase + i, 0);
-	port_outb(iobase + CMD, 0xEC); // IDENTIFY
+		port_out8(iobase + i, 0);
+	port_out8(iobase + CMD, 0xEC); // IDENTIFY
 
-	v = port_inb(iobase + STATUS);
+	v = port_in8(iobase + STATUS);
 	if (v == 0) return false; // nonexistent drive
-	while (port_inb(iobase + STATUS) & 0x80);
+	while (port_in8(iobase + STATUS) & 0x80);
 
 	/* check for uncomformant devices, quit early */
-	if (port_inb(iobase + LBAmid) || port_inb(iobase + LBAhi)) {
+	if (port_in8(iobase + LBAmid) || port_in8(iobase + LBAhi)) {
 		// TODO atapi
 		return true;
 	}
 	/* pool until bit 3 (DRQ) or 0 (ERR) is set */
-	while (!((v = port_inb(iobase + STATUS) & 0x9)));
+	while (!((v = port_in8(iobase + STATUS) & 0x9)));
 	if (v & 1) return false; /* ERR was set, bail */
 
 	// now I can read 512 bytes of data, TODO
