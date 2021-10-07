@@ -5,6 +5,11 @@
 #include <kernel/arch/io.h>
 
 static struct {
+	enum {
+		DEV_UNKNOWN,
+		DEV_PATA,
+		DEV_PATAPI,
+	} type;
 	uint32_t sectors;
 } ata_drives[4];
 
@@ -47,11 +52,19 @@ static bool ata_identify(int drive) {
 	if (v == 0) return false; // nonexistent drive
 	while (port_in8(iobase + STATUS) & 0x80);
 
-	/* check for uncomformant devices, quit early */
-	if (port_in8(iobase + LBAmid) || port_in8(iobase + LBAhi)) {
-		// TODO atapi
-		return true;
+	/* detect device type */
+	switch (port_in8(iobase + LBAmid)) {
+		case 0:
+			ata_drives[drive].type = DEV_PATA;
+			break;
+		case 0x14:
+			ata_drives[drive].type = DEV_PATAPI;
+			return true;
+		default:
+			ata_drives[drive].type = DEV_UNKNOWN;
+			return false;
 	}
+
 	/* pool until bit 3 (DRQ) or 0 (ERR) is set */
 	while (!((v = port_in8(iobase + STATUS) & 0x9)));
 	if (v & 1) return false; /* ERR was set, bail */
