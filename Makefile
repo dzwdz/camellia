@@ -18,10 +18,9 @@ endef
 .PHONY: all boot debug lint check clean
 all: out/boot.iso check
 
-boot: all
-	touch out/disk # TODO this is temporary
+boot: all out/hdd
 	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -no-shutdown \
-		-drive file=out/disk,format=raw,media=disk
+		-drive file=out/hdd,format=raw,media=disk
 
 
 debug: all
@@ -61,6 +60,9 @@ out/fs/boot/init: out/raw_init out/initrd.tar
 out/fs/boot/grub/grub.cfg: grub.cfg
 	@mkdir -p $(@D)
 	@cp $< $@
+
+out/hdd:
+	@dd if=/dev/zero of=$@ bs=512 count=70000
 
 
 out/obj/%.s.o: src/%.s
