@@ -1,5 +1,6 @@
 #include <kernel/arch/i386/ata.h>
 #include <kernel/arch/i386/port_io.h>
+#include <kernel/panic.h>
 #include <stdbool.h>
 
 #include <kernel/arch/io.h>
@@ -83,12 +84,18 @@ static bool ata_identify(int drive) {
 	uint16_t data[256];
 	uint8_t v;
 
-	// TODO test for float
-
 	ata_driveselect(drive, 0);
 	for (int i = 2; i < 6; i++)
 		port_out8(iobase + i, 0);
-	port_out8(iobase + CMD, 0xEC); // IDENTIFY
+	switch (ata_drives[drive].type) {
+		case DEV_PATA:
+			port_out8(iobase + CMD, 0xEC); // IDENTIFY
+			break;
+		case DEV_PATAPI:
+			port_out8(iobase + CMD, 0xA1); // IDENTIFY PACKET DEVICE
+			break;
+		default: panic_invalid_state();
+	}
 
 	v = port_in8(iobase + STATUS);
 	if (v == 0) return false; // nonexistent drive
@@ -110,12 +117,15 @@ void ata_init(void) {
 		tty_const("probing drive ");
 		_tty_var(i);
 		ata_detecttype(i);
-		_tty_var(ata_drives[i].type);
-		// if (ata_identify(i)) {
-		// 	tty_const(" - ");
-		// 	_tty_var(ata_drives[i].sectors);
-		// 	tty_const(" sectors (512b)");
-		// }
+		if (ata_drives[i].type != DEV_UNKNOWN) {
+			if (ata_identify(i)) {
+				tty_const(" - ");
+				_tty_var(ata_drives[i].sectors);
+				tty_const(" sectors (512b)");
+			} else {
+				tty_const(" identify failed");
+			}
+		}
 		tty_const("\n");
 	}
 }
