@@ -71,10 +71,10 @@ static void ata_detecttype(int drive) {
 			break;
 		case 0x14:
 			ata_drives[drive].type = DEV_PATAPI;
-			return true;
+			break;
 		default:
 			ata_drives[drive].type = DEV_UNKNOWN;
-			return false;
+			break;
 	}
 }
 
