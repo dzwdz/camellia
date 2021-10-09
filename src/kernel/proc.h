@@ -26,10 +26,7 @@ struct process {
 
 	// saved value, meaning depends on .state
 	union {
-		struct { // PS_DEAD, PS_WAITS4CHILDDEATH
-			char __user *buf;
-			size_t len;
-		} death_msg;
+		int death_msg; // PS_DEAD
 		struct vfs_request pending_req; // PS_WAITS4FS
 		struct {
 			char __user *buf;
@@ -55,6 +52,8 @@ _Noreturn void process_switch_any(void); // switches to any running process
 
 struct process *process_find(enum process_state);
 handle_t process_find_handle(struct process *proc); // finds the first free handle
+
+void process_kill(struct process *proc, int ret);
 
 /** Tries to transistion from PS_DEAD to PS_DEADER.
  * @return a nonnegative length of the quit message if successful, a negative val otherwise*/

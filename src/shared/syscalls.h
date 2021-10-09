@@ -27,12 +27,12 @@ int _syscall(int, int, int, int, int);
 /** Kills the current process.
  * TODO: what happens to the children?
  */
-_Noreturn void _syscall_exit(const char __user *msg, size_t len);
+_Noreturn void _syscall_exit(int ret);
 
-/** Waits for a child to exit, putting its exit message into *buf.
- * @return the length of the message
+/** Waits for a child to exit.
+ * @return the value the child passed to exit()
  */
-int _syscall_await(char __user *buf, int len);
+int _syscall_await(void);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.
