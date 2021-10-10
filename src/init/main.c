@@ -1,3 +1,4 @@
+#include <init/shell.h>
 #include <init/stdlib.h>
 #include <init/tar.h>
 #include <shared/flags.h>
