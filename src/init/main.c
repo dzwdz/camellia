@@ -11,8 +11,6 @@ extern char _bss_start; // provided by the linker
 extern char _bss_end;
 extern char _initrd;
 
-int tty_fd;
-
 void read_file(const char *path, size_t len);
 void fs_test(void);
 void test_await(void);
@@ -22,8 +20,8 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
-	if (tty_fd < 0)
+	__tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
+	if (__tty_fd < 0)
 		_syscall_exit(1);
 
 	fs_test();
@@ -38,7 +36,7 @@ void read_file(const char *path, size_t len) {
 	static char buf[64];
 	int buf_len = 64;
 
-	_syscall_write(tty_fd, path, len, 0);
+	_syscall_write(__tty_fd, path, len, 0);
 	printf(": ");
 	if (fd < 0) {
 		printf("couldn't open.\n");
@@ -46,7 +44,7 @@ void read_file(const char *path, size_t len) {
 	}
 
 	buf_len = _syscall_read(fd, buf, buf_len, 0);
-	_syscall_write(tty_fd, buf, buf_len, 0);
+	_syscall_write(__tty_fd, buf, buf_len, 0);
 
 	_syscall_close(fd);
 }

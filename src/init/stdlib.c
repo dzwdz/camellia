@@ -2,6 +2,9 @@
 #include <shared/syscalls.h>
 #include <stdarg.h>
 
+int __tty_fd;
+
+
 int memcmp(const void *s1, const void *s2, size_t n) {
 	const unsigned char *c1 = s1, *c2 = s2;
 	for (size_t i = 0; i < n; i++) {
