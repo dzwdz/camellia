@@ -45,6 +45,21 @@ static int readline(char *buf, size_t max) {
 	return -1; // error
 }
 
+static void cmd_cat(const char *args) {
+	int fd = _syscall_open(args, strlen(args));
+	static char buf[256];
+	int len = 256;
+
+	if (fd < 0) {
+		printf("couldn't open.\n");
+		return;
+	}
+
+	len = _syscall_read(fd, buf, len, 0);
+	_syscall_write(tty_fd, buf, len, 0);
+	_syscall_close(fd);
+}
+
 void shell_loop(void) {
 	static char cmd[256];
 	char *args;
@@ -55,6 +70,8 @@ void shell_loop(void) {
 		args = split(cmd);
 		if (!strcmp(cmd, "echo")) {
 			printf("%s\n", args);
+		} else if (!strcmp(cmd, "cat")) {
+			cmd_cat(args);
 		} else {
 			printf("unknown command :(\n");
 		}
