@@ -27,10 +27,7 @@ int main(void) {
 
 	fs_test();
 	test_await();
-
-	char c;
-	while (_syscall_read(tty_fd, &c, 1, 0))
-		_syscall_write(tty_fd, &c, 1, 0);
+	shell_loop();
 
 	_syscall_exit(0);
 }
