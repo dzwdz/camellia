@@ -6,6 +6,17 @@
 
 static int tty_fd = 0; // TODO put in stdlib
 
+static char *split(char *base) {
+	while (*base) {
+		if (*base == ' ' || *base == '\t') {
+			*base++ = '\0';
+			return base;
+		}
+		base++;
+	}
+	return NULL;
+}
+
 static int readline(char *buf, size_t max) {
 	char c;
 	size_t pos = 0;
@@ -36,9 +47,12 @@ static int readline(char *buf, size_t max) {
 
 void shell_loop(void) {
 	static char cmd[256];
+	char *args;
+
 	for (;;) {
 		printf(PROMPT);
 		readline(cmd, 256);
-		printf("  %s\n", cmd);
+		args = split(cmd);
+		printf("  %s | %s\n", cmd, args);
 	}
 }
