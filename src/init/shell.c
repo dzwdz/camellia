@@ -53,6 +53,10 @@ void shell_loop(void) {
 		printf(PROMPT);
 		readline(cmd, 256);
 		args = split(cmd);
-		printf("  %s | %s\n", cmd, args);
+		if (!strcmp(cmd, "echo")) {
+			printf("%s\n", args);
+		} else {
+			printf("unknown command :(\n");
+		}
 	}
 }
