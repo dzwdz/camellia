@@ -39,8 +39,10 @@ int printf(const char *fmt, ...) {
 				switch (c) {
 					case 's':
 						const char *s = va_arg(argp, char*);
-						_syscall_write(0, s, strlen(s), 0);
-						total += strlen(s);
+						if (s) {
+							_syscall_write(0, s, strlen(s), 0);
+							total += strlen(s);
+						}
 						break;
 
 					case 'x':
