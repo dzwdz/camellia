@@ -12,6 +12,7 @@ extern char _bss_end;
 extern char _initrd;
 
 void read_file(const char *path, size_t len);
+void fs_prep(void);
 void fs_test(void);
 void test_await(void);
 
@@ -24,6 +25,7 @@ int main(void) {
 	if (__tty_fd < 0)
 		_syscall_exit(1);
 
+	fs_prep();
 	fs_test();
 	test_await();
 	shell_loop();
@@ -49,55 +51,66 @@ void read_file(const char *path, size_t len) {
 	_syscall_close(fd);
 }
 
-void fs_test(void) {
+void fs_prep(void) {
 	handle_t front, back;
 	front = _syscall_fs_create(&back);
 
-	if (_syscall_fork()) {
-		// child: is the fs server
+	if (!_syscall_fork()) {
 		tar_driver(back, &_initrd);
-		return;
+		_syscall_exit(1);
 	}
 
-	// parent: accesses the fs
-	printf("\n\n");
-	// the trailing slash should be ignored by mount()
+	/* the trailing slash should be ignored by mount()
+	 * TODO actually write tests */
 	_syscall_mount(front, argify("/init/"));
-	read_file(argify("/init/fake.txt"));
-	read_file(argify("/init/1.txt"));
-	read_file(argify("/init/2.txt"));
-	read_file(argify("/init/dir/3.txt"));
+}
 
-	printf("\nshadowing /init/dir...\n");
-	_syscall_mount(-1, argify("/init/dir"));
-	read_file(argify("/init/fake.txt"));
-	read_file(argify("/init/1.txt"));
-	read_file(argify("/init/2.txt"));
-	read_file(argify("/init/dir/3.txt"));
+void fs_test(void) {
+	if (!_syscall_fork()) {
+		/* run the "test" in a child process to not affect the fs view of the
+		 * main process */
+		read_file(argify("/init/fake.txt"));
+		read_file(argify("/init/1.txt"));
+		read_file(argify("/init/2.txt"));
+		read_file(argify("/init/dir/3.txt"));
 
-	printf("\n");
+		printf("\nshadowing /init/dir...\n");
+		_syscall_mount(-1, argify("/init/dir"));
+		read_file(argify("/init/fake.txt"));
+		read_file(argify("/init/1.txt"));
+		read_file(argify("/init/2.txt"));
+		read_file(argify("/init/dir/3.txt"));
+
+		printf("\n");
+		_syscall_exit(0);
+	} else _syscall_await();
 }
 
 void test_await(void) {
 	int ret;
 
-	// regular exit()s
-	if (!_syscall_fork()) _syscall_exit(69);
-	if (!_syscall_fork()) _syscall_exit(420);
+	if (!_syscall_fork()) {
+		/* this "test" runs in a child process, because otherwise it would be
+		 * stuck waiting for e.g. the tar_driver process to exit */
 
-	// faults
-	if (!_syscall_fork()) { // invalid memory access
-		asm volatile("movb $69, 0" ::: "memory");
-		printf("this shouldn't happen");
-		_syscall_exit(-1);
-	}
-	if (!_syscall_fork()) { // #GP
-		asm volatile("hlt" ::: "memory");
-		printf("this shouldn't happen");
-		_syscall_exit(-1);
-	}
+		// regular exit()s
+		if (!_syscall_fork()) _syscall_exit(69);
+		if (!_syscall_fork()) _syscall_exit(420);
 
-	while ((ret = _syscall_await()) != ~0)
-		printf("await returned: %x\n", ret);
-	printf("await: no more children\n");
+		// faults
+		if (!_syscall_fork()) { // invalid memory access
+			asm volatile("movb $69, 0" ::: "memory");
+			printf("this shouldn't happen");
+			_syscall_exit(-1);
+		}
+		if (!_syscall_fork()) { // #GP
+			asm volatile("hlt" ::: "memory");
+			printf("this shouldn't happen");
+			_syscall_exit(-1);
+		}
+
+		while ((ret = _syscall_await()) != ~0)
+			printf("await returned: %x\n", ret);
+		printf("await: no more children\n");
+	} else _syscall_await();
 }
