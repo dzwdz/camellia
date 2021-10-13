@@ -72,6 +72,9 @@ void shell_loop(void) {
 			cmd_cat(args);
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
+		} else if (!strcmp(cmd, "fork")) {
+			if (_syscall_fork())
+				_syscall_await();
 		} else {
 			printf("unknown command :(\n");
 		}
