@@ -70,6 +70,8 @@ void shell_loop(void) {
 			printf("%s\n", args);
 		} else if (!strcmp(cmd, "cat")) {
 			cmd_cat(args);
+		} else if (!strcmp(cmd, "exit")) {
+			_syscall_exit(0);
 		} else {
 			printf("unknown command :(\n");
 		}
