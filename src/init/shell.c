@@ -2,8 +2,6 @@
 #include <init/stdlib.h>
 #include <shared/syscalls.h>
 
-#define PROMPT "$ "
-
 static char *split(char *base) {
 	while (*base) {
 		if (*base == ' ' || *base == '\t') {
@@ -60,10 +58,11 @@ static void cmd_cat(const char *args) {
 
 void shell_loop(void) {
 	static char cmd[256];
+	int level = 0;
 	char *args;
 
 	for (;;) {
-		printf(PROMPT);
+		printf("%x$ ", level);
 		readline(cmd, 256);
 		args = split(cmd);
 		if (!strcmp(cmd, "echo")) {
@@ -75,6 +74,7 @@ void shell_loop(void) {
 		} else if (!strcmp(cmd, "fork")) {
 			if (_syscall_fork())
 				_syscall_await();
+			else level++;
 		} else {
 			printf("unknown command :(\n");
 		}
