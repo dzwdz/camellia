@@ -112,5 +112,7 @@ void test_await(void) {
 		while ((ret = _syscall_await()) != ~0)
 			printf("await returned: %x\n", ret);
 		printf("await: no more children\n");
+
+		_syscall_exit(0);
 	} else _syscall_await();
 }
