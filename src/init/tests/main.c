@@ -11,44 +11,9 @@ static void run_forked(void (*fn)()) {
 	} else _syscall_await();
 }
 
-static void read_file(const char *path, size_t len) {
-	int fd = _syscall_open(path, len);
-	static char buf[64];
-	int buf_len = 64;
-
-	_syscall_write(__tty_fd, path, len, 0);
-	printf(": ");
-	if (fd < 0) {
-		printf("couldn't open.\n");
-		return;
-	}
-
-	buf_len = _syscall_read(fd, buf, buf_len, 0);
-	_syscall_write(__tty_fd, buf, buf_len, 0);
-
-	_syscall_close(fd);
-}
 
 void test_all(void) {
-	run_forked(test_fs);
 	run_forked(test_await);
-}
-
-void test_fs(void) {
-	// TODO this test is shit
-	read_file(argify("/init/fake.txt"));
-	read_file(argify("/init/1.txt"));
-	read_file(argify("/init/2.txt"));
-	read_file(argify("/init/dir/3.txt"));
-
-	printf("\nshadowing /init/dir...\n");
-	_syscall_mount(-1, argify("/init/dir"));
-	read_file(argify("/init/fake.txt"));
-	read_file(argify("/init/1.txt"));
-	read_file(argify("/init/2.txt"));
-	read_file(argify("/init/dir/3.txt"));
-
-	printf("\n");
 }
 
 void test_await(void) {
