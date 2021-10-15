@@ -26,6 +26,7 @@ static int readline(char *buf, size_t max) {
 					pos--;
 				}
 				break;
+			case '\n':
 			case '\r':
 				printf("\n");
 				buf[pos++] = '\0';
