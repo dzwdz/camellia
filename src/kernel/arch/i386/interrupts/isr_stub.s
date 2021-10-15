@@ -2,11 +2,10 @@
 
 .global _isr_stubs
 _isr_stubs:
-
 .rept 256
-	.align 8
 	pushal
 	call _isr_stage2
+	.align 8
 .endr
 
 _isr_stage2:

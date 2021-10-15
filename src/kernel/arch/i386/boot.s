@@ -23,5 +23,3 @@ halt_cpu:
 	cli
 1:	hlt
 	jmp 1b
-
-.size _start, . - _start

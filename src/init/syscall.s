@@ -7,7 +7,6 @@ _syscall:
 	push %edi
 	push %ebp
 
-//  note: i could squeeze out another parameter out of %ebp
 	mov 20(%esp), %eax
 	mov 24(%esp), %ebx
 	mov %esp, %ecx
@@ -16,6 +15,7 @@ _syscall:
 	mov 32(%esp), %edi
 	mov 36(%esp), %ebp
 	sysenter
+
 _syscall_ret:
 	pop %ebp
 	pop %edi
