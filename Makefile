@@ -19,7 +19,7 @@ endef
 all: out/boot.iso check
 
 boot: all out/hdd
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -no-shutdown \
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) \
 		-drive file=out/hdd,format=raw,media=disk
 
 

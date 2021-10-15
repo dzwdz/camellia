@@ -15,6 +15,8 @@ extern char _bss_end;
 
 __attribute__((noreturn))
 void halt_cpu(void);
+__attribute__((noreturn))
+void cpu_shutdown(void);
 
 // src/arch/i386/sysenter.s
 _Noreturn void sysexit(struct registers);
