@@ -22,6 +22,11 @@ static void read_file(const char *path, size_t len) {
 	_syscall_close(fd);
 }
 
+void test_all(void) {
+	test_fs();
+	test_await();
+}
+
 void test_fs(void) {
 	if (!_syscall_fork()) {
 		/* run the "test" in a child process to not affect the fs view of the

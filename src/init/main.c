@@ -26,8 +26,6 @@ int main(void) {
 		_syscall_exit(1);
 
 	fs_prep();
-	test_fs();
-	test_await();
 	shell_loop();
 
 	_syscall_exit(0);

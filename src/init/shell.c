@@ -1,5 +1,6 @@
 #include <init/shell.h>
 #include <init/stdlib.h>
+#include <init/tests/main.h>
 #include <shared/syscalls.h>
 
 static char *split(char *base) {
@@ -76,6 +77,8 @@ void shell_loop(void) {
 			if (_syscall_fork())
 				_syscall_await();
 			else level++;
+		} else if (!strcmp(cmd, "run_tests")) {
+			test_all();
 		} else {
 			printf("unknown command :(\n");
 		}
