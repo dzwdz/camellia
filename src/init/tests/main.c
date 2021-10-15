@@ -4,6 +4,13 @@
 
 #define argify(str) str, sizeof(str) - 1
 
+static void run_forked(void (*fn)()) {
+	if (!_syscall_fork()) {
+		fn();
+		_syscall_exit(0);
+	} else _syscall_await();
+}
+
 static void read_file(const char *path, size_t len) {
 	int fd = _syscall_open(path, len);
 	static char buf[64];
@@ -23,58 +30,47 @@ static void read_file(const char *path, size_t len) {
 }
 
 void test_all(void) {
-	test_fs();
-	test_await();
+	run_forked(test_fs);
+	run_forked(test_await);
 }
 
 void test_fs(void) {
-	if (!_syscall_fork()) {
-		/* run the "test" in a child process to not affect the fs view of the
-		 * main process */
-		read_file(argify("/init/fake.txt"));
-		read_file(argify("/init/1.txt"));
-		read_file(argify("/init/2.txt"));
-		read_file(argify("/init/dir/3.txt"));
+	// TODO this test is shit
+	read_file(argify("/init/fake.txt"));
+	read_file(argify("/init/1.txt"));
+	read_file(argify("/init/2.txt"));
+	read_file(argify("/init/dir/3.txt"));
 
-		printf("\nshadowing /init/dir...\n");
-		_syscall_mount(-1, argify("/init/dir"));
-		read_file(argify("/init/fake.txt"));
-		read_file(argify("/init/1.txt"));
-		read_file(argify("/init/2.txt"));
-		read_file(argify("/init/dir/3.txt"));
+	printf("\nshadowing /init/dir...\n");
+	_syscall_mount(-1, argify("/init/dir"));
+	read_file(argify("/init/fake.txt"));
+	read_file(argify("/init/1.txt"));
+	read_file(argify("/init/2.txt"));
+	read_file(argify("/init/dir/3.txt"));
 
-		printf("\n");
-		_syscall_exit(0);
-	} else _syscall_await();
+	printf("\n");
 }
 
 void test_await(void) {
 	int ret;
 
-	if (!_syscall_fork()) {
-		/* this "test" runs in a child process, because otherwise it would be
-		 * stuck waiting for e.g. the tar_driver process to exit */
+	// regular exit()s
+	if (!_syscall_fork()) _syscall_exit(69);
+	if (!_syscall_fork()) _syscall_exit(420);
 
-		// regular exit()s
-		if (!_syscall_fork()) _syscall_exit(69);
-		if (!_syscall_fork()) _syscall_exit(420);
+	// faults
+	if (!_syscall_fork()) { // invalid memory access
+		asm volatile("movb $69, 0" ::: "memory");
+		printf("this shouldn't happen");
+		_syscall_exit(-1);
+	}
+	if (!_syscall_fork()) { // #GP
+		asm volatile("hlt" ::: "memory");
+		printf("this shouldn't happen");
+		_syscall_exit(-1);
+	}
 
-		// faults
-		if (!_syscall_fork()) { // invalid memory access
-			asm volatile("movb $69, 0" ::: "memory");
-			printf("this shouldn't happen");
-			_syscall_exit(-1);
-		}
-		if (!_syscall_fork()) { // #GP
-			asm volatile("hlt" ::: "memory");
-			printf("this shouldn't happen");
-			_syscall_exit(-1);
-		}
-
-		while ((ret = _syscall_await()) != ~0)
-			printf("await returned: %x\n", ret);
-		printf("await: no more children\n");
-
-		_syscall_exit(0);
-	} else _syscall_await();
+	while ((ret = _syscall_await()) != ~0)
+		printf("await returned: %x\n", ret);
+	printf("await: no more children\n");
 }
