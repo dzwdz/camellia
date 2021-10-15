@@ -7,7 +7,7 @@ CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
-QFLAGS  = -no-reboot -serial stdio -display none
+QFLAGS  = -no-reboot -display none
 
 define from_sources
   $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
@@ -19,12 +19,23 @@ endef
 all: out/boot.iso check
 
 boot: all out/hdd
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) \
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -serial stdio \
 		-drive file=out/hdd,format=raw,media=disk
 
+test: all
+	@# pipes for the serial
+	@mkfifo out/qemu.in out/qemu.out 2> /dev/null || true
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -serial pipe:out/qemu &
+	@# for some reason the first sent character doesn't go through to the shell
+	@# the empty echo takes care of that, so the next echos will work just fine
+	@echo > out/qemu.in
+	echo run_tests > out/qemu.in
+	echo exit > out/qemu.in
+	@echo
+	@cat out/qemu.out
 
 debug: all
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -s -S &
+	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -serial stdio -s -S &
 	@sleep 1
 	gdb
 
