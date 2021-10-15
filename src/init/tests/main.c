@@ -12,11 +12,8 @@ static void run_forked(void (*fn)()) {
 }
 
 
-void test_all(void) {
-	run_forked(test_await);
-}
 
-void test_await(void) {
+static void test_await(void) {
 	int ret;
 
 	// regular exit()s
@@ -38,4 +35,10 @@ void test_await(void) {
 	while ((ret = _syscall_await()) != ~0)
 		printf("await returned: %x\n", ret);
 	printf("await: no more children\n");
+}
+
+
+
+void test_all(void) {
+	run_forked(test_await);
 }
