@@ -44,10 +44,13 @@ static int readline(char *buf, size_t max) {
 }
 
 static void cmd_cat(const char *args) {
-	int fd = _syscall_open(args, strlen(args));
+	int fd;
 	static char buf[256];
 	int len = 256;
 
+	if (!args) return; // no argument
+
+	fd = _syscall_open(args, strlen(args));
 	if (fd < 0) {
 		printf("couldn't open.\n");
 		return;
