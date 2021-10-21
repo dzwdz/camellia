@@ -84,6 +84,8 @@ void shell_loop(void) {
 				cmd_cat(files[i]);
 				printf("\n");
 			}
+		} else if (!strcmp(cmd, "shadow")) {
+			_syscall_mount(-1, args, strlen(args));
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
 		} else if (!strcmp(cmd, "fork")) {
