@@ -74,6 +74,16 @@ void shell_loop(void) {
 			printf("%s\n", args);
 		} else if (!strcmp(cmd, "cat")) {
 			cmd_cat(args);
+		} else if (!strcmp(cmd, "catall")) {
+			const char *files[] = {
+				"/init/fake.txt",
+				"/init/1.txt", "/init/2.txt",
+				"/init/dir/3.txt", NULL};
+			for (int i = 0; files[i]; i++) {
+				printf("%s:\n", files[i]);
+				cmd_cat(files[i]);
+				printf("\n");
+			}
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
 		} else if (!strcmp(cmd, "fork")) {
