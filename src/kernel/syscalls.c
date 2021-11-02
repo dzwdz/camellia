@@ -165,8 +165,8 @@ int _syscall_close(handle_t handle) {
 	return -1;
 }
 
-handle_t _syscall_fs_create(handle_t __user *back_user) {
-	handle_t front, back = 0;
+handle_t _syscall_fs_create(void) {
+	handle_t front = 0;
 	struct vfs_backend *backend;
 
 	front = process_find_handle(process_current);
@@ -174,52 +174,38 @@ handle_t _syscall_fs_create(handle_t __user *back_user) {
 	// the type needs to be set here so process_find_handle skips this handle
 	process_current->handles[front].type = HANDLE_FS_FRONT;
 
-	back  = process_find_handle(process_current);
-	if (back < 0) goto fail;
-	process_current->handles[back].type = HANDLE_FS_BACK;
-
-	// copy the back handle to back_user
-	if (!virt_cpy_to(process_current->pages, back_user, &back, sizeof(back)))
-		goto fail;
-
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
 	backend->handler = NULL;
 	backend->queue = NULL;
 
 	process_current->handles[front].fs.backend = backend;
-	process_current->handles[back ].fs.backend = backend;
+
+	process_current->controlled = backend;
 
 	return front;
 fail:
 	if (front >= 0)
 		process_current->handles[front].type = HANDLE_EMPTY;
-	if (back >= 0)
-		process_current->handles[back].type = HANDLE_EMPTY;
 	return -1;
 }
 
-int _syscall_fs_wait(handle_t back, char __user *buf, int max_len, 
-		struct fs_wait_response __user *res) {
-	struct handle *back_handle;
-
-	if (back < 0 || back >= HANDLE_MAX) return -1;
-	back_handle = &process_current->handles[back];
-	if (back_handle->type != HANDLE_FS_BACK)
-		return -1;
+int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {
+	struct vfs_backend *backend = process_current->controlled;
+	if (!backend) return -1;
 
 	process_current->state = PS_WAITS4REQUEST;
-	back_handle->fs.backend->handler = process_current;
+	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
 	 * vfs_request_pass2handler simpler. TODO? */
 	process_current->awaited_req.buf     = buf;
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
 
-	if (back_handle->fs.backend->queue) {
+	if (backend->queue) {
 		// handle queued requests
-		struct process *queued = back_handle->fs.backend->queue;
-		back_handle->fs.backend->queue = NULL; // TODO get the next queued proc
+		struct process *queued = backend->queue;
+		backend->queue = NULL; // TODO get the next queued proc
 		vfs_request_pass2handler(&queued->pending_req);
 	} else {
 		process_switch_any();
@@ -284,9 +270,9 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
 		case _SYSCALL_FS_CREATE:
-			return _syscall_fs_create((userptr_t)a);
+			return _syscall_fs_create();
 		case _SYSCALL_FS_WAIT:
-			return _syscall_fs_wait(a, (userptr_t)b, c, (userptr_t)d);
+			return _syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
 		case _SYSCALL_FS_RESPOND:
 			return _syscall_fs_respond((userptr_t)a, b);
 		case _SYSCALL_MEMFLAG:

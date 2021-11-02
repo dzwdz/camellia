@@ -13,11 +13,11 @@ static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
 
-void tar_driver(handle_t back, void *base) {
+void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
 	struct fs_wait_response res;
 	for (;;) {
-		switch (_syscall_fs_wait(back, buf, BUF_SIZE, &res)) {
+		switch (_syscall_fs_wait(buf, BUF_SIZE, &res)) {
 			case VFSOP_OPEN:
 				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0));
 				break;

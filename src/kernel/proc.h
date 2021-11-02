@@ -36,6 +36,9 @@ struct process {
 	};
 	struct vfs_request *handled_req;
 
+	/* vfs_backend controlled (not exclusively) by this process */
+	struct vfs_backend *controlled;
+
 	struct vfs_mount *mount;
 
 	struct handle handles[HANDLE_MAX];
