@@ -10,7 +10,6 @@ enum handle_type {
 	HANDLE_FILE,
 
 	HANDLE_FS_FRONT,
-	HANDLE_FS_BACK,
 };
 
 struct handle {
