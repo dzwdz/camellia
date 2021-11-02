@@ -34,8 +34,8 @@ int _syscall_close(handle_t handle) {
 	return _syscall(_SYSCALL_CLOSE, handle, 0, 0, 0);
 }
 
-handle_t _syscall_fs_create(void) {
-	return _syscall(_SYSCALL_FS_CREATE, 0, 0, 0, 0);
+handle_t _syscall_fs_fork2(void) {
+	return _syscall(_SYSCALL_FS_FORK2, 0, 0, 0, 0);
 }
 
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {

@@ -15,7 +15,7 @@ enum {
 	_SYSCALL_WRITE,
 	_SYSCALL_CLOSE,
 
-	_SYSCALL_FS_CREATE,
+	_SYSCALL_FS_FORK2,
 	_SYSCALL_FS_WAIT,
 	_SYSCALL_FS_RESPOND,
 
@@ -47,10 +47,8 @@ int _syscall_read(handle_t, char __user *buf, int len, int offset);
 int _syscall_write(handle_t, const char __user *buf, int len, int offset);
 int _syscall_close(handle_t);
 
-/** Creates a pair of front/back filesystem handles.
- * @param back a pointer to a handle_t which will store the back pointer
- */
-handle_t _syscall_fs_create(void);
+handle_t _syscall_fs_fork2(void);
+
 struct fs_wait_response {
 	int len; // how much was put in *buf
 	int id;  // file id (returned by the open handler, passed to other calls)

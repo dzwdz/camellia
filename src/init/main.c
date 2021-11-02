@@ -32,10 +32,8 @@ int main(void) {
 }
 
 void fs_prep(void) {
-	handle_t front;
-	front = _syscall_fs_create();
-
-	if (!_syscall_fork()) {
+	handle_t front = _syscall_fs_fork2();
+	if (!front) {
 		tar_driver(&_initrd);
 		_syscall_exit(1);
 	}

@@ -165,29 +165,34 @@ int _syscall_close(handle_t handle) {
 	return -1;
 }
 
-handle_t _syscall_fs_create(void) {
-	handle_t front = 0;
+handle_t _syscall_fs_fork2(void) {
 	struct vfs_backend *backend;
+	struct process *child;
+	handle_t front;
 
 	front = process_find_handle(process_current);
-	if (front < 0) goto fail;
-	// the type needs to be set here so process_find_handle skips this handle
+	if (front < 0) return -1;
 	process_current->handles[front].type = HANDLE_FS_FRONT;
+
+	/* so this can't return 0 in the parent or it will make it think that it's
+	 * the child. i could make fork()s return -1 in the child but that's weird.
+	 *
+	 * also there's this whole thing with handling errors here properly and
+	 * errno
+	 * TODO figure this out */
+	if (front == 0) panic_unimplemented();
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
 	backend->handler = NULL;
 	backend->queue = NULL;
 
+	child = process_fork(process_current);
+	child->controlled = backend;
+	regs_savereturn(&child->regs, 0);
+
 	process_current->handles[front].fs.backend = backend;
-
-	process_current->controlled = backend;
-
 	return front;
-fail:
-	if (front >= 0)
-		process_current->handles[front].type = HANDLE_EMPTY;
-	return -1;
 }
 
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {
@@ -269,8 +274,8 @@ int _syscall(int num, int a, int b, int c, int d) {
 			return _syscall_write(a, (userptr_t)b, c, d);
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
-		case _SYSCALL_FS_CREATE:
-			return _syscall_fs_create();
+		case _SYSCALL_FS_FORK2:
+			return _syscall_fs_fork2();
 		case _SYSCALL_FS_WAIT:
 			return _syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
 		case _SYSCALL_FS_RESPOND:
