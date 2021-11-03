@@ -49,10 +49,8 @@ handle_t _syscall_open(const char __user *path, int len) {
 	if (process_find_handle(process_current) < 0)
 		return -1;
 
-	// copy the path to the kernel, simplify it
-	path_buf = kmalloc(len); // gets freed in vfs_request_finish
-	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
-		goto fail;
+	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
+	if (!path_buf) goto fail;
 
 	len = path_simplify(path_buf, path_buf, len);
 	if (len < 0) goto fail;
@@ -90,9 +88,9 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	if (PATH_MAX < len) return -1;
 
 	// copy the path to the kernel to simplify it
-	path_buf = kmalloc(len);
-	if (!virt_cpy_from(process_current->pages, path_buf, path, len))
-		goto fail;
+	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
+	if (!path_buf) goto fail;
+
 	len = path_simplify(path_buf, path_buf, len);
 	if (len < 0) goto fail;
 

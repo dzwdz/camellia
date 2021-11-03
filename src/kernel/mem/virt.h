@@ -1,5 +1,6 @@
 /* contains utilities for interacting with virtual memory */
 #pragma once
+#include <kernel/mem/alloc.h>
 #include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -37,4 +38,16 @@ static inline bool virt_cpy_to(struct pagedir *dest_pages, // physical -> virtua
 static inline bool virt_cpy_from(struct pagedir *src_pages, // virtual -> physical
 		void *dest, const void __user *src, size_t length) {
 	return virt_cpy(NULL, (userptr_t)dest, src_pages, src, length);
+}
+
+/** Copies a chunk of virtual memory to a newly kmalloc'd buffer. */
+static inline void *virt_cpy2kmalloc(struct pagedir *src_pages,
+		const void __user *src, size_t length) {
+	void *buf = kmalloc(length);
+	if (virt_cpy_from(src_pages, buf, src, length)) {
+		return buf;
+	} else {
+		kfree(buf);
+		return NULL;
+	}
 }
