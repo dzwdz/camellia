@@ -38,6 +38,12 @@ TEST(path_simplify) {
 	TEST_WRAPPER("/asdf/.",   "/asdf/");
 	TEST_WRAPPER("/asdf//.",  "/asdf/");
 
+	TEST_WRAPPER("/foo/bar/..", "/foo/");
+	TEST_WRAPPER("/foo/bar/../bar",  "/foo/bar");
+	TEST_WRAPPER("/foo/bar/../bar/", "/foo/bar/");
+	TEST_WRAPPER("/foo/bar/xyz/..",  "/foo/bar/");
+	TEST_WRAPPER("/foo/bar/xyz/../", "/foo/bar/");
+
 	// going under the root or close to it
 	TEST_WRAPPER("/..",        NULL);
 	TEST_WRAPPER("/../asdf",   NULL);
