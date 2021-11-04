@@ -15,7 +15,11 @@ static void run_forked(void (*fn)()) {
 	if (!_syscall_fork()) {
 		fn();
 		_syscall_exit(0);
-	} else _syscall_await();
+	} else {
+		/* successful tests must return 0
+		 * TODO add a better fail msg */
+		if (_syscall_await() != 0) test_fail();
+	}
 }
 
 
