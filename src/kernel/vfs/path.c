@@ -5,7 +5,6 @@ int path_simplify(const char *in, char *out, size_t len) {
 	if (len == 0)     return -1; // empty paths are invalid
 	if (in[0] != '/') return -1; // so are relative paths
 
-	int depth = 0; // shouldn't be needed!
 	int seg_len; // the length of the current path segment
 	int out_pos = 0;
 	bool directory = 0;
@@ -33,32 +32,26 @@ int path_simplify(const char *in, char *out, size_t len) {
 		 *           (segment starts at i+1) */
 
 		if (seg_len == 0 || (seg_len == 1 && in[i + 1] == '.')) {
-			// the segment is // or /./
+			/*  // or /./  */
 			directory = true;
 		} else if (seg_len == 2 && in[i + 1] == '.' && in[i + 2] == '.') {
-			// the segment is /../
-			if (--depth < 0)
-				return -1;
-			// backtrack to last slash
-			while (out[--out_pos] != '/');
+			/*  /../  */
+			directory = true;
+
+			/* try to backtrack to the last slash */
+			while (--out_pos >= 0 && out[out_pos] != '/');
+			if (out_pos < 0) return -1;
 		} else {
-			// normal segment
+			/* a normal segment, e.g. /asdf/ */
 			out[out_pos] = '/';
 			memcpy(&out[out_pos + 1], &in[i + 1], seg_len);
 			out_pos += seg_len + 1;
-			depth++;
 		}
 
 	}
 
-	/* if we were backtracking, out_pos can become 0. i don't like this,
-	 * it feels sloppy. this algorithm should be implemented differently. TODO? */
-	if (out_pos == 0)
-		out[out_pos++] = '/';
-
-	if (directory) // if the path refers to a directory, append a trailing slash
-		if (out[out_pos-1] != '/') // unless it's already there
-			out[out_pos++] = '/';
+	/* paths to directories should have a trailing slash */
+	if (directory) out[out_pos++] = '/';
 
 	return out_pos;
 }

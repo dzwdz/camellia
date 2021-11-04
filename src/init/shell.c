@@ -44,10 +44,13 @@ static int readline(char *buf, size_t max) {
 }
 
 static void cmd_cat(const char *args) {
-	int fd = _syscall_open(args, strlen(args));
+	int fd;
 	static char buf[256];
 	int len = 256;
 
+	if (!args) return; // no argument
+
+	fd = _syscall_open(args, strlen(args));
 	if (fd < 0) {
 		printf("couldn't open.\n");
 		return;
@@ -71,6 +74,18 @@ void shell_loop(void) {
 			printf("%s\n", args);
 		} else if (!strcmp(cmd, "cat")) {
 			cmd_cat(args);
+		} else if (!strcmp(cmd, "catall")) {
+			const char *files[] = {
+				"/init/fake.txt",
+				"/init/1.txt", "/init/2.txt",
+				"/init/dir/3.txt", NULL};
+			for (int i = 0; files[i]; i++) {
+				printf("%s:\n", files[i]);
+				cmd_cat(files[i]);
+				printf("\n");
+			}
+		} else if (!strcmp(cmd, "shadow")) {
+			_syscall_mount(-1, args, strlen(args));
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
 		} else if (!strcmp(cmd, "fork")) {
