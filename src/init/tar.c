@@ -6,7 +6,7 @@
 #define BUF_SIZE 64
 
 static int tar_open(const char *path, int len, void *base, size_t base_len);
-static int tar_read(struct fs_wait_response *res);
+static int tar_read(struct fs_wait_response *res, void *base, size_t base_len);
 static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
@@ -21,7 +21,7 @@ void tar_driver(void *base) {
 				break;
 
 			case VFSOP_READ:
-				tar_read(&res);
+				tar_read(&res, base, ~0);
 				break;
 
 			default:
@@ -43,13 +43,19 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 	return (int)ptr;
 }
 
-static int tar_read(struct fs_wait_response *res) {
+static int tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
 	void *meta =  (void*)res->id;
 	char  type = *(char*)(meta + 156);
+	size_t meta_len;
+	int size;
+
+	static char buf[BUF_SIZE]; // TODO reuse a single buffer
+	size_t buf_pos = 0;
+
 	switch (type) {
 		case '\0':
-		case '0': { /* normal files */
-			int size = tar_size(meta);
+		case '0': /* normal files */
+			size = tar_size(meta);
 			if (res->offset < 0 || res->offset > size) {
 				// TODO support negative offsets
 				_syscall_fs_respond(NULL, -1);
@@ -57,10 +63,32 @@ static int tar_read(struct fs_wait_response *res) {
 				_syscall_fs_respond(meta + 512 + res->offset, size - res->offset);
 			}
 			break;
-		}
 
 		case '5': /* directory */
-			_syscall_fs_respond("[directory]", 11);
+			meta_len = strlen(meta);
+
+			/* find files in dir */
+			for (size_t off = 0; off < base_len;) {
+				if (0 != memcmp(base + off + 257, "ustar", 5))
+					break; // not a metadata sector
+				// TODO more meaningful variable names and clean code up
+				if (0 == memcmp(base + off, meta, meta_len) &&
+						*(char*)(base + off + meta_len) != '\0') {
+					char *suffix = base + off + meta_len;
+					size_t suffix_len = strlen(suffix);
+					memcpy(buf + buf_pos, suffix, suffix_len);
+					buf[buf_pos + suffix_len] = '\0';
+					buf_pos += suffix_len + 1;
+					// TODO no buffer overrun check
+					// TODO don't list files in subdirectories
+				}
+
+				size = tar_size(base + off);
+				off += 512;                 // skip this metadata sector
+				off += (size + 511) & ~511; // skip the data sectors
+			}
+
+			_syscall_fs_respond(buf, buf_pos);
 			break;
 
 		default:
