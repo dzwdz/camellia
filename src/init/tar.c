@@ -64,7 +64,8 @@ static void *tar_find(const char *path, size_t path_len, void *base, size_t base
 	for (size_t off = 0; off < base_len;) {
 		if (0 != memcmp(base + off + 257, "ustar", 5))
 			break; // not a metadata sector
-		if (0 == memcmp(base + off, path, path_len))
+		if (0 == memcmp(base + off, path, path_len) &&
+				*(char*)(base + off + path_len) == '\0')
 			return base + off; // file found, quit
 
 		size = tar_size(base + off);
