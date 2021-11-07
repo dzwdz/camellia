@@ -5,10 +5,8 @@
 
 #define BUF_SIZE 64
 
-extern int tty_fd;
-
-// TODO struct tar
 static int tar_open(const char *path, int len, void *base, size_t base_len);
+static int tar_read(struct fs_wait_response *res);
 static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
@@ -22,17 +20,9 @@ void tar_driver(void *base) {
 				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0));
 				break;
 
-			case VFSOP_READ: {
-				void *meta = (void*)res.id;
-				int size = tar_size(meta);
-				if (res.offset < 0 || res.offset > size) {
-					// TODO support negative offsets
-					_syscall_fs_respond(NULL, -1);
-				} else {
-					_syscall_fs_respond(meta + 512 + res.offset, size - res.offset);
-				}
+			case VFSOP_READ:
+				tar_read(&res);
 				break;
-			}
 
 			default:
 				_syscall_fs_respond(NULL, -1); // unsupported
@@ -51,6 +41,32 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 	ptr = tar_find(path, len, base, ~0);
 	if (!ptr) return -1;
 	return (int)ptr;
+}
+
+static int tar_read(struct fs_wait_response *res) {
+	void *meta =  (void*)res->id;
+	char  type = *(char*)(meta + 156);
+	switch (type) {
+		case '\0':
+		case '0': { /* normal files */
+			int size = tar_size(meta);
+			if (res->offset < 0 || res->offset > size) {
+				// TODO support negative offsets
+				_syscall_fs_respond(NULL, -1);
+			} else {
+				_syscall_fs_respond(meta + 512 + res->offset, size - res->offset);
+			}
+			break;
+		}
+
+		case '5': /* directory */
+			_syscall_fs_respond("[directory]", 11);
+			break;
+
+		default:
+			_syscall_fs_respond(NULL, -1);
+			break;
+	}
 }
 
 static int tar_size(void *sector) {
