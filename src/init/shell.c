@@ -2,6 +2,7 @@
 #include <init/stdlib.h>
 #include <init/tests/main.h>
 #include <shared/syscalls.h>
+#include <stdbool.h>
 
 static char *split(char *base) {
 	while (*base) {
@@ -43,7 +44,7 @@ static int readline(char *buf, size_t max) {
 	return -1; // error
 }
 
-static void cmd_cat(const char *args) {
+static void cmd_cat_ls(const char *args, bool ls) {
 	int fd;
 	static char buf[256];
 	int len = 256;
@@ -57,6 +58,10 @@ static void cmd_cat(const char *args) {
 	}
 
 	len = _syscall_read(fd, buf, len, 0);
+	if (ls)
+		for (int i = 0; i < len; i++)
+			if (buf[i] == '\0') buf[i] = '\n';
+
 	_syscall_write(__tty_fd, buf, len, 0);
 	_syscall_close(fd);
 }
@@ -73,7 +78,9 @@ void shell_loop(void) {
 		if (!strcmp(cmd, "echo")) {
 			printf("%s\n", args);
 		} else if (!strcmp(cmd, "cat")) {
-			cmd_cat(args);
+			cmd_cat_ls(args, false);
+		} else if (!strcmp(cmd, "ls")) {
+			cmd_cat_ls(args, true);
 		} else if (!strcmp(cmd, "catall")) {
 			const char *files[] = {
 				"/init/fake.txt",
@@ -81,7 +88,7 @@ void shell_loop(void) {
 				"/init/dir/3.txt", NULL};
 			for (int i = 0; files[i]; i++) {
 				printf("%s:\n", files[i]);
-				cmd_cat(files[i]);
+				cmd_cat_ls(files[i], false);
 				printf("\n");
 			}
 		} else if (!strcmp(cmd, "shadow")) {
