@@ -11,6 +11,10 @@ static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
 
+
+static const char *root_fakemeta = ""; /* see comment in tar_open */
+
+
 void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
 	struct fs_wait_response res;
@@ -34,9 +38,15 @@ void tar_driver(void *base) {
 static int tar_open(const char *path, int len, void *base, size_t base_len) {
 	void *ptr;
 
-	if (len <= 1) return -1;
+	if (len <= 0) return -1;
 	path += 1; // skip the leading slash
 	len  -= 1;
+
+	/* TAR archives don't (seem to) contain an entry for the root dir, so i'm
+	 * returning a fake one. this isn't a full entry because i'm currently too
+	 * lazy to create a full one - thus, it has to be special cased in tar_read */
+	if (len == 0)
+		return root_fakemeta;
 
 	ptr = tar_find(path, len, base, ~0);
 	if (!ptr) return -1;
@@ -51,6 +61,8 @@ static int tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
 
 	static char buf[BUF_SIZE]; // TODO reuse a single buffer
 	size_t buf_pos = 0;
+
+	if (meta == root_fakemeta) type = '5'; /* see comment in tar_open() */
 
 	switch (type) {
 		case '\0':
