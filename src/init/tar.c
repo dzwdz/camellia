@@ -84,15 +84,24 @@ static int tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
 				if (0 != memcmp(base + off + 257, "ustar", 5))
 					break; // not a metadata sector
 				// TODO more meaningful variable names and clean code up
+
+				/* check if prefix matches */
 				if (0 == memcmp(base + off, meta, meta_len) &&
 						*(char*)(base + off + meta_len) != '\0') {
 					char *suffix = base + off + meta_len;
 					size_t suffix_len = strlen(suffix);
-					memcpy(buf + buf_pos, suffix, suffix_len);
-					buf[buf_pos + suffix_len] = '\0';
-					buf_pos += suffix_len + 1;
-					// TODO no buffer overrun check
-					// TODO don't list files in subdirectories
+
+					/* check if the path contains any non-trailing slashes */
+					char *next = suffix;
+					while (*next && *next != '/') next++;
+					if (*next == '/') next++;
+					if (*next == '\0') {
+						/* it doesn't - so let's add it to the result */
+						memcpy(buf + buf_pos, suffix, suffix_len);
+						buf[buf_pos + suffix_len] = '\0';
+						buf_pos += suffix_len + 1;
+						// TODO no buffer overrun check
+					}
 				}
 
 				size = tar_size(base + off);
