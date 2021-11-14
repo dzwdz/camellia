@@ -1,6 +1,6 @@
 #include <kernel/mem/alloc.h>
-#include <kernel/util.h>
 #include <kernel/vfs/mount.h>
+#include <shared/mem.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
 	struct vfs_mount   *mount   = kmalloc(sizeof *mount);

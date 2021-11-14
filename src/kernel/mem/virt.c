@@ -1,6 +1,7 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem/virt.h>
 #include <kernel/util.h>
+#include <shared/mem.h>
 
 void virt_iter_new(
 		struct virt_iter *iter, void __user *virt, size_t length,

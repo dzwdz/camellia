@@ -5,6 +5,7 @@
 #include <kernel/proc.h>
 #include <kernel/vfs/path.h>
 #include <shared/flags.h>
+#include <shared/mem.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
 

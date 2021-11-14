@@ -1,6 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/arch/i386/gdt.h>
-#include <kernel/util.h>
+#include <shared/mem.h>
 #include <stdbool.h>
 #include <stdint.h>
 

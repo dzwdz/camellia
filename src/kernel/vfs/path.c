@@ -1,5 +1,6 @@
 #include <kernel/vfs/path.h>
 #include <kernel/panic.h>
+#include <shared/mem.h>
 
 int path_simplify(const char *in, char *out, size_t len) {
 	if (len == 0)     return -1; // empty paths are invalid

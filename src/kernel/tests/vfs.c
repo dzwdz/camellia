@@ -1,9 +1,9 @@
 #include <kernel/mem/alloc.h>
 #include <kernel/tests/base.h>
 #include <kernel/tests/tests.h>
-#include <kernel/util.h>
 #include <kernel/vfs/mount.h>
 #include <kernel/vfs/path.h>
+#include <shared/mem.h>
 
 TEST(path_simplify) {
 #define TEST_WRAPPER(argument, result) do { \

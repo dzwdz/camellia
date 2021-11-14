@@ -1,6 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
-#include <kernel/util.h>
+#include <shared/mem.h>
 #include <stdint.h>
 
 /* <heat> nitpick: I highly recommend you dont use bitfields for paging

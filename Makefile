@@ -3,7 +3,7 @@ PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 AS      = i686-elf-as
 CC      = i686-elf-gcc
 CHECK   = sparse
-CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition
+CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
@@ -52,12 +52,12 @@ clean:
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
 	@grub-mkrescue -o $@ out/fs/ > /dev/null 2>&1
 
-out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/)
+out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-out/raw_init: src/init/linker.ld $(call from_sources, src/init/)
+out/raw_init: src/init/linker.ld $(call from_sources, src/init/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 

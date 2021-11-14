@@ -3,8 +3,8 @@
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/util.h>
 #include <kernel/vfs/mount.h>
+#include <shared/mem.h>
 #include <stdint.h>
 
 struct process *process_first;

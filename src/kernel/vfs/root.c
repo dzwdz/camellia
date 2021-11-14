@@ -1,8 +1,8 @@
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/util.h>
 #include <kernel/vfs/root.h>
+#include <shared/mem.h>
 
 enum {
 	HANDLE_ROOT,

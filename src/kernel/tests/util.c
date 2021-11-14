@@ -1,6 +1,6 @@
 #include <kernel/tests/base.h>
 #include <kernel/tests/tests.h>
-#include <kernel/util.h>
+#include <shared/mem.h>
 
 TEST(memcmp) {
 	// basic equality checks
