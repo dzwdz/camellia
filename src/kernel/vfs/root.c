@@ -1,6 +1,7 @@
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
+#include <kernel/util.h>
 #include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
@@ -9,26 +10,25 @@ enum {
 	HANDLE_TTY,
 };
 
+static bool exacteq(struct vfs_request *req, const char *str) {
+	int len = strlen(str);
+	assert(req->input.kern);
+	return req->input.len == len && !memcmp(req->input.buf_kern, str, len);
+}
+
 int vfs_root_handler(struct vfs_request *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
-			assert(req->input.kern);
-			if (req->input.len == 1 && *req->input.buf_kern == '/')
-				return HANDLE_ROOT;
-			if (req->input.len == 4
-					&& !memcmp(req->input.buf_kern, "/tty", 4)) {
-				return HANDLE_TTY;
-			}
+			if (exacteq(req, "/"))    return HANDLE_ROOT;
+			if (exacteq(req, "/tty")) return HANDLE_TTY;
 			return -1;
 
 		case VFSOP_READ:
 			switch (req->id) {
 				case HANDLE_ROOT: {
 					const char *src = "tty"; // TODO document directory read format
-					int srclen = 4; // TODO port strlen to the kernel
-					int len = req->output.len;
-					if (len < 0) return 0; // is this needed?
-					if (len > srclen) len = srclen;
+					if (req->output.len < 0) return 0; // is this needed? TODO make that a size_t or something
+					int len = min((size_t) req->output.len, strlen(src) + 1);
 					virt_cpy_to(req->caller->pages, req->output.buf, src, len);
 					return len;
 				}
