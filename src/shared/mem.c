@@ -26,3 +26,20 @@ void *memset(void *s, int c, size_t n) {
 		s2[i] = c;
 	return s;
 }
+
+int strcmp(const char *s1, const char *s2) {
+	while (*s1) {
+		if (*s1 != *s2) {
+			if (*s1 < *s2)  return -1;
+			else            return 1;
+		}
+		s1++; s2++;
+	}
+	return 0;
+}
+
+size_t strlen(const char *s) {
+	size_t c = 0;
+	while (*s++) c++;
+	return c;
+}
