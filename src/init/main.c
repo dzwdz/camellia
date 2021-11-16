@@ -1,3 +1,4 @@
+#include <init/fs/misc.h>
 #include <init/shell.h>
 #include <init/stdlib.h>
 #include <init/tar.h>
@@ -41,4 +42,13 @@ void fs_prep(void) {
 	/* the trailing slash should be ignored by mount()
 	 * TODO actually write tests */
 	_syscall_mount(front, argify("/init/"));
+
+
+	/* passthrough fs */
+	front = _syscall_fs_fork2();
+	if (!front) {
+		fs_passthru();
+		_syscall_exit(1); /* unreachable */
+	}
+	_syscall_mount(front, argify("/2nd"));
 }
