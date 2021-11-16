@@ -43,12 +43,9 @@ void fs_prep(void) {
 	 * TODO actually write tests */
 	_syscall_mount(front, argify("/init/"));
 
+	/* from here on i'll just use the helper func fork2_n_mount */
 
 	/* passthrough fs */
-	front = _syscall_fs_fork2();
-	if (!front) {
+	if (!fork2_n_mount("/2nd"))
 		fs_passthru();
-		_syscall_exit(1); /* unreachable */
-	}
-	_syscall_mount(front, argify("/2nd"));
 }

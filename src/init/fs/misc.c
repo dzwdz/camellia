@@ -1,6 +1,14 @@
+#include <init/fs/misc.h>
 #include <init/stdlib.h>
 #include <shared/flags.h>
+#include <shared/mem.h>
 #include <shared/syscalls.h>
+
+bool fork2_n_mount(const char *path) {
+	handle_t h = _syscall_fs_fork2();
+	if (h) _syscall_mount(h, path, strlen(path));
+	return h;
+}
 
 void fs_passthru(void) {
 	struct fs_wait_response res;
