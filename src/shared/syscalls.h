@@ -51,6 +51,7 @@ handle_t _syscall_fs_fork2(void);
 
 struct fs_wait_response {
 	int len; // how much was put in *buf
+	int capacity; // how much output can be accepted by the caller
 	int id;  // file id (returned by the open handler, passed to other calls)
 	int offset;
 };
