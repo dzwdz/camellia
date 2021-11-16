@@ -1,3 +1,3 @@
 #pragma once
 
-void fs_passthru();
+void fs_passthru(void);

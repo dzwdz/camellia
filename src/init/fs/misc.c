@@ -2,7 +2,7 @@
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 
-void fs_passthru() {
+void fs_passthru(void) {
 	struct fs_wait_response res;
 	int buf_size = 64;
 	char buf[      64];
