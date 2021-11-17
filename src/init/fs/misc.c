@@ -10,16 +10,28 @@ bool fork2_n_mount(const char *path) {
 	return h;
 }
 
-void fs_passthru(void) {
+void fs_passthru(const char *prefix) {
 	struct fs_wait_response res;
 	int buf_size = 64;
 	char buf[      64];
-	int ret;
+	int ret, prefix_len;
+	if (prefix) prefix_len = strlen(prefix);
 
 	for (;;) {
 		switch (_syscall_fs_wait(buf, buf_size, &res)) {
 			case VFSOP_OPEN:
-				ret = _syscall_open(buf, res.len);
+				if (prefix) {
+					if (prefix_len + res.len <= buf_size) {
+						// TODO memmove
+						char tmp[64];
+						memcpy(tmp, buf, res.len);
+						memcpy(buf, prefix, prefix_len);
+						memcpy(buf + prefix_len, tmp, res.len);
+						ret = _syscall_open(buf, res.len + prefix_len);
+					} else ret = -1;
+				} else {
+					ret = _syscall_open(buf, res.len);
+				}
 				_syscall_fs_respond(NULL, ret);
 				break;
 

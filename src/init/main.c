@@ -47,5 +47,8 @@ void fs_prep(void) {
 
 	/* passthrough fs */
 	if (!fork2_n_mount("/2nd"))
-		fs_passthru();
+		fs_passthru(NULL);
+
+	if (!fork2_n_mount("/3nd"))
+		fs_passthru("/init");
 }

@@ -3,4 +3,4 @@
 
 bool fork2_n_mount(const char *path);
 
-void fs_passthru(void);
+void fs_passthru(const char *prefix);
