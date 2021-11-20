@@ -18,8 +18,8 @@ static const char *root_fakemeta = ""; /* see comment in tar_open */
 void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
 	struct fs_wait_response res;
-	for (;;) {
-		switch (_syscall_fs_wait(buf, BUF_SIZE, &res)) {
+	while (!_syscall_fs_wait(buf, BUF_SIZE, &res)) {
+		switch (res.op) {
 			case VFSOP_OPEN:
 				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0));
 				break;
@@ -33,6 +33,7 @@ void tar_driver(void *base) {
 				break;
 		}
 	}
+	_syscall_exit(0);
 }
 
 static int tar_open(const char *path, int len, void *base, size_t base_len) {

@@ -17,8 +17,8 @@ void fs_passthru(const char *prefix) {
 	int ret, prefix_len;
 	if (prefix) prefix_len = strlen(prefix);
 
-	for (;;) {
-		switch (_syscall_fs_wait(buf, buf_size, &res)) {
+	while (!_syscall_fs_wait(buf, buf_size, &res)) {
+		switch (res.op) {
 			case VFSOP_OPEN:
 				if (prefix) {
 					if (prefix_len + res.len <= buf_size) {
@@ -50,4 +50,5 @@ void fs_passthru(const char *prefix) {
 				break;
 		}
 	}
+	_syscall_exit(0);
 }

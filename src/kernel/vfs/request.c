@@ -63,12 +63,13 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	res.capacity = req->output.len;
 	res.id       = req->id;
 	res.offset   = req->offset;
+	res.op       = req->type;
 
 	if (!virt_cpy_to(handler->pages,
 				handler->awaited_req.res, &res, sizeof res))
 		goto fail; // can't copy response struct
 
-	regs_savereturn(&handler->regs, req->type);
+	regs_savereturn(&handler->regs, 0);
 	process_switch(handler);
 fail:
 	panic_unimplemented(); // TODO
