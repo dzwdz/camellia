@@ -76,19 +76,27 @@ void fs_passthru(const char *prefix) {
 	if (prefix) prefix_len = strlen(prefix);
 
 	while (!_syscall_fs_wait(buf, buf_size, &res)) {
-		if (prefix && res.op == VFSOP_OPEN) {
-			/* the only special case: rewriting the path */
-			if (prefix_len + res.len <= buf_size) {
-				// TODO memmove
-				char tmp[64];
-				memcpy(tmp, buf, res.len);
-				memcpy(buf, prefix, prefix_len);
-				memcpy(buf + prefix_len, tmp, res.len);
-				ret = _syscall_open(buf, res.len + prefix_len);
-			} else ret = -1;
-			_syscall_fs_respond(NULL, ret);
-		} else {
-			fs_respond_delegate(&res, res.id);
+		switch (res.op) {
+			case VFSOP_OPEN:
+				if (prefix) {
+					/* special case: rewriting the path */
+					if (prefix_len + res.len <= buf_size) {
+						// TODO memmove
+						char tmp[64];
+						memcpy(tmp, buf, res.len);
+						memcpy(buf, prefix, prefix_len);
+						memcpy(buf + prefix_len, tmp, res.len);
+						ret = _syscall_open(buf, res.len + prefix_len);
+					} else ret = -1;
+				} else {
+					ret = _syscall_open(buf, res.len);
+				}
+				_syscall_fs_respond(NULL, ret);
+				break;
+
+			default:
+				fs_respond_delegate(&res, res.id);
+				break;
 		}
 	}
 	_syscall_exit(0);
