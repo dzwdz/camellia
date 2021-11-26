@@ -101,3 +101,74 @@ void fs_passthru(const char *prefix) {
 	}
 	_syscall_exit(0);
 }
+
+
+void fs_dir_inject(const char *path) {
+	struct fs_dir_handle {
+		int delegate;
+		const char *inject;
+	};
+
+	const int path_len = strlen(path);
+	struct fs_wait_response res;
+	struct fs_dir_handle handles[16]; // TODO hardcoded FD_MAX - use malloc instead
+	int handle_next = 0;
+	int buf_size = 64;
+	char buf[      64];
+	int ret;
+
+	while (!_syscall_fs_wait(buf, buf_size, &res)) {
+		switch (res.op) {
+			case VFSOP_OPEN:
+				if (handle_next > 15) _syscall_fs_respond(NULL, -2); // we ran out of handles, which is entirely our fault.
+
+				ret = _syscall_open(buf, res.len); /* errors handled in inject handler */
+				handles[handle_next].delegate = ret;
+				handles[handle_next].inject = NULL;
+
+				if (buf[res.len - 1] == '/' &&
+						res.len < path_len && !memcmp(path, buf, res.len)) {
+					handles[handle_next].inject = path + res.len;
+				} else {
+					/* not injecting, don't allow opening nonexistent stuff */
+					if (ret < 0) _syscall_fs_respond(NULL, ret);
+				}
+				_syscall_fs_respond(NULL, handle_next++);
+				break;
+
+			case VFSOP_READ:
+				if (handles[res.id].inject) {
+					// TODO check offset
+					struct fs_dir_handle h = handles[res.id];
+
+					int out_len = 0;
+					while (h.inject[out_len] != '/') out_len++; // TODO ensure trailing slash
+					memcpy(buf, h.inject, out_len);
+					buf[out_len++] = '\0';
+
+					if (h.delegate >= 0) {
+						int to_read = res.capacity < buf_size ? res.capacity : buf_size;
+						to_read -= out_len;
+						ret = _syscall_read(h.delegate, buf + out_len, to_read, 0);
+						if (ret > 0) out_len += ret;
+						// TODO deduplicate entries
+					}
+
+					_syscall_fs_respond(buf, out_len);
+					break;
+				}
+
+			/* fallthrough */
+
+			default: {
+				struct fs_dir_handle h = handles[res.id];
+				if (h.delegate < 0)
+					_syscall_fs_respond(NULL, -1);
+				else
+					fs_respond_delegate(&res, h.delegate);
+				break;
+			}
+		}
+	}
+	_syscall_exit(0);
+}

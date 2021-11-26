@@ -51,4 +51,8 @@ void fs_prep(void) {
 
 	if (!fork2_n_mount("/3nd"))
 		fs_passthru("/init");
+
+	if (!fork2_n_mount("/"))
+		fs_dir_inject("/test/dir/");
+
 }
