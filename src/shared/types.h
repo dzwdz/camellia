@@ -11,3 +11,9 @@
 
 typedef void __user * userptr_t;
 typedef int handle_t;
+
+enum vfs_operation {
+	VFSOP_OPEN,
+	VFSOP_READ,
+	VFSOP_WRITE,
+};
