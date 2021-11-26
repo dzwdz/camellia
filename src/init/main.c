@@ -43,16 +43,11 @@ void fs_prep(void) {
 	 * TODO actually write tests */
 	_syscall_mount(front, argify("/init/"));
 
-	/* from here on i'll just use the helper func fork2_n_mount */
+	if (!fork2_n_mount("/")) fs_dir_inject("/init/");
+
+	/* from here on i'll just use the helper MOUNT macro */
 
 	/* passthrough fs */
-	if (!fork2_n_mount("/2nd"))
-		fs_passthru(NULL);
-
-	if (!fork2_n_mount("/3nd"))
-		fs_passthru("/init");
-
-	if (!fork2_n_mount("/"))
-		fs_dir_inject("/test/dir/");
-
+	MOUNT("/2nd/", fs_passthru(NULL));     /* copies / under /2nd */
+	MOUNT("/3rd/", fs_passthru("/init/")); /* copies /init under /3rd */
 }
