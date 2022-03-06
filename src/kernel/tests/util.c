@@ -22,6 +22,15 @@ TEST(memcmp) {
 	TEST_COND(0 < memcmp("654", "555", 3));
 }
 
+TEST(strcmp) {
+	TEST_COND(0 == strcmp("string", "string"));
+	TEST_COND(0 > strcmp("str", "string"));
+	TEST_COND(0 < strcmp("string", "str"));
+
+	TEST_COND(0 != strcmp("stress", "string"));
+}
+
 void tests_utils(void) {
 	TEST_RUN(memcmp);
+	TEST_RUN(strcmp);
 }

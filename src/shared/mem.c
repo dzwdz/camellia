@@ -28,14 +28,12 @@ void *memset(void *s, int c, size_t n) {
 }
 
 int strcmp(const char *s1, const char *s2) {
-	while (*s1) {
-		if (*s1 != *s2) {
-			if (*s1 < *s2)  return -1;
-			else            return 1;
-		}
+	while (*s1 && *s1 == *s2) {
 		s1++; s2++;
 	}
-	return 0;
+	if (*s1 == *s2) return  0;
+	if (*s1 <  *s2) return -1;
+	else            return  1;
 }
 
 size_t strlen(const char *s) {
