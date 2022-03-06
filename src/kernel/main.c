@@ -16,17 +16,17 @@ _Noreturn static void run_init(struct kmain_info *info) {
 		            true, true);
 	proc->regs.eip = init_base;
 
-	tty_const("switching...");
+	tty_const("switching...\n");
 	process_switch(proc);
 }
 
 void kmain(struct kmain_info info) {
-	tty_const("mem...");
+	tty_const("mem...\n");
 	mem_init(&info);
 
-	tty_const("tests...");
+	tty_const("tests...\n");
 	tests_all();
 
-	tty_const("loading init...");
+	tty_const("loading init...\n");
 	run_init(&info);
 }
