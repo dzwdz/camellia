@@ -35,9 +35,11 @@ static void serial_putchar(char c) {
 	port_out8(COM1, c);
 }
 
-char serial_read(void) {
-	while ((port_in8(COM1 + 5) & 0x01) == 0); // wait for DR
-	return port_in8(COM1);
+bool serial_poll_read(char *c) {
+	if ((port_in8(COM1 + 5) & 0x01) == 0) // needs DR
+		return false;
+	*c = port_in8(COM1);
+	return true;
 }
 
 void serial_write(const char *buf, size_t len) {

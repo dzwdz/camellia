@@ -3,6 +3,7 @@
 #include <kernel/arch/i386/boot.h>
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/interrupts/idt.h>
+#include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/multiboot.h>
 #include <kernel/main.h>
 #include <kernel/panic.h>
@@ -16,6 +17,8 @@ void kmain_early(struct multiboot_info *multiboot) {
 	gdt_init();
 	tty_const("idt...");
 	idt_init();
+	tty_const("irq...");
+	irq_init();
 	tty_const("ata...");
 	ata_init();
 

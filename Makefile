@@ -7,7 +7,10 @@ CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -We
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
-QFLAGS  = -no-reboot -display none
+QFLAGS  = -no-reboot
+ifndef QEMU_DISPLAY
+QFLAGS += -display none
+endif
 
 define from_sources
   $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
