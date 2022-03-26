@@ -47,17 +47,29 @@ static int readline(char *buf, size_t max) {
 static void cmd_cat_ls(const char *args, bool ls) {
 	int fd;
 	static char buf[256];
-	int len = 256;
+	int len; // first used for strlen(args), then length of buffer
 
-	if (!args) return; // no argument
+	if (!args) args = "/";
+	len = strlen(args);
+	memcpy(buf, args, len + 1); // no overflow check - the shell is just a PoC
 
-	fd = _syscall_open(args, strlen(args));
+	if (ls) { // paths to directories always have a trailing slash
+		char *p = buf;
+		while (*p) p++;
+		if (p[-1] != '/') {
+			p[0] = '/';
+			p[1] = '\0';
+			len++;
+		}
+	}
+
+	fd = _syscall_open(buf, len);
 	if (fd < 0) {
 		printf("couldn't open.\n");
 		return;
 	}
 
-	len = _syscall_read(fd, buf, len, 0);
+	len = _syscall_read(fd, buf, sizeof buf, 0);
 	if (ls)
 		for (int i = 0; i < len; i++)
 			if (buf[i] == '\0') buf[i] = '\n';
