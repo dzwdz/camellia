@@ -6,7 +6,7 @@
 #define BUF_SIZE 64
 
 static int tar_open(const char *path, int len, void *base, size_t base_len);
-static int tar_read(struct fs_wait_response *res, void *base, size_t base_len);
+static void tar_read(struct fs_wait_response *res, void *base, size_t base_len);
 static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
@@ -47,14 +47,14 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 	 * returning a fake one. this isn't a full entry because i'm currently too
 	 * lazy to create a full one - thus, it has to be special cased in tar_read */
 	if (len == 0)
-		return root_fakemeta;
+		return (int)root_fakemeta;
 
-	ptr = tar_find(path, len, base, ~0);
+	ptr = tar_find(path, len, base, base_len);
 	if (!ptr) return -1;
 	return (int)ptr;
 }
 
-static int tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
+static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
 	void *meta =  (void*)res->id;
 	char  type = *(char*)(meta + 156);
 	size_t meta_len;
