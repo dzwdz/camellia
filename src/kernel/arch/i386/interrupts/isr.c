@@ -19,12 +19,12 @@ void isr_stage3(int interrupt) {
 			isr_test_interrupt_called = true;
 			return;
 
-		case 0x21:; // keyboard irq
+		case 0x21: // keyboard irq
 			keyboard_recv(port_in8(0x60));
 			irq_eoi(1);
 			return;
 
-		case 0x24:; // COM1 irq
+		case 0x24: // COM1 irq
 			irq_eoi(1);
 			return;
 
