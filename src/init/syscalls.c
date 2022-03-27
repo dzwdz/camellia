@@ -22,11 +22,11 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	return _syscall(_SYSCALL_MOUNT, handle, (int)path, len, 0);
 }
 
-int _syscall_read(handle_t handle, char __user *buf, int len, int offset) {
+int _syscall_read(handle_t handle, void __user *buf, int len, int offset) {
 	return _syscall(_SYSCALL_READ, handle, (int)buf, len, offset);
 }
 
-int _syscall_write(handle_t handle, const char __user *buf, int len, int offset) {
+int _syscall_write(handle_t handle, const void __user *buf, int len, int offset) {
 	return _syscall(_SYSCALL_WRITE, handle, (int)buf, len, offset);
 }
 

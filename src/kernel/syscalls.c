@@ -125,7 +125,7 @@ fail:
 	return -1;
 }
 
-int _syscall_read(handle_t handle_num, char __user *buf, int len, int offset) {
+int _syscall_read(handle_t handle_num, void __user *buf, int len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -142,7 +142,7 @@ int _syscall_read(handle_t handle_num, char __user *buf, int len, int offset) {
 		});
 }
 
-int _syscall_write(handle_t handle_num, const char __user *buf, int len, int offset) {
+int _syscall_write(handle_t handle_num, const void __user *buf, int len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
