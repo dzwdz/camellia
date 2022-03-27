@@ -1,4 +1,5 @@
 #include <shared/syscalls.h>
+#include <stdbool.h>
 
 struct vga_cell {
 	unsigned char c;
@@ -10,10 +11,15 @@ static handle_t tty_fd;
 static handle_t vga_fd;
 
 static struct {int x, y;} cursor = {0};
+static bool dirty = false;
+static bool pendingFlush = false;
 
+/* TODO unflushed writes mix with the kernel's vga driver */
 
 static void flush(void) {
 	_syscall_write(vga_fd, vga, sizeof vga, 0);
+	dirty = false;
+	pendingFlush = false;
 }
 
 static void scroll(void) {
@@ -22,6 +28,7 @@ static void scroll(void) {
 	for (size_t i = 80 * 24; i < 80 * 25; i++)
 		vga[i].c = ' ';
 	cursor.y--;
+	pendingFlush = true;
 }
 
 static void in_char(char c) {
@@ -29,6 +36,7 @@ static void in_char(char c) {
 		case '\n':
 			cursor.x = 0;
 			cursor.y++;
+			pendingFlush = true;
 			break;
 		case '\b':
 			if (--cursor.x < 0) cursor.x = 0;
@@ -42,6 +50,7 @@ static void in_char(char c) {
 		cursor.y++;
 	}
 	while (cursor.y >= 25) scroll();
+	dirty = true;
 }
 
 void ansiterm_drv(void) {
@@ -74,13 +83,14 @@ void ansiterm_drv(void) {
 				_syscall_write(tty_fd, buf, res.len, 0);
 				for (int i = 0; i < res.len; i++)
 					in_char(buf[i]);
-				flush();
+				if (pendingFlush) flush();
 				_syscall_fs_respond(NULL, res.len);
 				break;
 
 			case VFSOP_READ:
 				if (res.capacity > sizeof buf)
 					res.capacity = sizeof buf;
+				if (dirty) flush();
 				size_t len = _syscall_read(tty_fd, buf, res.capacity, 0);
 				_syscall_fs_respond(buf, len);
 				break;
