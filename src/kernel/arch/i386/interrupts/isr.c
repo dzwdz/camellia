@@ -24,6 +24,10 @@ void isr_stage3(int interrupt) {
 			irq_eoi(1);
 			return;
 
+		case 0x24:; // COM1 irq
+			irq_eoi(1);
+			return;
+
 		default:
 			// TODO check if the exception was in the kernel
 			process_kill(process_current, interrupt);

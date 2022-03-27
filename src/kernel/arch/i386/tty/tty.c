@@ -19,6 +19,7 @@ void tty_read(char *buf, size_t len) {
 		for (;;) {
 			if (serial_poll_read(&buf[i]))		break;
 			if (keyboard_poll_read(&buf[i]))	break;
+			asm("hlt" ::: "memory");
 		}
 	}
 }

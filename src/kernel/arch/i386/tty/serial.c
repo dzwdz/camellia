@@ -14,15 +14,13 @@ static void serial_selftest(void) {
 
 void serial_init(void) {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
-
-	port_out8(COM1 + 1, 0x00); // disable interrupts, we won't be using them
-
 	// set baud rate divisor
 	port_out8(COM1 + 3, 0b10000000); // enable DLAB
 	port_out8(COM1 + 0, 0x01);       // divisor = 1 (low  byte)
 	port_out8(COM1 + 1, 0x00);       //             (high byte)
 
 	port_out8(COM1 + 3, 0b00000011); // 8 bits, no parity, one stop bit
+	port_out8(COM1 + 1, 0x01);       // enable the Data Ready IRQ
 	port_out8(COM1 + 2, 0b11000111); // enable FIFO with 14-bit trigger level (???)
 
 	serial_selftest();

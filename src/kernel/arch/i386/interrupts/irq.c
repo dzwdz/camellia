@@ -5,27 +5,24 @@
 static const int PIC1 = 0x20;
 static const int PIC2 = 0xA0;
 
-static void irq_unmask(uint8_t line) {
-	uint16_t pic = line < 8 ? PIC1 : PIC2;
-	line &= 7;
-
-	port_out8(pic+1, port_in8(pic+1) & ~(1 << line));
-}
-
 void irq_init(void) {
-	port_out8(PIC1, 0x11);  /* start init sequence */
+	port_out8(PIC1, 0x11);   /* start init sequence */
 	port_out8(PIC2, 0x11);
 
-	port_out8(PIC1+1, 0x20);   /* interrupt offsets */
+	port_out8(PIC1+1, 0x20); /* interrupt offsets */
 	port_out8(PIC2+1, 0x30);
 
-	port_out8(PIC1+1, 0x4);   /* just look at the osdev wiki lol */
+	port_out8(PIC1+1, 0x4);  /* just look at the osdev wiki lol */
 	port_out8(PIC2+1, 0x2);
 
-	port_out8(PIC1+1, 0x1);   /* 8086 mode */
+	port_out8(PIC1+1, 0x1);  /* 8086 mode */
 	port_out8(PIC2+1, 0x1);
 
-	port_out8(PIC1+1, 0xfd); /* mask */
+	uint8_t mask = 0xff;
+	mask &= ~(1 << 1); // keyboard
+	mask &= ~(1 << 4); // COM1
+
+	port_out8(PIC1+1, mask);
 	port_out8(PIC2+1, 0xff);
 }
 
