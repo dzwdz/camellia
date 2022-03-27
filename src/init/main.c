@@ -17,20 +17,18 @@ extern char _initrd;
 void read_file(const char *path, size_t len);
 void fs_prep(void);
 
+void ansiterm_drv(void); // TODO header file
+
 __attribute__((section(".text.startup")))
 int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
+	if (!fork2_n_mount("/tty")) ansiterm_drv();
+
 	__tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
 	if (__tty_fd < 0)
 		_syscall_exit(1);
-
-	// change screen color
-	handle_t vga = _syscall_open(argify("/vga"));
-	for (int i = 1; i < 80*25*2; i += 2)
-		_syscall_write(vga, "\x4f", 1, i);
-	_syscall_close(vga);
 
 	fs_prep();
 	shell_loop();

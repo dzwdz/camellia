@@ -179,7 +179,13 @@ handle_t _syscall_fs_fork2(void) {
 	 * also there's this whole thing with handling errors here properly and
 	 * errno
 	 * TODO figure this out */
-	if (front == 0) panic_unimplemented();
+	if (front == 0) {
+		// dumb hack
+		front = process_find_handle(process_current);
+		if (front < 0) return -1;
+		process_current->handles[front].type = HANDLE_FS_FRONT;
+		process_current->handles[0].type = HANDLE_EMPTY;
+	}
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
