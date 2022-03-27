@@ -26,6 +26,12 @@ int main(void) {
 	if (__tty_fd < 0)
 		_syscall_exit(1);
 
+	// change screen color
+	handle_t vga = _syscall_open(argify("/vga"));
+	for (int i = 1; i < 80*25*2; i += 2)
+		_syscall_write(vga, "\x4f", 1, i);
+	_syscall_close(vga);
+
 	fs_prep();
 	shell_loop();
 
