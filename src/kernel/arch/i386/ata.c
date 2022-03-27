@@ -15,6 +15,9 @@ static struct {
 } ata_drives[4];
 
 enum {
+	DATA   = 0,
+	FEAT   = 1,
+	SCNT   = 2,
 	LBAlo  = 3,
 	LBAmid = 4,
 	LBAhi  = 5,
@@ -112,20 +115,39 @@ static bool ata_identify(int drive) {
 }
 
 void ata_init(void) {
-	tty_const("\n");
 	for (int i = 0; i < 4; i++) {
-		tty_const("probing drive ");
-		_tty_var(i);
 		ata_detecttype(i);
-		if (ata_drives[i].type != DEV_UNKNOWN) {
-			if (ata_identify(i)) {
-				tty_const(" - ");
-				_tty_var(ata_drives[i].sectors);
-				tty_const(" sectors (512b)");
-			} else {
-				tty_const(" identify failed");
-			}
-		}
-		tty_const("\n");
+		if (ata_drives[i].type == DEV_PATA)
+			ata_identify(i);
 	}
+}
+
+bool ata_available(int drive) {
+	return ata_drives[drive].type != DEV_UNKNOWN;
+}
+
+int ata_read(int drive, uint32_t lba, void *buf) {
+	assert(ata_drives[drive].type == DEV_PATA);
+	int iobase = ata_iobase(drive);
+
+	ata_driveselect(drive, lba);
+	port_out8(iobase + FEAT, 0); // supposedly pointless
+	port_out8(iobase + SCNT, 1); // sector count
+	port_out8(iobase + LBAlo, lba);
+	port_out8(iobase + LBAmid, lba >> 8);
+	port_out8(iobase + LBAhi, lba >> 16);
+	port_out8(iobase + CMD, 0x20); // READ SECTORS
+
+	for (;;) { // TODO separate polling function
+		uint8_t v = port_in8(iobase + STATUS);
+		if (v & 0x80) continue; // still BSY, continue
+		if (v & 0x40) break; // RDY, break
+		// TODO check for ERR
+	}
+
+	uint16_t *b = buf;
+	for (int i = 0; i < 256; i++)
+		b[i] = port_in16(iobase);
+
+	return 512;
 }

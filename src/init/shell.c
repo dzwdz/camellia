@@ -46,7 +46,7 @@ static int readline(char *buf, size_t max) {
 
 static void cmd_cat_ls(const char *args, bool ls) {
 	int fd;
-	static char buf[256];
+	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
 
 	if (!args) args = "/";

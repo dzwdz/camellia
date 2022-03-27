@@ -22,13 +22,12 @@ endef
 all: out/boot.iso check
 
 boot: all out/hdd
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -serial stdio \
-		-drive file=out/hdd,format=raw,media=disk
+	qemu-system-i386 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial stdio
 
 test: all
 	@# pipes for the serial
 	@mkfifo out/qemu.in out/qemu.out 2> /dev/null || true
-	qemu-system-i386 -cdrom out/boot.iso $(QFLAGS) -serial pipe:out/qemu &
+	qemu-system-i386 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial pipe:out/qemu &
 	@# for some reason the first sent character doesn't go through to the shell
 	@# the empty echo takes care of that, so the next echos will work just fine
 	@echo > out/qemu.in
