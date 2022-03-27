@@ -13,10 +13,18 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 }
 
 void *memcpy(void *dest, const void *src, size_t n) {
-	char *d = dest;
-	const char *s = src;
-	for (size_t i = 0; i < n; i++)
-		d[i] = s[i];
+	const uint32_t *s32 = src;
+	uint32_t *d32 = dest;
+	while (n >= 4) {
+		*d32++ = *s32++;
+		n -= 4;
+	}
+
+	const char *s8 = (void*)s32;
+	char *d8 = (void*)d32;
+	while (n-- != 0)
+		*d8++ = *s8++;
+
 	return dest;
 }
 
