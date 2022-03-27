@@ -21,8 +21,20 @@ int printf(const char *fmt, ...) {
 			case '%':
 				_syscall_write(0, seg, fmt - seg - 1, 0);
 				total += fmt - seg - 1;
+				size_t pad_len = 0;
+parse_fmt:
 				c = *fmt++;
 				switch (c) {
+					case '0':
+						pad_len = *fmt++ - '0'; // can skip over the null byte, idc
+						goto parse_fmt;
+
+					case 'c':
+						char c = va_arg(argp, int);
+						_syscall_write(0, &c, 1, 0);
+						total += 1;
+						break;
+
 					case 's':
 						const char *s = va_arg(argp, char*);
 						if (s) {
@@ -36,6 +48,9 @@ int printf(const char *fmt, ...) {
 						size_t i = 4; // nibbles * 4
 						while (n >> i && i < (sizeof(int) * 8))
 							i += 4;
+
+						if (i < pad_len * 4)
+							i = pad_len * 4;
 
 						while (i > 0) {
 							i -= 4;

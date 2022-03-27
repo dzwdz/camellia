@@ -78,6 +78,38 @@ static void cmd_cat_ls(const char *args, bool ls) {
 	_syscall_close(fd);
 }
 
+static void cmd_hexdump(const char *args) {
+	static uint8_t buf[513];
+	int fd, len;
+
+	fd = _syscall_open(args, strlen(args));
+	if (fd < 0) {
+		printf("couldn't open.\n");
+		return;
+	}
+
+	len = _syscall_read(fd, buf, sizeof buf, 0);
+	for (int i = 0; i < len; i += 16) {
+		printf("%08x  ", i);
+
+		for (int j = i; j < i + 8 && j < len; j++)
+			printf("%02x ", buf[j]);
+		printf(" ");
+		for (int j = i + 8; j < i + 16 && j < len; j++)
+			printf("%02x ", buf[j]);
+		printf(" |");
+
+		for (int j = i; j < i + 16 && j < len; j++) {
+			char c = '.';
+			if (0x20 <= buf[j] && buf[j] < 0x7f) c = buf[j];
+			printf("%c", c);
+		}
+		printf("|\n");
+	}
+
+	_syscall_close(fd);
+}
+
 void shell_loop(void) {
 	static char cmd[256];
 	int level = 0;
@@ -93,6 +125,8 @@ void shell_loop(void) {
 			cmd_cat_ls(args, false);
 		} else if (!strcmp(cmd, "ls")) {
 			cmd_cat_ls(args, true);
+		} else if (!strcmp(cmd, "hexdump")) {
+			cmd_hexdump(args);
 		} else if (!strcmp(cmd, "catall")) {
 			const char *files[] = {
 				"/init/fake.txt",
