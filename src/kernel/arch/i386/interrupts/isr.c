@@ -1,7 +1,7 @@
+#include <kernel/arch/i386/driver/ps2.h>
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/interrupts/isr.h>
 #include <kernel/arch/i386/port_io.h>
-#include <kernel/arch/i386/tty/keyboard.h>
 #include <kernel/arch/io.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -20,7 +20,7 @@ void isr_stage3(int interrupt) {
 			return;
 
 		case 0x21: // keyboard irq
-			keyboard_recv(port_in8(0x60));
+			ps2_recv(port_in8(0x60));
 			irq_eoi(1);
 			return;
 

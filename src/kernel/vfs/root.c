@@ -1,4 +1,5 @@
 #include <kernel/arch/i386/ata.h>
+#include <kernel/arch/i386/driver/ps2.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -12,6 +13,7 @@ enum {
 	HANDLE_ROOT,
 	HANDLE_TTY,
 	HANDLE_VGA,
+	HANDLE_PS2,
 	HANDLE_ATA_ROOT,
 	HANDLE_ATA,
 	_SKIP = HANDLE_ATA + 4,
@@ -58,8 +60,10 @@ int vfs_root_handler(struct vfs_request *req) {
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
 			if (exacteq(req, "/tty"))	return HANDLE_TTY;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
-			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
 
+			if (exacteq(req, "/ps2"))	return HANDLE_PS2;
+
+			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
 			if (exacteq(req, "/ata/0"))
 				return ata_available(0) ? HANDLE_ATA+0 : -1;
 			if (exacteq(req, "/ata/1"))
@@ -95,6 +99,12 @@ int vfs_root_handler(struct vfs_request *req) {
 					virt_cpy_to(req->caller->pages, req->output.buf,
 							vga + req->offset, req->output.len);
 					return req->output.len;
+				}
+				case HANDLE_PS2: {
+					uint8_t buf[16];
+					size_t len = ps2_read(buf, sizeof buf);
+					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
+					return len;
 				}
 				case HANDLE_ATA_ROOT: {
 					// TODO offset
