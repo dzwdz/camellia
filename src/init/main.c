@@ -29,6 +29,8 @@ int main(void) {
 	if (__tty_fd < 0)
 		_syscall_exit(1);
 
+	MOUNT("/keyboard", ps2_drv());
+
 	fs_prep();
 	shell_loop();
 
