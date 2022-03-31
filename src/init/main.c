@@ -1,3 +1,4 @@
+#include <init/driver/driver.h>
 #include <init/fs/misc.h>
 #include <init/shell.h>
 #include <init/stdlib.h>
@@ -16,8 +17,6 @@ extern char _initrd;
 
 void read_file(const char *path, size_t len);
 void fs_prep(void);
-
-void ansiterm_drv(void); // TODO header file
 
 __attribute__((section(".text.startup")))
 int main(void) {
