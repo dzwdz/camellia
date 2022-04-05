@@ -2,9 +2,7 @@
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <shared/mem.h>
 
-#define BACKLOG_CAPACITY 16
-
-/* TODO move away from tty/ */
+#define BACKLOG_CAPACITY 64
 
 static volatile uint8_t backlog[BACKLOG_CAPACITY] = {};
 static volatile size_t backlog_size = 0;
@@ -14,15 +12,21 @@ void ps2_recv(uint8_t s) {
 	backlog[backlog_size++] = s;
 }
 
-size_t ps2_read(uint8_t *buf, size_t max_len) {
+size_t ps2_read(uint8_t *buf, size_t len) {
 	irq_interrupt_flag(true);
 	while (backlog_size == 0)
 		asm("hlt" ::: "memory");
 	irq_interrupt_flag(false);
 
-	size_t len = backlog_size;
-	if (len > max_len) len = max_len;
-	backlog_size = 0;
+	if (backlog_size <= len)
+		len = backlog_size;
+	backlog_size -= len; /* guaranteed to never be < 0 */
 	memcpy(buf, (void*)backlog, len);
+
+	/* move rest of buffer back on partial reads */
+	// TODO assumes that memcpy()ing into an overlapping buffer is fine, outside spec
+	if (backlog_size > 0)
+		memcpy((void*)backlog, (void*)backlog + len, backlog_size);
+
 	return len;
 }
