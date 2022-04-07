@@ -2,7 +2,8 @@
 #include <shared/syscalls.h>
 #include <stdarg.h>
 
-int __tty_fd;
+int __stdin  = -1;
+int __stdout = -1;
 
 
 int printf(const char *fmt, ...) {
@@ -10,7 +11,7 @@ int printf(const char *fmt, ...) {
 	int total = 0;
 	va_list argp;
 	va_start(argp, fmt);
-	if (__tty_fd < 0) return 0;
+	if (__stdout < 0) return 0;
 
 	for (;;) {
 		char c = *fmt++;

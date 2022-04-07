@@ -18,7 +18,7 @@ static char *split(char *base) {
 static int readline(char *buf, size_t max) {
 	char c;
 	size_t pos = 0;
-	while (_syscall_read(__tty_fd, &c, 1, 0)) {
+	while (_syscall_read(__stdin, &c, 1, 0)) {
 		switch (c) {
 			case '\b':
 			case 0x7f:
@@ -35,7 +35,7 @@ static int readline(char *buf, size_t max) {
 				return pos;
 			default:
 				if (pos < max) {
-					_syscall_write(__tty_fd, &c, 1, 0);
+					_syscall_write(__stdout, &c, 1, 0);
 					buf[pos] = c;
 					pos++;
 				}
@@ -74,7 +74,7 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		for (int i = 0; i < len; i++)
 			if (buf[i] == '\0') buf[i] = '\n';
 
-	_syscall_write(__tty_fd, buf, len, 0);
+	_syscall_write(__stdout, buf, len, 0);
 	_syscall_close(fd);
 }
 

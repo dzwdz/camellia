@@ -30,24 +30,30 @@ int main(void) {
 	MOUNT("/bind", fs_passthru(NULL));
 
 	if (!_syscall_fork()) {
-		__tty_fd = _syscall_open(argify("/com1"));
-		if (__tty_fd < 0) _syscall_exit(1);
+		__stdin = __stdout = _syscall_open(argify("/com1"));
+		if (__stdout < 0) _syscall_exit(1);
 
 		shell_loop();
 		_syscall_exit(1);
 	}
 
 	if (!_syscall_fork()) {
-		__tty_fd = _syscall_open(argify("/vga_tty"));
-		if (__tty_fd < 0) _syscall_exit(1);
+		__stdout = _syscall_open(argify("/vga_tty"));
+		if (__stdout < 0) _syscall_exit(1);
+
+		__stdin = _syscall_open(argify("/keyboard"));
+		if (__stdin < 0) {
+			printf("couldn't open /keyboard\n");
+			_syscall_exit(1);
+		}
 
 		shell_loop();
 		_syscall_exit(1);
 	}
 
 	// try to find any working output
-	__tty_fd = _syscall_open(argify("/com1"));
-	if (__tty_fd < 0) __tty_fd = _syscall_open(argify("/vga_tty"));
+	__stdout = _syscall_open(argify("/com1"));
+	if (__stdout < 0) __stdout = _syscall_open(argify("/vga_tty"));
 
 	for (;;) {
 		_syscall_await();

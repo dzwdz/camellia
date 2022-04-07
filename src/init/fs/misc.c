@@ -47,14 +47,13 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 	 *          ```
 	 */
 	static char buf[1024];
-	int buf_size  = 1024;
 	int size;
 	int ret;
 
 	switch (res->op) {
 		case VFSOP_READ:
 			// TODO instead of truncating the size, allocate a bigger buffer
-			size = res->capacity < buf_size ? res->capacity : buf_size;
+			size = res->capacity < sizeof(buf) ? res->capacity : sizeof(buf);
 			ret = _syscall_read(delegate, buf, size, res->offset);
 			_syscall_fs_respond(buf, ret);
 			break;
@@ -74,17 +73,16 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 
 void fs_passthru(const char *prefix) {
 	struct fs_wait_response res;
-	int buf_size = 64; // TODO just use sizeof...
-	char buf[      64];
+	static char buf[1024];
 	int ret, prefix_len;
 	if (prefix) prefix_len = strlen(prefix);
 
-	while (!_syscall_fs_wait(buf, buf_size, &res)) {
+	while (!_syscall_fs_wait(buf, sizeof(buf), &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (prefix) {
 					/* special case: rewriting the path */
-					if (prefix_len + res.len <= buf_size) {
+					if (prefix_len + res.len <= sizeof(buf)) {
 						// TODO memmove
 						char tmp[64];
 						memcpy(tmp, buf, res.len);
@@ -117,11 +115,10 @@ void fs_dir_inject(const char *path) {
 	struct fs_wait_response res;
 	struct fs_dir_handle handles[16]; // TODO hardcoded FD_MAX - use malloc instead
 	int handle_next = 0;
-	int buf_size = 64;
-	char buf[      64];
+	static char buf[1024];
 	int ret;
 
-	while (!_syscall_fs_wait(buf, buf_size, &res)) {
+	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (handle_next > 15) _syscall_fs_respond(NULL, -2); // we ran out of handles, which is entirely our fault.
@@ -153,7 +150,7 @@ void fs_dir_inject(const char *path) {
 					buf[out_len++] = '\0';
 
 					if (h.delegate >= 0) {
-						int to_read = res.capacity < buf_size ? res.capacity : buf_size;
+						int to_read = res.capacity < sizeof(buf) ? res.capacity : sizeof(buf);
 						to_read -= out_len;
 						ret = _syscall_read(h.delegate, buf + out_len, to_read, 0);
 						if (ret > 0) out_len += ret;

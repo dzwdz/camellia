@@ -8,17 +8,18 @@ struct vga_cell {
 } __attribute__((__packed__));
 static struct vga_cell vga[80 * 25];
 
-static handle_t tty_fd;
 static handle_t vga_fd;
 
 static struct {int x, y;} cursor = {0};
 static bool dirty = false;
 static bool pendingFlush = false;
 
-/* TODO unflushed writes mix with the kernel's vga driver */
-
 static void flush(void) {
-	_syscall_write(vga_fd, vga, sizeof vga, 0);
+	size_t off = 0;
+	/* we have to do multiple write() calls if we're behind a shitty passthrough fs
+	 * i don't like this either */
+	while (off < sizeof(vga))
+		off += _syscall_write(vga_fd, (void*)vga + off, sizeof(vga) - off, off);
 	dirty = false;
 	pendingFlush = false;
 }
@@ -55,9 +56,6 @@ static void in_char(char c) {
 }
 
 void ansiterm_drv(void) {
-	tty_fd = _syscall_open("/tty", 4);
-	_syscall_write(tty_fd, "ansiterm...\n", 12, 0);
-
 	vga_fd = _syscall_open("/vga", 4);
 	_syscall_read(vga_fd, vga, sizeof vga, 0);
 
@@ -71,6 +69,10 @@ void ansiterm_drv(void) {
 	}
 	cursor.x = 0;
 
+	for (int i = 0; i < 80 * 25; i++)
+		vga[i].style = 0x70;
+	flush();
+
 	static char buf[512];
 	struct fs_wait_response res;
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
@@ -81,19 +83,10 @@ void ansiterm_drv(void) {
 				break;
 
 			case VFSOP_WRITE:
-				_syscall_write(tty_fd, buf, res.len, 0);
 				for (int i = 0; i < res.len; i++)
 					in_char(buf[i]);
-				if (pendingFlush) flush();
+				/* if (pendingFlush) */ flush();
 				_syscall_fs_respond(NULL, res.len);
-				break;
-
-			case VFSOP_READ:
-				if (res.capacity > sizeof buf)
-					res.capacity = sizeof buf;
-				if (dirty) flush();
-				size_t len = _syscall_read(tty_fd, buf, res.capacity, 0);
-				_syscall_fs_respond(buf, len);
 				break;
 
 			default:
