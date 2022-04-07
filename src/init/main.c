@@ -23,9 +23,9 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	if (!fork2_n_mount("/tty")) ansiterm_drv();
+	// TODO if (!fork2_n_mount("/tty")) ansiterm_drv();
 
-	__tty_fd = _syscall_open("/tty", sizeof("/tty") - 1);
+	__tty_fd = _syscall_open(argify("/com1"));
 	if (__tty_fd < 0)
 		_syscall_exit(1);
 

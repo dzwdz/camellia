@@ -12,7 +12,6 @@
 
 enum {
 	HANDLE_ROOT,
-	HANDLE_TTY,
 	HANDLE_VGA,
 	HANDLE_COM1,
 	HANDLE_PS2,
@@ -60,9 +59,7 @@ int vfs_root_handler(struct vfs_request *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
-			if (exacteq(req, "/tty"))	return HANDLE_TTY;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
-
 			if (exacteq(req, "/com1"))	return HANDLE_COM1;
 			if (exacteq(req, "/ps2"))	return HANDLE_PS2;
 
@@ -83,7 +80,6 @@ int vfs_root_handler(struct vfs_request *req) {
 				case HANDLE_ROOT: {
 					// TODO document directory read format
 					const char src[] =
-						"tty\0"
 						"vga\0"
 						"com1\0"
 						"ps2\0"
@@ -93,14 +89,6 @@ int vfs_root_handler(struct vfs_request *req) {
 					virt_cpy_to(req->caller->pages, req->output.buf, src, len);
 					return len;
 				}
-				case HANDLE_TTY: {
-					struct virt_iter iter;
-					virt_iter_new(&iter, req->output.buf, req->output.len,
-							req->caller->pages, true, false);
-					while (virt_iter_next(&iter))
-						tty_read(iter.frag, iter.frag_len);
-					return iter.prior;
-				}
 				case HANDLE_VGA: {
 					char *vga = (void*)0xB8000;
 					req_preprocess(req, 80*25*2);
@@ -109,10 +97,12 @@ int vfs_root_handler(struct vfs_request *req) {
 					return req->output.len;
 				}
 				case HANDLE_COM1: {
-					char buf[16];
-					size_t len = serial_read(buf, sizeof buf);
-					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
-					return len;
+					struct virt_iter iter;
+					virt_iter_new(&iter, req->output.buf, req->output.len,
+						req->caller->pages, true, false);
+					while (virt_iter_next(&iter))
+						serial_read(iter.frag, iter.frag_len);
+					return iter.prior;
 				}
 				case HANDLE_PS2: {
 					uint8_t buf[16];
@@ -150,14 +140,6 @@ int vfs_root_handler(struct vfs_request *req) {
 		case VFSOP_WRITE:
 			switch (req->id) {
 				case HANDLE_ROOT: return -1;
-				case HANDLE_TTY: {
-					struct virt_iter iter;
-					virt_iter_new(&iter, req->input.buf, req->input.len,
-							req->caller->pages, true, false);
-					while (virt_iter_next(&iter))
-						tty_write(iter.frag, iter.frag_len);
-					return iter.prior;
-				}
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
 					req_preprocess(req, 80*25*2);

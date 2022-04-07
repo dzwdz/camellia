@@ -44,12 +44,11 @@ bool serial_poll_read(char *c) {
 size_t serial_read(char *buf, size_t len) {
 	irq_interrupt_flag(true);
 	for (size_t i = 0; i < len; i++) {
-		for (;;) {
-			if (serial_poll_read(&buf[i]))	break;
+		while (!serial_poll_read(&buf[i]))
 			asm("hlt" ::: "memory");
-		}
 	}
 	irq_interrupt_flag(false);
+	// TODO root driver assumes no partial reads
 	return len;
 }
 
