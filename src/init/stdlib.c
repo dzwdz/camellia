@@ -10,6 +10,8 @@ int printf(const char *fmt, ...) {
 	int total = 0;
 	va_list argp;
 	va_start(argp, fmt);
+	if (__tty_fd < 0) return 0;
+
 	for (;;) {
 		char c = *fmt++;
 		switch (c) {

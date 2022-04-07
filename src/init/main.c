@@ -16,43 +16,43 @@ extern char _bss_end;
 extern char _initrd;
 
 void read_file(const char *path, size_t len);
-void fs_prep(void);
 
 __attribute__((section(".text.startup")))
 int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	// TODO if (!fork2_n_mount("/tty")) ansiterm_drv();
 
-	__tty_fd = _syscall_open(argify("/com1"));
-	if (__tty_fd < 0)
-		_syscall_exit(1);
-
+	MOUNT("/init", tar_driver(&_initrd));
 	MOUNT("/keyboard", ps2_drv());
+	MOUNT("/vga_tty", ansiterm_drv());
 
-	fs_prep();
-	shell_loop();
+	MOUNT("/bind", fs_passthru(NULL));
 
-	_syscall_exit(0);
-}
+	if (!_syscall_fork()) {
+		__tty_fd = _syscall_open(argify("/com1"));
+		if (__tty_fd < 0) _syscall_exit(1);
 
-void fs_prep(void) {
-	handle_t front = _syscall_fs_fork2();
-	if (!front) {
-		tar_driver(&_initrd);
+		shell_loop();
 		_syscall_exit(1);
 	}
 
-	/* the trailing slash should be ignored by mount()
-	 * TODO actually write tests */
-	_syscall_mount(front, argify("/init/"));
+	if (!_syscall_fork()) {
+		__tty_fd = _syscall_open(argify("/vga_tty"));
+		if (__tty_fd < 0) _syscall_exit(1);
 
-	if (!fork2_n_mount("/")) fs_dir_inject("/init/");
+		shell_loop();
+		_syscall_exit(1);
+	}
 
-	/* from here on i'll just use the helper MOUNT macro */
+	// try to find any working output
+	__tty_fd = _syscall_open(argify("/com1"));
+	if (__tty_fd < 0) __tty_fd = _syscall_open(argify("/vga_tty"));
 
-	/* passthrough fs */
-	MOUNT("/2nd/", fs_passthru(NULL));     /* copies / under /2nd */
-	MOUNT("/3rd/", fs_passthru("/init/")); /* copies /init under /3rd */
+	for (;;) {
+		_syscall_await();
+		printf("init: something quit\n");
+	}
+
+	_syscall_exit(0);
 }

@@ -25,15 +25,17 @@ int vfs_request_create(struct vfs_request req_) {
 			ret = vfs_request_finish(req, ret);
 			return ret;
 		case VFS_BACK_USER:
-			if (req->backend->handler == NULL) {
+			if (req->backend->handler
+					&& req->backend->handler->state == PS_WAITS4REQUEST)
+			{
+				vfs_request_pass2handler(req);
+			} else {
 				// backend isn't ready yet, join the queue
 				struct process **iter = &req->backend->queue;
 				while (*iter != NULL)
 					iter = &(*iter)->waits4fs.queue_next;
 				*iter = process_current;
 				process_switch_any();
-			} else {
-				vfs_request_pass2handler(req);
 			}
 		default:
 			panic_invalid_state();
@@ -45,7 +47,7 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 	struct fs_wait_response res = {0};
 	int len;
 	assert(handler);
-	assert(handler->state == PS_WAITS4REQUEST);
+	assert(handler->state == PS_WAITS4REQUEST); // TODO currently callers have to ensure that the handler is in the correct state. should they?
 	assert(!handler->handled_req);
 	handler->state = PS_RUNNING;
 	handler->handled_req = req;
