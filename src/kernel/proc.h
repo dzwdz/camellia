@@ -27,7 +27,10 @@ struct process {
 	// saved value, meaning depends on .state
 	union {
 		int death_msg; // PS_DEAD
-		struct vfs_request pending_req; // PS_WAITS4FS
+		struct {
+			struct vfs_request req;
+			struct process *queue_next;
+		} waits4fs; // PS_WAITS4FS
 		struct {
 			char __user *buf;
 			int  max_len;

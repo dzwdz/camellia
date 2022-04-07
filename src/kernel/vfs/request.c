@@ -10,10 +10,11 @@ int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
 	int ret;
 	process_current->state = PS_WAITS4FS;
+	process_current->waits4fs.queue_next = NULL;
 
 	// the request is owned by the caller
-	process_current->pending_req = req_;
-	req = &process_current->pending_req;
+	process_current->waits4fs.req = req_;
+	req = &process_current->waits4fs.req;
 
 	if (!req->backend)
 		return vfs_request_finish(req, -1);
@@ -26,8 +27,10 @@ int vfs_request_create(struct vfs_request req_) {
 		case VFS_BACK_USER:
 			if (req->backend->handler == NULL) {
 				// backend isn't ready yet, join the queue
-				assert(req->backend->queue == NULL); // TODO implement a proper queue
-				req->backend->queue = process_current;
+				struct process **iter = &req->backend->queue;
+				while (*iter != NULL)
+					iter = &(*iter)->waits4fs.queue_next;
+				*iter = process_current;
 				process_switch_any();
 			} else {
 				vfs_request_pass2handler(req);

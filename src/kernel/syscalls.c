@@ -215,8 +215,8 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	if (backend->queue) {
 		// handle queued requests
 		struct process *queued = backend->queue;
-		backend->queue = NULL; // TODO get the next queued proc
-		vfs_request_pass2handler(&queued->pending_req);
+		backend->queue = queued->waits4fs.queue_next;
+		vfs_request_pass2handler(&queued->waits4fs.req);
 	} else {
 		process_switch_any();
 	}
