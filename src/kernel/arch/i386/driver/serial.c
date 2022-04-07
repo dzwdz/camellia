@@ -1,5 +1,6 @@
+#include <kernel/arch/i386/driver/serial.h>
+#include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/port_io.h>
-#include <kernel/arch/i386/tty/serial.h>
 #include <kernel/panic.h>
 #include <stdint.h>
 
@@ -38,6 +39,18 @@ bool serial_poll_read(char *c) {
 		return false;
 	*c = port_in8(COM1);
 	return true;
+}
+
+size_t serial_read(char *buf, size_t len) {
+	irq_interrupt_flag(true);
+	for (size_t i = 0; i < len; i++) {
+		for (;;) {
+			if (serial_poll_read(&buf[i]))	break;
+			asm("hlt" ::: "memory");
+		}
+	}
+	irq_interrupt_flag(false);
+	return len;
 }
 
 void serial_write(const char *buf, size_t len) {

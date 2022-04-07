@@ -1,5 +1,6 @@
 #include <kernel/arch/i386/ata.h>
 #include <kernel/arch/i386/driver/ps2.h>
+#include <kernel/arch/i386/driver/serial.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -13,6 +14,7 @@ enum {
 	HANDLE_ROOT,
 	HANDLE_TTY,
 	HANDLE_VGA,
+	HANDLE_COM1,
 	HANDLE_PS2,
 	HANDLE_ATA_ROOT,
 	HANDLE_ATA,
@@ -61,6 +63,7 @@ int vfs_root_handler(struct vfs_request *req) {
 			if (exacteq(req, "/tty"))	return HANDLE_TTY;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
 
+			if (exacteq(req, "/com1"))	return HANDLE_COM1;
 			if (exacteq(req, "/ps2"))	return HANDLE_PS2;
 
 			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
@@ -79,7 +82,12 @@ int vfs_root_handler(struct vfs_request *req) {
 			switch (req->id) {
 				case HANDLE_ROOT: {
 					// TODO document directory read format
-					const char src[] = "tty\0vga\0ata/";
+					const char src[] =
+						"tty\0"
+						"vga\0"
+						"com1\0"
+						"ps2\0"
+						"ata/";
 					if (req->output.len < 0) return 0; // is this needed? TODO make that a size_t or something
 					int len = min((size_t) req->output.len, sizeof(src));
 					virt_cpy_to(req->caller->pages, req->output.buf, src, len);
@@ -99,6 +107,12 @@ int vfs_root_handler(struct vfs_request *req) {
 					virt_cpy_to(req->caller->pages, req->output.buf,
 							vga + req->offset, req->output.len);
 					return req->output.len;
+				}
+				case HANDLE_COM1: {
+					char buf[16];
+					size_t len = serial_read(buf, sizeof buf);
+					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
+					return len;
 				}
 				case HANDLE_PS2: {
 					uint8_t buf[16];
@@ -151,7 +165,16 @@ int vfs_root_handler(struct vfs_request *req) {
 							req->input.buf, req->input.len);
 					return req->input.len;
 				}
+				case HANDLE_COM1: {
+					struct virt_iter iter;
+					virt_iter_new(&iter, req->input.buf, req->input.len,
+							req->caller->pages, true, false);
+					while (virt_iter_next(&iter))
+						serial_write(iter.frag, iter.frag_len);
+					return iter.prior;
+				}
 				case HANDLE_ATA_ROOT: return -1;
+				// TODO don't panic on ps2 reads
 				default: panic_invalid_state();
 			}
 
