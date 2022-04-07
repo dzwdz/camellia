@@ -10,7 +10,7 @@ bool fork2_n_mount(const char *path) {
 	return h;
 }
 
-static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate) {
+static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate, const char *og_buf) {
 	/* The idea behind this function is that many fs implementations (e.g. for
 	 * overlay fs) will want to forward received requests to the original fs
 	 * implementation.
@@ -59,7 +59,11 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate)
 			_syscall_fs_respond(buf, ret);
 			break;
 
-		// TODO writing (see above)
+		// TODO proper writing (see above)
+		case VFSOP_WRITE:
+			ret = _syscall_write(delegate, og_buf, res->len, res->offset);
+			_syscall_fs_respond(NULL, ret);
+			break;
 
 		default:
 			/* unsupported / unexpected */
@@ -70,7 +74,7 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate)
 
 void fs_passthru(const char *prefix) {
 	struct fs_wait_response res;
-	int buf_size = 64;
+	int buf_size = 64; // TODO just use sizeof...
 	char buf[      64];
 	int ret, prefix_len;
 	if (prefix) prefix_len = strlen(prefix);
@@ -95,7 +99,7 @@ void fs_passthru(const char *prefix) {
 				break;
 
 			default:
-				fs_respond_delegate(&res, res.id);
+				fs_respond_delegate(&res, res.id, buf);
 				break;
 		}
 	}
@@ -167,7 +171,7 @@ void fs_dir_inject(const char *path) {
 				if (h.delegate < 0)
 					_syscall_fs_respond(NULL, -1);
 				else
-					fs_respond_delegate(&res, h.delegate);
+					fs_respond_delegate(&res, h.delegate, buf);
 				break;
 			}
 		}
