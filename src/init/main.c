@@ -37,19 +37,21 @@ int main(void) {
 		_syscall_exit(1);
 	}
 
-	if (!_syscall_fork()) {
-		__stdout = _syscall_open(argify("/vga_tty"));
-		if (__stdout < 0) _syscall_exit(1);
+	/*
+	 * if (!_syscall_fork()) {
+	 * 	__stdout = _syscall_open(argify("/vga_tty"));
+	 * 	if (__stdout < 0) _syscall_exit(1);
 
-		__stdin = _syscall_open(argify("/keyboard"));
-		if (__stdin < 0) {
-			printf("couldn't open /keyboard\n");
-			_syscall_exit(1);
-		}
+	 * 	__stdin = _syscall_open(argify("/keyboard"));
+	 * 	if (__stdin < 0) {
+	 * 		printf("couldn't open /keyboard\n");
+	 * 		_syscall_exit(1);
+	 * 	}
 
-		shell_loop();
-		_syscall_exit(1);
-	}
+	 * 	shell_loop();
+	 * 	_syscall_exit(1);
+	 * }
+	 */
 
 	// try to find any working output
 	__stdout = _syscall_open(argify("/com1"));
