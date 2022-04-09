@@ -27,11 +27,11 @@ int _syscall_await(void) {
 			has_children = true;
 	}
 
-	if (has_children)
-		process_switch_any(); // wait until a child dies
-	else {
+	if (!has_children) {
 		process_current->state = PS_RUNNING;
 		return ~0; // TODO errno
+	} else {
+		return -1;
 	}
 }
 
@@ -217,9 +217,8 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 		struct process *queued = backend->queue;
 		backend->queue = queued->waits4fs.queue_next;
 		return vfs_request_accept(&queued->waits4fs.req);
-	} else {
-		process_switch_any();
 	}
+	return -1;
 }
 
 int _syscall_fs_respond(char __user *buf, int ret) {
