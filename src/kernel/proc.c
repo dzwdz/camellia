@@ -58,6 +58,7 @@ struct process *process_fork(struct process *parent) {
 }
 
 void process_switch(struct process *proc) {
+	assert(proc->state == PS_RUNNING);
 	process_current = proc;
 	pagedir_switch(proc->pages);
 	sysexit(proc->regs);

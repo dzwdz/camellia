@@ -207,7 +207,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	process_current->state = PS_WAITS4REQUEST;
 	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
-	 * vfs_request_pass2handler simpler. TODO? */
+	 * vfs_request_accept simpler. TODO? */
 	process_current->awaited_req.buf     = buf;
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
@@ -216,7 +216,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 		// handle queued requests
 		struct process *queued = backend->queue;
 		backend->queue = queued->waits4fs.queue_next;
-		vfs_request_pass2handler(&queued->waits4fs.req);
+		return vfs_request_accept(&queued->waits4fs.req);
 	} else {
 		process_switch_any();
 	}

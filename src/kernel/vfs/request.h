@@ -41,7 +41,7 @@ struct vfs_request {
 };
 
 /** Assigns the vfs_request to the caller, and calls the backend. Might not
- * return - can switch processes! */
+ * return - can switch processes! TODO no it can't*/
 int vfs_request_create(struct vfs_request);
-_Noreturn void vfs_request_pass2handler(struct vfs_request *);
+int vfs_request_accept(struct vfs_request *);
 int vfs_request_finish(struct vfs_request *, int ret);

@@ -28,7 +28,8 @@ int vfs_request_create(struct vfs_request req_) {
 			if (req->backend->handler
 					&& req->backend->handler->state == PS_WAITS4REQUEST)
 			{
-				vfs_request_pass2handler(req);
+				vfs_request_accept(req);
+				process_switch(req->backend->handler);
 			} else {
 				// backend isn't ready yet, join the queue
 				struct process **iter = &req->backend->queue;
@@ -42,18 +43,17 @@ int vfs_request_create(struct vfs_request req_) {
 	}
 }
 
-_Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
+int vfs_request_accept(struct vfs_request *req) {
 	struct process *handler = req->backend->handler;
 	struct fs_wait_response res = {0};
 	int len;
 	assert(handler);
 	assert(handler->state == PS_WAITS4REQUEST); // TODO currently callers have to ensure that the handler is in the correct state. should they?
 	assert(!handler->handled_req);
-	handler->state = PS_RUNNING;
-	handler->handled_req = req;
 
 	len = min(req->input.len, handler->awaited_req.max_len);
 
+	// TODO having to separately handle copying from kernel and userland stinks
 	if (req->input.kern) {
 		if (!virt_cpy_to(handler->pages,
 					handler->awaited_req.buf, req->input.buf_kern, len))
@@ -74,8 +74,10 @@ _Noreturn void vfs_request_pass2handler(struct vfs_request *req) {
 				handler->awaited_req.res, &res, sizeof res))
 		goto fail; // can't copy response struct
 
+	handler->state = PS_RUNNING;
+	handler->handled_req = req;
 	regs_savereturn(&handler->regs, 0);
-	process_switch(handler);
+	return;
 fail:
 	panic_unimplemented(); // TODO
 }
