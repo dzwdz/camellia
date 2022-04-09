@@ -5,7 +5,6 @@
 #include <kernel/vfs/request.h>
 #include <kernel/vfs/root.h>
 
-// dispatches a VFS operation to the correct process
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
 	int ret;
@@ -29,15 +28,14 @@ int vfs_request_create(struct vfs_request req_) {
 					&& req->backend->handler->state == PS_WAITS4REQUEST)
 			{
 				vfs_request_accept(req);
-				process_switch(req->backend->handler);
 			} else {
 				// backend isn't ready yet, join the queue
 				struct process **iter = &req->backend->queue;
 				while (*iter != NULL)
 					iter = &(*iter)->waits4fs.queue_next;
 				*iter = process_current;
-				process_switch_any();
 			}
+			return -1; // isn't passed to the caller process anyways
 		default:
 			panic_invalid_state();
 	}
@@ -77,7 +75,7 @@ int vfs_request_accept(struct vfs_request *req) {
 	handler->state = PS_RUNNING;
 	handler->handled_req = req;
 	regs_savereturn(&handler->regs, 0);
-	return;
+	return 0;
 fail:
 	panic_unimplemented(); // TODO
 }

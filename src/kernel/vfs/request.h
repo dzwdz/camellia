@@ -40,8 +40,7 @@ struct vfs_request {
 	struct vfs_backend *backend;
 };
 
-/** Assigns the vfs_request to the caller, and calls the backend. Might not
- * return - can switch processes! TODO no it can't*/
+/** Assigns the vfs_request to the caller, and dispatches the call */
 int vfs_request_create(struct vfs_request);
 int vfs_request_accept(struct vfs_request *);
 int vfs_request_finish(struct vfs_request *, int ret);
