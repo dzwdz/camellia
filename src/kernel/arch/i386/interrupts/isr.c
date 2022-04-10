@@ -1,4 +1,5 @@
 #include <kernel/arch/i386/driver/ps2.h>
+#include <kernel/arch/i386/driver/serial.h>
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/interrupts/isr.h>
 #include <kernel/arch/i386/port_io.h>
@@ -25,6 +26,7 @@ void isr_stage3(int interrupt) {
 			return;
 
 		case 0x24: // COM1 irq
+			serial_irq();
 			irq_eoi(1);
 			return;
 

@@ -22,14 +22,13 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-
 	MOUNT("/init", tar_driver(&_initrd));
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
 
 	MOUNT("/bind", fs_passthru(NULL));
 
-	if (false && !_syscall_fork()) {
+	if (!_syscall_fork()) {
 		__stdin = __stdout = _syscall_open(argify("/com1"));
 		if (__stdout < 0) _syscall_exit(1);
 

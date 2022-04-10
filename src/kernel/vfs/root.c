@@ -97,12 +97,19 @@ static int handle(struct vfs_request *req, bool *ready) {
 					return req->output.len;
 				}
 				case HANDLE_COM1: {
-					struct virt_iter iter;
-					virt_iter_new(&iter, req->output.buf, req->output.len,
-						req->caller->pages, true, false);
-					while (virt_iter_next(&iter))
-						serial_read(iter.frag, iter.frag_len);
-					return iter.prior;
+					// yet another bit of code shared between serial and ps2.
+					// i really should think how i could unite both of those
+					if (!serial_ready()) {
+						*ready = false;
+						req->caller->state = PS_WAITS4IRQ;
+						req->caller->waits4irq.req = *req;
+						req->caller->waits4irq.ready = serial_ready;
+						return -1;
+					}
+					uint8_t buf[16];
+					size_t len = serial_read(buf, sizeof buf);
+					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
+					return len;
 				}
 				case HANDLE_PS2: {
 					if (!ps2_ready()) {

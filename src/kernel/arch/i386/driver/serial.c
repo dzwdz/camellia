@@ -2,9 +2,16 @@
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/port_io.h>
 #include <kernel/panic.h>
+#include <shared/mem.h>
 #include <stdint.h>
 
+
+#define BACKLOG_CAPACITY 64
+static volatile uint8_t backlog[BACKLOG_CAPACITY] = {};
+static volatile size_t backlog_size = 0;
+
 static const int COM1 = 0x3f8;
+
 
 static void serial_selftest(void) {
 	char b = 0x69;
@@ -29,27 +36,35 @@ void serial_init(void) {
 	port_out8(COM1 + 4, 0b00001111); // enable everything in the MCR
 }
 
-static void serial_putchar(char c) {
-	while ((port_in8(COM1 + 5) & 0x20) == 0); // wait for THRE
-	port_out8(COM1, c);
+
+bool serial_ready(void) {
+	return backlog_size > 0;
 }
 
-bool serial_poll_read(char *c) {
-	if ((port_in8(COM1 + 5) & 0x01) == 0) // needs DR
-		return false;
-	*c = port_in8(COM1);
-	return true;
+void serial_irq(void) {
+	if (backlog_size >= BACKLOG_CAPACITY) return;
+	backlog[backlog_size++] = port_in8(COM1);
 }
 
 size_t serial_read(char *buf, size_t len) {
-	irq_interrupt_flag(true);
-	for (size_t i = 0; i < len; i++) {
-		while (!serial_poll_read(&buf[i]))
-			asm("hlt" ::: "memory");
-	}
-	irq_interrupt_flag(false);
-	// TODO root driver assumes no partial reads
+	// copied from ps2, maybe could be made into a shared function? TODO FIFO lib
+	if (backlog_size <= len)
+		len = backlog_size;
+	backlog_size -= len; /* guaranteed to never be < 0 */
+	memcpy(buf, (void*)backlog, len);
+
+	/* move rest of buffer back on partial reads */
+	// TODO assumes that memcpy()ing into an overlapping buffer is fine, outside spec
+	if (backlog_size > 0)
+		memcpy((void*)backlog, (void*)backlog + len, backlog_size);
+
 	return len;
+}
+
+
+static void serial_putchar(char c) {
+	while ((port_in8(COM1 + 5) & 0x20) == 0); // wait for THRE
+	port_out8(COM1, c);
 }
 
 void serial_write(const char *buf, size_t len) {
