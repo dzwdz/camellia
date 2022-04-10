@@ -17,12 +17,11 @@ int printf(const char *fmt, ...) {
 		char c = *fmt++;
 		switch (c) {
 			case '\0':
-				// TODO don't assume that stdout is @ fd 0
-				_syscall_write(0, seg, fmt - seg - 1, 0);
+				_syscall_write(__stdout, seg, fmt - seg - 1, -1);
 				return total + (fmt - seg - 1);
 
 			case '%':
-				_syscall_write(0, seg, fmt - seg - 1, 0);
+				_syscall_write(__stdout, seg, fmt - seg - 1, -1);
 				total += fmt - seg - 1;
 				size_t pad_len = 0;
 parse_fmt:
@@ -34,14 +33,14 @@ parse_fmt:
 
 					case 'c':
 						char c = va_arg(argp, int);
-						_syscall_write(0, &c, 1, 0);
+						_syscall_write(__stdout, &c, 1, -1);
 						total += 1;
 						break;
 
 					case 's':
 						const char *s = va_arg(argp, char*);
 						if (s) {
-							_syscall_write(0, s, strlen(s), 0);
+							_syscall_write(__stdout, s, strlen(s), -1);
 							total += strlen(s);
 						}
 						break;
@@ -59,7 +58,7 @@ parse_fmt:
 							i -= 4;
 							char h = '0' + ((n >> i) & 0xf);
 							if (h > '9') h += 'a' - '9' - 1;
-							_syscall_write(0, &h, 1, 0);
+							_syscall_write(__stdout, &h, 1, -1);
 							total++;
 						}
 						break;
