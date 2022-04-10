@@ -54,6 +54,8 @@ struct process *process_fork(struct process *parent) {
 	child->parent  = parent;
 	parent->child  = child;
 
+	parent->handled_req = NULL; // TODO control this with a flag
+
 	child->id      = next_pid++;
 
 	return child;

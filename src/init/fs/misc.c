@@ -52,10 +52,16 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 
 	switch (res->op) {
 		case VFSOP_READ:
+			if (_syscall_fork()) {
+				// handle reads in a child
+				// this is a HORRIBLE workaround for making concurrent IO work without proper delegates
+				break;
+			}
 			// TODO instead of truncating the size, allocate a bigger buffer
 			size = res->capacity < sizeof(buf) ? res->capacity : sizeof(buf);
 			ret = _syscall_read(delegate, buf, size, res->offset);
 			_syscall_fs_respond(buf, ret);
+			_syscall_exit(0); // TODO unreapable - add a nonblocking reap syscall
 			break;
 
 		// TODO proper writing (see above)
