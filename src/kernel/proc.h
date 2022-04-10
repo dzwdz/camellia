@@ -57,6 +57,8 @@ _Noreturn void process_switch(struct process *proc);
 _Noreturn void process_switch_any(void); // switches to any running process
 
 struct process *process_find(enum process_state);
+size_t process_find_multiple(enum process_state, struct process **buf, size_t max);
+
 handle_t process_find_handle(struct process *proc); // finds the first free handle
 
 void process_kill(struct process *proc, int ret);

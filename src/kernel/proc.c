@@ -74,25 +74,30 @@ _Noreturn void process_switch_any(void) {
 }
 
 // TODO there's no check for going past the stack - VULN
-static struct process *_process_find_recursive(
-		enum process_state target, struct process *iter) {
-	struct process *in;
-	while (iter) {
+static size_t _process_find_recursive(
+		enum process_state target, struct process *iter,
+		struct process **buf, size_t pos, size_t max)
+{
+	while (pos < max && iter) {
 		if (iter->state == target)
-			return iter;
+			buf[pos++] = iter;
 
 		// DFS
-		in = _process_find_recursive(target, iter->child);
-		if (in)
-			return in;
+		pos = _process_find_recursive(target, iter->child, buf, pos, max);
 
 		iter = iter->sibling;
 	}
-	return NULL;
+	return pos;
 }
 
 struct process *process_find(enum process_state target) {
-	return _process_find_recursive(target, process_first);
+	struct process *result = NULL;
+	process_find_multiple(target, &result, 1);
+	return result;
+}
+
+size_t process_find_multiple(enum process_state target, struct process **buf, size_t max) {
+	return _process_find_recursive(target, process_first, buf, 0, max);
 }
 
 handle_t process_find_handle(struct process *proc) {
