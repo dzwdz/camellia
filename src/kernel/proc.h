@@ -11,6 +11,7 @@ enum process_state {
 	PS_WAITS4CHILDDEATH,
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
+	PS_WAITS4IRQ, // set by root vfs
 };
 
 struct process {
@@ -36,6 +37,10 @@ struct process {
 			int  max_len;
 			struct fs_wait_response __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
+		struct {
+			struct vfs_request req;
+			bool (*ready)();
+		} waits4irq;
 	};
 	struct vfs_request *handled_req;
 
@@ -55,6 +60,9 @@ struct process *process_seed(void);
 struct process *process_fork(struct process *parent);
 _Noreturn void process_switch(struct process *proc);
 _Noreturn void process_switch_any(void); // switches to any running process
+
+/** If there are any processes waiting for IRQs, wait with them. Otherwise, shut down */
+_Noreturn void process_idle(void);
 
 struct process *process_find(enum process_state);
 size_t process_find_multiple(enum process_state, struct process **buf, size_t max);

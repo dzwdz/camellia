@@ -7,17 +7,16 @@
 static volatile uint8_t backlog[BACKLOG_CAPACITY] = {};
 static volatile size_t backlog_size = 0;
 
+bool ps2_ready(void) {
+	return backlog_size > 0;
+}
+
 void ps2_recv(uint8_t s) {
 	if (backlog_size >= BACKLOG_CAPACITY) return;
 	backlog[backlog_size++] = s;
 }
 
 size_t ps2_read(uint8_t *buf, size_t len) {
-	irq_interrupt_flag(true);
-	while (backlog_size == 0)
-		asm("hlt" ::: "memory");
-	irq_interrupt_flag(false);
-
 	if (backlog_size <= len)
 		len = backlog_size;
 	backlog_size -= len; /* guaranteed to never be < 0 */

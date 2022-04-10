@@ -6,6 +6,8 @@
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 #include <stdint.h>
+#include <kernel/arch/i386/interrupts/irq.h> // TODO move irq stuff to arch/generic
+#include <kernel/vfs/root.h> // TODO
 
 struct process *process_first;
 struct process *process_current;
@@ -66,11 +68,30 @@ void process_switch(struct process *proc) {
 
 _Noreturn void process_switch_any(void) {
 	struct process *found = process_find(PS_RUNNING);
-	if (found)
-		process_switch(found);
+	if (found) process_switch(found);
+	process_idle();
+}
 
-	mem_debugprint();
-	cpu_shutdown();
+_Noreturn void process_idle(void) {
+	struct process *procs[16];
+	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
+
+	if (len == 0) {
+		mem_debugprint();
+		cpu_shutdown();
+	}
+
+	irq_interrupt_flag(true);
+	for (;;) {
+		asm("hlt" ::: "memory"); // TODO move to irq.c
+		for (size_t i = 0; i < len; i++) {
+			if (procs[i]->waits4irq.ready()) {
+				irq_interrupt_flag(false);
+				vfs_root_handler(&procs[i]->waits4irq.req); // TODO this should be a function pointer too
+				process_switch_any();
+			}
+		}
+	}
 }
 
 // TODO there's no check for going past the stack - VULN

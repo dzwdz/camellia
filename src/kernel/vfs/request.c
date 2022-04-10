@@ -7,7 +7,6 @@
 
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
-	int ret;
 	process_current->state = PS_WAITS4FS;
 	process_current->waits4fs.queue_next = NULL;
 
@@ -20,9 +19,7 @@ int vfs_request_create(struct vfs_request req_) {
 
 	switch (req->backend->type) {
 		case VFS_BACK_ROOT:
-			ret = vfs_root_handler(req);
-			ret = vfs_request_finish(req, ret);
-			return ret;
+			return vfs_root_handler(req);
 		case VFS_BACK_USER:
 			if (req->backend->handler
 					&& req->backend->handler->state == PS_WAITS4REQUEST)

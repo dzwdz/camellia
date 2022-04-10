@@ -55,7 +55,7 @@ static void req_preprocess(struct vfs_request *req, int max_len) {
 	assert(req->input.len + req->offset <= max_len);
 }
 
-int vfs_root_handler(struct vfs_request *req) {
+static int handle(struct vfs_request *req, bool *ready) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
@@ -105,6 +105,16 @@ int vfs_root_handler(struct vfs_request *req) {
 					return iter.prior;
 				}
 				case HANDLE_PS2: {
+					if (!ps2_ready()) {
+						*ready = false;
+						req->caller->state = PS_WAITS4IRQ;
+						/* not copying any memory, both sides point to the same
+						 * struct. this line's only there so i don't depend on
+						 * struct alignment always staying the same */
+						req->caller->waits4irq.req = *req;
+						req->caller->waits4irq.ready = ps2_ready;
+						return -1;
+					}
 					uint8_t buf[16];
 					size_t len = ps2_read(buf, sizeof buf);
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
@@ -162,4 +172,13 @@ int vfs_root_handler(struct vfs_request *req) {
 
 		default: panic_invalid_state();
 	}
+}
+
+int vfs_root_handler(struct vfs_request *req) {
+	bool ready = true;
+	int ret = handle(req, &ready);
+	if (ready)
+		return vfs_request_finish(req, ret);
+	else
+		return -1;
 }
