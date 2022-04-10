@@ -2,13 +2,13 @@
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/port_io.h>
 #include <kernel/panic.h>
+#include <shared/container/ring.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
-
 #define BACKLOG_CAPACITY 64
-static volatile uint8_t backlog[BACKLOG_CAPACITY] = {};
-static volatile size_t backlog_size = 0;
+static volatile uint8_t backlog_buf[BACKLOG_CAPACITY];
+static volatile ring_t backlog = {(void*)backlog_buf, BACKLOG_CAPACITY, 0, 0};
 
 static const int COM1 = 0x3f8;
 
@@ -38,27 +38,15 @@ void serial_init(void) {
 
 
 bool serial_ready(void) {
-	return backlog_size > 0;
+	return ring_size((void*)&backlog) > 0;
 }
 
 void serial_irq(void) {
-	if (backlog_size >= BACKLOG_CAPACITY) return;
-	backlog[backlog_size++] = port_in8(COM1);
+	ring_put1b((void*)&backlog, port_in8(COM1));
 }
 
 size_t serial_read(char *buf, size_t len) {
-	// copied from ps2, maybe could be made into a shared function? TODO FIFO lib
-	if (backlog_size <= len)
-		len = backlog_size;
-	backlog_size -= len; /* guaranteed to never be < 0 */
-	memcpy(buf, (void*)backlog, len);
-
-	/* move rest of buffer back on partial reads */
-	// TODO assumes that memcpy()ing into an overlapping buffer is fine, outside spec
-	if (backlog_size > 0)
-		memcpy((void*)backlog, (void*)backlog + len, backlog_size);
-
-	return len;
+	return ring_get((void*)&backlog, buf, len);
 }
 
 
