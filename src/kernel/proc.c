@@ -83,16 +83,16 @@ _Noreturn void process_idle(void) {
 		cpu_shutdown();
 	}
 
-	irq_interrupt_flag(true);
 	for (;;) {
-		asm("hlt" ::: "memory"); // TODO move to irq.c
 		for (size_t i = 0; i < len; i++) {
 			if (procs[i]->waits4irq.ready()) {
-				irq_interrupt_flag(false);
 				vfs_root_handler(&procs[i]->waits4irq.req); // TODO this should be a function pointer too
 				process_switch_any();
 			}
 		}
+		irq_interrupt_flag(true);
+		asm("hlt" ::: "memory"); // TODO move to irq.c
+		irq_interrupt_flag(false);
 	}
 }
 
