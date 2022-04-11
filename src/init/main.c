@@ -56,10 +56,8 @@ int main(void) {
 	__stdout = _syscall_open(argify("/com1"));
 	if (__stdout < 0) __stdout = _syscall_open(argify("/vga_tty"));
 
-	for (;;) {
-		_syscall_await();
-		printf("init: something quit\n");
-	}
+	_syscall_await();
+	printf("init: something quit\n");
 
 	_syscall_exit(0);
 }

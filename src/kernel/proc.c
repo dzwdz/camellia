@@ -137,6 +137,11 @@ void process_kill(struct process *proc, int ret) {
 	proc->state = PS_DEAD;
 	proc->death_msg = ret;
 	process_try2collect(proc);
+	if (proc == process_first) {
+		tty_const("init killed, quitting...");
+		mem_debugprint();
+		cpu_shutdown();
+	}
 }
 
 int process_try2collect(struct process *dead) {
