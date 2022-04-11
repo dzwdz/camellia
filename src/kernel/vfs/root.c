@@ -107,7 +107,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 						return -1;
 					}
 					uint8_t buf[16];
-					size_t len = serial_read(buf, sizeof buf);
+					size_t len = serial_read(buf, min(req->output.len, sizeof buf));
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				}
@@ -123,7 +123,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 						return -1;
 					}
 					uint8_t buf[16];
-					size_t len = ps2_read(buf, sizeof buf);
+					size_t len = ps2_read(buf, min(req->output.len, sizeof buf));
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				}
