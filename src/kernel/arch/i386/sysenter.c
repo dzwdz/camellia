@@ -1,5 +1,4 @@
 #include <kernel/arch/generic.h>
-#include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/sysenter.h>
 #include <kernel/proc.h>
 #include <shared/syscalls.h>
@@ -21,8 +20,6 @@ _Noreturn void sysenter_stage2(void) {
 	*regs = _sysexit_regs; // save the registers
 	regs->esp = (userptr_t) regs->ecx; // fix them up
 	regs->eip = (userptr_t) regs->edx;
-
-	irq_interrupt_flag(false);
 
 	val = _syscall(regs->eax, regs->ebx,
 	               regs->esi, regs->edi, (uintptr_t)regs->ebp);

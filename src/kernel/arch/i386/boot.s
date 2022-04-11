@@ -23,3 +23,12 @@ halt_cpu:
 	cli
 1:	hlt
 	jmp 1b
+
+
+.global cpu_pause
+.type cpu_pause, @function
+cpu_pause:
+	sti
+	hlt
+	cli
+	ret

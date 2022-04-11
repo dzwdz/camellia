@@ -6,7 +6,6 @@
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 #include <stdint.h>
-#include <kernel/arch/i386/interrupts/irq.h> // TODO move irq stuff to arch/generic
 #include <kernel/vfs/root.h> // TODO
 
 struct process *process_first;
@@ -86,13 +85,13 @@ _Noreturn void process_idle(void) {
 	for (;;) {
 		for (size_t i = 0; i < len; i++) {
 			if (procs[i]->waits4irq.ready()) {
+				/* if this is entered during the first iteration, it indicates a
+				 * kernel bug. this should be logged. TODO? */
 				vfs_root_handler(&procs[i]->waits4irq.req); // TODO this should be a function pointer too
 				process_switch_any();
 			}
 		}
-		irq_interrupt_flag(true);
-		asm("hlt" ::: "memory"); // TODO move to irq.c
-		irq_interrupt_flag(false);
+		cpu_pause();
 	}
 }
 

@@ -18,6 +18,9 @@ void halt_cpu(void);
 __attribute__((noreturn))
 void cpu_shutdown(void);
 
+/** on x86: waits for an IRQ */
+void cpu_pause(void);
+
 // src/arch/i386/sysenter.s
 _Noreturn void sysexit(struct registers);
 

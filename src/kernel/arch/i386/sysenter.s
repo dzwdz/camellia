@@ -48,6 +48,8 @@ sysenter_setup:
 	ret
 
 sysenter_stage1:
+	cli /* prevent random IRQs in the middle of kernel code */
+
 	//   disable paging
 	// I don't want to damage any of the registers passed in by the user,
 	// so i'm using ESP as a temporary register. At this point there's nothing

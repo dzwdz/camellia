@@ -4,5 +4,3 @@
 
 void irq_init(void);
 void irq_eoi(uint8_t line);
-
-void irq_interrupt_flag(bool flag);

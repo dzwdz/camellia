@@ -31,8 +31,3 @@ void irq_eoi(uint8_t line) {
 	if (line >= 8)
 		port_out8(PIC2, 0x20);
 }
-
-void irq_interrupt_flag(bool flag) {
-	if (flag)	asm("sti" : : : "memory");
-	else		asm("cli" : : : "memory");
-}
