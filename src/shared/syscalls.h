@@ -43,16 +43,16 @@ int _syscall_fork(void);
 handle_t _syscall_open(const char __user *path, int len);
 
 int _syscall_mount(handle_t, const char __user *path, int len);
-int _syscall_read(handle_t, void __user *buf, int len, int offset);
-int _syscall_write(handle_t, const void __user *buf, int len, int offset);
+int _syscall_read(handle_t, void __user *buf, size_t len, int offset);
+int _syscall_write(handle_t, const void __user *buf, size_t len, int offset);
 int _syscall_close(handle_t);
 
 handle_t _syscall_fs_fork2(void);
 
 struct fs_wait_response {
 	enum vfs_operation op;
-	int len; // how much was put in *buf
-	int capacity; // how much output can be accepted by the caller
+	size_t len; // how much was put in *buf
+	size_t capacity; // how much output can be accepted by the caller
 	int id;  // file id (returned by the open handler, passed to other calls)
 	int offset;
 };

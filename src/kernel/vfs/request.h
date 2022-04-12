@@ -26,11 +26,11 @@ struct vfs_request {
 			char __user *buf;
 			char *buf_kern;
 		};
-		int len;
+		size_t len;
 	} input;
 	struct {
 		char __user *buf;
-		int len;
+		size_t len;
 	} output;
 
 	int id; // handle.file.id

@@ -34,7 +34,7 @@ struct process {
 		} waits4fs; // PS_WAITS4FS
 		struct {
 			char __user *buf;
-			int  max_len;
+			size_t max_len;
 			struct fs_wait_response __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
 		struct {

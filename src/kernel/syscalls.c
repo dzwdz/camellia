@@ -125,7 +125,7 @@ fail:
 	return -1;
 }
 
-int _syscall_read(handle_t handle_num, void __user *buf, int len, int offset) {
+int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -142,7 +142,7 @@ int _syscall_read(handle_t handle_num, void __user *buf, int len, int offset) {
 		});
 }
 
-int _syscall_write(handle_t handle_num, const void __user *buf, int len, int offset) {
+int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
 	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
 	if (handle->type != HANDLE_FILE) return -1;
@@ -228,8 +228,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 	if (req->output.len > 0 && ret > 0) {
 		// if this vfsop outputs data and ret is positive, it's the length of the buffer
 		// TODO document
-		if (ret > req->output.len)
-			ret = req->output.len; // i'm not handling this in a special way - the fs server can prevent this on its own
+		ret = min(ret, capped_cast32(req->output.len));
 		if (!virt_cpy(req->caller->pages, req->output.buf,
 					process_current->pages, buf, ret)) {
 			// how should this error even be handled? TODO

@@ -3,7 +3,7 @@ PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 AS      = i686-elf-as
 CC      = i686-elf-gcc
 CHECK   = sparse
-CFLAGS  = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
+CFLAGS += -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration -ftrack-macro-expansion=0
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
