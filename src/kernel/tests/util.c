@@ -32,7 +32,7 @@ TEST(strcmp) {
 }
 
 TEST(ring) {
-	char buf[16], backbuf[16];
+	char backbuf[16];
 	size_t num_read = 0, num_written = 0;
 	uint8_t c;
 

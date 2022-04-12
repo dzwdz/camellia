@@ -61,7 +61,7 @@ static void main_loop(void) {
 					/* read raw input until we have something to output */
 					int len = _syscall_read(fd, buf, sizeof buf, 0);
 					if (len == 0) break;
-					for (size_t i = 0; i < len; i++)
+					for (int i = 0; i < len; i++)
 						parse_scancode(buf[i]);
 				}
 				if (res.capacity > backlog_size)

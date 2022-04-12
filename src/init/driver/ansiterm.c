@@ -83,7 +83,7 @@ void ansiterm_drv(void) {
 				break;
 
 			case VFSOP_WRITE:
-				for (int i = 0; i < res.len; i++)
+				for (size_t i = 0; i < res.len; i++)
 					in_char(buf[i]);
 				/* if (pendingFlush) */ flush();
 				_syscall_fs_respond(NULL, res.len);

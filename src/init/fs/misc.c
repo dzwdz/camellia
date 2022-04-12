@@ -117,7 +117,7 @@ void fs_dir_inject(const char *path) {
 		const char *inject;
 	};
 
-	const int path_len = strlen(path);
+	const size_t path_len = strlen(path);
 	struct fs_wait_response res;
 	struct fs_dir_handle handles[16]; // TODO hardcoded FD_MAX - use malloc instead
 	int handle_next = 0;
