@@ -95,21 +95,24 @@ _Noreturn void process_idle(void) {
 	}
 }
 
-// TODO there's no check for going past the stack - VULN
-static size_t _process_find_recursive(
-		enum process_state target, struct process *iter,
-		struct process **buf, size_t pos, size_t max)
-{
-	while (pos < max && iter) {
-		if (iter->state == target)
-			buf[pos++] = iter;
+struct process *process_next(struct process *p) {
+	/* is a weird depth-first search, the search order is:
+	 *         1
+	 *        / \
+	 *       2   5
+	 *      /|   |\
+	 *     3 4   6 7
+	 */
+	if (!p)	return NULL;
+	if (p->child)	return p->child;
+	if (p->sibling)	return p->sibling;
 
-		// DFS
-		pos = _process_find_recursive(target, iter->child, buf, pos, max);
-
-		iter = iter->sibling;
+	/* looking at the diagram above - we're at 4, want to find 5 */
+	while (!p->sibling) {
+		p = p->parent;
+		if (!p) return NULL;
 	}
-	return pos;
+	return p->sibling;
 }
 
 struct process *process_find(enum process_state target) {
@@ -119,7 +122,14 @@ struct process *process_find(enum process_state target) {
 }
 
 size_t process_find_multiple(enum process_state target, struct process **buf, size_t max) {
-	return _process_find_recursive(target, process_first, buf, 0, max);
+	size_t i = 0;
+	for (struct process *p = process_first;
+		i < max && p;
+		p = process_next(p))
+	{
+		if (p->state == target) buf[i++] = p;
+	}
+	return i;
 }
 
 handle_t process_find_handle(struct process *proc) {

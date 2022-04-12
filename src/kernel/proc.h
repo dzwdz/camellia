@@ -64,6 +64,9 @@ _Noreturn void process_switch_any(void); // switches to any running process
 /** If there are any processes waiting for IRQs, wait with them. Otherwise, shut down */
 _Noreturn void process_idle(void);
 
+/** Used for iterating over all processes */
+struct process *process_next(struct process *);
+
 struct process *process_find(enum process_state);
 size_t process_find_multiple(enum process_state, struct process **buf, size_t max);
 
