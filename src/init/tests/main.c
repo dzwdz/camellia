@@ -64,8 +64,17 @@ static void test_faults(void) {
 	assert(await_cnt == 2);
 }
 
+static void stress_fork(void) {
+	/* run a lot of processes */
+	for (size_t i = 0; i < 2048; i++) {
+		if (!_syscall_fork()) _syscall_exit(0);
+		_syscall_await();
+	}
+}
+
 
 void test_all(void) {
 	run_forked(test_await);
 	run_forked(test_faults);
+	run_forked(stress_fork);
 }
