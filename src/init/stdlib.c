@@ -5,42 +5,51 @@
 int __stdin  = -1;
 int __stdout = -1;
 
+static void backend_file(void *arg, const char *buf, size_t len) {
+	_syscall_write(*(handle_t*)arg, buf, len, -1);
+}
 
-int printf(const char *fmt, ...) {
+static int __printf_internal(const char *fmt, va_list argp,
+		void (*back)(void*, const char*, size_t), void *back_arg)
+{
 	const char *seg = fmt; // beginning of the current segment
 	int total = 0;
-	va_list argp;
-	va_start(argp, fmt);
-	if (__stdout < 0) return 0;
 
 	for (;;) {
 		char c = *fmt++;
 		switch (c) {
 			case '\0':
-				_syscall_write(__stdout, seg, fmt - seg - 1, -1);
+				back(back_arg, seg, fmt - seg - 1);
 				return total + (fmt - seg - 1);
 
 			case '%':
-				_syscall_write(__stdout, seg, fmt - seg - 1, -1);
+				back(back_arg, seg, fmt - seg - 1);
 				total += fmt - seg - 1;
 				size_t pad_len = 0;
-parse_fmt:
-				c = *fmt++;
-				switch (c) {
-					case '0':
-						pad_len = *fmt++ - '0'; // can skip over the null byte, idc
-						goto parse_fmt;
 
+				c = *fmt++;
+				while (1) {
+					switch (c) {
+						case '0':
+							pad_len = *fmt++ - '0'; // can skip over the null byte, idc
+							break;
+						default:
+							goto modifier_break;
+					}
+					c = *fmt++;
+				}
+modifier_break:
+				switch (c) {
 					case 'c':
 						char c = va_arg(argp, int);
-						_syscall_write(__stdout, &c, 1, -1);
+						back(back_arg, &c, 1);
 						total += 1;
 						break;
 
 					case 's':
 						const char *s = va_arg(argp, char*);
 						if (s) {
-							_syscall_write(__stdout, s, strlen(s), -1);
+							back(back_arg, s, strlen(s));
 							total += strlen(s);
 						}
 						break;
@@ -58,7 +67,7 @@ parse_fmt:
 							i -= 4;
 							char h = '0' + ((n >> i) & 0xf);
 							if (h > '9') h += 'a' - '9' - 1;
-							_syscall_write(__stdout, &h, 1, -1);
+							back(back_arg, &h, 1);
 							total++;
 						}
 						break;
@@ -67,4 +76,15 @@ parse_fmt:
 				break;
 		}
 	}
+}
+
+int printf(const char *fmt, ...) {
+	int ret = 0;
+	va_list argp;
+	va_start(argp, fmt);
+	if (__stdout < 0) goto end;
+	__printf_internal(fmt, argp, backend_file, (void*)&__stdout);
+end:
+	va_end(argp);
+	return ret;
 }
