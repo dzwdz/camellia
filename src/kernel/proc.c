@@ -60,6 +60,27 @@ struct process *process_fork(struct process *parent) {
 	return child;
 }
 
+void process_free(struct process *p) {
+	assert(p->state == PS_DEADER);
+	pagedir_free(p->pages);
+	if (p->child) { // TODO
+		// panic_invalid_state();
+		return;
+	}
+	if (p->parent && p->parent->child == p) {
+		p->parent->child = p->sibling;
+	} else {
+		// this would be simpler if siblings were a doubly linked list
+		struct process *prev = p->parent->child;
+		while (prev->sibling != p) {
+			prev = prev->sibling;
+			assert(prev);
+		}
+		prev->sibling = p->sibling;
+	}
+	kfree(p);
+}
+
 void process_switch(struct process *proc) {
 	assert(proc->state == PS_RUNNING);
 	process_current = proc;
@@ -143,6 +164,7 @@ handle_t process_find_handle(struct process *proc) {
 }
 
 void process_kill(struct process *proc, int ret) {
+	// TODO kill children
 	proc->state = PS_DEAD;
 	proc->death_msg = ret;
 	process_try2collect(proc);
@@ -161,11 +183,13 @@ int process_try2collect(struct process *dead) {
 
 	switch (parent->state) {
 		case PS_WAITS4CHILDDEATH:
-			dead->state = PS_DEADER;
-			parent->state = PS_RUNNING;
-
 			ret = dead->death_msg;
 			regs_savereturn(&parent->regs, ret);
+			parent->state = PS_RUNNING;
+
+			dead->state = PS_DEADER;
+			process_free(dead);
+
 			return ret;
 
 		default:

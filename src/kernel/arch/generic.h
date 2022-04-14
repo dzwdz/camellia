@@ -27,6 +27,8 @@ _Noreturn void sysexit(struct registers);
 // all of those can allocate memory
 struct pagedir *pagedir_new(void);
 struct pagedir *pagedir_copy(const struct pagedir *orig);
+
+void pagedir_free(struct pagedir *);
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable);
 

@@ -1,6 +1,7 @@
 .set MAGIC, 0x1BADB002
 
 /* 1<<0  - align modules on page boundaries.
+   1<<1  - fill the mem_ fields in multiboot_info
    1<<16 - enable manual addressing */
 .set FLAGS,        1<<0 | 1<<16
 .set CHECKSUM, -(MAGIC + FLAGS)

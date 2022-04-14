@@ -32,5 +32,7 @@ void kmain_early(struct multiboot_info *multiboot) {
 		info.init.size = module->end - module->start;
 	}
 
+	info.memtop = (void*) (multiboot->mem_upper * 1024);
+
 	kmain(info);
 }

@@ -58,6 +58,7 @@ extern struct process *process_current;
 // creates the root process
 struct process *process_seed(void);
 struct process *process_fork(struct process *parent);
+void process_free(struct process *);
 _Noreturn void process_switch(struct process *proc);
 _Noreturn void process_switch_any(void); // switches to any running process
 

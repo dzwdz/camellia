@@ -46,6 +46,29 @@ struct pagedir *pagedir_new(void) {
 	return dir;
 }
 
+void pagedir_free(struct pagedir *dir) {
+	// assumes all user pages are unique and can be freed
+	struct pagetable_entry *pt;
+	void *page;
+
+	for (int i = 0; i < 1024; i++) {
+		if (!dir->e[i].present) continue;
+		if (!dir->e[i].user)    continue;
+
+		pt = (void*)(dir->e[i].address << 11);
+
+		for (int j = 0; j < 1024; j++) {
+			if (!pt[j].present) continue;
+			if (!pt[j].user)    continue;
+
+			page = (void*)(pt[j].address << 11);
+			page_free(page, 1);
+		}
+		page_free(pt, 1);
+	}
+	page_free(dir, 1);
+}
+
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable)
 {
