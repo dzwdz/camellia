@@ -7,8 +7,7 @@
 
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
-	assert(process_current->state == PS_RUNNING);
-	process_current->state = PS_WAITS4FS;
+	process_transition(process_current, PS_WAITS4FS);
 	process_current->waits4fs.queue_next = NULL;
 
 	// the request is owned by the caller
@@ -64,7 +63,7 @@ int vfs_request_accept(struct vfs_request *req) {
 				handler->awaited_req.res, &res, sizeof res))
 		goto fail; // can't copy response struct
 
-	handler->state = PS_RUNNING;
+	process_transition(handler, PS_RUNNING);
 	handler->handled_req = req;
 	regs_savereturn(&handler->regs, 0);
 	return 0;
@@ -92,8 +91,8 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 
 	if (req->input.kern)  kfree(req->input.buf_kern);
 
-	assert(req->caller->state = PS_WAITS4FS);
-	req->caller->state = PS_RUNNING;
+	assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
+	process_transition(req->caller, PS_RUNNING);
 	regs_savereturn(&req->caller->regs, ret);
 	return ret;
 }

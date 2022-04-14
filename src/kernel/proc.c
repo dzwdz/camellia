@@ -162,9 +162,34 @@ handle_t process_find_handle(struct process *proc) {
 	return handle;
 }
 
+void process_transition(struct process *p, enum process_state state) {
+	enum process_state last = p->state;
+	p->state = state;
+	switch (state) {
+		case PS_RUNNING:
+			assert(last != PS_DEAD && last != PS_DEADER);
+			break;
+		case PS_DEAD:
+			assert(last == PS_RUNNING);
+			break;
+		case PS_DEADER:
+			assert(last == PS_DEAD);
+			process_free(p);
+			break;
+		case PS_WAITS4CHILDDEATH:
+		case PS_WAITS4FS:
+		case PS_WAITS4REQUEST:
+			assert(last == PS_RUNNING);
+			break;
+		case PS_WAITS4IRQ:
+			assert(last == PS_WAITS4FS);
+			break;
+	}
+}
+
 void process_kill(struct process *proc, int ret) {
 	// TODO kill children
-	proc->state = PS_DEAD;
+	process_transition(proc, PS_DEAD);
 	proc->death_msg = ret;
 	process_try2collect(proc);
 	if (proc == process_first) {
@@ -184,10 +209,8 @@ int process_try2collect(struct process *dead) {
 		case PS_WAITS4CHILDDEATH:
 			ret = dead->death_msg;
 			regs_savereturn(&parent->regs, ret);
-			parent->state = PS_RUNNING;
-
-			dead->state = PS_DEADER;
-			process_free(dead);
+			process_transition(parent, PS_RUNNING);
+			process_transition(dead, PS_DEADER);
 
 			return ret;
 

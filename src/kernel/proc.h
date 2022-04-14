@@ -74,6 +74,8 @@ size_t process_find_multiple(enum process_state, struct process **buf, size_t ma
 
 handle_t process_find_handle(struct process *proc); // finds the first free handle
 
+void process_transition(struct process *, enum process_state);
+
 void process_kill(struct process *proc, int ret);
 
 /** Tries to transistion from PS_DEAD to PS_DEADER.

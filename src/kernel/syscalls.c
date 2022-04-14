@@ -16,7 +16,7 @@ _Noreturn void _syscall_exit(int ret) {
 
 int _syscall_await(void) {
 	bool has_children = false;
-	process_current->state = PS_WAITS4CHILDDEATH;
+	process_transition(process_current, PS_WAITS4CHILDDEATH);
 
 	// find any already dead children
 	for (struct process *iter = process_current->child;
@@ -28,7 +28,7 @@ int _syscall_await(void) {
 	}
 
 	if (!has_children) {
-		process_current->state = PS_RUNNING;
+		process_transition(process_current, PS_RUNNING);
 		return ~0; // TODO errno
 	} else {
 		return -1;
@@ -204,7 +204,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	struct vfs_backend *backend = process_current->controlled;
 	if (!backend) return -1;
 
-	process_current->state = PS_WAITS4REQUEST;
+	process_transition(process_current, PS_WAITS4REQUEST);
 	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
 	 * vfs_request_accept simpler. TODO? */
