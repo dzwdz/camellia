@@ -7,6 +7,7 @@
 #include <kernel/util.h>
 #include <kernel/vfs/root.h>
 #include <shared/mem.h>
+#include <stdbool.h>
 
 // TODO move to arch/
 
@@ -45,6 +46,23 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 
 	assert(req->input.len + req->offset <= max_len);
 	assert(req->input.len + req->offset <= max_len);
+}
+
+
+static void wait_callback(struct process *proc) {
+	vfs_root_handler(&proc->waits4irq.req);
+}
+
+static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)()) {
+	if (!ready_fn()) {
+		*ready = false;
+		req->caller->state = PS_WAITS4IRQ;
+		req->caller->waits4irq.req = *req;
+		req->caller->waits4irq.ready = ready_fn;
+		req->caller->waits4irq.callback = wait_callback;
+		return true;
+	}
+	return false;
 }
 
 static int handle(struct vfs_request *req, bool *ready) {
@@ -88,31 +106,14 @@ static int handle(struct vfs_request *req, bool *ready) {
 					return req->output.len;
 				}
 				case HANDLE_COM1: {
-					// yet another bit of code shared between serial and ps2.
-					// i really should think how i could unite both of those
-					if (!serial_ready()) {
-						*ready = false;
-						req->caller->state = PS_WAITS4IRQ;
-						req->caller->waits4irq.req = *req;
-						req->caller->waits4irq.ready = serial_ready;
-						return -1;
-					}
+					if (wait_setup(req, ready, serial_ready)) return -1;
 					char buf[16];
 					size_t len = serial_read(buf, min(req->output.len, sizeof buf));
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				}
 				case HANDLE_PS2: {
-					if (!ps2_ready()) {
-						*ready = false;
-						req->caller->state = PS_WAITS4IRQ;
-						/* not copying any memory, both sides point to the same
-						 * struct. this line's only there so i don't depend on
-						 * struct alignment always staying the same */
-						req->caller->waits4irq.req = *req;
-						req->caller->waits4irq.ready = ps2_ready;
-						return -1;
-					}
+					if (wait_setup(req, ready, ps2_ready)) return -1;
 					uint8_t buf[16];
 					size_t len = ps2_read(buf, min(req->output.len, sizeof buf));
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);

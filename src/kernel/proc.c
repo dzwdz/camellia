@@ -6,7 +6,6 @@
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 #include <stdint.h>
-#include <kernel/vfs/root.h> // TODO
 
 struct process *process_first;
 struct process *process_current;
@@ -108,7 +107,7 @@ _Noreturn void process_idle(void) {
 			if (procs[i]->waits4irq.ready()) {
 				/* if this is entered during the first iteration, it indicates a
 				 * kernel bug. this should be logged. TODO? */
-				vfs_root_handler(&procs[i]->waits4irq.req); // TODO this should be a function pointer too
+				procs[i]->waits4irq.callback(procs[i]);
 				process_switch_any();
 			}
 		}

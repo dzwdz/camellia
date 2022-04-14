@@ -40,6 +40,7 @@ struct process {
 		struct {
 			struct vfs_request req;
 			bool (*ready)();
+			void (*callback)(struct process *);
 		} waits4irq;
 	};
 	struct vfs_request *handled_req;
