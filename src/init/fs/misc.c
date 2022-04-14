@@ -149,10 +149,11 @@ void fs_dir_inject(const char *path) {
 					struct fs_dir_handle h = handles[res.id];
 
 					int out_len = 0;
-					while (h.inject[out_len] != '/')
+					while (h.inject[out_len] && h.inject[out_len] != '/')
+						out_len++;
+					if (h.inject[out_len] == '/')
 						out_len++;
 					memcpy(buf, h.inject, out_len);
-					buf[out_len++] = '/';
 					buf[out_len++] = '\0';
 
 					if (h.delegate >= 0) {
