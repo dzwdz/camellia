@@ -147,7 +147,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 
 		case VFSOP_WRITE:
 			switch (req->id) {
-				case HANDLE_ROOT: return -1;
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
 					req_preprocess(req, 80*25*2);
@@ -163,9 +162,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 						serial_write(iter.frag, iter.frag_len);
 					return iter.prior;
 				}
-				case HANDLE_ATA_ROOT: return -1;
-				// TODO don't panic on ps2 reads
-				default: panic_invalid_state();
+				default: return -1;
 			}
 
 		default: panic_invalid_state();
