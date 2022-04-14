@@ -7,6 +7,7 @@
 
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
+	assert(process_current->state == PS_RUNNING);
 	process_current->state = PS_WAITS4FS;
 	process_current->waits4fs.queue_next = NULL;
 
@@ -43,21 +44,15 @@ int vfs_request_accept(struct vfs_request *req) {
 	struct fs_wait_response res = {0};
 	int len;
 	assert(handler);
-	assert(handler->state == PS_WAITS4REQUEST); // TODO currently callers have to ensure that the handler is in the correct state. should they?
+	assert(handler->state == PS_WAITS4REQUEST);
 	assert(!handler->handled_req);
 
 	len = min(req->input.len, handler->awaited_req.max_len);
 
-	// TODO having to separately handle copying from kernel and userland stinks
-	if (req->input.kern) {
-		if (!virt_cpy_to(handler->pages,
-					handler->awaited_req.buf, req->input.buf_kern, len))
-			goto fail; // can't copy buffer
-	} else {
-		if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
-					req->caller->pages, req->input.buf, len))
-			goto fail; // can't copy buffer
-	}
+	// wouldn't it be kinda nice to have a fake kernel "process"?
+	if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
+				req->input.kern ? NULL : req->caller->pages, req->input.buf, len))
+		goto fail; // can't copy buffer
 
 	res.len      = len;
 	res.capacity = req->output.len;
@@ -97,6 +92,7 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 
 	if (req->input.kern)  kfree(req->input.buf_kern);
 
+	assert(req->caller->state = PS_WAITS4FS);
 	req->caller->state = PS_RUNNING;
 	regs_savereturn(&req->caller->regs, ret);
 	return ret;
