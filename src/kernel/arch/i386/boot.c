@@ -8,24 +8,26 @@
 #include <kernel/main.h>
 #include <kernel/panic.h>
 
+void tty_init(void); // TODO put this in a header file
+
 void kmain_early(struct multiboot_info *multiboot) {
 	struct kmain_info info;
 
 	// setup some basic stuff
 	tty_init();
-	tty_const("gdt...");
+	kprintf("gdt...");
 	gdt_init();
-	tty_const("idt...");
+	kprintf("idt...");
 	idt_init();
-	tty_const("irq...");
+	kprintf("irq...");
 	irq_init();
-	tty_const("ata...");
+	kprintf("ata...");
 	ata_init();
 
 	{ // find the init module
 		struct multiboot_mod *module = &multiboot->mods[0];
 		if (multiboot->mods_count < 1) {
-			tty_const("can't find init! ");
+			kprintf("can't find init! ");
 			panic_invalid_state(); // no init
 		}
 		info.init.at   = module->start;

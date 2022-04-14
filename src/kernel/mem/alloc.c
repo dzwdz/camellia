@@ -37,9 +37,7 @@ void mem_init(struct kmain_info *info) {
 }
 
 void mem_debugprint(void) {
-	tty_const("malloc balance: ");
-	_tty_var(malloc_balance);
-	tty_const(" ");
+	kprintf("malloc balance: 0x%x\n", malloc_balance);
 }
 
 static bool bitmap_get(size_t i) {
@@ -72,7 +70,7 @@ void *page_alloc(size_t pages) {
 			return page_bitmap_start + i * PAGE_SIZE;
 		}
 	}
-	tty_const("we ran out of memory :(\ngoodbye.\n");
+	kprintf("we ran out of memory :(\ngoodbye.\n");
 	panic_unimplemented();
 }
 
@@ -101,9 +99,8 @@ void kfree(void *ptr) {
 	if (ptr == NULL) return;
 	if (*magic != MALLOC_MAGIC) {
 		// TODO add some kind of separate system log
-		tty_const("WARNING kfree() didn't find MALLOC_MAGIC, ptr == ");
-		_tty_var(ptr);
-		tty_const(" ");
+		kprintf("kfree() didn't find MALLOC_MAGIC @ 0x%x\n", ptr);
+		panic_invalid_state();
 	} else {
 		// change the magic marker to detect double frees
 		*magic = 0xBADF2EED;

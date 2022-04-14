@@ -3,9 +3,9 @@
 #include <kernel/util.h>
 
 #define _panic(type) do { \
-	tty_const(" an "type" PANIC! at the "); \
-	tty_const(__func__); \
-	tty_const(" (" __FILE__ ":" NUM2STR(__LINE__) ") "); \
+	kprintf(" an "type" PANIC! at the "); \
+	kprintf(__func__); \
+	kprintf(" (" __FILE__ ":" NUM2STR(__LINE__) ") "); \
 	halt_cpu(); \
 } while (0)
 

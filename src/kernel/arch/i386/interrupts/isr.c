@@ -3,7 +3,7 @@
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/interrupts/isr.h>
 #include <kernel/arch/i386/port_io.h>
-#include <kernel/arch/io.h>
+#include <kernel/arch/generic.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <stdbool.h>
@@ -14,7 +14,7 @@ bool isr_test_interrupt_called = false;
 void isr_stage3(int interrupt) {
 	switch (interrupt) {
 		case 0x08: // double fault
-			tty_const("#DF");
+			kprintf("#DF");
 			panic_invalid_state();
 		case 0x34:
 			isr_test_interrupt_called = true;

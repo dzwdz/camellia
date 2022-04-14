@@ -1,5 +1,5 @@
 #pragma once
-#include <kernel/arch/io.h>
+#include <kernel/arch/generic.h>
 #include <kernel/util.h>
 #include <stdbool.h>
 
@@ -17,7 +17,5 @@ extern bool _did_tests_fail;
 #define TEST_COND(cond)                           \
 	if (!(cond)) {                                \
 		_did_tests_fail = true;                   \
-		tty_const("test failed at "               \
-		          __FILE__ ":" NUM2STR(__LINE__)  \
-		                                    " "); \
+		kprintf("test failed at " __FILE__ ":" NUM2STR(__LINE__) " "); \
 	}

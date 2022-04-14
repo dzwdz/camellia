@@ -2,6 +2,7 @@
 #include <shared/flags.h>
 #include <shared/types.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 enum vfs_backend_type {
 	VFS_BACK_ROOT,

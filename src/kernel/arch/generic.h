@@ -1,9 +1,9 @@
 #pragma once
 
 #include <kernel/arch/i386/registers.h>
-#include <kernel/arch/io.h>
 #include <shared/types.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 // i have no idea where else to put it
 // some code assumes that it's a power of 2
@@ -37,3 +37,5 @@ void pagedir_switch(struct pagedir *);
 // return 0 on failure
 void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
                         bool user, bool writeable);
+
+int kprintf(const char *fmt, ...);

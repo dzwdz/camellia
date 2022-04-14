@@ -3,8 +3,6 @@
 #include <kernel/panic.h>
 #include <stdbool.h>
 
-#include <kernel/arch/io.h>
-
 static struct {
 	enum {
 		DEV_UNKNOWN,

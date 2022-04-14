@@ -286,7 +286,7 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_MEMFLAG:
 			return _syscall_memflag((userptr_t)a, b, c);
 		default:
-			tty_const("unknown syscall ");
+			kprintf("unknown syscall ");
 			panic_unimplemented(); // TODO fail gracefully
 	}
 }
