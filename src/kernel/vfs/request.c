@@ -14,7 +14,7 @@ int vfs_request_create(struct vfs_request req_) {
 	process_current->waits4fs.req = req_;
 	req = &process_current->waits4fs.req;
 
-	if (!req->backend)
+	if (!req->backend || !req->backend->potential_handlers)
 		return vfs_request_finish(req, -1);
 
 	switch (req->backend->type) {
@@ -89,10 +89,22 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		ret = handle;
 	}
 
-	if (req->input.kern)  kfree(req->input.buf_kern);
+	if (req->input.kern)
+		kfree(req->input.buf_kern);
 
 	assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
 	process_transition(req->caller, PS_RUNNING);
 	regs_savereturn(&req->caller->regs, ret);
 	return ret;
+}
+
+void vfs_request_cancel(struct vfs_request *req, int ret) {
+	if (req->input.kern)
+		kfree(req->input.buf_kern);
+
+	// ret must always be negative, so it won't be confused with a success
+	if (ret > 0) ret = -ret;
+	if (ret == 0) ret = -1;
+	regs_savereturn(&req->caller->regs, ret);
+	process_transition(req->caller, PS_RUNNING);
 }

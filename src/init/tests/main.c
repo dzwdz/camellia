@@ -79,6 +79,18 @@ static void test_interrupted_fs(void) {
 	}
 }
 
+static void test_orphaned_fs(void) {
+	handle_t h = _syscall_fs_fork2();
+	if (h) {
+		_syscall_mount(h, "/", 1);
+		int ret = _syscall_open("/", 1);
+		// no handler will ever be available to handle this call - the syscall should instantly return
+		_syscall_exit(ret < 0 ? 0 : -1);
+	} else {
+		_syscall_exit(0);
+	}
+}
+
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
@@ -92,5 +104,6 @@ void test_all(void) {
 	run_forked(test_await);
 	run_forked(test_faults);
 	run_forked(test_interrupted_fs);
+	run_forked(test_orphaned_fs);
 //	run_forked(stress_fork);
 }

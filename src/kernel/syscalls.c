@@ -189,6 +189,7 @@ handle_t _syscall_fs_fork2(void) {
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
+	backend->potential_handlers = 1;
 	backend->handler = NULL;
 	backend->queue = NULL;
 

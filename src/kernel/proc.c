@@ -54,6 +54,9 @@ struct process *process_fork(struct process *parent) {
 
 	parent->handled_req = NULL; // TODO control this with a flag
 
+	if (child->controlled)
+		child->controlled->potential_handlers++;
+
 	child->id      = next_pid++;
 
 	return child;
@@ -189,9 +192,21 @@ void process_transition(struct process *p, enum process_state state) {
 
 void process_kill(struct process *proc, int ret) {
 	// TODO kill children
+	if (proc->controlled) {
+		proc->controlled->potential_handlers--;
+		if (proc->controlled->potential_handlers == 0) {
+			// orphaned
+			struct process *q = proc->controlled->queue;
+			while (q) {
+				assert(q->state == PS_WAITS4FS);
+				struct process *q2 = q->waits4fs.queue_next;
+				vfs_request_cancel(&q->waits4fs.req, ret);
+				q = q2;
+			}
+		}
+	}
 	if (proc->handled_req) {
-		regs_savereturn(&proc->handled_req->caller->regs, -1);
-		process_transition(proc->handled_req->caller, PS_RUNNING);
+		vfs_request_cancel(proc->handled_req, ret);
 	}
 	process_transition(proc, PS_DEAD);
 	proc->death_msg = ret;

@@ -13,6 +13,8 @@ enum vfs_backend_type {
 struct vfs_backend {
 	enum vfs_backend_type type;
 
+	size_t potential_handlers; // 0 - orphaned
+
 	// only used with VFS_BACK_USER
 	struct process *handler;
 	struct process *queue;
@@ -45,3 +47,5 @@ struct vfs_request {
 int vfs_request_create(struct vfs_request);
 int vfs_request_accept(struct vfs_request *);
 int vfs_request_finish(struct vfs_request *, int ret);
+
+void vfs_request_cancel(struct vfs_request *, int ret);
