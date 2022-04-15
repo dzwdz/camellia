@@ -64,6 +64,21 @@ static void test_faults(void) {
 	assert(await_cnt == 2);
 }
 
+static void test_interrupted_fs(void) {
+	handle_t h = _syscall_fs_fork2();
+	if (h) {
+		_syscall_mount(h, "/", 1);
+		int ret = _syscall_open("/", 1);
+		// the handler quits while handling that call - but this syscall should return anyways
+		_syscall_exit(ret < 0 ? 0 : -1);
+	} else {
+		// TODO make a similar test with all 0s passed to fs_wait
+		struct fs_wait_response res;
+		_syscall_fs_wait(NULL, 0, &res);
+		_syscall_exit(0);
+	}
+}
+
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
@@ -76,5 +91,6 @@ static void stress_fork(void) {
 void test_all(void) {
 	run_forked(test_await);
 	run_forked(test_faults);
-	run_forked(stress_fork);
+	run_forked(test_interrupted_fs);
+//	run_forked(stress_fork);
 }

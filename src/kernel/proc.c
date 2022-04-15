@@ -189,6 +189,10 @@ void process_transition(struct process *p, enum process_state state) {
 
 void process_kill(struct process *proc, int ret) {
 	// TODO kill children
+	if (proc->handled_req) {
+		regs_savereturn(&proc->handled_req->caller->regs, -1);
+		process_transition(proc->handled_req->caller, PS_RUNNING);
+	}
 	process_transition(proc, PS_DEAD);
 	proc->death_msg = ret;
 	process_try2collect(proc);
