@@ -76,5 +76,5 @@ static void stress_fork(void) {
 void test_all(void) {
 	run_forked(test_await);
 	run_forked(test_faults);
-	run_forked(stress_fork);
+//	run_forked(stress_fork);
 }

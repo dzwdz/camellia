@@ -8,6 +8,7 @@ enum process_state {
 	PS_RUNNING,
 	PS_DEAD,    // return message wasn't collected
 	PS_DEADER,  // return message was collected
+
 	PS_WAITS4CHILDDEATH,
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
@@ -18,6 +19,8 @@ struct process {
 	struct pagedir *pages;
 	struct registers regs;
 	enum process_state state;
+
+	bool deathbed; // kill on the first chance we get
 
 	struct process *sibling;
 	struct process *child;
@@ -41,6 +44,9 @@ struct process {
 			struct vfs_request req;
 			bool (*ready)();
 			void (*callback)(struct process *);
+			// TODO kernel / user fs disparity
+			// only kernel io can be interrupted
+			bool (*interrupt)(struct process *);
 		} waits4irq;
 	};
 	struct vfs_request *handled_req;

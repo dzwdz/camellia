@@ -53,6 +53,11 @@ static void wait_callback(struct process *proc) {
 	vfs_root_handler(&proc->waits4irq.req);
 }
 
+static bool stub_interrupt(struct process *proc) {
+	process_transition(proc, PS_RUNNING);
+	return true;
+}
+
 static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)()) {
 	if (!ready_fn()) {
 		*ready = false;
@@ -60,6 +65,7 @@ static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)())
 		req->caller->waits4irq.req = *req;
 		req->caller->waits4irq.ready = ready_fn;
 		req->caller->waits4irq.callback = wait_callback;
+		req->caller->waits4irq.interrupt = stub_interrupt;
 		return true;
 	}
 	return false;

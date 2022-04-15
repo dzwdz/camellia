@@ -205,6 +205,8 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	if (!backend) return -1;
 
 	process_transition(process_current, PS_WAITS4REQUEST);
+
+	assert(!backend->handler); // TODO allow multiple processes to fs_wait on the same backend
 	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
 	 * vfs_request_accept simpler. TODO? */
@@ -213,6 +215,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	process_current->awaited_req.res     = res;
 
 	if (backend->queue) {
+		// TODO queue advancement would probably be better handled in vfs_request_accept
 		// handle queued requests
 		struct process *queued = backend->queue;
 		backend->queue = queued->waits4fs.queue_next;

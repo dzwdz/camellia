@@ -15,6 +15,7 @@ struct process *process_seed(void) {
 	struct process *proc = kmalloc(sizeof *proc);
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
+	proc->deathbed = false;
 	proc->sibling = NULL;
 	proc->child   = NULL;
 	proc->parent  = NULL;
@@ -98,12 +99,23 @@ _Noreturn void process_idle(void) {
 	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
 
 	if (len == 0) {
+		// TODO shutdown()
+
+		size_t states[PS_WAITS4IRQ+1] = {0}; // TODO PS_LAST
+		for (struct process *p = process_first; p; p = process_next(p))
+			states[p->state]++;
+		for (size_t i = 0; i < sizeof(states) / sizeof(*states); i++)
+			kprintf("state 0x%x: 0x%x\n", i, states[i]);
+
 		mem_debugprint();
 		cpu_shutdown();
 	}
 
 	for (;;) {
 		for (size_t i = 0; i < len; i++) {
+			if (procs[i]->deathbed && procs[i]->waits4irq.interrupt(procs[i])) {
+				process_switch_any();
+			}
 			if (procs[i]->waits4irq.ready()) {
 				/* if this is entered during the first iteration, it indicates a
 				 * kernel bug. this should be logged. TODO? */
@@ -168,9 +180,11 @@ void process_transition(struct process *p, enum process_state state) {
 	switch (state) {
 		case PS_RUNNING:
 			assert(last != PS_DEAD && last != PS_DEADER);
+			if (p->deathbed)
+				process_kill(p, -1);
 			break;
 		case PS_DEAD:
-			assert(last == PS_RUNNING);
+			// see process_kill
 			break;
 		case PS_DEADER:
 			assert(last == PS_DEAD);
@@ -187,16 +201,61 @@ void process_transition(struct process *p, enum process_state state) {
 	}
 }
 
-void process_kill(struct process *proc, int ret) {
-	// TODO kill children
-	process_transition(proc, PS_DEAD);
-	proc->death_msg = ret;
-	process_try2collect(proc);
-	if (proc == process_first) {
-		kprintf("init killed, quitting...");
-		mem_debugprint();
-		cpu_shutdown();
+void process_kill(struct process *p, int ret) {
+	// TODO VULN unbounded recursion
+	for (struct process *c = p->child; c; c = c->sibling)
+		process_kill(c, -1);
+
+	switch (p->state) {
+		case PS_DEAD:
+		case PS_DEADER:
+			// it'd be wise to check this before recursing downward
+			return;
+
+		case PS_RUNNING:
+			// TODO if was handling a request, return in child
+			// actually, all the children are already going to get killed
+			// currently they are just stuck in PS_WAITS4FS
+		case PS_WAITS4CHILDDEATH:
+			break;
+
+		case PS_WAITS4FS:
+			/* TODO write tests, properly figure this out
+			 *
+			 * before req accepted:
+			 *   a reference can be stored in:
+			 *     (struct process)->waits4fs.queue_next
+			 *     (struct vfs_backend)->queue
+			 *   the two options are:
+			 *    * remove that reference and instantly kill
+			 *    * deathbed and wait for the request
+			 *        slow but easier
+			 *
+			 * once accepted:
+			 *   reference stored in
+			 *     (struct process)->handled_req->caller
+			 *   we can just deathbed and let the request finish
+			 */
+			p->deathbed = true;
+			return;
+		case PS_WAITS4IRQ:
+			p->deathbed = true;
+			return;
+
+		case PS_WAITS4REQUEST:
+			assert(p->controlled);
+			if (p->controlled->handler == p)
+				p->controlled->handler = NULL;
+			break;
+
+		default:
+			kprintf("process_kill unexpected state 0x%x\n", p->state);
+			panic_invalid_state();
 	}
+
+	process_transition(p, PS_DEAD);
+	p->death_msg = ret;
+	process_try2collect(p);
 }
 
 int process_try2collect(struct process *dead) {
@@ -213,6 +272,11 @@ int process_try2collect(struct process *dead) {
 			process_transition(dead, PS_DEADER);
 
 			return ret;
+
+		case PS_DEAD:
+		case PS_DEADER:
+			process_transition(dead, PS_DEADER);
+			return -1;
 
 		default:
 			return -1; // this return value isn't used anywhere

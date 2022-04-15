@@ -21,9 +21,9 @@ int vfs_request_create(struct vfs_request req_) {
 		case VFS_BACK_ROOT:
 			return vfs_root_handler(req);
 		case VFS_BACK_USER:
-			if (req->backend->handler
-					&& req->backend->handler->state == PS_WAITS4REQUEST)
+			if (req->backend->handler)
 			{
+				assert(req->backend->handler->state == PS_WAITS4REQUEST);
 				vfs_request_accept(req);
 			} else {
 				// backend isn't ready yet, join the queue
@@ -63,6 +63,7 @@ int vfs_request_accept(struct vfs_request *req) {
 				handler->awaited_req.res, &res, sizeof res))
 		goto fail; // can't copy response struct
 
+	req->backend->handler = NULL;
 	process_transition(handler, PS_RUNNING);
 	handler->handled_req = req;
 	regs_savereturn(&handler->regs, 0);
