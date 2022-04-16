@@ -17,7 +17,7 @@ struct vfs_backend {
 
 	// only used with VFS_BACK_USER
 	struct process *handler;
-	struct process *queue;
+	struct vfs_request *queue;
 };
 
 // describes an in-process vfs call
@@ -41,6 +41,8 @@ struct vfs_request {
 
 	struct process *caller;
 	struct vfs_backend *backend;
+
+	struct vfs_request *queue_next;
 };
 
 /** Assigns the vfs_request to the caller, and dispatches the call */

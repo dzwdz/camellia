@@ -196,11 +196,10 @@ void process_kill(struct process *proc, int ret) {
 		proc->controlled->potential_handlers--;
 		if (proc->controlled->potential_handlers == 0) {
 			// orphaned
-			struct process *q = proc->controlled->queue;
+			struct vfs_request *q = proc->controlled->queue;
 			while (q) {
-				assert(q->state == PS_WAITS4FS);
-				struct process *q2 = q->waits4fs.queue_next;
-				vfs_request_cancel(&q->waits4fs.req, ret);
+				struct vfs_request *q2 = q->queue_next;
+				vfs_request_cancel(q, ret);
 				q = q2;
 			}
 		}

@@ -30,7 +30,6 @@ struct process {
 		int death_msg; // PS_DEAD
 		struct {
 			struct vfs_request req;
-			struct process *queue_next;
 		} waits4fs; // PS_WAITS4FS
 		struct {
 			char __user *buf;

@@ -8,7 +8,6 @@
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
 	process_transition(process_current, PS_WAITS4FS);
-	process_current->waits4fs.queue_next = NULL;
 
 	// the request is owned by the caller
 	process_current->waits4fs.req = req_;
@@ -21,10 +20,10 @@ int vfs_request_create(struct vfs_request req_) {
 		case VFS_BACK_ROOT:
 			return vfs_root_handler(req);
 		case VFS_BACK_USER: {
-			struct process **iter = &req->backend->queue;
+			struct vfs_request **iter = &req->backend->queue;
 			while (*iter != NULL) // find free spot in queue
-				iter = &(*iter)->waits4fs.queue_next;
-			*iter = req->caller;
+				iter = &(*iter)->queue_next;
+			*iter = req;
 
 			vfs_backend_accept(req->backend);
 			return -1; // isn't passed to the caller process anyways
@@ -35,19 +34,17 @@ int vfs_request_create(struct vfs_request req_) {
 }
 
 int vfs_backend_accept(struct vfs_backend *backend) {
-	struct vfs_request *req;
+	struct vfs_request *req = backend->queue;
 	struct process *handler = backend->handler;
 	struct fs_wait_response res = {0};
 	int len;
 
-	if (!backend->handler) return -1;
+	if (!handler) return -1;
 	assert(handler->state == PS_WAITS4REQUEST);
 	assert(!handler->handled_req);
 
-	if (!backend->queue) return -1;
-	// TODO wouldn't it be better to directly store vfs_requests in the queue?
-	req = &backend->queue->waits4fs.req;
-	backend->queue = backend->queue->waits4fs.queue_next;
+	if (!req) return -1;
+	backend->queue = req->queue_next;
 
 	len = min(req->input.len, handler->awaited_req.max_len);
 	if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
@@ -101,6 +98,8 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 }
 
 void vfs_request_cancel(struct vfs_request *req, int ret) {
+	assert(req->caller->state == PS_WAITS4FS);
+
 	if (req->input.kern)
 		kfree(req->input.buf_kern);
 
