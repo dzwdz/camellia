@@ -206,6 +206,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	if (!backend) return -1;
 
 	process_transition(process_current, PS_WAITS4REQUEST);
+	assert(!backend->handler); // TODO allow multiple processes to wait on the same backend
 	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
 	 * vfs_request_accept simpler. TODO? */
