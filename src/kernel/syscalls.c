@@ -209,18 +209,12 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	assert(!backend->handler); // TODO allow multiple processes to wait on the same backend
 	backend->handler = process_current;
 	/* checking the validity of those pointers here would make
-	 * vfs_request_accept simpler. TODO? */
+	 * vfs_backend_accept simpler. TODO? */
 	process_current->awaited_req.buf     = buf;
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
 
-	if (backend->queue) {
-		// handle queued requests
-		struct process *queued = backend->queue;
-		backend->queue = queued->waits4fs.queue_next;
-		return vfs_request_accept(&queued->waits4fs.req);
-	}
-	return -1;
+	return vfs_backend_accept(backend);
 }
 
 int _syscall_fs_respond(char __user *buf, int ret) {

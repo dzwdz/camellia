@@ -20,34 +20,36 @@ int vfs_request_create(struct vfs_request req_) {
 	switch (req->backend->type) {
 		case VFS_BACK_ROOT:
 			return vfs_root_handler(req);
-		case VFS_BACK_USER:
-			if (req->backend->handler) {
-				assert(req->backend->handler->state == PS_WAITS4REQUEST);
-				vfs_request_accept(req);
-			} else {
-				// backend isn't ready yet, join the queue
-				struct process **iter = &req->backend->queue;
-				while (*iter != NULL)
-					iter = &(*iter)->waits4fs.queue_next;
-				*iter = process_current;
-			}
+		case VFS_BACK_USER: {
+			struct process **iter = &req->backend->queue;
+			while (*iter != NULL) // find free spot in queue
+				iter = &(*iter)->waits4fs.queue_next;
+			*iter = req->caller;
+
+			vfs_backend_accept(req->backend);
 			return -1; // isn't passed to the caller process anyways
+		}
 		default:
 			panic_invalid_state();
 	}
 }
 
-int vfs_request_accept(struct vfs_request *req) {
-	struct process *handler = req->backend->handler;
+int vfs_backend_accept(struct vfs_backend *backend) {
+	struct vfs_request *req;
+	struct process *handler = backend->handler;
 	struct fs_wait_response res = {0};
 	int len;
-	assert(handler);
+
+	if (!backend->handler) return -1;
 	assert(handler->state == PS_WAITS4REQUEST);
 	assert(!handler->handled_req);
 
-	len = min(req->input.len, handler->awaited_req.max_len);
+	if (!backend->queue) return -1;
+	// TODO wouldn't it be better to directly store vfs_requests in the queue?
+	req = &backend->queue->waits4fs.req;
+	backend->queue = backend->queue->waits4fs.queue_next;
 
-	// wouldn't it be kinda nice to have a fake kernel "process"?
+	len = min(req->input.len, handler->awaited_req.max_len);
 	if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
 				req->input.kern ? NULL : req->caller->pages, req->input.buf, len))
 		goto fail; // can't copy buffer
