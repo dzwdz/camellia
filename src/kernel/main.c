@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 _Noreturn static void run_init(struct kmain_info *info) {
+	// TODO move all of this to process_seed
 	struct process *proc = process_seed();
 	void __user *init_base = (userptr_t)0x200000;
 
@@ -17,7 +18,7 @@ _Noreturn static void run_init(struct kmain_info *info) {
 	proc->regs.eip = init_base;
 
 	kprintf("switching...\n");
-	process_switch(proc);
+	process_switch_any();
 }
 
 void kmain(struct kmain_info info) {

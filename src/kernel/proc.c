@@ -84,8 +84,7 @@ void process_free(struct process *p) {
 	kfree(p);
 }
 
-// TODO make process_switch private
-void process_switch(struct process *proc) {
+static _Noreturn void process_switch(struct process *proc) {
 	assert(proc->state == PS_RUNNING);
 	if (proc->deathbed) {
 		process_kill(proc, -1);
@@ -96,13 +95,8 @@ void process_switch(struct process *proc) {
 	sysexit(proc->regs);
 }
 
-_Noreturn void process_switch_any(void) {
-	struct process *found = process_find(PS_RUNNING);
-	if (found) process_switch(found);
-	process_idle();
-}
-
-_Noreturn void process_idle(void) {
+/** If there are any processes waiting for IRQs, wait with them. Otherwise, shut down */
+static _Noreturn void process_idle(void) {
 	struct process *procs[16];
 	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
 
@@ -119,6 +113,15 @@ _Noreturn void process_idle(void) {
 		}
 		cpu_pause();
 	}
+}
+
+_Noreturn void process_switch_any(void) {
+	if (process_current && process_current->state == PS_RUNNING)
+		process_switch(process_current);
+
+	struct process *found = process_find(PS_RUNNING);
+	if (found) process_switch(found);
+	process_idle();
 }
 
 struct process *process_next(struct process *p) {
