@@ -84,8 +84,13 @@ void process_free(struct process *p) {
 	kfree(p);
 }
 
+// TODO make process_switch private
 void process_switch(struct process *proc) {
 	assert(proc->state == PS_RUNNING);
+	if (proc->deathbed) {
+		process_kill(proc, -1);
+		process_switch_any();
+	}
 	process_current = proc;
 	pagedir_switch(proc->pages);
 	sysexit(proc->regs);
@@ -169,13 +174,6 @@ void process_transition(struct process *p, enum process_state state) {
 	switch (state) {
 		case PS_RUNNING:
 			assert(last != PS_DEAD && last != PS_DEADER);
-			if (p->deathbed)
-				process_kill(p, -1);
-			/* TODO return something to warn caller if deathbedded, to prevent
-			 * use after free
-			 *
-			 * alternatively assert(!p->deathbed); and move the responsibility
-			 * to the caller */
 			break;
 		case PS_DEAD:
 			// see process_kill

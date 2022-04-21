@@ -21,7 +21,7 @@ struct process {
 	struct registers regs;
 	enum process_state state;
 
-	bool deathbed; // kill instead of switching to PS_RUNNING
+	bool deathbed; // kill on next process_switch attempt
 
 	struct process *sibling;
 	struct process *child;
