@@ -30,3 +30,14 @@ void kmain(struct kmain_info info) {
 	kprintf("loading init...\n");
 	run_init(&info);
 }
+
+void shutdown(void) {
+	size_t states[PS_LAST] = {0};
+	for (struct process *p = process_first; p; p = process_next(p))
+		states[p->state]++;
+	for (size_t i = 0; i < sizeof(states) / sizeof(*states); i++)
+		kprintf("state 0x%x: 0x%x\n", i, states[i]);
+
+	mem_debugprint();
+	cpu_shutdown();
+}

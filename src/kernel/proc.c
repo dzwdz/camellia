@@ -1,4 +1,5 @@
 #include <kernel/arch/generic.h>
+#include <kernel/main.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
@@ -100,10 +101,7 @@ _Noreturn void process_idle(void) {
 	struct process *procs[16];
 	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
 
-	if (len == 0) {
-		mem_debugprint();
-		cpu_shutdown();
-	}
+	if (len == 0) shutdown();
 
 	for (;;) {
 		for (size_t i = 0; i < len; i++) {
@@ -210,11 +208,7 @@ void process_kill(struct process *proc, int ret) {
 	process_transition(proc, PS_DEAD);
 	proc->death_msg = ret;
 	process_try2collect(proc);
-	if (proc == process_first) {
-		kprintf("init killed, quitting...");
-		mem_debugprint();
-		cpu_shutdown();
-	}
+	if (proc == process_first) shutdown();
 }
 
 int process_try2collect(struct process *dead) {

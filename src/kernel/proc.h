@@ -12,6 +12,7 @@ enum process_state {
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
 	PS_WAITS4IRQ, // set by root vfs
+	PS_LAST,
 };
 
 struct process {
