@@ -3,6 +3,7 @@
 #include <kernel/handle.h>
 #include <kernel/vfs/mount.h>
 #include <shared/syscalls.h>
+#include <stdbool.h>
 
 enum process_state {
 	PS_RUNNING,
@@ -19,6 +20,8 @@ struct process {
 	struct pagedir *pages;
 	struct registers regs;
 	enum process_state state;
+
+	bool deathbed; // kill instead of switching to PS_RUNNING
 
 	struct process *sibling;
 	struct process *child;

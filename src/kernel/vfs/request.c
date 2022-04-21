@@ -92,8 +92,8 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		kfree(req->input.buf_kern);
 
 	assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
-	process_transition(req->caller, PS_RUNNING);
 	regs_savereturn(&req->caller->regs, ret);
+	process_transition(req->caller, PS_RUNNING);
 	return ret;
 }
 

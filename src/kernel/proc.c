@@ -169,9 +169,16 @@ void process_transition(struct process *p, enum process_state state) {
 	switch (state) {
 		case PS_RUNNING:
 			assert(last != PS_DEAD && last != PS_DEADER);
+			if (p->deathbed)
+				process_kill(p, -1);
+			/* TODO return something to warn caller if deathbedded, to prevent
+			 * use after free
+			 *
+			 * alternatively assert(!p->deathbed); and move the responsibility
+			 * to the caller */
 			break;
 		case PS_DEAD:
-			assert(last == PS_RUNNING);
+			// see process_kill
 			break;
 		case PS_DEADER:
 			assert(last == PS_DEAD);
@@ -188,13 +195,20 @@ void process_transition(struct process *p, enum process_state state) {
 	}
 }
 
-void process_kill(struct process *proc, int ret) {
-	// TODO kill children
-	if (proc->controlled) {
-		proc->controlled->potential_handlers--;
-		if (proc->controlled->potential_handlers == 0) {
+void process_kill(struct process *p, int ret) {
+	if (p->state == PS_DEAD || p->state == PS_DEADER) return;
+
+	if (p->handled_req) {
+		vfs_request_cancel(p->handled_req, ret);
+		p->handled_req = NULL;
+	}
+	if (p->controlled) {
+		// code stink: i don't like how handling controlled backends is split
+		// between this if and the switch lower down
+		p->controlled->potential_handlers--;
+		if (p->controlled->potential_handlers == 0) {
 			// orphaned
-			struct vfs_request *q = proc->controlled->queue;
+			struct vfs_request *q = p->controlled->queue;
 			while (q) {
 				struct vfs_request *q2 = q->queue_next;
 				vfs_request_cancel(q, ret);
@@ -202,13 +216,40 @@ void process_kill(struct process *proc, int ret) {
 			}
 		}
 	}
-	if (proc->handled_req) {
-		vfs_request_cancel(proc->handled_req, ret);
+
+	// TODO VULN unbounded recursion
+	for (struct process *c = p->child; c; c = c->sibling)
+		process_kill(c, -1);
+
+	switch (p->state) {
+		case PS_RUNNING:
+		case PS_WAITS4CHILDDEATH:
+			break;
+
+		case PS_WAITS4FS:
+			// if the request wasn't accepted we could just remove this process from the queue
+		case PS_WAITS4IRQ:
+			/* the system doesn't shut down until it receives one of each of the interrupts it's waiting for
+			 * more broadly: killing processes stuck on long io calls doesn't free up the drivers
+			 * TODO add a syscall for checking if a request is still valid, to bail early
+			 *  ( not needed for our kernel drivers, but we need feature parity )
+			 */
+			p->deathbed = true;
+			return;
+
+		case PS_WAITS4REQUEST:
+			assert(p->controlled);
+			if (p->controlled->handler == p)
+				p->controlled->handler = NULL;
+			break;
+
+		default:
+			kprintf("process_kill unexpected state 0x%x\n", p->state);
+			panic_invalid_state();
 	}
-	process_transition(proc, PS_DEAD);
-	proc->death_msg = ret;
-	process_try2collect(proc);
-	if (proc == process_first) shutdown();
+	process_transition(p, PS_DEAD);
+	p->death_msg = ret;
+	process_try2collect(p);
 }
 
 int process_try2collect(struct process *dead) {

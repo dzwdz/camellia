@@ -57,7 +57,6 @@ int main(void) {
 	if (__stdout < 0) __stdout = _syscall_open(argify("/vga_tty"));
 
 	_syscall_await();
-	printf("init: something quit\n");
-
+	printf("init: quitting\n");
 	_syscall_exit(0);
 }
