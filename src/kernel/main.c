@@ -6,21 +6,6 @@
 #include <kernel/util.h>
 #include <stdint.h>
 
-_Noreturn static void run_init(struct kmain_info *info) {
-	// TODO move all of this to process_seed
-	struct process *proc = process_seed();
-	void __user *init_base = (userptr_t)0x200000;
-
-	// map the module as rw
-	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
-		pagedir_map(proc->pages, init_base + off, info->init.at + off,
-		            true, true);
-	proc->regs.eip = init_base;
-
-	kprintf("switching...\n");
-	process_switch_any();
-}
-
 void kmain(struct kmain_info info) {
 	kprintf("mem...\n");
 	mem_init(&info);
@@ -29,7 +14,10 @@ void kmain(struct kmain_info info) {
 	tests_all();
 
 	kprintf("loading init...\n");
-	run_init(&info);
+	process_seed(&info);
+
+	kprintf("switching...\n");
+	process_switch_any();
 }
 
 void shutdown(void) {

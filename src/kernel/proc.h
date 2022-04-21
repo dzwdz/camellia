@@ -60,7 +60,7 @@ extern struct process *process_first;
 extern struct process *process_current;
 
 // creates the root process
-struct process *process_seed(void);
+struct process *process_seed(struct kmain_info *info);
 struct process *process_fork(struct process *parent);
 void process_free(struct process *);
 _Noreturn void process_switch_any(void); // switches to any running process

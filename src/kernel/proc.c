@@ -12,7 +12,7 @@ struct process *process_first;
 struct process *process_current;
 static uint32_t next_pid = 0;
 
-struct process *process_seed(void) {
+struct process *process_seed(struct kmain_info *info) {
 	struct process *proc = kmalloc(sizeof *proc);
 	proc->pages = pagedir_new();
 	proc->state = PS_RUNNING;
@@ -39,7 +39,13 @@ struct process *process_seed(void) {
 	for (size_t p = 0x100000; p < (size_t)&_bss_end; p += PAGE_SIZE)
 		pagedir_map(proc->pages, (userptr_t)p, (void*)p, false, true);
 
-	// the kernel still has to load the executable code and set EIP
+	// map the init module as rw
+	void __user *init_base = (userptr_t)0x200000;
+	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
+		pagedir_map(proc->pages, init_base + off, info->init.at + off,
+		            true, true);
+	proc->regs.eip = init_base;
+
 	return proc;
 }
 
