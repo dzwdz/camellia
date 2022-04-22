@@ -70,13 +70,20 @@ struct process *process_fork(struct process *parent) {
 }
 
 void process_free(struct process *p) {
-	assert(p->state == PS_DEADER);
-	pagedir_free(p->pages);
-	if (p->child) { // TODO
-		// panic_invalid_state();
-		return;
-	}
-	if (p->parent && p->parent->child == p) {
+	// TODO only attempt to free, return a bool
+	bool valid = false;
+	if (p->state == PS_DEADER) valid = true;
+	if (p->state == PS_DEAD && (!p->parent
+	                        ||   p->parent->state == PS_DEAD
+	                        ||   p->parent->state == PS_DEADER)) valid = true;
+	assert(valid);
+
+	while (p->child)
+		process_free(p->child);
+
+	if (p == process_first) return;
+
+	if (p->parent->child == p) {
 		p->parent->child = p->sibling;
 	} else {
 		// this would be simpler if siblings were a doubly linked list
@@ -87,6 +94,7 @@ void process_free(struct process *p) {
 		}
 		prev->sibling = p->sibling;
 	}
+	pagedir_free(p->pages); // TODO could be done on kill
 	kfree(p);
 }
 
@@ -273,6 +281,11 @@ int process_try2collect(struct process *dead) {
 			process_transition(dead, PS_DEADER);
 
 			return ret;
+
+		case PS_DEAD:
+		case PS_DEADER:
+			process_transition(dead, PS_DEADER);
+			return -1;
 
 		default:
 			return -1; // this return value isn't used anywhere

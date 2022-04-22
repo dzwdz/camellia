@@ -28,5 +28,10 @@ void shutdown(void) {
 		kprintf("state 0x%x: 0x%x\n", i, states[i]);
 
 	mem_debugprint();
+
+	// TODO generalize to process_cleanup
+	process_free(process_first);
+
+	mem_debugprint();
 	cpu_shutdown();
 }
