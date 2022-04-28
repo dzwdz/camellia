@@ -28,6 +28,23 @@ int main(void) {
 
 	MOUNT("/bind/", fs_passthru(NULL));
 
+	if (_syscall_fork()) {
+		/* (used to) expose a bug in the kernel
+		 * the program will flow like this:
+		 * 1. we launch the forked init
+		 * 2. the forked init launches both shells
+		 * 3. one of the shells quit
+		 * 4. the forked init picks it up and quits
+		 *
+		 * then, in process_kill, the other shell will be deathbedded
+		 *
+		 * before i implement(ed) reparenting, it was a lingering running child
+		 * of a dead process, which is invalid state
+		 */
+		_syscall_await();
+		_syscall_exit(1);
+	}
+
 	if (!_syscall_fork()) {
 		__stdin = __stdout = _syscall_open(argify("/com1"));
 		if (__stdout < 0) _syscall_exit(1);
