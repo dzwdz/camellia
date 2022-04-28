@@ -6,7 +6,7 @@
 #define HANDLE_MAX 16
 
 enum handle_type {
-	HANDLE_EMPTY,
+	HANDLE_EMPTY = 0, // by design - handle structs start out NULLed out
 	HANDLE_FILE,
 
 	HANDLE_FS_FRONT,

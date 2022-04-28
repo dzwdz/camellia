@@ -13,40 +13,31 @@ struct process *process_current;
 static uint32_t next_pid = 0;
 
 struct process *process_seed(struct kmain_info *info) {
-	struct process *proc = kmalloc(sizeof *proc);
-	proc->pages = pagedir_new();
-	proc->state = PS_RUNNING;
-	proc->sibling = NULL;
-	proc->child   = NULL;
-	proc->parent  = NULL;
-	proc->mount   = vfs_mount_seed();
-	proc->id      = next_pid++;
-	proc->handled_req = NULL;
-	proc->controlled  = NULL;
-
-	process_first = proc;
-
-	for (int i = 0; i < HANDLE_MAX; i++)
-		proc->handles[i].type = HANDLE_EMPTY;
+	process_first = kmalloc(sizeof *process_first);
+	memset(process_first, 0, sizeof *process_first);
+	process_first->state   = PS_RUNNING;
+	process_first->pages   = pagedir_new();
+	process_first->mount   = vfs_mount_seed();
+	process_first->id      = next_pid++;
 
 	// map the stack to the last page in memory
-	pagedir_map(proc->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
-	proc->regs.esp = (userptr_t) ~0xF;
+	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
+	process_first->regs.esp = (userptr_t) ~0xF;
 
 	// map the kernel
 	//   yup, .text is writeable too. the plan is to not map the kernel
 	//   into user memory at all, but i'll implement that later. TODO
 	for (size_t p = 0x100000; p < (size_t)&_bss_end; p += PAGE_SIZE)
-		pagedir_map(proc->pages, (userptr_t)p, (void*)p, false, true);
+		pagedir_map(process_first->pages, (userptr_t)p, (void*)p, false, true);
 
 	// map the init module as rw
 	void __user *init_base = (userptr_t)0x200000;
 	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
-		pagedir_map(proc->pages, init_base + off, info->init.at + off,
+		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
 		            true, true);
-	proc->regs.eip = init_base;
+	process_first->regs.eip = init_base;
 
-	return proc;
+	return process_first;
 }
 
 struct process *process_fork(struct process *parent) {
