@@ -86,7 +86,6 @@ void process_forget(struct process *p) {
 }
 
 void process_free(struct process *p) {
-	// TODO only attempt to free, return a bool
 	bool valid = false;
 	if (p->state == PS_DEADER) valid = true;
 	if (p->state == PS_DEAD && (!p->parent
@@ -121,7 +120,7 @@ static _Noreturn void process_idle(void) {
 
 	if (len == 0) shutdown();
 
-	if (process_first->state == PS_DEAD) {
+	if (process_first->state == PS_DEAD || process_first->state == PS_DEADER) {
 		/* special case: if the system is about to shut off, stop waiting for IRQs
 		 * usually this would be an issue because it would let processes know if
 		 * they're using the kernel handler, but the system is shutting off anyways,
@@ -305,6 +304,10 @@ int process_try2collect(struct process *dead) {
 
 	assert(dead->state == PS_DEAD);
 
+	if (!parent) {
+		process_transition(dead, PS_DEADER);
+		return -1;
+	}
 	switch (parent->state) {
 		case PS_WAITS4CHILDDEATH:
 			ret = dead->death_msg;
@@ -316,6 +319,7 @@ int process_try2collect(struct process *dead) {
 
 		case PS_DEAD:
 		case PS_DEADER:
+		case PS_DUMMY:
 			process_transition(dead, PS_DEADER);
 			return -1;
 
