@@ -116,6 +116,18 @@ static _Noreturn void process_idle(void) {
 
 	if (len == 0) shutdown();
 
+	if (process_first->state == PS_DEAD) {
+		/* special case: if the system is about to shut off, stop waiting for IRQs
+		 * usually this would be an issue because it would let processes know if
+		 * they're using the kernel handler, but the system is shutting off anyways,
+		 * and no further user code will run */
+		for (size_t i = 0; i < len; i++) {
+			assert(procs[i]->deathbed);
+			process_transition(procs[i], PS_RUNNING);
+		}
+		process_switch_any(); // start cleaning out processes
+	}
+
 	for (;;) {
 		for (size_t i = 0; i < len; i++) {
 			if (procs[i]->waits4irq.ready()) {
@@ -244,11 +256,6 @@ void process_kill(struct process *p, int ret) {
 		case PS_WAITS4FS:
 			// if the request wasn't accepted we could just remove this process from the queue
 		case PS_WAITS4IRQ:
-			/* the system doesn't shut down until it receives one of each of the interrupts it's waiting for
-			 * more broadly: killing processes stuck on long io calls doesn't free up the drivers
-			 * TODO add a syscall for checking if a request is still valid, to bail early
-			 *  ( not needed for our kernel drivers, but we need feature parity )
-			 */
 			p->deathbed = true;
 			return;
 
