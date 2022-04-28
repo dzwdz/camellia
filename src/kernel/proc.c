@@ -219,6 +219,8 @@ void process_transition(struct process *p, enum process_state state) {
 		case PS_WAITS4IRQ:
 			assert(last == PS_WAITS4FS);
 			break;
+
+		case PS_LAST: panic_invalid_state();
 	}
 }
 
@@ -265,7 +267,9 @@ void process_kill(struct process *p, int ret) {
 				p->controlled->handler = NULL;
 			break;
 
-		default:
+		case PS_DEAD:
+		case PS_DEADER:
+		case PS_LAST:
 			kprintf("process_kill unexpected state 0x%x\n", p->state);
 			panic_invalid_state();
 	}
