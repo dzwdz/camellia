@@ -13,6 +13,8 @@ enum process_state {
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
 	PS_WAITS4IRQ, // set by root vfs
+
+	PS_DUMMY,
 	PS_LAST,
 };
 
@@ -62,6 +64,8 @@ extern struct process *process_current;
 // creates the root process
 struct process *process_seed(struct kmain_info *info);
 struct process *process_fork(struct process *parent);
+
+void process_forget(struct process *); // remove references to process
 void process_free(struct process *);
 _Noreturn void process_switch_any(void); // switches to any running process
 

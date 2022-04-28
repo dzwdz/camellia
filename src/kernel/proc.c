@@ -10,15 +10,17 @@
 
 struct process *process_first;
 struct process *process_current;
+static struct process *process_deadparent;
+
 static uint32_t next_pid = 0;
 
 struct process *process_seed(struct kmain_info *info) {
 	process_first = kmalloc(sizeof *process_first);
 	memset(process_first, 0, sizeof *process_first);
-	process_first->state   = PS_RUNNING;
-	process_first->pages   = pagedir_new();
-	process_first->mount   = vfs_mount_seed();
-	process_first->id      = next_pid++;
+	process_first->state = PS_RUNNING;
+	process_first->pages = pagedir_new();
+	process_first->mount = vfs_mount_seed();
+	process_first->id    = next_pid++;
 
 	// map the stack to the last page in memory
 	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
@@ -36,6 +38,13 @@ struct process *process_seed(struct kmain_info *info) {
 		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
 		            true, true);
 	process_first->regs.eip = init_base;
+
+	process_deadparent = kmalloc(sizeof *process_deadparent);
+	memset(process_deadparent, 0, sizeof *process_deadparent);
+	process_deadparent->state = PS_DUMMY;
+	process_deadparent->id    = next_pid++;
+
+	process_first->sibling = process_deadparent;
 
 	return process_first;
 }
@@ -60,19 +69,8 @@ struct process *process_fork(struct process *parent) {
 	return child;
 }
 
-void process_free(struct process *p) {
-	// TODO only attempt to free, return a bool
-	bool valid = false;
-	if (p->state == PS_DEADER) valid = true;
-	if (p->state == PS_DEAD && (!p->parent
-	                        ||   p->parent->state == PS_DEAD
-	                        ||   p->parent->state == PS_DEADER)) valid = true;
-	assert(valid);
-
-	while (p->child)
-		process_free(p->child);
-
-	if (p == process_first) return;
+void process_forget(struct process *p) {
+	assert(p->parent);
 
 	if (p->parent->child == p) {
 		p->parent->child = p->sibling;
@@ -85,6 +83,22 @@ void process_free(struct process *p) {
 		}
 		prev->sibling = p->sibling;
 	}
+}
+
+void process_free(struct process *p) {
+	// TODO only attempt to free, return a bool
+	bool valid = false;
+	if (p->state == PS_DEADER) valid = true;
+	if (p->state == PS_DEAD && (!p->parent
+	                        ||   p->parent->state == PS_DEAD
+	                        ||   p->parent->state == PS_DEADER)) valid = true;
+	assert(valid);
+
+	while (p->child)
+		process_free(p->child);
+
+	if (!p->parent) return;
+	process_forget(p);
 	pagedir_free(p->pages); // TODO could be done on kill
 	kfree(p);
 }
@@ -211,7 +225,9 @@ void process_transition(struct process *p, enum process_state state) {
 			assert(last == PS_WAITS4FS);
 			break;
 
-		case PS_LAST: panic_invalid_state();
+		case PS_DUMMY:
+		case PS_LAST:
+			panic_invalid_state();
 	}
 }
 
@@ -238,8 +254,11 @@ void process_kill(struct process *p, int ret) {
 	}
 
 	// TODO VULN unbounded recursion
-	for (struct process *c = p->child; c; c = c->sibling)
+	struct process *c2;
+	for (struct process *c = p->child; c; c = c2) {
+		c2 = c->sibling;
 		process_kill(c, -1);
+	}
 
 	switch (p->state) {
 		case PS_RUNNING:
@@ -249,7 +268,17 @@ void process_kill(struct process *p, int ret) {
 		case PS_WAITS4FS:
 			// if the request wasn't accepted we could just remove this process from the queue
 		case PS_WAITS4IRQ:
+			/* instead of killing the process outright, we mark it to get killed
+			 * as soon as it becomes running and we try to give it control.
+			 *
+			 * we also reparent it to process_deadparent because we don't want
+			 * dead processes to have any alive children */
+			// TODO process_reparent?
 			p->deathbed = true;
+			process_forget(p);
+			p->sibling = process_deadparent->child;
+			p->parent  = process_deadparent;
+			process_deadparent->child  = p;
 			return;
 
 		case PS_WAITS4REQUEST:
@@ -260,6 +289,7 @@ void process_kill(struct process *p, int ret) {
 
 		case PS_DEAD:
 		case PS_DEADER:
+		case PS_DUMMY:
 		case PS_LAST:
 			kprintf("process_kill unexpected state 0x%x\n", p->state);
 			panic_invalid_state();
