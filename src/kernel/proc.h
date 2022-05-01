@@ -76,6 +76,7 @@ struct process *process_find(enum process_state);
 size_t process_find_multiple(enum process_state, struct process **buf, size_t max);
 
 handle_t process_find_handle(struct process *proc, handle_t start_at); // finds the first free handle
+struct handle *process_handle_get(struct process *, handle_t, enum handle_type);
 
 void process_transition(struct process *, enum process_state);
 

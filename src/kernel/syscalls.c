@@ -81,7 +81,7 @@ fail:
 	return -1;
 }
 
-int _syscall_mount(handle_t handle, const char __user *path, int len) {
+int _syscall_mount(handle_t hid, const char __user *path, int len) {
 	struct vfs_mount *mount = NULL;
 	struct vfs_backend *backend = NULL;
 	char *path_buf = NULL;
@@ -102,15 +102,10 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 		len--;
 	}
 
-	if (handle >= 0) { // mounting a real backend?
-		// TODO macro/function for validating handles, this is ridiculous
-		if (handle >= HANDLE_MAX)
-			goto fail;
-		if (!process_current->handles[handle])
-			goto fail;
-		if (process_current->handles[handle]->type != HANDLE_FS_FRONT)
-			goto fail;
-		backend = process_current->handles[handle]->fs.backend;
+	if (hid >= 0) { // mounting a real backend?
+		struct handle *handle = process_handle_get(process_current, hid, HANDLE_FS_FRONT);
+		if (!handle) goto fail;
+		backend = handle->fs.backend;
 	} // otherwise backend == NULL
 
 	// append to mount list
@@ -129,9 +124,8 @@ fail:
 }
 
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
-	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
-	struct handle *handle = process_current->handles[handle_num];
-	if (handle == NULL || handle->type != HANDLE_FILE) return -1;
+	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
+	if (!handle) return -1;
 	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_READ,
 			.output = {
@@ -146,9 +140,8 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 }
 
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
-	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
-	struct handle *handle = process_current->handles[handle_num];
-	if (handle == NULL || handle->type != HANDLE_FILE) return -1;
+	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
+	if (!handle) return -1;
 	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
 			.input = {
