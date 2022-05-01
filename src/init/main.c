@@ -46,8 +46,8 @@ int main(void) {
 	}
 
 	if (!_syscall_fork()) {
-		__stdin = __stdout = _syscall_open(argify("/com1"));
-		if (__stdout < 0) _syscall_exit(1);
+		if (file_open(&__stdout, "/com1") < 0 || file_open(&__stdin, "/com1") < 0)
+			_syscall_exit(1);
 
 		shell_loop();
 		_syscall_exit(1);
@@ -55,11 +55,10 @@ int main(void) {
 
 
 	if (!_syscall_fork()) {
-		__stdout = _syscall_open(argify("/vga_tty"));
-		if (__stdout < 0) _syscall_exit(1);
+		if (file_open(&__stdout, "/vga_tty") < 0)
+			_syscall_exit(1);
 
-		__stdin = _syscall_open(argify("/keyboard"));
-		if (__stdin < 0) {
+		if (file_open(&__stdin, "/keyboard") < 0) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
@@ -70,8 +69,8 @@ int main(void) {
 
 
 	// try to find any working output
-	__stdout = _syscall_open(argify("/com1"));
-	if (__stdout < 0) __stdout = _syscall_open(argify("/vga_tty"));
+	if (file_open(&__stdout, "/com1") < 0)
+		file_open(&__stdout, "/vga_tty");
 
 	_syscall_await();
 	printf("init: quitting\n");

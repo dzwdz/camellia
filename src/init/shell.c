@@ -18,7 +18,7 @@ static char *split(char *base) {
 static int readline(char *buf, size_t max) {
 	char c;
 	size_t pos = 0;
-	while (_syscall_read(__stdin, &c, 1, 0)) {
+	while (file_read(&__stdin, &c, 1)) {
 		switch (c) {
 			case '\b':
 			case 0x7f:
@@ -35,7 +35,7 @@ static int readline(char *buf, size_t max) {
 				return pos;
 			default:
 				if (pos < max) {
-					_syscall_write(__stdout, &c, 1, 0);
+					printf("%c", c);
 					buf[pos] = c;
 					pos++;
 				}
@@ -45,10 +45,9 @@ static int readline(char *buf, size_t max) {
 }
 
 static void cmd_cat_ls(const char *args, bool ls) {
-	int fd;
+	libc_file file;
 	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
-	size_t pos = 0;
 
 	if (!args) args = "/";
 	len = strlen(args);
@@ -64,25 +63,22 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		}
 	}
 
-	fd = _syscall_open(buf, len);
-	if (fd < 0) {
+	if (file_open(&file, buf) < 0) {
 		printf("couldn't open.\n");
 		return;
 	}
 
-	while (true) {
-		len = _syscall_read(fd, buf, sizeof buf, pos);
+	while (!file.eof) {
+		int len = file_read(&file, buf, sizeof buf);
 		if (len <= 0) break;
-		pos += len;
 
 		if (ls) {
 			for (int i = 0; i < len; i++)
 				if (buf[i] == '\0') buf[i] = '\n';
 		}
-		_syscall_write(__stdout, buf, len, 0);
+		file_write(&__stdout, buf, len);
 	}
-
-	_syscall_close(fd);
+	file_close(&file);
 }
 
 static void cmd_hexdump(const char *args) {
