@@ -55,7 +55,7 @@ struct process {
 
 	struct vfs_mount *mount;
 
-	struct handle handles[HANDLE_MAX];
+	struct handle *handles[HANDLE_MAX];
 };
 
 extern struct process *process_first;
@@ -75,7 +75,7 @@ struct process *process_next(struct process *);
 struct process *process_find(enum process_state);
 size_t process_find_multiple(enum process_state, struct process **buf, size_t max);
 
-handle_t process_find_handle(struct process *proc); // finds the first free handle
+handle_t process_find_handle(struct process *proc, handle_t start_at); // finds the first free handle
 
 void process_transition(struct process *, enum process_state);
 

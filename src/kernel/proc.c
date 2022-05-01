@@ -64,7 +64,13 @@ struct process *process_fork(struct process *parent) {
 	if (child->controlled)
 		child->controlled->potential_handlers++;
 
-	child->id      = next_pid++;
+	for (handle_t h = 0; h < HANDLE_MAX; h++) {
+		if (child->handles[h])
+			child->handles[h]->refcount++;
+		// no overflow check - if you manage to get 2^32 references to a handle you have bigger problems
+	}
+
+	child->id = next_pid++;
 
 	return child;
 }
@@ -191,13 +197,14 @@ size_t process_find_multiple(enum process_state target, struct process **buf, si
 	return i;
 }
 
-handle_t process_find_handle(struct process *proc) {
+handle_t process_find_handle(struct process *proc, handle_t start_at) {
+	// TODO start_at is a bit of a hack
 	handle_t handle;
-	for (handle = 0; handle < HANDLE_MAX; handle++) {
-		if (proc->handles[handle].type == HANDLE_EMPTY)
+	for (handle = start_at; handle < HANDLE_MAX; handle++) {
+		if (proc->handles[handle] == NULL)
 			break;
 	}
-	if (handle == HANDLE_MAX) handle = -1;
+	if (handle >= HANDLE_MAX) handle = -1;
 	return handle;
 }
 
@@ -293,6 +300,9 @@ void process_kill(struct process *p, int ret) {
 			kprintf("process_kill unexpected state 0x%x\n", p->state);
 			panic_invalid_state();
 	}
+
+	for (handle_t h = 0; h < HANDLE_MAX; h++)
+		handle_close(p->handles[h]);
 	process_transition(p, PS_DEAD);
 	p->death_msg = ret;
 	process_try2collect(p);

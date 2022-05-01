@@ -47,7 +47,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 
 	if (PATH_MAX < len)
 		return -1;
-	if (process_find_handle(process_current) < 0)
+	if (process_find_handle(process_current, 0) < 0)
 		return -1;
 
 	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
@@ -103,11 +103,14 @@ int _syscall_mount(handle_t handle, const char __user *path, int len) {
 	}
 
 	if (handle >= 0) { // mounting a real backend?
+		// TODO macro/function for validating handles, this is ridiculous
 		if (handle >= HANDLE_MAX)
 			goto fail;
-		if (process_current->handles[handle].type != HANDLE_FS_FRONT)
+		if (!process_current->handles[handle])
 			goto fail;
-		backend = process_current->handles[handle].fs.backend;
+		if (process_current->handles[handle]->type != HANDLE_FS_FRONT)
+			goto fail;
+		backend = process_current->handles[handle]->fs.backend;
 	} // otherwise backend == NULL
 
 	// append to mount list
@@ -126,9 +129,9 @@ fail:
 }
 
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
-	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
-	if (handle->type != HANDLE_FILE) return -1;
+	struct handle *handle = process_current->handles[handle_num];
+	if (handle == NULL || handle->type != HANDLE_FILE) return -1;
 	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_READ,
 			.output = {
@@ -143,9 +146,9 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 }
 
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
-	struct handle *handle = &process_current->handles[handle_num];
 	if (handle_num < 0 || handle_num >= HANDLE_MAX) return -1;
-	if (handle->type != HANDLE_FILE) return -1;
+	struct handle *handle = process_current->handles[handle_num];
+	if (handle == NULL || handle->type != HANDLE_FILE) return -1;
 	return vfs_request_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
 			.input = {
@@ -169,23 +172,10 @@ handle_t _syscall_fs_fork2(void) {
 	struct process *child;
 	handle_t front;
 
-	front = process_find_handle(process_current);
+	front = process_find_handle(process_current, 1);
 	if (front < 0) return -1;
-	process_current->handles[front].type = HANDLE_FS_FRONT;
-
-	/* so this can't return 0 in the parent or it will make it think that it's
-	 * the child. i could make fork()s return -1 in the child but that's weird.
-	 *
-	 * also there's this whole thing with handling errors here properly and
-	 * errno
-	 * TODO figure this out */
-	if (front == 0) {
-		// dumb hack
-		front = process_find_handle(process_current);
-		if (front < 0) return -1;
-		process_current->handles[front].type = HANDLE_FS_FRONT;
-		process_current->handles[0].type = HANDLE_EMPTY;
-	}
+	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
+	process_current->handles[front]->type = HANDLE_FS_FRONT;
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
@@ -197,7 +187,7 @@ handle_t _syscall_fs_fork2(void) {
 	child->controlled = backend;
 	regs_savereturn(&child->regs, 0);
 
-	process_current->handles[front].fs.backend = backend;
+	process_current->handles[front]->fs.backend = backend;
 	return front;
 }
 

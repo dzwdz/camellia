@@ -75,16 +75,14 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to
 		// the client
-		handle_t handle = process_find_handle(req->caller);
+		handle_t handle = process_find_handle(req->caller, 0);
 		if (handle < 0)
 			panic_invalid_state(); // we check for free handles before the open() call
-		req->caller->handles[handle] = (struct handle){
-			.type = HANDLE_FILE,
-			.file = {
-				.backend = req->backend,
-				.id = ret,
-			},
-		};
+
+		struct handle *backing = handle_init(HANDLE_FILE);
+		backing->file.backend = req->backend;
+		backing->file.id = ret;
+		req->caller->handles[handle] = backing;
 		ret = handle;
 	}
 

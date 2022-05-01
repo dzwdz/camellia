@@ -6,7 +6,7 @@
 #define HANDLE_MAX 16
 
 enum handle_type {
-	HANDLE_EMPTY = 0, // by design - handle structs start out NULLed out
+	HANDLE_INVALID = 0,
 	HANDLE_FILE,
 
 	HANDLE_FS_FRONT,
@@ -23,4 +23,9 @@ struct handle {
 			struct vfs_backend *backend;
 		} fs;
 	};
+
+	size_t refcount;
 };
+
+struct handle *handle_init(enum handle_type);
+void handle_close(struct handle *);
