@@ -1,0 +1,7 @@
+this file is longer than 512 characters. each line is exactly 80 characters long
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+0         10        20        30        40        50        60        70      80
+for this file to be over 512 bytes, it needs 512/81 = 7 lines. that's a fun fact
+ ,_____O> [duck sound]  | that's as good of a duck as i can make. it's very good
+~|____|                 | /-- this X is the 513th byte in this file. very coolio
+  |  |  ,.  . .,  ,  ., | X. here it is. what you've waited for. idk what to say

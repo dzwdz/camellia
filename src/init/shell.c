@@ -48,6 +48,7 @@ static void cmd_cat_ls(const char *args, bool ls) {
 	int fd;
 	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
+	size_t pos = 0;
 
 	if (!args) args = "/";
 	len = strlen(args);
@@ -69,17 +70,23 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		return;
 	}
 
-	len = _syscall_read(fd, buf, sizeof buf, 0);
-	if (ls)
-		for (int i = 0; i < len; i++)
-			if (buf[i] == '\0') buf[i] = '\n';
+	while (true) {
+		len = _syscall_read(fd, buf, sizeof buf, pos);
+		if (len <= 0) break;
+		pos += len;
 
-	_syscall_write(__stdout, buf, len, 0);
+		if (ls) {
+			for (int i = 0; i < len; i++)
+				if (buf[i] == '\0') buf[i] = '\n';
+		}
+		_syscall_write(__stdout, buf, len, 0);
+	}
+
 	_syscall_close(fd);
 }
 
 static void cmd_hexdump(const char *args) {
-	static uint8_t buf[513];
+	static uint8_t buf[512];
 	int fd, len;
 
 	fd = _syscall_open(args, strlen(args));
