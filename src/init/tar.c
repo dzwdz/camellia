@@ -79,6 +79,7 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 
 		case '5': /* directory */
 			meta_len = strlen(meta);
+			size_t to_skip = res->offset;
 
 			/* find files in dir */
 			for (size_t off = 0; off < base_len;) {
@@ -97,11 +98,19 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 					while (*next && *next != '/') next++;
 					if (*next == '/') next++;
 					if (*next == '\0') {
-						/* it doesn't - so let's add it to the result */
-						memcpy(buf + buf_pos, suffix, suffix_len);
-						buf[buf_pos + suffix_len] = '\0';
-						buf_pos += suffix_len + 1;
-						// TODO no buffer overrun check
+						if (to_skip > suffix_len) {
+							to_skip -= suffix_len;
+						} else {
+							suffix += to_skip;
+							suffix_len -= to_skip;
+							to_skip = 0;
+
+							/* it doesn't - so let's add it to the result */
+							memcpy(buf + buf_pos, suffix, suffix_len);
+							buf[buf_pos + suffix_len] = '\0';
+							buf_pos += suffix_len + 1;
+							// TODO no buffer overrun check
+						}
 					}
 				}
 

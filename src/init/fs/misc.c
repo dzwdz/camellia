@@ -145,7 +145,7 @@ void fs_dir_inject(const char *path) {
 
 			case VFSOP_READ:
 				if (handles[res.id].inject) {
-					// TODO check offset
+					if (res.offset > 0) _syscall_fs_respond(NULL, 0); // TODO working offsets
 					struct fs_dir_handle h = handles[res.id];
 
 					int out_len = 0;
