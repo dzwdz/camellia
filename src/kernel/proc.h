@@ -1,6 +1,7 @@
 #pragma once
 #include <kernel/arch/generic.h>
 #include <kernel/handle.h>
+#include <kernel/main.h>
 #include <kernel/vfs/mount.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>

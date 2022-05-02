@@ -73,9 +73,10 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 
 		case VFSOP_CLOSE:
 			_syscall_close(delegate);
-			_syscall_fs_respond(NULL, 0);
 			// isn't it kinda weird that i even have to respond to close()s?
 			// i suppose it makes the API more consistent
+			_syscall_fs_respond(NULL, 0);
+			break;
 
 		default:
 			/* unsupported / unexpected */

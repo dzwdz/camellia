@@ -105,5 +105,5 @@ void test_all(void) {
 	run_forked(test_faults);
 	run_forked(test_interrupted_fs);
 	run_forked(test_orphaned_fs);
-//	run_forked(stress_fork);
+	run_forked(stress_fork);
 }
