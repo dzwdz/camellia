@@ -4,14 +4,26 @@
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 #include <kernel/vfs/root.h>
+#include <shared/mem.h>
 
 int vfs_request_create(struct vfs_request req_) {
 	struct vfs_request *req;
-	process_transition(process_current, PS_WAITS4FS);
 
-	// the request is owned by the caller
-	process_current->waits4fs.req = req_;
-	req = &process_current->waits4fs.req;
+	if (req_.caller) {
+		/* if the request has an explicit caller (isn't a close() call)
+		 * it's owned by said caller
+		 *
+		 * it would be simpler if all requests were owned by the backend.
+		 * i might end up changing that eventually. TODO? */
+		process_transition(req_.caller, PS_WAITS4FS);
+		req_.caller->waits4fs.req = req_;
+		req = &req_.caller->waits4fs.req;
+	} else {
+		/* requests without explicit callers (close() calls) are owned by the
+		 * backend, and freed in vfs_request_finish or vfs_request_cancel */
+		req = kmalloc(sizeof *req);
+		memcpy(req, &req_, sizeof *req);
+	}
 
 	if (!req->backend || !req->backend->potential_handlers)
 		return vfs_request_finish(req, -1);
@@ -37,7 +49,7 @@ int vfs_backend_accept(struct vfs_backend *backend) {
 	struct vfs_request *req = backend->queue;
 	struct process *handler = backend->handler;
 	struct fs_wait_response res = {0};
-	int len;
+	int len = 0;
 
 	if (!handler) return -1;
 	assert(handler->state == PS_WAITS4REQUEST);
@@ -46,10 +58,12 @@ int vfs_backend_accept(struct vfs_backend *backend) {
 	if (!req) return -1;
 	backend->queue = req->queue_next;
 
-	len = min(req->input.len, handler->awaited_req.max_len);
-	if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
-				req->input.kern ? NULL : req->caller->pages, req->input.buf, len))
-		goto fail; // can't copy buffer
+	if (req->input.buf) {
+		len = min(req->input.len, handler->awaited_req.max_len);
+		if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
+					req->input.kern ? NULL : req->caller->pages, req->input.buf, len))
+			goto fail; // can't copy buffer
+	}
 
 	res.len      = len;
 	res.capacity = req->output.len;
@@ -75,6 +89,7 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to
 		// the client
+		assert(req->caller);
 		handle_t handle = process_find_handle(req->caller, 0);
 		if (handle < 0)
 			panic_invalid_state(); // we check for free handles before the open() call
@@ -89,6 +104,11 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 	if (req->input.kern)
 		kfree(req->input.buf_kern);
 
+	if (!req->caller) {
+		kfree(req); // ok, this stinks. see comment at top of file
+		return 0;
+	}
+
 	assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
 	regs_savereturn(&req->caller->regs, ret);
 	process_transition(req->caller, PS_RUNNING);
@@ -96,6 +116,11 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 }
 
 void vfs_request_cancel(struct vfs_request *req, int ret) {
+	if (!req->caller) {
+		kfree(req);
+		return;
+	}
+
 	assert(req->caller->state == PS_WAITS4FS);
 
 	if (req->input.kern)

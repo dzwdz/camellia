@@ -3,6 +3,7 @@
 #include <shared/flags.h>
 #include <shared/mem.h>
 #include <shared/syscalls.h>
+#include <stdbool.h>
 
 bool fork2_n_mount(const char *path) {
 	handle_t h = _syscall_fs_fork2();
@@ -70,6 +71,12 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 			_syscall_fs_respond(NULL, ret);
 			break;
 
+		case VFSOP_CLOSE:
+			_syscall_close(delegate);
+			_syscall_fs_respond(NULL, 0);
+			// isn't it kinda weird that i even have to respond to close()s?
+			// i suppose it makes the API more consistent
+
 		default:
 			/* unsupported / unexpected */
 			_syscall_fs_respond(NULL, -1);
@@ -113,34 +120,49 @@ void fs_passthru(const char *prefix) {
 
 void fs_dir_inject(const char *path) {
 	struct fs_dir_handle {
+		bool taken;
 		int delegate;
 		const char *inject;
 	};
 
 	const size_t path_len = strlen(path);
 	struct fs_wait_response res;
-	struct fs_dir_handle handles[16]; // TODO hardcoded FD_MAX - use malloc instead
-	int handle_next = 0;
+	struct fs_dir_handle handles[16] = {0}; // TODO hardcoded FD_MAX - use malloc instead
 	static char buf[1024];
 	int ret;
 
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
-				if (handle_next > 15) _syscall_fs_respond(NULL, -2); // we ran out of handles, which is entirely our fault.
+				int hid = -1;
+				for (int hid2 = 0; hid2 * sizeof(*handles) < sizeof(handles); hid2++) {
+					if (!handles[hid2].taken) {
+						hid = hid2;
+						break;
+					}
+				}
+				if (hid < 0) _syscall_fs_respond(NULL, -2); // we ran out of handles
 
 				ret = _syscall_open(buf, res.len); /* errors handled in inject handler */
-				handles[handle_next].delegate = ret;
-				handles[handle_next].inject = NULL;
+				handles[hid].delegate = ret;
+				handles[hid].inject = NULL;
+				handles[hid].taken = true;
 
 				if (buf[res.len - 1] == '/' &&
 						res.len < path_len && !memcmp(path, buf, res.len)) {
-					handles[handle_next].inject = path + res.len;
+					handles[hid].inject = path + res.len;
 				} else {
 					/* not injecting, don't allow opening nonexistent stuff */
 					if (ret < 0) _syscall_fs_respond(NULL, ret);
 				}
-				_syscall_fs_respond(NULL, handle_next++);
+				_syscall_fs_respond(NULL, hid);
+				break;
+
+			case VFSOP_CLOSE:
+				if (handles[res.id].delegate >= 0)
+					_syscall_close(handles[res.id].delegate);
+				handles[res.id].taken = false;
+				_syscall_fs_respond(NULL, 0);
 				break;
 
 			case VFSOP_READ:

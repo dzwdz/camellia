@@ -166,6 +166,9 @@ static int handle(struct vfs_request *req, bool *ready) {
 				default: return -1;
 			}
 
+		case VFSOP_CLOSE:
+			return 0;
+
 		default: panic_invalid_state();
 	}
 }
