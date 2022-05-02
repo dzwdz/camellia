@@ -28,7 +28,7 @@ int main(void) {
 
 	MOUNT("/bind/", fs_passthru(NULL));
 
-	if (_syscall_fork()) {
+	if (_syscall_fork(0)) {
 		/* (used to) expose a bug in the kernel
 		 * the program will flow like this:
 		 * 1. we launch the forked init
@@ -45,7 +45,7 @@ int main(void) {
 		_syscall_exit(1);
 	}
 
-	if (!_syscall_fork()) {
+	if (!_syscall_fork(0)) {
 		if (file_open(&__stdout, "/com1") < 0 || file_open(&__stdin, "/com1") < 0)
 			_syscall_exit(1);
 
@@ -54,7 +54,7 @@ int main(void) {
 	}
 
 
-	if (!_syscall_fork()) {
+	if (!_syscall_fork(0)) {
 		if (file_open(&__stdout, "/vga_tty") < 0)
 			_syscall_exit(1);
 

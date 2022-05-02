@@ -21,7 +21,7 @@ int _syscall_await(void) {
 	// find any already dead children
 	for (struct process *iter = process_current->child;
 			iter; iter = iter->sibling) {
-		if (iter->state == PS_DEAD)
+		if (iter->state == PS_DEAD && !iter->noreap)
 			return process_try2collect(iter);
 		if (iter->state != PS_DEADER)
 			has_children = true;
@@ -35,8 +35,8 @@ int _syscall_await(void) {
 	}
 }
 
-int _syscall_fork(void) {
-	struct process *child = process_fork(process_current);
+int _syscall_fork(int flags) {
+	struct process *child = process_fork(process_current, flags);
 	regs_savereturn(&child->regs, 0);
 	return 1;
 }
@@ -180,7 +180,7 @@ handle_t _syscall_fs_fork2(void) {
 	backend->handler = NULL;
 	backend->queue = NULL;
 
-	child = process_fork(process_current);
+	child = process_fork(process_current, 0);
 	child->controlled = backend;
 	regs_savereturn(&child->regs, 0);
 
@@ -249,7 +249,7 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_AWAIT:
 			return _syscall_await();
 		case _SYSCALL_FORK:
-			return _syscall_fork();
+			return _syscall_fork(a);
 		case _SYSCALL_OPEN:
 			return _syscall_open((userptr_t)a, b);
 		case _SYSCALL_MOUNT:

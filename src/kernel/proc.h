@@ -25,6 +25,7 @@ struct process {
 	enum process_state state;
 
 	bool deathbed; // kill on next process_switch attempt
+	bool noreap;
 
 	struct process *sibling;
 	struct process *child;
@@ -64,7 +65,7 @@ extern struct process *process_current;
 
 // creates the root process
 struct process *process_seed(struct kmain_info *info);
-struct process *process_fork(struct process *parent);
+struct process *process_fork(struct process *parent, int flags);
 
 void process_forget(struct process *); // remove references to process
 void process_free(struct process *);

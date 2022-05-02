@@ -6,6 +6,7 @@
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
+#include <shared/syscalls.h>
 #include <stdint.h>
 
 struct process *process_first;
@@ -49,7 +50,7 @@ struct process *process_seed(struct kmain_info *info) {
 	return process_first;
 }
 
-struct process *process_fork(struct process *parent) {
+struct process *process_fork(struct process *parent, int flags) {
 	struct process *child = kmalloc(sizeof *child);
 	memcpy(child, parent, sizeof *child);
 
@@ -58,6 +59,7 @@ struct process *process_fork(struct process *parent) {
 	child->child   = NULL;
 	child->parent  = parent;
 	parent->child  = child;
+	child->noreap  = (flags & FORK_NOREAP) > 0;
 
 	parent->handled_req = NULL; // TODO control this with a flag
 
@@ -325,7 +327,7 @@ int process_try2collect(struct process *dead) {
 
 	assert(dead->state == PS_DEAD);
 
-	if (!parent) {
+	if (!parent || dead->noreap) {
 		process_transition(dead, PS_DEADER);
 		return -1;
 	}

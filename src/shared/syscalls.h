@@ -2,6 +2,8 @@
 #include <shared/types.h>
 #include <stddef.h>
 
+#define FORK_NOREAP 1
+
 enum {
 	// idc about stable syscall numbers just yet
 	_SYSCALL_EXIT,
@@ -38,7 +40,7 @@ int _syscall_await(void);
  * All user memory pages get copied too.
  * @return 0 in the child, a meaningless positive value in the parent.
  */
-int _syscall_fork(void);
+int _syscall_fork(int flags);
 
 handle_t _syscall_open(const char __user *path, int len);
 

@@ -12,7 +12,7 @@
 #define assert(cond) if (!(cond)) test_fail();
 
 static void run_forked(void (*fn)()) {
-	if (!_syscall_fork()) {
+	if (!_syscall_fork(0)) {
 		fn();
 		_syscall_exit(0);
 	} else {
@@ -31,7 +31,7 @@ static void test_await(void) {
 	int counts[16] = {0};
 
 	for (int i = 0; i < 16; i++)
-		if (!_syscall_fork())
+		if (!_syscall_fork(0))
 			_syscall_exit(i);
 
 	while ((ret = _syscall_await()) != ~0) {
@@ -49,12 +49,12 @@ static void test_faults(void) {
 	 * reap all its children */
 	int await_cnt = 0;
 
-	if (!_syscall_fork()) { // invalid memory access
+	if (!_syscall_fork(0)) { // invalid memory access
 		asm volatile("movb $69, 0" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
 	}
-	if (!_syscall_fork()) { // #GP
+	if (!_syscall_fork(0)) { // #GP
 		asm volatile("hlt" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
@@ -94,7 +94,7 @@ static void test_orphaned_fs(void) {
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
-		if (!_syscall_fork()) _syscall_exit(0);
+		if (!_syscall_fork(0)) _syscall_exit(0);
 		_syscall_await();
 	}
 }

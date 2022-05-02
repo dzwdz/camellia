@@ -6,8 +6,8 @@ _Noreturn void _syscall_exit(int ret) {
 	__builtin_unreachable();
 }
 
-int _syscall_fork(void) {
-	return _syscall(_SYSCALL_FORK, 0, 0, 0, 0);
+int _syscall_fork(int flags) {
+	return _syscall(_SYSCALL_FORK, flags, 0, 0, 0);
 }
 
 int _syscall_await(void) {

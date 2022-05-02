@@ -145,7 +145,7 @@ void shell_loop(void) {
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
 		} else if (!strcmp(cmd, "fork")) {
-			if (_syscall_fork())
+			if (_syscall_fork(0))
 				_syscall_await();
 			else level++;
 		} else if (!strcmp(cmd, "run_tests")) {
