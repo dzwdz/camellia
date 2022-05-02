@@ -288,6 +288,8 @@ void process_kill(struct process *p, int ret) {
 			 *
 			 * we also reparent it to process_deadparent because we don't want
 			 * dead processes to have any alive children */
+			/* TODO: because requests are no longer owned by the parent, we can safely kill it.
+			 * this whole deathbed thing (and, by extension, freeing after killing) is unnecessary */
 			// TODO process_reparent?
 			p->deathbed = true;
 			process_forget(p);

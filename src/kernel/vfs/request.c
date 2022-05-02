@@ -7,22 +7,13 @@
 #include <shared/mem.h>
 
 int vfs_request_create(struct vfs_request req_) {
-	struct vfs_request *req;
+	struct vfs_request *req = kmalloc(sizeof *req);
+	memcpy(req, &req_, sizeof *req);
+	/* freed in vfs_request_finish or vfs_request_cancel */
 
-	if (req_.caller) {
-		/* if the request has an explicit caller (isn't a close() call)
-		 * it's owned by said caller
-		 *
-		 * it would be simpler if all requests were owned by the backend.
-		 * i might end up changing that eventually. TODO? */
-		process_transition(req_.caller, PS_WAITS4FS);
-		req_.caller->waits4fs.req = req_;
-		req = &req_.caller->waits4fs.req;
-	} else {
-		/* requests without explicit callers (close() calls) are owned by the
-		 * backend, and freed in vfs_request_finish or vfs_request_cancel */
-		req = kmalloc(sizeof *req);
-		memcpy(req, &req_, sizeof *req);
+	if (req->caller) {
+		process_transition(req->caller, PS_WAITS4FS);
+		req->caller->waits4fs.req = req;
 	}
 
 	if (!req->backend || !req->backend->potential_handlers)
@@ -104,31 +95,28 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 	if (req->input.kern)
 		kfree(req->input.buf_kern);
 
-	if (!req->caller) {
-		kfree(req); // ok, this stinks. see comment at top of file
-		return 0;
+	if (req->caller) {
+		assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
+		regs_savereturn(&req->caller->regs, ret);
+		process_transition(req->caller, PS_RUNNING);
 	}
 
-	assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
-	regs_savereturn(&req->caller->regs, ret);
-	process_transition(req->caller, PS_RUNNING);
+	kfree(req);
 	return ret;
 }
 
 void vfs_request_cancel(struct vfs_request *req, int ret) {
-	if (!req->caller) {
-		kfree(req);
-		return;
+	if (req->caller) {
+		assert(req->caller->state == PS_WAITS4FS);
+
+		if (req->input.kern)
+			kfree(req->input.buf_kern);
+
+		// ret must always be negative, so it won't be confused with a success
+		if (ret > 0) ret = -ret;
+		if (ret == 0) ret = -1;
+		regs_savereturn(&req->caller->regs, ret);
+		process_transition(req->caller, PS_RUNNING);
 	}
-
-	assert(req->caller->state == PS_WAITS4FS);
-
-	if (req->input.kern)
-		kfree(req->input.buf_kern);
-
-	// ret must always be negative, so it won't be confused with a success
-	if (ret > 0) ret = -ret;
-	if (ret == 0) ret = -1;
-	regs_savereturn(&req->caller->regs, ret);
-	process_transition(req->caller, PS_RUNNING);
+	kfree(req);
 }

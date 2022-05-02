@@ -35,7 +35,7 @@ struct process {
 	union {
 		int death_msg; // PS_DEAD
 		struct {
-			struct vfs_request req;
+			struct vfs_request *req;
 		} waits4fs; // PS_WAITS4FS
 		struct {
 			char __user *buf;
@@ -43,7 +43,7 @@ struct process {
 			struct fs_wait_response __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
 		struct {
-			struct vfs_request req;
+			struct vfs_request *req;
 			bool (*ready)();
 			void (*callback)(struct process *);
 		} waits4irq;

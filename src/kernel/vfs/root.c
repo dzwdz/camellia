@@ -50,14 +50,14 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 
 
 static void wait_callback(struct process *proc) {
-	vfs_root_handler(&proc->waits4irq.req);
+	vfs_root_handler(proc->waits4irq.req);
 }
 
 static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)()) {
 	if (!ready_fn()) {
 		*ready = false;
 		process_transition(req->caller, PS_WAITS4IRQ);
-		req->caller->waits4irq.req = *req;
+		req->caller->waits4irq.req = req;
 		req->caller->waits4irq.ready = ready_fn;
 		req->caller->waits4irq.callback = wait_callback;
 		return true;
