@@ -155,9 +155,13 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 		});
 }
 
-int _syscall_close(handle_t handle) {
-	if (handle < 0 || handle >= HANDLE_MAX) return -1;
-	return -1;
+int _syscall_close(handle_t hid) {
+	if (hid < 0 || hid >= HANDLE_MAX) return -1;
+	struct handle **h = &process_current->handles[hid];
+	if (!*h) return -1;
+	handle_close(*h);
+	*h = NULL;
+	return 0;
 }
 
 handle_t _syscall_fs_fork2(void) {
