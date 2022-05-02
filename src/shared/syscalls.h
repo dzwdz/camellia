@@ -44,10 +44,10 @@ int _syscall_fork(int flags);
 
 handle_t _syscall_open(const char __user *path, int len);
 
-int _syscall_mount(handle_t, const char __user *path, int len);
-int _syscall_read(handle_t, void __user *buf, size_t len, int offset);
-int _syscall_write(handle_t, const void __user *buf, size_t len, int offset);
-int _syscall_close(handle_t);
+int _syscall_mount(handle_t h, const char __user *path, int len);
+int _syscall_read(handle_t h, void __user *buf, size_t len, int offset);
+int _syscall_write(handle_t h, const void __user *buf, size_t len, int offset);
+int _syscall_close(handle_t h);
 
 handle_t _syscall_fs_fork2(void);
 

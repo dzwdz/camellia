@@ -85,3 +85,6 @@ out/obj/%.s.o: src/%.s
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
+
+src/init/syscalls.c: tools/syscall_wrappers.awk src/shared/syscalls.h
+	awk -f $^ > $@
