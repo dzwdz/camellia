@@ -102,8 +102,9 @@ void page_free(void *first_addr, size_t pages) {
 	}
 }
 
-static void kmalloc_sanity(struct malloc_hdr *hdr) {
-	assert(hdr);
+void kmalloc_sanity(void *addr) {
+	assert(addr);
+	struct malloc_hdr *hdr = addr - sizeof(struct malloc_hdr);
 	assert(hdr->magic == MALLOC_MAGIC);
 	if (hdr->next) assert(hdr->next->prev == hdr);
 	if (hdr->prev) assert(hdr->prev->next == hdr);
@@ -112,30 +113,32 @@ static void kmalloc_sanity(struct malloc_hdr *hdr) {
 void *kmalloc(size_t len) {
 	// TODO better kmalloc
 
-	struct malloc_hdr *addr;
+	struct malloc_hdr *hdr;
+	void *addr;
 	uint32_t pages;
 
 	len += sizeof(struct malloc_hdr);
 	pages = len / PAGE_SIZE + 1;
 
-	addr = page_alloc(pages);
-	addr->magic = MALLOC_MAGIC;
-	addr->page_amt = pages;
+	hdr = page_alloc(pages);
+	hdr->magic = MALLOC_MAGIC;
+	hdr->page_amt = pages;
 
-	addr->next = NULL;
-	addr->prev = malloc_last;
-	if (addr->prev) {
-		assert(!addr->prev->next);
-		addr->prev->next = addr;
+	hdr->next = NULL;
+	hdr->prev = malloc_last;
+	if (hdr->prev) {
+		assert(!hdr->prev->next);
+		hdr->prev->next = hdr;
 	}
 
 	for (size_t i = 0; i < 4; i++)
-		addr->stacktrace[i] = debug_caller(i);
+		hdr->stacktrace[i] = debug_caller(i);
 
-	malloc_last = addr;
+	malloc_last = hdr;
+
+	addr = (void*)hdr + sizeof(struct malloc_hdr);
 	kmalloc_sanity(addr);
-
-	return (void*)addr + sizeof(struct malloc_hdr);
+	return addr;
 }
 
 void kfree(void *ptr) {
@@ -143,7 +146,7 @@ void kfree(void *ptr) {
 	if (ptr == NULL) return;
 
 	hdr = ptr - sizeof(struct malloc_hdr);
-	kmalloc_sanity(hdr);
+	kmalloc_sanity(ptr);
 
 	hdr->magic = ~MALLOC_MAGIC; // (hopefully) detect double frees
 	if (hdr->next)
