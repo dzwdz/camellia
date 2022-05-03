@@ -256,8 +256,7 @@ void process_kill(struct process *p, int ret) {
 		p->handled_req = NULL;
 	}
 	if (p->controlled) {
-		// code stink: i don't like how handling controlled backends is split
-		// between this if and the switch lower down
+		assert(p->controlled->potential_handlers > 0);
 		p->controlled->potential_handlers--;
 		if (p->controlled->potential_handlers == 0) {
 			// orphaned
@@ -268,6 +267,11 @@ void process_kill(struct process *p, int ret) {
 				q = q2;
 			}
 		}
+		if (p->controlled->handler == p) {
+			assert(p->state == PS_WAITS4REQUEST);
+			p->controlled->handler = NULL;
+		}
+		p->controlled = NULL;
 	}
 
 	// TODO VULN unbounded recursion
@@ -280,6 +284,7 @@ void process_kill(struct process *p, int ret) {
 	switch (p->state) {
 		case PS_RUNNING:
 		case PS_WAITS4CHILDDEATH:
+		case PS_WAITS4REQUEST:
 			break;
 
 		case PS_WAITS4FS:
@@ -299,12 +304,6 @@ void process_kill(struct process *p, int ret) {
 			p->parent  = process_deadparent;
 			process_deadparent->child  = p;
 			return;
-
-		case PS_WAITS4REQUEST:
-			assert(p->controlled);
-			if (p->controlled->handler == p)
-				p->controlled->handler = NULL;
-			break;
 
 		case PS_DEAD:
 		case PS_DEADER:
