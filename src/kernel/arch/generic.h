@@ -2,8 +2,9 @@
 
 #include <kernel/arch/i386/registers.h>
 #include <shared/types.h>
-#include <stdbool.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 // i have no idea where else to put it
 // some code assumes that it's a power of 2
@@ -39,3 +40,6 @@ void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
                         bool user, bool writeable);
 
 int kprintf(const char *fmt, ...);
+
+void *debug_caller(size_t depth);
+void debug_stacktrace(void);

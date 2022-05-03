@@ -3,9 +3,10 @@
 #include <kernel/util.h>
 
 #define _panic(type) do { \
-	kprintf(" an "type" PANIC! at the "); \
+	kprintf("\nan "type" PANIC! at the "); \
 	kprintf(__func__); \
-	kprintf(" (" __FILE__ ":" NUM2STR(__LINE__) ") "); \
+	kprintf(" (" __FILE__ ":" NUM2STR(__LINE__) ")\n"); \
+	debug_stacktrace(); \
 	halt_cpu(); \
 } while (0)
 
