@@ -72,6 +72,9 @@ struct process *process_fork(struct process *parent, int flags) {
 		// no overflow check - if you manage to get 2^32 references to a handle you have bigger problems
 	}
 
+	assert(child->mount);
+	child->mount->refs++;
+
 	child->id = next_pid++;
 
 	return child;
@@ -103,6 +106,10 @@ void process_free(struct process *p) {
 
 	while (p->child)
 		process_free(p->child);
+
+	// also could be done on kill
+	vfs_mount_remref(p->mount);
+	p->mount = NULL;
 
 	if (!p->parent) return;
 	process_forget(p);

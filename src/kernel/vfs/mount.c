@@ -1,4 +1,5 @@
 #include <kernel/mem/alloc.h>
+#include <kernel/panic.h>
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 
@@ -9,9 +10,10 @@ struct vfs_mount *vfs_mount_seed(void) {
 	backend->potential_handlers = 1;
 	*mount = (struct vfs_mount){
 		.prev = NULL,
-		.prefix = "",
+		.prefix = NULL,
 		.prefix_len = 0,
 		.backend = backend,
+		.refs = 1, // never to be freed
 	};
 	return mount;
 }
@@ -35,4 +37,16 @@ struct vfs_mount *vfs_mount_resolve(
 			break;
 	}
 	return top;
+}
+
+void vfs_mount_remref(struct vfs_mount *mnt) {
+	assert(mnt);
+	assert(mnt->refs > 0);
+	if (--(mnt->refs) > 0) return;
+
+	struct vfs_mount *prev = mnt->prev;
+	kfree(mnt->prefix);
+	kfree(mnt);
+
+	if (prev) vfs_mount_remref(prev);
 }

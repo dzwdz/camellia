@@ -109,12 +109,17 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 	} // otherwise backend == NULL
 
 	// append to mount list
+	// TODO move to kernel/vfs/mount.c
 	mount = kmalloc(sizeof *mount);
 	mount->prev = process_current->mount;
-	mount->prefix = path_buf;
+	mount->prefix = path_buf; // owned
 	mount->prefix_len = len;
 	mount->backend = backend;
+	mount->refs = 1;
 	process_current->mount = mount;
+
+	kmalloc_sanity(mount);
+	kmalloc_sanity(mount->prefix);
 	return 0;
 
 fail:
