@@ -83,27 +83,38 @@ void page_free(void *first_addr, size_t pages) {
 	}
 }
 
+struct malloc_hdr {
+	uint32_t magic;
+	uint32_t page_amt;
+};
 
 void *kmalloc(size_t len) {
-	void *addr;
-	len += sizeof(uint32_t); // add space for MALLOC_MAGIC
-	// extremely inefficient, but this is only temporary anyways
-	addr = page_alloc(len / PAGE_SIZE + 1);
-	*(uint32_t*)addr = MALLOC_MAGIC;
+	// TODO better kmalloc
+
+	struct malloc_hdr *addr;
+	uint32_t pages;
+
+	len += sizeof(struct malloc_hdr);
+	pages = len / PAGE_SIZE + 1;
+
+	addr = page_alloc(pages);
+	addr->magic = MALLOC_MAGIC;
+	addr->page_amt = pages;
 	malloc_balance++;
-	return addr + sizeof(uint32_t);
+	return (void*)addr + sizeof(struct malloc_hdr);
 }
 
 void kfree(void *ptr) {
-	uint32_t *magic = &((uint32_t*)ptr)[-1];
+	struct malloc_hdr *hdr;
 	if (ptr == NULL) return;
-	if (*magic != MALLOC_MAGIC) {
-		// TODO add some kind of separate system log
+
+	hdr = ptr - sizeof(struct malloc_hdr);
+	if (hdr->magic != MALLOC_MAGIC) {
 		kprintf("kfree() didn't find MALLOC_MAGIC @ 0x%x\n", ptr);
 		panic_invalid_state();
 	} else {
-		// change the magic marker to detect double frees
-		*magic = 0xBADF2EED;
+		hdr->magic = ~MALLOC_MAGIC; // (hopefully) detect double frees
+		page_free(hdr, hdr->page_amt);
 	}
 	malloc_balance--;
 }
