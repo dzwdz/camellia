@@ -8,13 +8,21 @@
 
 #define MALLOC_MAGIC 0xACAB1312
 
+struct malloc_hdr {
+	uint32_t magic;
+	uint32_t page_amt;
+	struct malloc_hdr *next, *prev;
+};
+
+struct malloc_hdr *malloc_last = NULL;
+
+
 static void *memtop;
 
 static uint8_t *page_bitmap;
 static void *page_bitmap_start;
 static size_t page_bitmap_len;
 
-static int malloc_balance = 0;
 
 static void *closest_page(void *p) {
 	return (void*)(((uintptr_t)p + PAGE_MASK) & ~PAGE_MASK);
@@ -37,7 +45,14 @@ void mem_init(struct kmain_info *info) {
 }
 
 void mem_debugprint(void) {
-	kprintf("malloc balance: 0x%x\n", malloc_balance);
+	size_t total = 0;
+	kprintf("current kmallocs:\n");
+	kprintf("addr      pages\n");
+	for (struct malloc_hdr *iter = malloc_last; iter; iter = iter->prev) {
+		kprintf("%08x  %05x\n", iter, iter->page_amt);
+		total++;
+	}
+	kprintf("  total 0x%x\n", total);
 }
 
 static bool bitmap_get(size_t i) {
@@ -83,10 +98,12 @@ void page_free(void *first_addr, size_t pages) {
 	}
 }
 
-struct malloc_hdr {
-	uint32_t magic;
-	uint32_t page_amt;
-};
+static void kmalloc_sanity(struct malloc_hdr *hdr) {
+	assert(hdr);
+	assert(hdr->magic == MALLOC_MAGIC);
+	if (hdr->next) assert(hdr->next->prev == hdr);
+	if (hdr->prev) assert(hdr->prev->next == hdr);
+}
 
 void *kmalloc(size_t len) {
 	// TODO better kmalloc
@@ -100,7 +117,16 @@ void *kmalloc(size_t len) {
 	addr = page_alloc(pages);
 	addr->magic = MALLOC_MAGIC;
 	addr->page_amt = pages;
-	malloc_balance++;
+
+	addr->next = NULL;
+	addr->prev = malloc_last;
+	if (addr->prev) {
+		assert(!addr->prev->next);
+		addr->prev->next = addr;
+	}
+	malloc_last = addr;
+	kmalloc_sanity(addr);
+
 	return (void*)addr + sizeof(struct malloc_hdr);
 }
 
@@ -109,12 +135,14 @@ void kfree(void *ptr) {
 	if (ptr == NULL) return;
 
 	hdr = ptr - sizeof(struct malloc_hdr);
-	if (hdr->magic != MALLOC_MAGIC) {
-		kprintf("kfree() didn't find MALLOC_MAGIC @ 0x%x\n", ptr);
-		panic_invalid_state();
-	} else {
-		hdr->magic = ~MALLOC_MAGIC; // (hopefully) detect double frees
-		page_free(hdr, hdr->page_amt);
-	}
-	malloc_balance--;
+	kmalloc_sanity(hdr);
+
+	hdr->magic = ~MALLOC_MAGIC; // (hopefully) detect double frees
+	if (hdr->next)
+		hdr->next->prev = hdr->prev;
+	if (hdr->prev)
+		hdr->prev->next = hdr->next;
+	if (malloc_last == hdr)
+		malloc_last = hdr->prev;
+	page_free(hdr, hdr->page_amt);
 }
