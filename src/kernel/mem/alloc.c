@@ -12,6 +12,7 @@ struct malloc_hdr {
 	uint32_t magic;
 	uint32_t page_amt;
 	struct malloc_hdr *next, *prev;
+	void *stacktrace[4];
 };
 
 struct malloc_hdr *malloc_last = NULL;
@@ -49,7 +50,10 @@ void mem_debugprint(void) {
 	kprintf("current kmallocs:\n");
 	kprintf("addr      pages\n");
 	for (struct malloc_hdr *iter = malloc_last; iter; iter = iter->prev) {
-		kprintf("%08x  %05x\n", iter, iter->page_amt);
+		kprintf("%08x  %05x", iter, iter->page_amt);
+		for (size_t i = 0; i < 4; i++)
+			kprintf("  k/%08x", iter->stacktrace[i]);
+		kprintf("\n");
 		total++;
 	}
 	kprintf("  total 0x%x\n", total);
@@ -124,6 +128,10 @@ void *kmalloc(size_t len) {
 		assert(!addr->prev->next);
 		addr->prev->next = addr;
 	}
+
+	for (size_t i = 0; i < 4; i++)
+		addr->stacktrace[i] = debug_caller(i);
+
 	malloc_last = addr;
 	kmalloc_sanity(addr);
 
