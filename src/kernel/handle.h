@@ -16,6 +16,7 @@ enum handle_type {
 struct handle {
 	enum handle_type type;
 	union {
+		// TODO consolidate backend fields
 		struct {
 			struct vfs_backend *backend;
 			int id;

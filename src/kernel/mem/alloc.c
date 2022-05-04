@@ -53,7 +53,7 @@ void mem_debugprint(void) {
 		kprintf("%08x  %05x", iter, iter->page_amt);
 		for (size_t i = 0; i < 4; i++)
 			kprintf("  k/%08x", iter->stacktrace[i]);
-		kprintf("\n");
+		kprintf("\n    peek 0x%x\n", *(uint32_t*)(&iter[1]));
 		total++;
 	}
 	kprintf("  total 0x%x\n", total);

@@ -11,6 +11,9 @@ int vfs_request_create(struct vfs_request req_) {
 	memcpy(req, &req_, sizeof *req);
 	/* freed in vfs_request_finish or vfs_request_cancel */
 
+	if (req->backend)
+		req->backend->refcount++;
+
 	if (req->caller) {
 		process_transition(req->caller, PS_WAITS4FS);
 		req->caller->waits4fs.req = req;
@@ -87,6 +90,7 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 
 		struct handle *backing = handle_init(HANDLE_FILE);
 		backing->file.backend = req->backend;
+		req->backend->refcount++;
 		backing->file.id = ret;
 		req->caller->handles[handle] = backing;
 		ret = handle;
@@ -101,11 +105,13 @@ int vfs_request_finish(struct vfs_request *req, int ret) {
 		process_transition(req->caller, PS_RUNNING);
 	}
 
+	vfs_backend_refdown(req->backend);
 	kfree(req);
 	return ret;
 }
 
 void vfs_request_cancel(struct vfs_request *req, int ret) {
+	// TODO merge with vfs_request_finish
 	if (req->caller) {
 		assert(req->caller->state == PS_WAITS4FS);
 
@@ -118,5 +124,16 @@ void vfs_request_cancel(struct vfs_request *req, int ret) {
 		regs_savereturn(&req->caller->regs, ret);
 		process_transition(req->caller, PS_RUNNING);
 	}
+
+	vfs_backend_refdown(req->backend);
 	kfree(req);
+}
+
+void vfs_backend_refdown(struct vfs_backend *b) {
+	assert(b);
+	assert(b->refcount > 0);
+	if (--(b->refcount) > 0) return;
+
+	assert(!b->queue);
+	kfree(b);
 }

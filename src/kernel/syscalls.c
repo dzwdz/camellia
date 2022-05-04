@@ -106,6 +106,7 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 		struct handle *handle = process_handle_get(process_current, hid, HANDLE_FS_FRONT);
 		if (!handle) goto fail;
 		backend = handle->fs.backend;
+		backend->refcount++;
 	} // otherwise backend == NULL
 
 	// append to mount list
@@ -177,15 +178,16 @@ handle_t _syscall_fs_fork2(void) {
 	front = process_find_handle(process_current, 1);
 	if (front < 0) return -1;
 	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
-	process_current->handles[front]->type = HANDLE_FS_FRONT;
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
 	backend->type = VFS_BACK_USER;
 	backend->potential_handlers = 1;
+	backend->refcount = 2; // child + handle
 	backend->handler = NULL;
 	backend->queue = NULL;
 
 	child = process_fork(process_current, 0);
+	if (child->controlled) vfs_backend_refdown(child->controlled);
 	child->controlled = backend;
 	regs_savereturn(&child->regs, 0);
 

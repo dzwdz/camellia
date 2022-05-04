@@ -8,6 +8,7 @@ struct vfs_mount *vfs_mount_seed(void) {
 	struct vfs_backend *backend = kmalloc(sizeof *backend);
 	backend->type = VFS_BACK_ROOT;
 	backend->potential_handlers = 1;
+	backend->refcount = 1;
 	*mount = (struct vfs_mount){
 		.prev = NULL,
 		.prefix = NULL,
@@ -45,6 +46,8 @@ void vfs_mount_remref(struct vfs_mount *mnt) {
 	if (--(mnt->refs) > 0) return;
 
 	struct vfs_mount *prev = mnt->prev;
+	if (mnt->backend)
+		vfs_backend_refdown(mnt->backend);
 	kfree(mnt->prefix);
 	kfree(mnt);
 

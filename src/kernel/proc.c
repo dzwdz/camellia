@@ -63,8 +63,10 @@ struct process *process_fork(struct process *parent, int flags) {
 
 	parent->handled_req = NULL; // TODO control this with a flag
 
-	if (child->controlled)
+	if (child->controlled) {
 		child->controlled->potential_handlers++;
+		child->controlled->refcount++;
+	}
 
 	for (handle_t h = 0; h < HANDLE_MAX; h++) {
 		if (child->handles[h])
@@ -110,6 +112,11 @@ void process_free(struct process *p) {
 	// also could be done on kill
 	vfs_mount_remref(p->mount);
 	p->mount = NULL;
+
+	if (p->controlled) {
+		vfs_backend_refdown(p->controlled);
+		p->controlled = NULL;
+	}
 
 	if (!p->parent) return;
 	process_forget(p);
@@ -273,11 +280,14 @@ void process_kill(struct process *p, int ret) {
 				vfs_request_cancel(q, ret);
 				q = q2;
 			}
+			p->controlled->queue = NULL;
 		}
 		if (p->controlled->handler == p) {
 			assert(p->state == PS_WAITS4REQUEST);
 			p->controlled->handler = NULL;
 		}
+
+		vfs_backend_refdown(p->controlled);
 		p->controlled = NULL;
 	}
 

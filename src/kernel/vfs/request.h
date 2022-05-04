@@ -11,6 +11,14 @@ enum vfs_backend_type {
 
 // describes something which can act as an access function
 struct vfs_backend {
+	size_t refcount;
+	/* references:
+	 *   struct vfs_mount
+	 *   struct vfs_request
+	 *   struct process
+	 *   struct handle
+	 */
+
 	enum vfs_backend_type type;
 
 	size_t potential_handlers; // 0 - orphaned
@@ -52,3 +60,5 @@ int vfs_backend_accept(struct vfs_backend *);
 int vfs_request_finish(struct vfs_request *, int ret);
 
 void vfs_request_cancel(struct vfs_request *, int ret);
+
+void vfs_backend_refdown(struct vfs_backend *);
