@@ -298,6 +298,7 @@ void process_kill(struct process *p, int ret) {
 		process_kill(c, -1);
 	}
 
+	struct vfs_request *req;
 	switch (p->state) {
 		case PS_RUNNING:
 		case PS_WAITS4CHILDDEATH:
@@ -307,20 +308,11 @@ void process_kill(struct process *p, int ret) {
 		case PS_WAITS4FS:
 			// if the request wasn't accepted we could just remove this process from the queue
 		case PS_WAITS4IRQ:
-			/* instead of killing the process outright, we mark it to get killed
-			 * as soon as it becomes running and we try to give it control.
-			 *
-			 * we also reparent it to process_deadparent because we don't want
-			 * dead processes to have any alive children */
-			/* TODO: because requests are no longer owned by the parent, we can safely kill it.
-			 * this whole deathbed thing (and, by extension, freeing after killing) is unnecessary */
-			// TODO process_reparent?
-			p->deathbed = true;
-			process_forget(p);
-			p->sibling = process_deadparent->child;
-			p->parent  = process_deadparent;
-			process_deadparent->child  = p;
-			return;
+			req = p->state == PS_WAITS4FS
+				? p->waits4fs.req : p->waits4irq.req;
+			req->caller = NULL;
+			// TODO test this
+			break;
 
 		case PS_DEAD:
 		case PS_DEADER:
