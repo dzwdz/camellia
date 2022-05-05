@@ -66,6 +66,7 @@ static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)())
 }
 
 static int handle(struct vfs_request *req, bool *ready) {
+	assert(req->caller);
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
@@ -174,10 +175,25 @@ static int handle(struct vfs_request *req, bool *ready) {
 }
 
 int vfs_root_handler(struct vfs_request *req) {
-	bool ready = true;
-	int ret = handle(req, &ready);
-	if (ready)
-		return vfs_request_finish(req, ret);
-	else
-		return -1;
+	if (req->caller) {
+		/* this introduces a difference between the root vfs and emulated ones:
+		 *
+		 * the root vfs has to immediately discard requests from dead processes.
+		 * so, if 16 processes queue up for an IRQ, and the middle 14 quit, only
+		 * 2 IRQs will be processed
+		 *
+		 * but if they do that in an emulated root vfs, all 16 IRQs will be processed
+		 *
+		 * to fix this, i need to make it so callerless requests can also wait
+		 * for IRQs.
+		 */
+		bool ready = true;
+		int ret = handle(req, &ready);
+		if (ready)
+			return vfs_request_finish(req, ret);
+		else
+			return -1;
+	} else {
+		return vfs_request_finish(req, -1);
+	}
 }
