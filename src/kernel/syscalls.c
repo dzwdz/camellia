@@ -186,7 +186,8 @@ handle_t _syscall_fs_fork2(void) {
 	if (front < 0) SYSCALL_RETURN(-1);
 	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
 
-	backend = kmalloc(sizeof *backend); // TODO never freed
+	backend = kmalloc(sizeof *backend);
+	backend->heap = true;
 	backend->is_user = true;
 	backend->potential_handlers = 1;
 	backend->refcount = 2; // child + handle

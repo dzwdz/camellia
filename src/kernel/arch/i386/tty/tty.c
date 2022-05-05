@@ -5,7 +5,7 @@
 
 void tty_init(void) {
 	vga_clear();
-	serial_init();
+	serial_preinit();
 
 	vga_write("\x03 ", 2); // cp437 heart
 	serial_write("<3 ", 3);

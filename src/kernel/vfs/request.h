@@ -14,6 +14,7 @@ struct vfs_backend {
 	 *   struct process
 	 *   struct handle
 	 */
+	bool heap;
 
 	size_t potential_handlers; // 0 - orphaned
 	struct vfs_request *queue;
@@ -64,3 +65,11 @@ void vfs_backend_tryaccept(struct vfs_backend *);
 void vfs_backend_user_accept(struct vfs_request *req);
 
 void vfs_backend_refdown(struct vfs_backend *);
+
+
+#define BACKEND_KERN(ready, accept) ((struct vfs_backend){\
+	.is_user = false, \
+	.heap = false, \
+	.potential_handlers = 1, \
+	.refcount = 1, \
+	.kern = {ready, accept}})

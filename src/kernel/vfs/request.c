@@ -134,5 +134,5 @@ void vfs_backend_refdown(struct vfs_backend *b) {
 	if (--(b->refcount) > 0) return;
 
 	assert(!b->queue);
-	kfree(b);
+	if (b->heap) kfree(b);
 }

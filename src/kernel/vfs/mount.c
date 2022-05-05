@@ -1,63 +1,13 @@
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/vfs/mount.h>
-#include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
 // TODO not the place where this should be done
-#include <kernel/arch/i386/driver/ps2.h>
-#include <kernel/arch/i386/driver/serial.h>
+static struct vfs_mount *mount_root = NULL;
 
 struct vfs_mount *vfs_mount_seed(void) {
-	struct vfs_mount   *mount   = kmalloc(sizeof *mount);
-	struct vfs_backend *backend = kmalloc(sizeof *backend);
-	backend->is_user = false;
-	backend->potential_handlers = 1;
-	backend->refcount = 1;
-	backend->kern.ready  = vfs_root_ready;
-	backend->kern.accept = vfs_root_accept;
-	*mount = (struct vfs_mount){
-		.prev = NULL,
-		.prefix = NULL,
-		.prefix_len = 0,
-		.backend = backend,
-		.refs = 1,
-	};
-
-	// what a mess.
-	// TODO register funcs
-	struct vfs_mount *ps2 = kmalloc(sizeof *ps2);
-	backend = kmalloc(sizeof *backend);
-	backend->is_user = false;
-	backend->potential_handlers = 1;
-	backend->refcount = 1;
-	backend->kern.ready  = vfs_ps2_ready;
-	backend->kern.accept = vfs_ps2_accept;
-	*ps2 = (struct vfs_mount){
-		.prev = mount,
-		.prefix = "/ps2",
-		.prefix_len = 4,
-		.backend = backend,
-		.refs = 1,
-	};
-
-	// oh god oh fuck
-	struct vfs_mount *com = kmalloc(sizeof *com);
-	backend = kmalloc(sizeof *backend);
-	backend->is_user = false;
-	backend->potential_handlers = 1;
-	backend->refcount = 1;
-	backend->kern.ready  = vfs_com1_ready;
-	backend->kern.accept = vfs_com1_accept;
-	*com = (struct vfs_mount){
-		.prev = ps2,
-		.prefix = "/com1",
-		.prefix_len = 5,
-		.backend = backend,
-		.refs = 1,
-	};
-
-	return com;
+	return mount_root;
 }
 
 struct vfs_mount *vfs_mount_resolve(
@@ -90,8 +40,20 @@ void vfs_mount_remref(struct vfs_mount *mnt) {
 	if (mnt->backend)
 		vfs_backend_refdown(mnt->backend);
 	if (mnt->prefix_owned)
-		kfree(mnt->prefix);
+		kfree((void*)mnt->prefix);
 	kfree(mnt);
 
 	if (prev) vfs_mount_remref(prev);
+}
+
+void vfs_mount_root_register(const char *path, struct vfs_backend *backend) {
+	struct vfs_mount *mount = kmalloc(sizeof *mount);
+	*mount = (struct vfs_mount){
+		.prev = mount_root,
+		.prefix = path,
+		.prefix_len = strlen(path),
+		.backend = backend,
+		.refs = 1,
+	};
+	mount_root = mount;
 }

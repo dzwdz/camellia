@@ -7,9 +7,6 @@
 #include <stdint.h>
 
 void kmain(struct kmain_info info) {
-	kprintf("mem...\n");
-	mem_init(&info);
-
 	kprintf("tests...\n");
 	tests_all();
 

@@ -102,9 +102,9 @@ void page_free(void *first_addr, size_t pages) {
 	}
 }
 
-void kmalloc_sanity(void *addr) {
+void kmalloc_sanity(const void *addr) {
 	assert(addr);
-	struct malloc_hdr *hdr = addr - sizeof(struct malloc_hdr);
+	const struct malloc_hdr *hdr = addr - sizeof(struct malloc_hdr);
 	assert(hdr->magic == MALLOC_MAGIC);
 	if (hdr->next) assert(hdr->next->prev == hdr);
 	if (hdr->prev) assert(hdr->prev->next == hdr);

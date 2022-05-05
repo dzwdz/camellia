@@ -130,7 +130,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 	}
 }
 
-void vfs_root_accept(struct vfs_request *req) {
+static void accept(struct vfs_request *req) {
 	if (req->caller) {
 		bool ready = true;
 		int ret = handle(req, &ready);
@@ -142,6 +142,9 @@ void vfs_root_accept(struct vfs_request *req) {
 	}
 }
 
-bool vfs_root_ready(struct vfs_backend *self) {
+static bool is_ready(struct vfs_backend *self) {
 	return true;
 }
+
+static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+void vfs_root_init(void) { vfs_mount_root_register("", &backend); }

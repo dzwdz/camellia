@@ -4,7 +4,7 @@
 
 struct vfs_mount {
 	struct vfs_mount *prev;
-	char *prefix;
+	const char *prefix;
 	size_t prefix_len;
 	bool prefix_owned;
 	struct vfs_backend *backend;
@@ -20,3 +20,5 @@ struct vfs_mount *vfs_mount_resolve(
 		struct vfs_mount *top, const char *path, size_t path_len);
 /** Decrements the reference count, potentially freeing the mount. */
 void vfs_mount_remref(struct vfs_mount *mnt);
+
+void vfs_mount_root_register(const char *path, struct vfs_backend *backend);

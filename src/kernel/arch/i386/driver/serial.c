@@ -16,6 +16,17 @@ static const int COM1 = 0x3f8;
 static struct vfs_request *blocked_on = NULL;
 
 
+static void accept(struct vfs_request *req);
+static bool is_ready(struct vfs_backend *self);
+
+
+static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+void serial_init(void) { vfs_mount_root_register("/com1", &backend); }
+
+
+
+
+
 static void serial_selftest(void) {
 	char b = 0x69;
 	port_out8(COM1 + 4, 0b00011110); // enable loopback mode
@@ -23,7 +34,7 @@ static void serial_selftest(void) {
 	assert(port_in8(COM1) == b);
 }
 
-void serial_init(void) {
+void serial_preinit(void) {
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
 	// set baud rate divisor
 	port_out8(COM1 + 3, 0b10000000); // enable DLAB
@@ -40,20 +51,20 @@ void serial_init(void) {
 }
 
 
-bool serial_ready(void) {
+static bool serial_ready(void) {
 	return ring_size((void*)&backlog) > 0;
 }
 
 void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
 	if (blocked_on) {
-		vfs_com1_accept(blocked_on);
+		accept(blocked_on);
 		blocked_on = NULL;
 		// TODO vfs_backend_tryaccept
 	}
 }
 
-size_t serial_read(char *buf, size_t len) {
+static size_t serial_read(char *buf, size_t len) {
 	return ring_get((void*)&backlog, buf, len);
 }
 
@@ -69,8 +80,8 @@ void serial_write(const char *buf, size_t len) {
 }
 
 
-void vfs_com1_accept(struct vfs_request *req) {
-	static uint8_t buf[32];
+static void accept(struct vfs_request *req) {
+	static char buf[32];
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
@@ -109,4 +120,4 @@ void vfs_com1_accept(struct vfs_request *req) {
 	}
 }
 
-bool vfs_com1_ready(struct vfs_backend *self) { return blocked_on == NULL; }
+static bool is_ready(struct vfs_backend *self) { return blocked_on == NULL; }
