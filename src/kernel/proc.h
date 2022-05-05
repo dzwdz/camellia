@@ -6,6 +6,8 @@
 #include <shared/syscalls.h>
 #include <stdbool.h>
 
+#define HANDLE_MAX 16
+
 enum process_state {
 	PS_RUNNING,
 	PS_DEAD,    // return message wasn't collected

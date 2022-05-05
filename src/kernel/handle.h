@@ -3,9 +3,6 @@
 #include <shared/types.h>
 #include <stddef.h>
 
-// TODO make accessible only from proc.c
-#define HANDLE_MAX 16
-
 enum handle_type {
 	HANDLE_INVALID = 0,
 	HANDLE_FILE,

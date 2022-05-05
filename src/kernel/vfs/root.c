@@ -15,7 +15,6 @@ enum {
 	HANDLE_ROOT,
 	HANDLE_VGA,
 	HANDLE_COM1,
-	HANDLE_PS2,
 	HANDLE_ATA_ROOT,
 	HANDLE_ATA,
 	_SKIP = HANDLE_ATA + 4,
@@ -72,7 +71,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
 			if (exacteq(req, "/com1"))	return HANDLE_COM1;
-			if (exacteq(req, "/ps2"))	return HANDLE_PS2;
 
 			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
 			if (exacteq(req, "/ata/0"))
@@ -110,13 +108,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 					if (wait_setup(req, ready, serial_ready)) return -1;
 					char buf[16];
 					size_t len = serial_read(buf, min(req->output.len, sizeof buf));
-					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
-					return len;
-				}
-				case HANDLE_PS2: {
-					if (wait_setup(req, ready, ps2_ready)) return -1;
-					uint8_t buf[16];
-					size_t len = ps2_read(buf, min(req->output.len, sizeof buf));
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				}

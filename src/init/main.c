@@ -22,11 +22,16 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
+	file_open(&__stdout, "/com1");
+	printf("preinit\n");
+
 	MOUNT("/init/", tar_driver(&_initrd));
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
 
 	MOUNT("/bind/", fs_passthru(NULL));
+
+	file_close(&__stdout);
 
 	if (_syscall_fork(0)) {
 		/* (used to) expose a bug in the kernel

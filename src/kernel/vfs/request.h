@@ -1,4 +1,5 @@
 #pragma once
+#include <kernel/proc.h>
 #include <shared/flags.h>
 #include <shared/types.h>
 #include <stdbool.h>
