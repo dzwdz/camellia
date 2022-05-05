@@ -11,7 +11,6 @@
 
 struct process *process_first;
 struct process *process_current;
-static struct process *process_deadparent;
 
 static uint32_t next_pid = 0;
 
@@ -39,13 +38,6 @@ struct process *process_seed(struct kmain_info *info) {
 		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
 		            true, true);
 	process_first->regs.eip = init_base;
-
-	process_deadparent = kmalloc(sizeof *process_deadparent);
-	memset(process_deadparent, 0, sizeof *process_deadparent);
-	process_deadparent->state = PS_DUMMY;
-	process_deadparent->id    = next_pid++;
-
-	process_first->sibling = process_deadparent;
 
 	return process_first;
 }
@@ -126,10 +118,6 @@ void process_free(struct process *p) {
 
 static _Noreturn void process_switch(struct process *proc) {
 	assert(proc->state == PS_RUNNING);
-	if (proc->deathbed) {
-		process_kill(proc, -1);
-		process_switch_any();
-	}
 	process_current = proc;
 	pagedir_switch(proc->pages);
 	sysexit(proc->regs);
@@ -141,18 +129,6 @@ static _Noreturn void process_idle(void) {
 	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
 
 	if (len == 0) shutdown();
-
-	if (process_first->state == PS_DEAD || process_first->state == PS_DEADER) {
-		/* special case: if the system is about to shut off, stop waiting for IRQs
-		 * usually this would be an issue because it would let processes know if
-		 * they're using the kernel handler, but the system is shutting off anyways,
-		 * and no further user code will run */
-		for (size_t i = 0; i < len; i++) {
-			assert(procs[i]->deathbed);
-			process_transition(procs[i], PS_RUNNING);
-		}
-		process_switch_any(); // start cleaning out processes
-	}
 
 	for (;;) {
 		for (size_t i = 0; i < len; i++) {
@@ -256,7 +232,6 @@ void process_transition(struct process *p, enum process_state state) {
 			assert(last == PS_WAITS4FS);
 			break;
 
-		case PS_DUMMY:
 		case PS_LAST:
 			panic_invalid_state();
 	}
@@ -316,7 +291,6 @@ void process_kill(struct process *p, int ret) {
 
 		case PS_DEAD:
 		case PS_DEADER:
-		case PS_DUMMY:
 		case PS_LAST:
 			kprintf("process_kill unexpected state 0x%x\n", p->state);
 			panic_invalid_state();
@@ -350,7 +324,6 @@ int process_try2collect(struct process *dead) {
 
 		case PS_DEAD:
 		case PS_DEADER:
-		case PS_DUMMY:
 			process_transition(dead, PS_DEADER);
 			return -1;
 

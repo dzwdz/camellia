@@ -15,7 +15,6 @@ enum process_state {
 	PS_WAITS4REQUEST,
 	PS_WAITS4IRQ, // set by root vfs
 
-	PS_DUMMY,
 	PS_LAST,
 };
 
@@ -24,7 +23,6 @@ struct process {
 	struct registers regs;
 	enum process_state state;
 
-	bool deathbed; // kill on next process_switch attempt
 	bool noreap;
 
 	struct process *sibling;
