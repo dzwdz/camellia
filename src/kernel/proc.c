@@ -241,7 +241,7 @@ void process_kill(struct process *p, int ret) {
 	if (p->state == PS_DEAD || p->state == PS_DEADER) return;
 
 	if (p->handled_req) {
-		vfs_request_cancel(p->handled_req, ret);
+		vfsreq_finish(p->handled_req, -1);
 		p->handled_req = NULL;
 	}
 	if (p->controlled) {
@@ -252,7 +252,7 @@ void process_kill(struct process *p, int ret) {
 			struct vfs_request *q = p->controlled->queue;
 			while (q) {
 				struct vfs_request *q2 = q->queue_next;
-				vfs_request_cancel(q, ret);
+				vfsreq_finish(q, -1);
 				q = q2;
 			}
 			p->controlled->queue = NULL;

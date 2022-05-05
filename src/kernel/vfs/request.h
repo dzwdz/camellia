@@ -54,11 +54,10 @@ struct vfs_request {
 };
 
 /** Assigns the vfs_request to the caller, and dispatches the call */
-int vfs_request_create(struct vfs_request);
+int vfsreq_create(struct vfs_request);
+int vfsreq_finish(struct vfs_request *, int ret);
+
 /** Try to accept an enqueued request */
 int vfs_backend_accept(struct vfs_backend *);
-int vfs_request_finish(struct vfs_request *, int ret);
-
-void vfs_request_cancel(struct vfs_request *, int ret);
 
 void vfs_backend_refdown(struct vfs_backend *);

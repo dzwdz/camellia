@@ -66,7 +66,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 		memcpy(path_buf, path_buf + mount->prefix_len, len);
 	}
 
-	return vfs_request_create((struct vfs_request) {
+	return vfsreq_create((struct vfs_request) {
 			.type = VFSOP_OPEN,
 			.input = {
 				.kern = true,
@@ -132,7 +132,7 @@ fail:
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
 	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
 	if (!handle) return -1;
-	return vfs_request_create((struct vfs_request) {
+	return vfsreq_create((struct vfs_request) {
 			.type = VFSOP_READ,
 			.output = {
 				.buf = (userptr_t) buf,
@@ -148,7 +148,7 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
 	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
 	if (!handle) return -1;
-	return vfs_request_create((struct vfs_request) {
+	return vfsreq_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
 			.input = {
 				.buf = (userptr_t) buf,
@@ -226,7 +226,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 	}
 
 	process_current->handled_req = NULL;
-	vfs_request_finish(req, ret);
+	vfsreq_finish(req, ret);
 	return 0;
 }
 

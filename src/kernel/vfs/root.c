@@ -190,10 +190,10 @@ int vfs_root_handler(struct vfs_request *req) {
 		bool ready = true;
 		int ret = handle(req, &ready);
 		if (ready)
-			return vfs_request_finish(req, ret);
+			return vfsreq_finish(req, ret);
 		else
 			return -1;
 	} else {
-		return vfs_request_finish(req, -1);
+		return vfsreq_finish(req, -1);
 	}
 }

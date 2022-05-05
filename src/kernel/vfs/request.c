@@ -6,10 +6,10 @@
 #include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
-int vfs_request_create(struct vfs_request req_) {
+int vfsreq_create(struct vfs_request req_) {
 	struct vfs_request *req = kmalloc(sizeof *req);
 	memcpy(req, &req_, sizeof *req);
-	/* freed in vfs_request_finish or vfs_request_cancel */
+	/* freed in vfsreq_finish */
 
 	if (req->backend)
 		req->backend->refcount++;
@@ -20,7 +20,7 @@ int vfs_request_create(struct vfs_request req_) {
 	}
 
 	if (!req->backend || !req->backend->potential_handlers)
-		return vfs_request_finish(req, -1);
+		return vfsreq_finish(req, -1);
 
 	switch (req->backend->type) {
 		case VFS_BACK_ROOT:
@@ -37,6 +37,43 @@ int vfs_request_create(struct vfs_request req_) {
 		default:
 			panic_invalid_state();
 	}
+}
+
+int vfsreq_finish(struct vfs_request *req, int ret) {
+	if (req->type == VFSOP_OPEN && ret >= 0) {
+		// open() calls need special handling
+		// we need to wrap the id returned by the VFS in a handle passed to
+		// the client
+		if (req->caller) {
+			handle_t handle = process_find_handle(req->caller, 0);
+			if (handle < 0)
+				panic_invalid_state(); // we check for free handles before the open() call
+
+			struct handle *backing = handle_init(HANDLE_FILE);
+			backing->file.backend = req->backend;
+			req->backend->refcount++;
+			backing->file.id = ret;
+			req->caller->handles[handle] = backing;
+			ret = handle;
+		} else {
+			// caller got killed
+			// TODO write tests & implement
+			panic_unimplemented();
+		}
+	}
+
+	if (req->input.kern)
+		kfree(req->input.buf_kern);
+
+	if (req->caller) {
+		assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
+		regs_savereturn(&req->caller->regs, ret);
+		process_transition(req->caller, PS_RUNNING);
+	}
+
+	vfs_backend_refdown(req->backend);
+	kfree(req);
+	return ret;
 }
 
 int vfs_backend_accept(struct vfs_backend *backend) {
@@ -76,62 +113,6 @@ int vfs_backend_accept(struct vfs_backend *backend) {
 	return 0;
 fail:
 	panic_unimplemented(); // TODO
-}
-
-int vfs_request_finish(struct vfs_request *req, int ret) {
-	if (req->type == VFSOP_OPEN && ret >= 0) {
-		// open() calls need special handling
-		// we need to wrap the id returned by the VFS in a handle passed to
-		// the client
-		if (req->caller) {
-			handle_t handle = process_find_handle(req->caller, 0);
-			if (handle < 0)
-				panic_invalid_state(); // we check for free handles before the open() call
-
-			struct handle *backing = handle_init(HANDLE_FILE);
-			backing->file.backend = req->backend;
-			req->backend->refcount++;
-			backing->file.id = ret;
-			req->caller->handles[handle] = backing;
-			ret = handle;
-		} else {
-			// caller got killed
-			// TODO write tests & implement
-			panic_unimplemented();
-		}
-	}
-
-	if (req->input.kern)
-		kfree(req->input.buf_kern);
-
-	if (req->caller) {
-		assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
-		regs_savereturn(&req->caller->regs, ret);
-		process_transition(req->caller, PS_RUNNING);
-	}
-
-	vfs_backend_refdown(req->backend);
-	kfree(req);
-	return ret;
-}
-
-void vfs_request_cancel(struct vfs_request *req, int ret) {
-	// TODO merge with vfs_request_finish
-	if (req->caller) {
-		assert(req->caller->state == PS_WAITS4FS);
-
-		if (req->input.kern)
-			kfree(req->input.buf_kern);
-
-		// ret must always be negative, so it won't be confused with a success
-		if (ret > 0) ret = -ret;
-		if (ret == 0) ret = -1;
-		regs_savereturn(&req->caller->regs, ret);
-		process_transition(req->caller, PS_RUNNING);
-	}
-
-	vfs_backend_refdown(req->backend);
-	kfree(req);
 }
 
 void vfs_backend_refdown(struct vfs_backend *b) {

@@ -18,7 +18,7 @@ void handle_close(struct handle *h) {
 
 	switch (h->type) {
 		case HANDLE_FILE:
-			vfs_request_create((struct vfs_request) {
+			vfsreq_create((struct vfs_request) {
 					.type = VFSOP_CLOSE,
 					.id = h->file.id,
 					.caller = NULL,
