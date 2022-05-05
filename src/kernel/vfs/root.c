@@ -45,10 +45,6 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 }
 
 
-static void wait_callback(struct process *proc) {
-	vfs_root_accept(proc->waits4irq.req);
-}
-
 static int handle(struct vfs_request *req, bool *ready) {
 	assert(req->caller);
 	switch (req->type) {

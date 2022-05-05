@@ -56,7 +56,7 @@ int vfsreq_finish(struct vfs_request *req, int ret) {
 		kfree(req->input.buf_kern);
 
 	if (req->caller) {
-		assert(req->caller->state == PS_WAITS4FS || req->caller->state == PS_WAITS4IRQ);
+		assert(req->caller->state == PS_WAITS4FS);
 		regs_savereturn(&req->caller->regs, ret);
 		process_transition(req->caller, PS_RUNNING);
 	}

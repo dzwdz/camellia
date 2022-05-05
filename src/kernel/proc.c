@@ -213,9 +213,6 @@ void process_transition(struct process *p, enum process_state state) {
 		case PS_WAITS4REQUEST:
 			assert(last == PS_RUNNING);
 			break;
-		case PS_WAITS4IRQ:
-			assert(last == PS_WAITS4FS);
-			break;
 
 		case PS_LAST:
 			panic_invalid_state();
@@ -267,9 +264,8 @@ void process_kill(struct process *p, int ret) {
 
 		case PS_WAITS4FS:
 			// if the request wasn't accepted we could just remove this process from the queue
-		case PS_WAITS4IRQ:
-			req = p->state == PS_WAITS4FS
-				? p->waits4fs.req : p->waits4irq.req;
+			// eh
+			req = p->waits4fs.req;
 			req->caller = NULL;
 			// TODO test this
 			break;
