@@ -9,6 +9,8 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
+#define SYSCALL_RETURN(val) return regs_savereturn(&process_current->regs, val)
+
 _Noreturn void _syscall_exit(int ret) {
 	process_kill(process_current, ret);
 	process_switch_any();
@@ -22,23 +24,23 @@ int _syscall_await(void) {
 	for (struct process *iter = process_current->child;
 			iter; iter = iter->sibling) {
 		if (iter->state == PS_DEAD && !iter->noreap)
-			return process_try2collect(iter);
+			SYSCALL_RETURN(process_try2collect(iter));
 		if (iter->state != PS_DEADER)
 			has_children = true;
 	}
 
 	if (!has_children) {
 		process_transition(process_current, PS_RUNNING);
-		return ~0; // TODO errno
+		SYSCALL_RETURN(~0); // TODO errno
 	} else {
-		return -1;
+		SYSCALL_RETURN(-1);
 	}
 }
 
 int _syscall_fork(int flags) {
 	struct process *child = process_fork(process_current, flags);
 	regs_savereturn(&child->regs, 0);
-	return 1;
+	SYSCALL_RETURN(1);
 }
 
 handle_t _syscall_open(const char __user *path, int len) {
@@ -46,9 +48,9 @@ handle_t _syscall_open(const char __user *path, int len) {
 	char *path_buf = NULL;
 
 	if (PATH_MAX < len)
-		return -1;
+		SYSCALL_RETURN(-1);
 	if (process_find_handle(process_current, 0) < 0)
-		return -1;
+		SYSCALL_RETURN(-1);
 
 	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
 	if (!path_buf) goto fail;
@@ -66,7 +68,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 		memcpy(path_buf, path_buf + mount->prefix_len, len);
 	}
 
-	return vfsreq_create((struct vfs_request) {
+	vfsreq_create((struct vfs_request) {
 			.type = VFSOP_OPEN,
 			.input = {
 				.kern = true,
@@ -76,9 +78,10 @@ handle_t _syscall_open(const char __user *path, int len) {
 			.caller = process_current,
 			.backend = mount->backend,
 		});
+	return -1; // dummy
 fail:
 	kfree(path_buf);
-	return -1;
+	SYSCALL_RETURN(-1);
 }
 
 int _syscall_mount(handle_t hid, const char __user *path, int len) {
@@ -86,7 +89,8 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 	struct vfs_backend *backend = NULL;
 	char *path_buf = NULL;
 
-	if (PATH_MAX < len) return -1;
+	if (PATH_MAX < len)
+		SYSCALL_RETURN(-1);
 
 	// copy the path to the kernel to simplify it
 	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
@@ -122,18 +126,18 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 
 	kmalloc_sanity(mount);
 	kmalloc_sanity(mount->prefix);
-	return 0;
+	SYSCALL_RETURN(0);
 
 fail:
 	kfree(path_buf);
 	kfree(mount);
-	return -1;
+	SYSCALL_RETURN(-1);
 }
 
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
 	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
-	if (!handle) return -1;
-	return vfsreq_create((struct vfs_request) {
+	if (!handle) SYSCALL_RETURN(-1);
+	vfsreq_create((struct vfs_request) {
 			.type = VFSOP_READ,
 			.output = {
 				.buf = (userptr_t) buf,
@@ -144,12 +148,13 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});
+	return -1; // dummy
 }
 
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
 	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
-	if (!handle) return -1;
-	return vfsreq_create((struct vfs_request) {
+	if (!handle) SYSCALL_RETURN(-1);
+	vfsreq_create((struct vfs_request) {
 			.type = VFSOP_WRITE,
 			.input = {
 				.buf = (userptr_t) buf,
@@ -160,15 +165,16 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 			.caller = process_current,
 			.backend = handle->file.backend,
 		});
+	return -1; // dummy
 }
 
 int _syscall_close(handle_t hid) {
 	if (hid < 0 || hid >= HANDLE_MAX) return -1;
 	struct handle **h = &process_current->handles[hid];
-	if (!*h) return -1;
+	if (!*h) SYSCALL_RETURN(-1);
 	handle_close(*h);
 	*h = NULL;
-	return 0;
+	SYSCALL_RETURN(0);
 }
 
 handle_t _syscall_fs_fork2(void) {
@@ -177,7 +183,7 @@ handle_t _syscall_fs_fork2(void) {
 	handle_t front;
 
 	front = process_find_handle(process_current, 1);
-	if (front < 0) return -1;
+	if (front < 0) SYSCALL_RETURN(-1);
 	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
@@ -193,12 +199,12 @@ handle_t _syscall_fs_fork2(void) {
 	regs_savereturn(&child->regs, 0);
 
 	process_current->handles[front]->fs.backend = backend;
-	return front;
+	SYSCALL_RETURN(front);
 }
 
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {
 	struct vfs_backend *backend = process_current->controlled;
-	if (!backend) return -1;
+	if (!backend) SYSCALL_RETURN(-1);
 
 	process_transition(process_current, PS_WAITS4REQUEST);
 	assert(!backend->user.handler); // TODO allow multiple processes to wait on the same backend
@@ -209,12 +215,13 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
 
-	return vfs_backend_tryaccept(backend);
+	vfs_backend_tryaccept(backend); // sets return value
+	return -1; // dummy
 }
 
 int _syscall_fs_respond(char __user *buf, int ret) {
 	struct vfs_request *req = process_current->handled_req;
-	if (!req) return -1;
+	if (!req) SYSCALL_RETURN(-1);
 
 	if (req->output.len > 0 && ret > 0) {
 		// if this vfsop outputs data and ret is positive, it's the length of the buffer
@@ -228,7 +235,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 
 	process_current->handled_req = NULL;
 	vfsreq_finish(req, ret);
-	return 0;
+	SYSCALL_RETURN(0);
 }
 
 int _syscall_memflag(void __user *addr, size_t len, int flags) {
@@ -247,7 +254,7 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 		}
 	}
 
-	return -1;
+	SYSCALL_RETURN(-1);
 }
 
 int _syscall(int num, int a, int b, int c, int d) {

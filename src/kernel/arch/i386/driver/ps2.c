@@ -28,14 +28,15 @@ size_t ps2_read(uint8_t *buf, size_t len) {
 	return ring_get((void*)&backlog, buf, len);
 }
 
-int vfs_ps2_accept(struct vfs_request *req) {
+void vfs_ps2_accept(struct vfs_request *req) {
 	// when you fix something here go also fix it in the COM1 driver
 	static uint8_t buf[32]; // pretty damn stupid
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
 			// allows opening /ps2/anything, TODO don't
-			return vfsreq_finish(req, 0); // fake file handle, whatever
+			vfsreq_finish(req, 0); // fake file handle, whatever
+			break;
 		case VFSOP_READ:
 			if (ps2_ready()) {
 				// TODO FUKKEN MESS
@@ -48,13 +49,14 @@ int vfs_ps2_accept(struct vfs_request *req) {
 					ret = ps2_read(buf, ret);
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
 				} else ret = -1;
-				return vfsreq_finish(req, ret);
+				vfsreq_finish(req, ret);
 			} else {
 				blocked_on = req;
-				return -1;
 			}
+			break;
 		default:
-			return vfsreq_finish(req, -1);
+			vfsreq_finish(req, -1);
+			break;
 	}
 }
 

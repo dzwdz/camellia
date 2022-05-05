@@ -69,12 +69,13 @@ void serial_write(const char *buf, size_t len) {
 }
 
 
-int vfs_com1_accept(struct vfs_request *req) {
+void vfs_com1_accept(struct vfs_request *req) {
 	static uint8_t buf[32];
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			return vfsreq_finish(req, 0);
+			vfsreq_finish(req, 0);
+			break;
 		case VFSOP_READ:
 			if (serial_ready()) {
 				if (req->caller) {
@@ -86,11 +87,11 @@ int vfs_com1_accept(struct vfs_request *req) {
 					ret = serial_read(buf, ret);
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
 				} else ret = -1;
-				return vfsreq_finish(req, ret);
+				vfsreq_finish(req, ret);
 			} else {
 				blocked_on = req;
-				return -1;
 			}
+			break;
 		case VFSOP_WRITE:
 			if (req->caller) {
 				struct virt_iter iter;
@@ -100,9 +101,11 @@ int vfs_com1_accept(struct vfs_request *req) {
 					serial_write(iter.frag, iter.frag_len);
 				ret = iter.prior;
 			} else ret = -1;
-			return vfsreq_finish(req, ret);
+			vfsreq_finish(req, ret);
+			break;
 		default:
-			return vfsreq_finish(req, -1);
+			vfsreq_finish(req, -1);
+			break;
 	}
 }
 

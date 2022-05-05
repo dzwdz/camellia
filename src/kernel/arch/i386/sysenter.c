@@ -23,6 +23,5 @@ _Noreturn void sysenter_stage2(void) {
 
 	val = _syscall(regs->eax, regs->ebx,
 	               regs->esi, regs->edi, (uintptr_t)regs->ebp);
-	regs_savereturn(&process_current->regs, val);
 	process_switch_any();
 }

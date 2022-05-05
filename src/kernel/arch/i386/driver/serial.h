@@ -11,5 +11,5 @@ size_t	serial_read(char *buf, size_t len);
 
 void	serial_write(const char *buf, size_t len);
 
-int  vfs_com1_accept(struct vfs_request *);
+void  vfs_com1_accept(struct vfs_request *);
 bool vfs_com1_ready(struct vfs_backend *);

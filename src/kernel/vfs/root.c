@@ -130,17 +130,15 @@ static int handle(struct vfs_request *req, bool *ready) {
 	}
 }
 
-int vfs_root_accept(struct vfs_request *req) {
+void vfs_root_accept(struct vfs_request *req) {
 	if (req->caller) {
 		bool ready = true;
 		int ret = handle(req, &ready);
 		if (ready) {
-			return vfsreq_finish(req, ret);
-		} else {
-			return -1;
+			vfsreq_finish(req, ret);
 		}
 	} else {
-		return vfsreq_finish(req, -1);
+		vfsreq_finish(req, -1);
 	}
 }
 

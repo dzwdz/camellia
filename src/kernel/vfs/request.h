@@ -25,10 +25,7 @@ struct vfs_backend {
 		} user;
 		struct {
 			bool (*ready)(struct vfs_backend *);
-
-			// return value might be passed to caller
-			// TODO make return void
-			int (*accept)(struct vfs_request *);
+			void (*accept)(struct vfs_request *);
 		} kern;
 	};
 };
@@ -59,13 +56,11 @@ struct vfs_request {
 };
 
 /** Assigns the vfs_request to the caller, and dispatches the call */
-int vfsreq_create(struct vfs_request);
-int vfsreq_finish(struct vfs_request *, int ret);
+void vfsreq_create(struct vfs_request);
+void vfsreq_finish(struct vfs_request *, int ret);
 
-/** Try to accept an enqueued request
- * @return same as _syscall_fs_wait, passed to it. except on calls to kern backend, where it returns the result of the fs op - also gets directly passed to caller. it's a mess */
-// TODO fix the return value mess
-int vfs_backend_tryaccept(struct vfs_backend *);
-int vfs_backend_user_accept(struct vfs_request *req);
+/** Try to accept an enqueued request */
+void vfs_backend_tryaccept(struct vfs_backend *);
+void vfs_backend_user_accept(struct vfs_request *req);
 
 void vfs_backend_refdown(struct vfs_backend *);

@@ -6,7 +6,7 @@
 #include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
-int vfsreq_create(struct vfs_request req_) {
+void vfsreq_create(struct vfs_request req_) {
 	struct vfs_request *req = kmalloc(sizeof *req); // freed in vfsreq_finish
 	memcpy(req, &req_, sizeof *req);
 
@@ -19,17 +19,17 @@ int vfsreq_create(struct vfs_request req_) {
 	}
 
 	if (!req->backend || !req->backend->potential_handlers)
-		return vfsreq_finish(req, -1);
+		vfsreq_finish(req, -1);
 
 	struct vfs_request **iter = &req->backend->queue;
 	while (*iter != NULL) // find free spot in queue
 		iter = &(*iter)->queue_next;
 	*iter = req;
 
-	return vfs_backend_tryaccept(req->backend);
+	vfs_backend_tryaccept(req->backend);
 }
 
-int vfsreq_finish(struct vfs_request *req, int ret) {
+void vfsreq_finish(struct vfs_request *req, int ret) {
 	if (req->type == VFSOP_OPEN && ret >= 0) {
 		// open() calls need special handling
 		// we need to wrap the id returned by the VFS in a handle passed to
@@ -63,32 +63,32 @@ int vfsreq_finish(struct vfs_request *req, int ret) {
 
 	vfs_backend_refdown(req->backend);
 	kfree(req);
-	return ret;
+	return;
 }
 
-int vfs_backend_tryaccept(struct vfs_backend *backend) {
+void vfs_backend_tryaccept(struct vfs_backend *backend) {
 	struct vfs_request *req = backend->queue;
-	if (!req) return -1;
+	if (!req) return;
 
 	/* ensure backend is ready to accept request */
 	if (backend->is_user) {
-		if (!backend->user.handler) return -1;
+		if (!backend->user.handler) return;
 	} else {
 		assert(backend->kern.ready);
-		if (!backend->kern.ready(backend)) return -1;
+		if (!backend->kern.ready(backend)) return;
 	}
 
 	backend->queue = req->queue_next;
 
 	if (backend->is_user) {
-		return vfs_backend_user_accept(req);
+		vfs_backend_user_accept(req);
 	} else {
 		assert(backend->kern.accept);
-		return backend->kern.accept(req);
+		backend->kern.accept(req);
 	}
 }
 
-int vfs_backend_user_accept(struct vfs_request *req) {
+void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
 	struct fs_wait_response res = {0};
 	int len = 0;
@@ -123,7 +123,7 @@ int vfs_backend_user_accept(struct vfs_request *req) {
 	handler->handled_req = req;
 	req->backend->user.handler = NULL;
 	regs_savereturn(&handler->regs, 0);
-	return 0;
+	return;
 fail:
 	panic_unimplemented(); // TODO
 }
