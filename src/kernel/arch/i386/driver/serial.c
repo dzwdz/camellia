@@ -1,6 +1,7 @@
 #include <kernel/arch/i386/driver/serial.h>
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/port_io.h>
+#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <shared/container/ring.h>
 #include <shared/mem.h>
@@ -11,6 +12,8 @@ static volatile uint8_t backlog_buf[BACKLOG_CAPACITY];
 static volatile ring_t backlog = {(void*)backlog_buf, BACKLOG_CAPACITY, 0, 0};
 
 static const int COM1 = 0x3f8;
+
+static struct vfs_request *blocked_on = NULL;
 
 
 static void serial_selftest(void) {
@@ -43,6 +46,11 @@ bool serial_ready(void) {
 
 void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
+	if (blocked_on) {
+		vfs_com1_accept(blocked_on);
+		blocked_on = NULL;
+		// TODO vfs_backend_tryaccept
+	}
 }
 
 size_t serial_read(char *buf, size_t len) {
@@ -59,3 +67,43 @@ void serial_write(const char *buf, size_t len) {
 	for (size_t i = 0; i < len; i++)
 		serial_putchar(buf[i]);
 }
+
+
+int vfs_com1_accept(struct vfs_request *req) {
+	static uint8_t buf[32];
+	int ret;
+	switch (req->type) {
+		case VFSOP_OPEN:
+			return vfsreq_finish(req, 0);
+		case VFSOP_READ:
+			if (serial_ready()) {
+				if (req->caller) {
+					// clamp between 0, sizeof buf
+					ret = req->output.len;
+					if (ret > sizeof buf) ret = sizeof buf;
+					if (ret < 0) ret = 0;
+
+					ret = serial_read(buf, ret);
+					virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
+				} else ret = -1;
+				return vfsreq_finish(req, ret);
+			} else {
+				blocked_on = req;
+				return -1;
+			}
+		case VFSOP_WRITE:
+			if (req->caller) {
+				struct virt_iter iter;
+				virt_iter_new(&iter, req->input.buf, req->input.len,
+						req->caller->pages, true, false);
+				while (virt_iter_next(&iter))
+					serial_write(iter.frag, iter.frag_len);
+				ret = iter.prior;
+			} else ret = -1;
+			return vfsreq_finish(req, ret);
+		default:
+			return vfsreq_finish(req, -1);
+	}
+}
+
+bool vfs_com1_ready(struct vfs_backend *self) { return blocked_on == NULL; }

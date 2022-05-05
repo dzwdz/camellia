@@ -6,6 +6,7 @@ struct vfs_mount {
 	struct vfs_mount *prev;
 	char *prefix;
 	size_t prefix_len;
+	bool prefix_owned;
 	struct vfs_backend *backend;
 	size_t refs; /* counts all references, atm from:
 	              *  - struct vfs_mount

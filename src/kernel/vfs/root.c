@@ -1,6 +1,4 @@
 #include <kernel/arch/i386/ata.h>
-#include <kernel/arch/i386/driver/ps2.h>
-#include <kernel/arch/i386/driver/serial.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -14,7 +12,6 @@
 enum {
 	HANDLE_ROOT,
 	HANDLE_VGA,
-	HANDLE_COM1,
 	HANDLE_ATA_ROOT,
 	HANDLE_ATA,
 	_SKIP = HANDLE_ATA + 4,
@@ -52,25 +49,12 @@ static void wait_callback(struct process *proc) {
 	vfs_root_accept(proc->waits4irq.req);
 }
 
-static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)()) {
-	if (!ready_fn()) {
-		*ready = false;
-		process_transition(req->caller, PS_WAITS4IRQ);
-		req->caller->waits4irq.req = req;
-		req->caller->waits4irq.ready = ready_fn;
-		req->caller->waits4irq.callback = wait_callback;
-		return true;
-	}
-	return false;
-}
-
 static int handle(struct vfs_request *req, bool *ready) {
 	assert(req->caller);
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
-			if (exacteq(req, "/com1"))	return HANDLE_COM1;
 
 			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
 			if (exacteq(req, "/ata/0"))
@@ -103,13 +87,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 					virt_cpy_to(req->caller->pages, req->output.buf,
 							vga + req->offset, req->output.len);
 					return req->output.len;
-				}
-				case HANDLE_COM1: {
-					if (wait_setup(req, ready, serial_ready)) return -1;
-					char buf[16];
-					size_t len = serial_read(buf, min(req->output.len, sizeof buf));
-					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
-					return len;
 				}
 				case HANDLE_ATA_ROOT: {
 					// TODO offset
@@ -147,14 +124,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 							req->input.buf, req->input.len);
 					return req->input.len;
 				}
-				case HANDLE_COM1: {
-					struct virt_iter iter;
-					virt_iter_new(&iter, req->input.buf, req->input.len,
-							req->caller->pages, true, false);
-					while (virt_iter_next(&iter))
-						serial_write(iter.frag, iter.frag_len);
-					return iter.prior;
-				}
 				default: return -1;
 			}
 
@@ -167,17 +136,6 @@ static int handle(struct vfs_request *req, bool *ready) {
 
 int vfs_root_accept(struct vfs_request *req) {
 	if (req->caller) {
-		/* this introduces a difference between the root vfs and emulated ones:
-		 *
-		 * the root vfs has to immediately discard requests from dead processes.
-		 * so, if 16 processes queue up for an IRQ, and the middle 14 quit, only
-		 * 2 IRQs will be processed
-		 *
-		 * but if they do that in an emulated root vfs, all 16 IRQs will be processed
-		 *
-		 * to fix this, i need to make it so callerless requests can also wait
-		 * for IRQs.
-		 */
 		bool ready = true;
 		int ret = handle(req, &ready);
 		if (ready) {

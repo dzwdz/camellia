@@ -4,7 +4,9 @@
 #include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
+// TODO not the place where this should be done
 #include <kernel/arch/i386/driver/ps2.h>
+#include <kernel/arch/i386/driver/serial.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
 	struct vfs_mount   *mount   = kmalloc(sizeof *mount);
@@ -19,7 +21,7 @@ struct vfs_mount *vfs_mount_seed(void) {
 		.prefix = NULL,
 		.prefix_len = 0,
 		.backend = backend,
-		.refs = 1, // never to be freed
+		.refs = 1,
 	};
 
 	// what a mess.
@@ -39,7 +41,23 @@ struct vfs_mount *vfs_mount_seed(void) {
 		.refs = 1,
 	};
 
-	return ps2;
+	// oh god oh fuck
+	struct vfs_mount *com = kmalloc(sizeof *com);
+	backend = kmalloc(sizeof *backend);
+	backend->is_user = false;
+	backend->potential_handlers = 1;
+	backend->refcount = 1;
+	backend->kern.ready  = vfs_com1_ready;
+	backend->kern.accept = vfs_com1_accept;
+	*com = (struct vfs_mount){
+		.prev = ps2,
+		.prefix = "/com1",
+		.prefix_len = 5,
+		.backend = backend,
+		.refs = 1,
+	};
+
+	return com;
 }
 
 struct vfs_mount *vfs_mount_resolve(
@@ -71,7 +89,8 @@ void vfs_mount_remref(struct vfs_mount *mnt) {
 	struct vfs_mount *prev = mnt->prev;
 	if (mnt->backend)
 		vfs_backend_refdown(mnt->backend);
-	kfree(mnt->prefix);
+	if (mnt->prefix_owned)
+		kfree(mnt->prefix);
 	kfree(mnt);
 
 	if (prev) vfs_mount_remref(prev);

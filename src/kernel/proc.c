@@ -123,34 +123,18 @@ static _Noreturn void process_switch(struct process *proc) {
 	sysexit(proc->regs);
 }
 
-/** If there are any processes waiting for IRQs, wait with them. Otherwise, shut down */
-static _Noreturn void process_idle(void) {
-	// this mess is temporary
-
-	struct process *procs[16];
-	size_t len = process_find_multiple(PS_WAITS4IRQ, procs, 16);
-
-	if (len == 0) shutdown();
-
-	cpu_pause();
-	for (size_t i = 0; i < len; i++) {
-		if (procs[i]->waits4irq.ready()) {
-			/* if this is entered during the first iteration, it indicates a
-			 * kernel bug. this should be logged. TODO? */
-			procs[i]->waits4irq.callback(procs[i]);
-		}
-	}
-
-	process_switch_any();
-}
-
 _Noreturn void process_switch_any(void) {
 	if (process_current && process_current->state == PS_RUNNING)
 		process_switch(process_current);
 
 	struct process *found = process_find(PS_RUNNING);
 	if (found) process_switch(found);
-	process_idle();
+
+	if (process_first->state == PS_DEAD || process_first->state == PS_DEADER)
+		shutdown();
+
+	cpu_pause();
+	process_switch_any();
 }
 
 struct process *process_next(struct process *p) {

@@ -29,6 +29,7 @@ size_t ps2_read(uint8_t *buf, size_t len) {
 }
 
 int vfs_ps2_accept(struct vfs_request *req) {
+	// when you fix something here go also fix it in the COM1 driver
 	static uint8_t buf[32]; // pretty damn stupid
 	int ret;
 	switch (req->type) {
