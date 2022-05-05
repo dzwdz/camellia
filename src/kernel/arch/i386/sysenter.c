@@ -14,14 +14,13 @@ void sysexit(struct registers regs) {
 }
 
 _Noreturn void sysenter_stage2(void) {
-	uint64_t val;
 	struct registers *regs = &process_current->regs;
 
 	*regs = _sysexit_regs; // save the registers
 	regs->esp = (userptr_t) regs->ecx; // fix them up
 	regs->eip = (userptr_t) regs->edx;
 
-	val = _syscall(regs->eax, regs->ebx,
-	               regs->esi, regs->edi, (uintptr_t)regs->ebp);
+	_syscall(regs->eax, regs->ebx,
+	         regs->esi, regs->edi, (uintptr_t)regs->ebp);
 	process_switch_any();
 }

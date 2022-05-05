@@ -1,4 +1,7 @@
 #pragma once
+
+enum handle_type; // forward declaration for proc.h
+
 #include <kernel/vfs/mount.h>
 #include <shared/types.h>
 #include <stddef.h>

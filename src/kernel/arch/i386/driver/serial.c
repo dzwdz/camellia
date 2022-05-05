@@ -92,7 +92,7 @@ static void accept(struct vfs_request *req) {
 				if (req->caller) {
 					// clamp between 0, sizeof buf
 					ret = req->output.len;
-					if (ret > sizeof buf) ret = sizeof buf;
+					if (ret > (int)sizeof buf) ret = sizeof buf;
 					if (ret < 0) ret = 0;
 
 					ret = serial_read(buf, ret);
@@ -120,4 +120,4 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static bool is_ready(struct vfs_backend *self) { return blocked_on == NULL; }
+static bool is_ready(struct vfs_backend __attribute__((unused)) *self) { return blocked_on == NULL; }

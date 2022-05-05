@@ -11,7 +11,7 @@ void tty_init(void) {
 	serial_write("<3 ", 3);
 }
 
-static void backend(void *arg, const char *buf, size_t len) {
+static void backend(void __attribute__((unused))  *arg, const char *buf, size_t len) {
 	vga_write(buf, len);
 	serial_write(buf, len);
 }

@@ -136,7 +136,7 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static bool is_ready(struct vfs_backend *self) {
+static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
 	return true;
 }
 
