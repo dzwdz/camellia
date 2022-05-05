@@ -180,10 +180,10 @@ handle_t _syscall_fs_fork2(void) {
 	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
 
 	backend = kmalloc(sizeof *backend); // TODO never freed
-	backend->type = VFS_BACK_USER;
+	backend->is_user = true;
 	backend->potential_handlers = 1;
 	backend->refcount = 2; // child + handle
-	backend->handler = NULL;
+	backend->user.handler = NULL;
 	backend->queue = NULL;
 
 	child = process_fork(process_current, 0);
@@ -200,15 +200,15 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	if (!backend) return -1;
 
 	process_transition(process_current, PS_WAITS4REQUEST);
-	assert(!backend->handler); // TODO allow multiple processes to wait on the same backend
-	backend->handler = process_current;
+	assert(!backend->user.handler); // TODO allow multiple processes to wait on the same backend
+	backend->user.handler = process_current;
 	/* checking the validity of those pointers here would make
 	 * vfs_backend_accept simpler. TODO? */
 	process_current->awaited_req.buf     = buf;
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
 
-	return vfs_backend_accept(backend);
+	return vfs_backend_tryaccept(backend);
 }
 
 int _syscall_fs_respond(char __user *buf, int ret) {

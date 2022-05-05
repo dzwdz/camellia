@@ -4,11 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-enum vfs_backend_type {
-	VFS_BACK_ROOT,
-	VFS_BACK_USER,
-};
-
 // describes something which can act as an access function
 struct vfs_backend {
 	size_t refcount;
@@ -19,13 +14,22 @@ struct vfs_backend {
 	 *   struct handle
 	 */
 
-	enum vfs_backend_type type;
-
 	size_t potential_handlers; // 0 - orphaned
-
-	// only used with VFS_BACK_USER
-	struct process *handler;
 	struct vfs_request *queue;
+	bool is_user;
+
+	union {
+		struct {
+			struct process *handler;
+		} user;
+		struct {
+			bool (*ready)(struct vfs_backend *);
+
+			// return value might be passed to caller
+			// TODO make return void
+			int (*accept)(struct vfs_request *);
+		} kern;
+	};
 };
 
 // describes an in-process vfs call
@@ -57,7 +61,10 @@ struct vfs_request {
 int vfsreq_create(struct vfs_request);
 int vfsreq_finish(struct vfs_request *, int ret);
 
-/** Try to accept an enqueued request */
-int vfs_backend_accept(struct vfs_backend *);
+/** Try to accept an enqueued request
+ * @return same as _syscall_fs_wait, passed to it. except on calls to kern backend, where it returns the result of the fs op - also gets directly passed to caller. it's a mess */
+// TODO fix the return value mess
+int vfs_backend_tryaccept(struct vfs_backend *);
+int vfs_backend_user_accept(struct vfs_request *req);
 
 void vfs_backend_refdown(struct vfs_backend *);

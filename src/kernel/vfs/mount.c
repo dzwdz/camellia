@@ -1,14 +1,17 @@
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/vfs/mount.h>
+#include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
 struct vfs_mount *vfs_mount_seed(void) {
 	struct vfs_mount   *mount   = kmalloc(sizeof *mount);
 	struct vfs_backend *backend = kmalloc(sizeof *backend);
-	backend->type = VFS_BACK_ROOT;
+	backend->is_user = false;
 	backend->potential_handlers = 1;
 	backend->refcount = 1;
+	backend->kern.ready  = vfs_root_ready;
+	backend->kern.accept = vfs_root_accept;
 	*mount = (struct vfs_mount){
 		.prev = NULL,
 		.prefix = NULL,

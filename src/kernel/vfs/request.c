@@ -7,9 +7,8 @@
 #include <shared/mem.h>
 
 int vfsreq_create(struct vfs_request req_) {
-	struct vfs_request *req = kmalloc(sizeof *req);
+	struct vfs_request *req = kmalloc(sizeof *req); // freed in vfsreq_finish
 	memcpy(req, &req_, sizeof *req);
-	/* freed in vfsreq_finish */
 
 	if (req->backend)
 		req->backend->refcount++;
@@ -22,21 +21,12 @@ int vfsreq_create(struct vfs_request req_) {
 	if (!req->backend || !req->backend->potential_handlers)
 		return vfsreq_finish(req, -1);
 
-	switch (req->backend->type) {
-		case VFS_BACK_ROOT:
-			return vfs_root_handler(req);
-		case VFS_BACK_USER: {
-			struct vfs_request **iter = &req->backend->queue;
-			while (*iter != NULL) // find free spot in queue
-				iter = &(*iter)->queue_next;
-			*iter = req;
+	struct vfs_request **iter = &req->backend->queue;
+	while (*iter != NULL) // find free spot in queue
+		iter = &(*iter)->queue_next;
+	*iter = req;
 
-			vfs_backend_accept(req->backend);
-			return -1; // isn't passed to the caller process anyways
-		}
-		default:
-			panic_invalid_state();
-	}
+	return vfs_backend_tryaccept(req->backend);
 }
 
 int vfsreq_finish(struct vfs_request *req, int ret) {
@@ -76,18 +66,41 @@ int vfsreq_finish(struct vfs_request *req, int ret) {
 	return ret;
 }
 
-int vfs_backend_accept(struct vfs_backend *backend) {
+int vfs_backend_tryaccept(struct vfs_backend *backend) {
 	struct vfs_request *req = backend->queue;
-	struct process *handler = backend->handler;
+	if (!req) return -1;
+
+	/* ensure backend is ready to accept request */
+	if (backend->is_user) {
+		if (!backend->user.handler) return -1;
+	} else {
+		assert(backend->kern.ready);
+		if (!backend->kern.ready(backend)) return -1;
+	}
+
+	backend->queue = req->queue_next;
+
+	if (backend->is_user) {
+		return vfs_backend_user_accept(req);
+	} else {
+		assert(backend->kern.accept);
+		return backend->kern.accept(req);
+	}
+}
+
+int vfs_backend_user_accept(struct vfs_request *req) {
+	struct process *handler;
 	struct fs_wait_response res = {0};
 	int len = 0;
 
-	if (!handler) return -1;
+	assert(req && req->backend && req->backend->user.handler);
+	handler = req->backend->user.handler;
 	assert(handler->state == PS_WAITS4REQUEST);
-	assert(!handler->handled_req);
+	assert(handler->handled_req == NULL);
 
-	if (!req) return -1;
-	backend->queue = req->queue_next;
+	// the virt_cpy calls aren't present in all kernel backends
+	// it's a way to tell apart kernel and user backends apart
+	// TODO check validity of memory regions somewhere else
 
 	if (req->input.buf) {
 		len = min(req->input.len, handler->awaited_req.max_len);
@@ -108,7 +121,7 @@ int vfs_backend_accept(struct vfs_backend *backend) {
 
 	process_transition(handler, PS_RUNNING);
 	handler->handled_req = req;
-	req->backend->handler = NULL;
+	req->backend->user.handler = NULL;
 	regs_savereturn(&handler->regs, 0);
 	return 0;
 fail:

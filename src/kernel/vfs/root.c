@@ -50,7 +50,7 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 
 
 static void wait_callback(struct process *proc) {
-	vfs_root_handler(proc->waits4irq.req);
+	vfs_root_accept(proc->waits4irq.req);
 }
 
 static bool wait_setup(struct vfs_request *req, bool *ready, bool (*ready_fn)()) {
@@ -174,7 +174,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 	}
 }
 
-int vfs_root_handler(struct vfs_request *req) {
+int vfs_root_accept(struct vfs_request *req) {
 	if (req->caller) {
 		/* this introduces a difference between the root vfs and emulated ones:
 		 *
@@ -189,11 +189,16 @@ int vfs_root_handler(struct vfs_request *req) {
 		 */
 		bool ready = true;
 		int ret = handle(req, &ready);
-		if (ready)
+		if (ready) {
 			return vfsreq_finish(req, ret);
-		else
+		} else {
 			return -1;
+		}
 	} else {
 		return vfsreq_finish(req, -1);
 	}
+}
+
+bool vfs_root_ready(struct vfs_backend *self) {
+	return true;
 }

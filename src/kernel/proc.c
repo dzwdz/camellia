@@ -257,9 +257,9 @@ void process_kill(struct process *p, int ret) {
 			}
 			p->controlled->queue = NULL;
 		}
-		if (p->controlled->handler == p) {
+		if (p->controlled->user.handler == p) {
 			assert(p->state == PS_WAITS4REQUEST);
-			p->controlled->handler = NULL;
+			p->controlled->user.handler = NULL;
 		}
 
 		vfs_backend_refdown(p->controlled);
