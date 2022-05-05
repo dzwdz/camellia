@@ -3,11 +3,9 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
-#include <kernel/vfs/root.h>
+#include <kernel/arch/i386/driver/fsroot.h>
 #include <shared/mem.h>
 #include <stdbool.h>
-
-// TODO move to arch/
 
 enum {
 	HANDLE_ROOT,
@@ -45,7 +43,7 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 }
 
 
-static int handle(struct vfs_request *req, bool *ready) {
+static int handle(struct vfs_request *req) {
 	assert(req->caller);
 	switch (req->type) {
 		case VFSOP_OPEN:
@@ -132,11 +130,7 @@ static int handle(struct vfs_request *req, bool *ready) {
 
 static void accept(struct vfs_request *req) {
 	if (req->caller) {
-		bool ready = true;
-		int ret = handle(req, &ready);
-		if (ready) {
-			vfsreq_finish(req, ret);
-		}
+		vfsreq_finish(req, handle(req));
 	} else {
 		vfsreq_finish(req, -1);
 	}

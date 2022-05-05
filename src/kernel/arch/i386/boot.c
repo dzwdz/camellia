@@ -1,6 +1,7 @@
 #include <kernel/arch/generic.h>
 #include <kernel/arch/i386/ata.h>
 #include <kernel/arch/i386/boot.h>
+#include <kernel/arch/i386/driver/fsroot.h>
 #include <kernel/arch/i386/driver/ps2.h>
 #include <kernel/arch/i386/driver/serial.h>
 #include <kernel/arch/i386/gdt.h>
@@ -10,7 +11,6 @@
 #include <kernel/main.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
-#include <kernel/vfs/root.h>
 
 void tty_init(void); // TODO put this in a header file
 

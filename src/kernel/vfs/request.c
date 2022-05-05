@@ -1,9 +1,9 @@
+#include <kernel/arch/i386/driver/fsroot.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
-#include <kernel/vfs/root.h>
 #include <shared/mem.h>
 
 void vfsreq_create(struct vfs_request req_) {
