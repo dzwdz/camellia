@@ -19,3 +19,9 @@
 static inline int32_t capped_cast32(uint32_t u) {
 	return (int32_t)min(u, (uint32_t)INT32_MAX);
 }
+
+static inline int clamp(int lo, int i, int hi) {
+	if (i < lo) return lo;
+	if (i > hi) return hi;
+	return i;
+}

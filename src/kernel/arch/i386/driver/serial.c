@@ -13,18 +13,12 @@ static volatile ring_t backlog = {(void*)backlog_buf, BACKLOG_CAPACITY, 0, 0};
 
 static const int COM1 = 0x3f8;
 
-static struct vfs_request *blocked_on = NULL;
-
-
 static void accept(struct vfs_request *req);
 static bool is_ready(struct vfs_backend *self);
 
-
+static struct vfs_request *blocked_on = NULL;
 static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
 void serial_init(void) { vfs_mount_root_register("/com1", &backend); }
-
-
-
 
 
 static void serial_selftest(void) {
@@ -51,21 +45,13 @@ void serial_preinit(void) {
 }
 
 
-static bool serial_ready(void) {
-	return ring_size((void*)&backlog) > 0;
-}
-
 void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
 	if (blocked_on) {
 		accept(blocked_on);
 		blocked_on = NULL;
-		// TODO vfs_backend_tryaccept
+		vfs_backend_tryaccept(&backend);
 	}
-}
-
-static size_t serial_read(char *buf, size_t len) {
-	return ring_get((void*)&backlog, buf, len);
 }
 
 
@@ -85,22 +71,20 @@ static void accept(struct vfs_request *req) {
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
+			ret = req->input.len == 0 ? 0 : -1;
 			vfsreq_finish(req, 0);
 			break;
 		case VFSOP_READ:
-			if (serial_ready()) {
-				if (req->caller) {
-					// clamp between 0, sizeof buf
-					ret = req->output.len;
-					if (ret > (int)sizeof buf) ret = sizeof buf;
-					if (ret < 0) ret = 0;
-
-					ret = serial_read(buf, ret);
-					virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
-				} else ret = -1;
+			if (ring_size((void*)&backlog) == 0) {
+				// nothing to read
+				blocked_on = req;
+			} else if (req->caller) {
+				ret = clamp(0, req->output.len, sizeof buf);
+				ret = ring_get((void*)&backlog, buf, ret);
+				virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
 				vfsreq_finish(req, ret);
 			} else {
-				blocked_on = req;
+				vfsreq_finish(req, -1);
 			}
 			break;
 		case VFSOP_WRITE:
@@ -120,4 +104,6 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static bool is_ready(struct vfs_backend __attribute__((unused)) *self) { return blocked_on == NULL; }
+static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
+	return blocked_on == NULL;
+}
