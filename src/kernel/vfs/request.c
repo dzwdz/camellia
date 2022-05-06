@@ -35,7 +35,7 @@ void vfsreq_finish(struct vfs_request *req, int ret) {
 		// we need to wrap the id returned by the VFS in a handle passed to
 		// the client
 		if (req->caller) {
-			handle_t handle = process_find_handle(req->caller, 0);
+			handle_t handle = process_find_free_handle(req->caller, 0);
 			if (handle < 0)
 				panic_invalid_state(); // we check for free handles before the open() call
 

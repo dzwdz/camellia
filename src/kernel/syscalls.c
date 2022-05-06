@@ -51,7 +51,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
-	if (process_find_handle(process_current, 0) < 0)
+	if (process_find_free_handle(process_current, 0) < 0)
 		SYSCALL_RETURN(-1);
 
 	path_buf = virt_cpy2kmalloc(process_current->pages, path, len);
@@ -184,7 +184,7 @@ handle_t _syscall_fs_fork2(void) {
 	struct process *child;
 	handle_t front;
 
-	front = process_find_handle(process_current, 1);
+	front = process_find_free_handle(process_current, 1);
 	if (front < 0) SYSCALL_RETURN(-1);
 	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
 

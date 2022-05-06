@@ -74,127 +74,6 @@ struct process *process_fork(struct process *parent, int flags) {
 	return child;
 }
 
-void process_forget(struct process *p) {
-	assert(p->parent);
-
-	if (p->parent->child == p) {
-		p->parent->child = p->sibling;
-	} else {
-		// this would be simpler if siblings were a doubly linked list
-		struct process *prev = p->parent->child;
-		while (prev->sibling != p) {
-			prev = prev->sibling;
-			assert(prev);
-		}
-		prev->sibling = p->sibling;
-	}
-}
-
-void process_free(struct process *p) {
-	assert(p->state == PS_DEAD);
-	assert(!p->child);
-
-	if (!p->parent) return;
-	process_forget(p);
-	kfree(p);
-}
-
-static _Noreturn void process_switch(struct process *proc) {
-	assert(proc->state == PS_RUNNING);
-	process_current = proc;
-	pagedir_switch(proc->pages);
-	sysexit(proc->regs);
-}
-
-_Noreturn void process_switch_any(void) {
-	if (process_current && process_current->state == PS_RUNNING)
-		process_switch(process_current);
-
-	struct process *found = process_find(PS_RUNNING);
-	if (found) process_switch(found);
-
-	cpu_pause();
-	process_switch_any();
-}
-
-struct process *process_next(struct process *p) {
-	/* is a weird depth-first search, the search order is:
-	 *         1
-	 *        / \
-	 *       2   5
-	 *      /|   |\
-	 *     3 4   6 7
-	 */
-	if (!p)	return NULL;
-	if (p->child)	return p->child;
-	if (p->sibling)	return p->sibling;
-
-	/* looking at the diagram above - we're at 4, want to find 5 */
-	while (!p->sibling) {
-		p = p->parent;
-		if (!p) return NULL;
-	}
-	return p->sibling;
-}
-
-struct process *process_find(enum process_state target) {
-	struct process *result = NULL;
-	process_find_multiple(target, &result, 1);
-	return result;
-}
-
-size_t process_find_multiple(enum process_state target, struct process **buf, size_t max) {
-	size_t i = 0;
-	for (struct process *p = process_first;
-		i < max && p;
-		p = process_next(p))
-	{
-		if (p->state == target) buf[i++] = p;
-	}
-	return i;
-}
-
-handle_t process_find_handle(struct process *proc, handle_t start_at) {
-	// TODO start_at is a bit of a hack
-	handle_t handle;
-	for (handle = start_at; handle < HANDLE_MAX; handle++) {
-		if (proc->handles[handle] == NULL)
-			break;
-	}
-	if (handle >= HANDLE_MAX) handle = -1;
-	return handle;
-}
-
-struct handle*
-process_handle_get(struct process *p, handle_t id, enum handle_type type) {
-	struct handle *h;
-	if (id < 0 || id >= HANDLE_MAX) return NULL;
-	h = p->handles[id];
-	if (h == NULL || h->type != type) return NULL;
-	return h;
-}
-
-void process_transition(struct process *p, enum process_state state) {
-	enum process_state last = p->state;
-	p->state = state;
-	switch (state) {
-		case PS_RUNNING:
-			assert(last != PS_DEAD);
-			break;
-		case PS_DEAD:
-			// see process_kill
-			break;
-		case PS_WAITS4CHILDDEATH:
-		case PS_WAITS4FS:
-		case PS_WAITS4REQUEST:
-			assert(last == PS_RUNNING);
-			break;
-
-		case PS_LAST:
-			panic_invalid_state();
-	}
-}
-
 void process_kill(struct process *p, int ret) {
 	if (p->state != PS_DEAD) {
 		if (p->handled_req) {
@@ -270,4 +149,115 @@ int process_try2collect(struct process *dead) {
 
 	process_free(dead);
 	return ret;
+}
+
+void process_free(struct process *p) {
+	assert(p->state == PS_DEAD);
+	assert(!p->child);
+
+	if (!p->parent) return;
+	process_forget(p);
+	kfree(p);
+}
+
+void process_forget(struct process *p) {
+	assert(p->parent);
+
+	if (p->parent->child == p) {
+		p->parent->child = p->sibling;
+	} else {
+		// this would be simpler if siblings were a doubly linked list
+		struct process *prev = p->parent->child;
+		while (prev->sibling != p) {
+			prev = prev->sibling;
+			assert(prev);
+		}
+		prev->sibling = p->sibling;
+	}
+}
+
+static _Noreturn void process_switch(struct process *proc) {
+	assert(proc->state == PS_RUNNING);
+	process_current = proc;
+	pagedir_switch(proc->pages);
+	sysexit(proc->regs);
+}
+
+_Noreturn void process_switch_any(void) {
+	if (process_current && process_current->state == PS_RUNNING)
+		process_switch(process_current);
+
+	struct process *found = process_find(PS_RUNNING);
+	if (found) process_switch(found);
+
+	cpu_pause();
+	process_switch_any();
+}
+
+struct process *process_next(struct process *p) {
+	/* is a weird depth-first search, the search order is:
+	 *         1
+	 *        / \
+	 *       2   5
+	 *      /|   |\
+	 *     3 4   6 7
+	 */
+	if (!p)	return NULL;
+	if (p->child)	return p->child;
+	if (p->sibling)	return p->sibling;
+
+	/* looking at the diagram above - we're at 4, want to find 5 */
+	while (!p->sibling) {
+		p = p->parent;
+		if (!p) return NULL;
+	}
+	return p->sibling;
+}
+
+struct process *process_find(enum process_state target) {
+	for (struct process *p = process_first; p; p = process_next(p)) {
+		if (p->state == target) return p;
+	}
+	return NULL;
+}
+
+handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
+	// TODO start_at is a bit of a hack
+	handle_t handle;
+	for (handle = start_at; handle < HANDLE_MAX; handle++) {
+		if (proc->handles[handle] == NULL)
+			break;
+	}
+	if (handle >= HANDLE_MAX) handle = -1;
+	return handle;
+}
+
+struct handle*
+process_handle_get(struct process *p, handle_t id, enum handle_type type) {
+	struct handle *h;
+	if (id < 0 || id >= HANDLE_MAX) return NULL;
+	h = p->handles[id];
+	if (h == NULL || h->type != type) return NULL;
+	return h;
+}
+
+void process_transition(struct process *p, enum process_state state) {
+	enum process_state last = p->state;
+	p->state = state;
+	switch (state) {
+		case PS_RUNNING:
+			assert(last != PS_DEAD);
+			break;
+		case PS_DEAD:
+			// see process_kill
+			break;
+		case PS_WAITS4CHILDDEATH:
+		case PS_WAITS4FS:
+		case PS_WAITS4REQUEST:
+			assert(last == PS_RUNNING);
+			break;
+
+		case PS_LAST:
+			panic_invalid_state();
+	}
 }

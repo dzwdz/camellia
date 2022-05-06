@@ -56,27 +56,26 @@ struct process {
 extern struct process *process_first;
 extern struct process *process_current;
 
-// creates the root process
+/** Creates the root process. */
 struct process *process_seed(struct kmain_info *info);
 struct process *process_fork(struct process *parent, int flags);
 
-void process_forget(struct process *); // remove references to process
+void process_kill(struct process *proc, int ret);
+/** Tries to free a process / collect its return value. */
+int process_try2collect(struct process *dead);
 void process_free(struct process *);
-_Noreturn void process_switch_any(void); // switches to any running process
+/** Removes a process from the process tree. */
+void process_forget(struct process *);
+
+/** Switches execution to any running process. */
+_Noreturn void process_switch_any(void);
 
 /** Used for iterating over all processes */
 struct process *process_next(struct process *);
 
 struct process *process_find(enum process_state);
-size_t process_find_multiple(enum process_state, struct process **buf, size_t max);
 
-handle_t process_find_handle(struct process *proc, handle_t start_at); // finds the first free handle
+handle_t process_find_free_handle(struct process *proc, handle_t start_at);
 struct handle *process_handle_get(struct process *, handle_t, enum handle_type);
 
 void process_transition(struct process *, enum process_state);
-
-void process_kill(struct process *proc, int ret);
-
-/** Tries to transistion from PS_DEAD to PS_DEADER.
- * @return a nonnegative length of the quit message if successful, a negative val otherwise*/
-int process_try2collect(struct process *dead);
