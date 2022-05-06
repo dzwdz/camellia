@@ -94,18 +94,8 @@ void process_free(struct process *p) {
 	assert(p->state == PS_DEAD);
 	assert(!p->child);
 
-	// also could be done on kill
-	vfs_mount_remref(p->mount);
-	p->mount = NULL;
-
-	if (p->controlled) {
-		vfs_backend_refdown(p->controlled);
-		p->controlled = NULL;
-	}
-
 	if (!p->parent) return;
 	process_forget(p);
-	pagedir_free(p->pages); // TODO could be done on kill
 	kfree(p);
 }
 
@@ -244,8 +234,14 @@ void process_kill(struct process *p, int ret) {
 		for (handle_t h = 0; h < HANDLE_MAX; h++)
 			handle_close(p->handles[h]);
 
+		vfs_mount_remref(p->mount);
+		p->mount = NULL;
+
 		process_transition(p, PS_DEAD);
 		p->death_msg = ret;
+
+		if (p->parent)
+			pagedir_free(p->pages); // TODO put init's pages in the allocator
 
 		// TODO VULN unbounded recursion
 		struct process *c2;
