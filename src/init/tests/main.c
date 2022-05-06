@@ -12,7 +12,7 @@
 #define assert(cond) if (!(cond)) test_fail();
 
 static void run_forked(void (*fn)()) {
-	if (!_syscall_fork(0)) {
+	if (!_syscall_fork(0, NULL)) {
 		fn();
 		_syscall_exit(0);
 	} else {
@@ -31,7 +31,7 @@ static void test_await(void) {
 	int counts[16] = {0};
 
 	for (int i = 0; i < 16; i++)
-		if (!_syscall_fork(0))
+		if (!_syscall_fork(0, NULL))
 			_syscall_exit(i);
 
 	while ((ret = _syscall_await()) != ~0) {
@@ -49,12 +49,12 @@ static void test_faults(void) {
 	 * reap all its children */
 	int await_cnt = 0;
 
-	if (!_syscall_fork(0)) { // invalid memory access
+	if (!_syscall_fork(0, NULL)) { // invalid memory access
 		asm volatile("movb $69, 0" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
 	}
-	if (!_syscall_fork(0)) { // #GP
+	if (!_syscall_fork(0, NULL)) { // #GP
 		asm volatile("hlt" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
@@ -65,36 +65,36 @@ static void test_faults(void) {
 }
 
 static void test_interrupted_fs(void) {
-	handle_t h = _syscall_fs_fork2();
-	if (h) {
-		_syscall_mount(h, "/", 1);
-		int ret = _syscall_open("/", 1);
-		// the handler quits while handling that call - but this syscall should return anyways
-		_syscall_exit(ret < 0 ? 0 : -1);
-	} else {
+	handle_t h;
+	if (_syscall_fork(FORK_NEWFS, &h)) { /* child */
 		// TODO make a similar test with all 0s passed to fs_wait
 		struct fs_wait_response res;
 		_syscall_fs_wait(NULL, 0, &res);
 		_syscall_exit(0);
+	} else { /* parent */
+		_syscall_mount(h, "/", 1);
+		int ret = _syscall_open("/", 1);
+		// the handler quits while handling that call - but this syscall should return anyways
+		_syscall_exit(ret < 0 ? 0 : -1);
 	}
 }
 
 static void test_orphaned_fs(void) {
-	handle_t h = _syscall_fs_fork2();
-	if (h) {
+	handle_t h;
+	if (_syscall_fork(FORK_NEWFS, &h)) { /* child */
+		_syscall_exit(0);
+	} else { /* parent */
 		_syscall_mount(h, "/", 1);
 		int ret = _syscall_open("/", 1);
 		// no handler will ever be available to handle this call - the syscall should instantly return
 		_syscall_exit(ret < 0 ? 0 : -1);
-	} else {
-		_syscall_exit(0);
 	}
 }
 
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
-		if (!_syscall_fork(0)) _syscall_exit(0);
+		if (!_syscall_fork(0, NULL)) _syscall_exit(0);
 		_syscall_await();
 	}
 }

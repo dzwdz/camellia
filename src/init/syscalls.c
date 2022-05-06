@@ -14,8 +14,8 @@ int _syscall_await(void) {
 	return _syscall(_SYSCALL_AWAIT, 0, 0, 0, 0);
 }
 
-int _syscall_fork(int flags) {
-	return _syscall(_SYSCALL_FORK, flags, 0, 0, 0);
+int _syscall_fork(int flags, handle_t __user *fs_front) {
+	return _syscall(_SYSCALL_FORK, flags, (int)fs_front, 0, 0);
 }
 
 handle_t _syscall_open(const char __user *path, int len) {
@@ -36,10 +36,6 @@ int _syscall_write(handle_t h, const void __user *buf, size_t len, int offset) {
 
 int _syscall_close(handle_t h) {
 	return _syscall(_SYSCALL_CLOSE, (int)h, 0, 0, 0);
-}
-
-handle_t _syscall_fs_fork2(void) {
-	return _syscall(_SYSCALL_FS_FORK2, 0, 0, 0, 0);
 }
 
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {

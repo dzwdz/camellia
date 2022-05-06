@@ -39,9 +39,42 @@ int _syscall_await(void) {
 	}
 }
 
-int _syscall_fork(int flags) {
-	struct process *child = process_fork(process_current, flags);
+int _syscall_fork(int flags, handle_t __user *fs_front) {
+	struct process *child;
+	handle_t front;
+
+	if ((flags & FORK_NEWFS) && fs_front) {
+		/* we'll need to return a handle, check if that's possible */
+		front = process_find_free_handle(process_current, 1);
+		if (front < 0) SYSCALL_RETURN(-1);
+	}
+
+	child = process_fork(process_current, flags);
 	regs_savereturn(&child->regs, 0);
+
+	if ((flags & FORK_NEWFS) && fs_front) {
+		struct vfs_backend *backend = kmalloc(sizeof *backend);
+
+		process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
+
+		backend->heap = true;
+		backend->is_user = true;
+		backend->potential_handlers = 1;
+		backend->refcount = 2; // child + handle
+		backend->user.handler = NULL;
+		backend->queue = NULL;
+
+		child->controlled = backend;
+
+		process_current->handles[front]->fs.backend = backend;
+
+		if (fs_front) {
+			/* failure ignored. if you pass an invalid pointer to this function,
+			 * you just don't receive the handle. you'll probably segfault
+			 * trying to access it anyways */
+			virt_cpy_to(process_current->pages, fs_front, &front, sizeof front);
+		}
+	}
 	SYSCALL_RETURN(1);
 }
 
@@ -179,32 +212,6 @@ int _syscall_close(handle_t hid) {
 	SYSCALL_RETURN(0);
 }
 
-handle_t _syscall_fs_fork2(void) {
-	struct vfs_backend *backend;
-	struct process *child;
-	handle_t front;
-
-	front = process_find_free_handle(process_current, 1);
-	if (front < 0) SYSCALL_RETURN(-1);
-	process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
-
-	backend = kmalloc(sizeof *backend);
-	backend->heap = true;
-	backend->is_user = true;
-	backend->potential_handlers = 1;
-	backend->refcount = 2; // child + handle
-	backend->user.handler = NULL;
-	backend->queue = NULL;
-
-	child = process_fork(process_current, 0);
-	if (child->controlled) vfs_backend_refdown(child->controlled);
-	child->controlled = backend;
-	regs_savereturn(&child->regs, 0);
-
-	process_current->handles[front]->fs.backend = backend;
-	SYSCALL_RETURN(front);
-}
-
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {
 	struct vfs_backend *backend = process_current->controlled;
 	if (!backend) SYSCALL_RETURN(-1);
@@ -267,7 +274,7 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_AWAIT:
 			return _syscall_await();
 		case _SYSCALL_FORK:
-			return _syscall_fork(a);
+			return _syscall_fork(a, (userptr_t)b);
 		case _SYSCALL_OPEN:
 			return _syscall_open((userptr_t)a, b);
 		case _SYSCALL_MOUNT:
@@ -278,8 +285,6 @@ int _syscall(int num, int a, int b, int c, int d) {
 			return _syscall_write(a, (userptr_t)b, c, d);
 		case _SYSCALL_CLOSE:
 			return _syscall_close(a);
-		case _SYSCALL_FS_FORK2:
-			return _syscall_fs_fork2();
 		case _SYSCALL_FS_WAIT:
 			return _syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
 		case _SYSCALL_FS_RESPOND:

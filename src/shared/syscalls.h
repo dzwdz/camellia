@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #define FORK_NOREAP 1
+#define FORK_NEWFS 2
 
 enum {
 	// idc about stable syscall numbers just yet
@@ -38,9 +39,13 @@ int _syscall_await(void);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.
+ *
+ * @param flags FORK_NOREAP, FORK_NEWFS
+ * @param fs_front requires FORK_NEWFS. the front handle to the new fs is put there
+ *
  * @return 0 in the child, a meaningless positive value in the parent.
  */
-int _syscall_fork(int flags);
+int _syscall_fork(int flags, handle_t __user *fs_front);
 
 handle_t _syscall_open(const char __user *path, int len);
 
@@ -48,8 +53,6 @@ int _syscall_mount(handle_t h, const char __user *path, int len);
 int _syscall_read(handle_t h, void __user *buf, size_t len, int offset);
 int _syscall_write(handle_t h, const void __user *buf, size_t len, int offset);
 int _syscall_close(handle_t h);
-
-handle_t _syscall_fs_fork2(void);
 
 struct fs_wait_response {
 	enum vfs_operation op;

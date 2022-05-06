@@ -44,7 +44,7 @@ struct process *process_seed(struct kmain_info *info) {
 
 struct process *process_fork(struct process *parent, int flags) {
 	struct process *child = kmalloc(sizeof *child);
-	memcpy(child, parent, sizeof *child);
+	memcpy(child, parent, sizeof *child); // TODO manually set fields
 
 	child->pages = pagedir_copy(parent->pages);
 	child->sibling = parent->child;
@@ -55,9 +55,13 @@ struct process *process_fork(struct process *parent, int flags) {
 
 	parent->handled_req = NULL; // TODO control this with a flag
 
-	if (child->controlled) {
-		child->controlled->potential_handlers++;
-		child->controlled->refcount++;
+	if ((flags & FORK_NEWFS) == 0) {
+		if (child->controlled) {
+			child->controlled->potential_handlers++;
+			child->controlled->refcount++;
+		}
+	} else {
+		child->controlled = NULL;
 	}
 
 	for (handle_t h = 0; h < HANDLE_MAX; h++) {

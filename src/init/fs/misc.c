@@ -6,9 +6,12 @@
 #include <stdbool.h>
 
 bool fork2_n_mount(const char *path) {
-	handle_t h = _syscall_fs_fork2();
-	if (h) _syscall_mount(h, path, strlen(path));
-	return h;
+	handle_t h;
+	if (_syscall_fork(FORK_NEWFS, &h) > 0) { /* parent */
+		_syscall_mount(h, path, strlen(path));
+		return true;
+	}
+	return false;
 }
 
 static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate, const char *og_buf) {
@@ -53,7 +56,7 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 
 	switch (res->op) {
 		case VFSOP_READ:
-			if (_syscall_fork(FORK_NOREAP)) {
+			if (_syscall_fork(FORK_NOREAP, NULL)) {
 				// handle reads in a child
 				// this is a HORRIBLE workaround for making concurrent IO work without proper delegates
 				break;

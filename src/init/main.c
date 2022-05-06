@@ -33,7 +33,7 @@ int main(void) {
 
 	file_close(&__stdout);
 
-	if (_syscall_fork(0)) {
+	if (_syscall_fork(0, NULL)) {
 		/* (used to) expose a bug in the kernel
 		 * the program will flow like this:
 		 * 1. we launch the forked init
@@ -50,7 +50,7 @@ int main(void) {
 		_syscall_exit(1);
 	}
 
-	if (!_syscall_fork(0)) {
+	if (!_syscall_fork(0, NULL)) {
 		if (file_open(&__stdout, "/com1") < 0 || file_open(&__stdin, "/com1") < 0)
 			_syscall_exit(1);
 
@@ -59,7 +59,7 @@ int main(void) {
 	}
 
 
-	if (!_syscall_fork(0)) {
+	if (!_syscall_fork(0, NULL)) {
 		if (file_open(&__stdout, "/vga_tty") < 0)
 			_syscall_exit(1);
 
