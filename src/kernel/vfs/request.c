@@ -40,9 +40,9 @@ void vfsreq_finish(struct vfs_request *req, int ret) {
 				panic_invalid_state(); // we check for free handles before the open() call
 
 			struct handle *backing = handle_init(HANDLE_FILE);
-			backing->file.backend = req->backend;
+			backing->backend = req->backend;
 			req->backend->refcount++;
-			backing->file.id = ret;
+			backing->file_id = ret;
 			req->caller->handles[handle] = backing;
 			ret = handle;
 		} else {

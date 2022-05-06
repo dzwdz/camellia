@@ -66,7 +66,7 @@ int _syscall_fork(int flags, handle_t __user *fs_front) {
 
 		child->controlled = backend;
 
-		process_current->handles[front]->fs.backend = backend;
+		process_current->handles[front]->backend = backend;
 
 		if (fs_front) {
 			/* failure ignored. if you pass an invalid pointer to this function,
@@ -144,7 +144,7 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 	if (hid >= 0) { // mounting a real backend?
 		struct handle *handle = process_handle_get(process_current, hid, HANDLE_FS_FRONT);
 		if (!handle) goto fail;
-		backend = handle->fs.backend;
+		backend = handle->backend;
 		backend->refcount++;
 	} // otherwise backend == NULL
 
@@ -178,10 +178,10 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 				.buf = (userptr_t) buf,
 				.len = len,
 			},
-			.id = handle->file.id,
+			.id = handle->file_id,
 			.offset = offset,
 			.caller = process_current,
-			.backend = handle->file.backend,
+			.backend = handle->backend,
 		});
 	return -1; // dummy
 }
@@ -195,10 +195,10 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 				.buf = (userptr_t) buf,
 				.len = len,
 			},
-			.id = handle->file.id,
+			.id = handle->file_id,
 			.offset = offset,
 			.caller = process_current,
-			.backend = handle->file.backend,
+			.backend = handle->backend,
 		});
 	return -1; // dummy
 }

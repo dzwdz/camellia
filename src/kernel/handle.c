@@ -16,21 +16,16 @@ void handle_close(struct handle *h) {
 	assert(h->refcount > 0);
 	if (--(h->refcount) > 0) return;
 
-	switch (h->type) {
-		case HANDLE_FILE:
-			vfsreq_create((struct vfs_request) {
-					.type = VFSOP_CLOSE,
-					.id = h->file.id,
-					.caller = NULL,
-					.backend = h->file.backend,
-				});
-			vfs_backend_refdown(h->file.backend);
-			break;
-		case HANDLE_FS_FRONT:
-			vfs_backend_refdown(h->fs.backend);
-			break;
-		case HANDLE_INVALID: panic_invalid_state();
+	if (h->type == HANDLE_FILE) {
+		vfsreq_create((struct vfs_request) {
+				.type = VFSOP_CLOSE,
+				.id = h->file_id,
+				.caller = NULL,
+				.backend = h->backend,
+			});
 	}
+
+	vfs_backend_refdown(h->backend);
 
 	// TODO sanity check to check if refcount is true. handle_sanity?
 

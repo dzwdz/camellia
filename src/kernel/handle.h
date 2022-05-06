@@ -15,16 +15,8 @@ enum handle_type {
 
 struct handle {
 	enum handle_type type;
-	union {
-		// TODO consolidate backend fields
-		struct {
-			struct vfs_backend *backend;
-			int id;
-		} file;
-		struct {
-			struct vfs_backend *backend;
-		} fs;
-	};
+	struct vfs_backend *backend;
+	int file_id; // only applicable to HANDLE_FILE
 
 	size_t refcount;
 };
