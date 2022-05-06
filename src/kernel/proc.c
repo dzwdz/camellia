@@ -91,15 +91,8 @@ void process_forget(struct process *p) {
 }
 
 void process_free(struct process *p) {
-	bool valid = false;
-	if (p->state == PS_DEADER) valid = true;
-	if (p->state == PS_DEAD && (!p->parent
-	                        ||   p->parent->state == PS_DEAD
-	                        ||   p->parent->state == PS_DEADER)) valid = true;
-	assert(valid);
-
-	while (p->child)
-		process_free(p->child);
+	assert(p->state == PS_DEAD);
+	assert(!p->child);
 
 	// also could be done on kill
 	vfs_mount_remref(p->mount);
@@ -130,8 +123,8 @@ _Noreturn void process_switch_any(void) {
 	struct process *found = process_find(PS_RUNNING);
 	if (found) process_switch(found);
 
-	if (process_first->state == PS_DEAD || process_first->state == PS_DEADER)
-		shutdown();
+	if (process_first->state == PS_DEAD)
+		shutdown(); // TODO not the place for this
 
 	cpu_pause();
 	process_switch_any();
@@ -199,14 +192,10 @@ void process_transition(struct process *p, enum process_state state) {
 	p->state = state;
 	switch (state) {
 		case PS_RUNNING:
-			assert(last != PS_DEAD && last != PS_DEADER);
+			assert(last != PS_DEAD);
 			break;
 		case PS_DEAD:
 			// see process_kill
-			break;
-		case PS_DEADER:
-			assert(last == PS_DEAD);
-			process_free(p);
 			break;
 		case PS_WAITS4CHILDDEATH:
 		case PS_WAITS4FS:
@@ -220,96 +209,70 @@ void process_transition(struct process *p, enum process_state state) {
 }
 
 void process_kill(struct process *p, int ret) {
-	if (p->state == PS_DEAD || p->state == PS_DEADER) return;
+	if (p->state != PS_DEAD) {
+		if (p->handled_req) {
+			vfsreq_finish(p->handled_req, -1);
+			p->handled_req = NULL;
+		}
 
-	if (p->handled_req) {
-		vfsreq_finish(p->handled_req, -1);
-		p->handled_req = NULL;
-	}
-	if (p->controlled) {
-		assert(p->controlled->potential_handlers > 0);
-		p->controlled->potential_handlers--;
-		if (p->controlled->potential_handlers == 0) {
-			// orphaned
-			struct vfs_request *q = p->controlled->queue;
-			while (q) {
-				struct vfs_request *q2 = q->queue_next;
-				vfsreq_finish(q, -1);
-				q = q2;
+		if (p->controlled) {
+			// TODO vfs_backend_user_handlerdown
+			assert(p->controlled->potential_handlers > 0);
+			p->controlled->potential_handlers--;
+			if (p->controlled->potential_handlers == 0) {
+				// orphaned
+				struct vfs_request *q = p->controlled->queue;
+				while (q) {
+					struct vfs_request *q2 = q->queue_next;
+					vfsreq_finish(q, -1);
+					q = q2;
+				}
+				p->controlled->queue = NULL;
 			}
-			p->controlled->queue = NULL;
+			if (p->controlled->user.handler == p) {
+				assert(p->state == PS_WAITS4REQUEST);
+				p->controlled->user.handler = NULL;
+			}
+
+			vfs_backend_refdown(p->controlled);
+			p->controlled = NULL;
 		}
-		if (p->controlled->user.handler == p) {
-			assert(p->state == PS_WAITS4REQUEST);
-			p->controlled->user.handler = NULL;
+
+		if (p->state == PS_WAITS4FS)
+			p->waits4fs.req->caller = NULL;
+
+		for (handle_t h = 0; h < HANDLE_MAX; h++)
+			handle_close(p->handles[h]);
+
+		process_transition(p, PS_DEAD);
+		p->death_msg = ret;
+
+		// TODO VULN unbounded recursion
+		struct process *c2;
+		for (struct process *c = p->child; c; c = c2) {
+			c2 = c->sibling;
+			process_kill(c, -1);
 		}
-
-		vfs_backend_refdown(p->controlled);
-		p->controlled = NULL;
 	}
 
-	// TODO VULN unbounded recursion
-	struct process *c2;
-	for (struct process *c = p->child; c; c = c2) {
-		c2 = c->sibling;
-		process_kill(c, -1);
-	}
-
-	struct vfs_request *req;
-	switch (p->state) {
-		case PS_RUNNING:
-		case PS_WAITS4CHILDDEATH:
-		case PS_WAITS4REQUEST:
-			break;
-
-		case PS_WAITS4FS:
-			// if the request wasn't accepted we could just remove this process from the queue
-			// eh
-			req = p->waits4fs.req;
-			req->caller = NULL;
-			// TODO test this
-			break;
-
-		case PS_DEAD:
-		case PS_DEADER:
-		case PS_LAST:
-			kprintf("process_kill unexpected state 0x%x\n", p->state);
-			panic_invalid_state();
-	}
-
-	for (handle_t h = 0; h < HANDLE_MAX; h++)
-		handle_close(p->handles[h]);
-	process_transition(p, PS_DEAD);
-	p->death_msg = ret;
+	assert(!p->child);
 	process_try2collect(p);
 }
 
 int process_try2collect(struct process *dead) {
 	struct process *parent = dead->parent;
-	int ret;
+	int ret = -1;
 
-	assert(dead->state == PS_DEAD);
+	assert(dead && dead->state == PS_DEAD);
 
-	if (!parent || dead->noreap) {
-		process_transition(dead, PS_DEADER);
-		return -1;
+	if (!dead->noreap && parent && parent->state != PS_DEAD) { // might be reaped
+		if (parent->state != PS_WAITS4CHILDDEATH) return -1;
+
+		ret = dead->death_msg;
+		regs_savereturn(&parent->regs, ret);
+		process_transition(parent, PS_RUNNING);
 	}
-	switch (parent->state) {
-		case PS_WAITS4CHILDDEATH:
-			ret = dead->death_msg;
-			regs_savereturn(&parent->regs, ret);
-			process_transition(parent, PS_RUNNING);
-			process_transition(dead, PS_DEADER);
 
-			return ret;
-
-		case PS_DEAD:
-		case PS_DEADER:
-			process_transition(dead, PS_DEADER);
-			return -1;
-
-		default:
-			return -1; // this return value isn't used anywhere
-			           // TODO enforce that, somehow? idk
-	}
+	process_free(dead);
+	return ret;
 }

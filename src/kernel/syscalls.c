@@ -23,10 +23,12 @@ int _syscall_await(void) {
 	// find any already dead children
 	for (struct process *iter = process_current->child;
 			iter; iter = iter->sibling) {
-		if (iter->state == PS_DEAD && !iter->noreap)
+		if (iter->state == PS_DEAD && !iter->noreap) {
+			assert(!iter->noreap);
 			SYSCALL_RETURN(process_try2collect(iter));
-		if (iter->state != PS_DEADER)
+		} else {
 			has_children = true;
+		}
 	}
 
 	if (!has_children) {
