@@ -113,9 +113,6 @@ _Noreturn void process_switch_any(void) {
 	struct process *found = process_find(PS_RUNNING);
 	if (found) process_switch(found);
 
-	if (process_first->state == PS_DEAD)
-		shutdown(); // TODO not the place for this
-
 	cpu_pause();
 	process_switch_any();
 }
@@ -253,6 +250,8 @@ void process_kill(struct process *p, int ret) {
 
 	assert(!p->child);
 	process_try2collect(p);
+
+	if (p == process_first) shutdown();
 }
 
 int process_try2collect(struct process *dead) {
