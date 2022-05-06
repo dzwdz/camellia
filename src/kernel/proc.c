@@ -44,36 +44,42 @@ struct process *process_seed(struct kmain_info *info) {
 
 struct process *process_fork(struct process *parent, int flags) {
 	struct process *child = kmalloc(sizeof *child);
-	memcpy(child, parent, sizeof *child); // TODO manually set fields
+	memset(child, 0, sizeof *child);
 
 	child->pages = pagedir_copy(parent->pages);
+	child->regs  = parent->regs;
+	child->state = parent->state;
+	assert(child->state == PS_RUNNING); // not copying the state union
+
+	child->noreap  = (flags & FORK_NOREAP) > 0;
+
 	child->sibling = parent->child;
 	child->child   = NULL;
 	child->parent  = parent;
 	parent->child  = child;
-	child->noreap  = (flags & FORK_NOREAP) > 0;
 
-	parent->handled_req = NULL; // TODO control this with a flag
+	child->id = next_pid++;
 
-	if ((flags & FORK_NEWFS) == 0) {
-		if (child->controlled) {
-			child->controlled->potential_handlers++;
-			child->controlled->refcount++;
-		}
-	} else {
-		child->controlled = NULL;
+	// TODO control this with a flag
+	child->handled_req  = parent->handled_req;
+	parent->handled_req = NULL;
+
+	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
+		// TODO would it be better to change the default to not sharing the controlled fs?
+		child->controlled = parent->controlled;
+		child->controlled->potential_handlers++;
+		child->controlled->refcount++;
 	}
 
-	for (handle_t h = 0; h < HANDLE_MAX; h++) {
-		if (child->handles[h])
-			child->handles[h]->refcount++;
-		// no overflow check - if you manage to get 2^32 references to a handle you have bigger problems
-	}
-
+	child->mount = parent->mount;
 	assert(child->mount);
 	child->mount->refs++;
 
-	child->id = next_pid++;
+	for (handle_t h = 0; h < HANDLE_MAX; h++) {
+		child->handles[h] = parent->handles[h];
+		if (child->handles[h])
+			child->handles[h]->refcount++;
+	}
 
 	return child;
 }
