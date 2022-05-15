@@ -39,15 +39,3 @@ static inline bool virt_cpy_from(struct pagedir *src_pages, // virtual -> physic
 		void *dest, const void __user *src, size_t length) {
 	return virt_cpy(NULL, (userptr_t)dest, src_pages, src, length);
 }
-
-/** Copies a chunk of virtual memory to a newly kmalloc'd buffer. */
-static inline void *virt_cpy2kmalloc(struct pagedir *src_pages,
-		const void __user *src, size_t length) {
-	void *buf = kmalloc(length);
-	if (virt_cpy_from(src_pages, buf, src, length)) {
-		return buf;
-	} else {
-		kfree(buf);
-		return NULL;
-	}
-}
