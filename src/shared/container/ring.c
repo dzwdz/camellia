@@ -21,14 +21,14 @@ void ring_put(ring_t *r, void *buf, size_t len) {
 
 void ring_put1b(ring_t *r, uint8_t byte) {
 	if (at_end(r)) return;
-	((uint8_t*)r->buf)[r->_head++] = byte;
+	r->buf[r->_head++] = byte;
 	if (r->_head >= r->capacity) r->_head = 0;
 }
 
 size_t ring_get(ring_t *r, void *buf, size_t len) {
 	for (size_t i = 0; i < len; i++) {
 		if (r->_head == r->_tail || at_end(r)) return i;
-		((uint8_t*)buf)[i] = ((uint8_t*)r->buf)[r->_tail++];
+		((uint8_t*)buf)[i] = r->buf[r->_tail++];
 		if (r->_tail >= r->capacity) r->_tail = 0;
 	}
 	return len;

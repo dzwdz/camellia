@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 typedef struct {
-	void *buf;
+	char *buf;
 	size_t capacity;
 	size_t _head, _tail;
 } ring_t;
