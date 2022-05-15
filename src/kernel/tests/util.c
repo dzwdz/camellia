@@ -32,11 +32,22 @@ TEST(strcmp) {
 }
 
 TEST(ring) {
-	char backbuf[16];
+	char backbuf[16], cmpbuf[16];
 	size_t num_read = 0, num_written = 0;
 	uint8_t c;
 
 	ring_t r = {backbuf, 16, 0, 0};
+
+	// test aliasing
+	for (size_t i = 0; i < 16; i++) {
+		TEST_COND(ring_size(&r) == 0);
+		ring_put(&r, "11 bytes...", 11);
+		TEST_COND(ring_size(&r) == 11);
+
+		memset(cmpbuf, 0, sizeof cmpbuf);
+		TEST_COND(ring_get(&r, cmpbuf, 16) == 11);
+		TEST_COND(memcmp(cmpbuf, "11 bytes...", 11) == 0);
+	}
 
 	TEST_COND(ring_size(&r) == 0);
 	for (size_t i = 0; i < 7; i++)
