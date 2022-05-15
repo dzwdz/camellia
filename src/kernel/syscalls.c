@@ -9,7 +9,10 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
-#define SYSCALL_RETURN(val) return regs_savereturn(&process_current->regs, val)
+#define SYSCALL_RETURN(val) do { \
+	assert(process_current->state == PS_RUNNING); \
+	return regs_savereturn(&process_current->regs, val); \
+} while (0)
 
 _Noreturn void _syscall_exit(int ret) {
 	process_kill(process_current, ret);
@@ -34,9 +37,9 @@ int _syscall_await(void) {
 	if (!has_children) {
 		process_transition(process_current, PS_RUNNING);
 		SYSCALL_RETURN(~0); // TODO errno
-	} else {
-		SYSCALL_RETURN(-1);
 	}
+
+	return -1; // dummy
 }
 
 int _syscall_fork(int flags, handle_t __user *fs_front) {
