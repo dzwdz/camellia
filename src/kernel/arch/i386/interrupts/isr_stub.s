@@ -2,19 +2,17 @@
 
 .global _isr_stubs
 _isr_stubs:
-.rept 256
-	pushal
-	call _isr_stage2
-	.align 8
-.endr
+	.set iter, 0
+	.rept 256
+		.byte 0xbb // starts a `mov ___, %ebx`, used as a pseudo-NOP
+		pushal
+		mov $iter, %al
+		nop
+	.set iter, iter + 1
+	.endr
 
 _isr_stage2:
 	cli
-
-	// convert the return address into the vector nr
-	pop %eax
-	add $-_isr_stubs, %eax
-	shr $3, %eax
 
 	// disable paging, if present
 	mov %cr0, %ebx
@@ -24,7 +22,10 @@ _isr_stage2:
 
 	mov %esp, %ebp
 	mov $_bss_end, %esp // switch to kernel stack
+
+	and $0xff, %eax
 	push %eax // push the vector nr
+
 	call isr_stage3
 
 	mov %ebp, %esp // switch back to isr_stack

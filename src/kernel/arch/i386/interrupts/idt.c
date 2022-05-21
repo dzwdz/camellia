@@ -35,7 +35,7 @@ static void idt_test(void);
 static void idt_prepare(void) {
 	uintptr_t offset;
 	for (int i = 0; i < 256; i++) {
-		offset = (uintptr_t) &_isr_stubs + i * 8;
+		offset = (uintptr_t) &_isr_stubs + i * 5 + 1;
 
 		IDT[i] = (struct idt_entry) {
 			.offset_low  = offset,
