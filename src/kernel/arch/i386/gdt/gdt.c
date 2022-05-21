@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+extern char _isr_stack_top;
 
 struct gdt_entry {
 	uint64_t limit_low  : 16;
@@ -37,7 +38,9 @@ struct lgdt_arg {
 	uint32_t base;
 } __attribute__((packed));
 
+__attribute__((section(".text.early")))
 static struct gdt_entry GDT[SEG_end];
+__attribute__((section(".text.early")))
 static struct tss_entry TSS;
 static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
 
@@ -80,7 +83,7 @@ static void gdt_prepare(void) {
 	// tss
 	memset(&TSS, 0, sizeof(TSS));
 	TSS.ss0 = SEG_r0data << 3; // kernel data segment
-	TSS.esp0 = (uintptr_t) &_bss_end;
+	TSS.esp0 = (uintptr_t) &_isr_stack_top;
 
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),

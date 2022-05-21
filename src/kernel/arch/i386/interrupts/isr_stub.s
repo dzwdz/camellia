@@ -1,4 +1,4 @@
-.section .text
+.section .text.early
 
 .global _isr_stubs
 _isr_stubs:
@@ -9,25 +9,34 @@ _isr_stubs:
 .endr
 
 _isr_stage2:
-	cld
+	cli
 
 	// convert the return address into the vector nr
 	pop %eax
 	add $-_isr_stubs, %eax
 	shr $3, %eax
 
-		// disable paging, if present
-		// it's done here so the stuff on the stack is in the right order
-		mov %cr0, %ebx
-		push %ebx
-		and $0x7FFFFFFF, %ebx
-		mov %ebx, %cr0
+	// disable paging, if present
+	mov %cr0, %ebx
+	push %ebx // push original cr0
+	and $0x7FFFFFFF, %ebx
+	mov %ebx, %cr0
 
-	push %eax       // push the vector nr
+	mov %esp, %ebp
+	mov $_bss_end, %esp // switch to kernel stack
+	push %eax // push the vector nr
 	call isr_stage3
-	add $4, %esp    // "pop" the vector nr
-	pop %eax        // restore old cr0
+
+	mov %ebp, %esp // switch back to isr_stack
+	pop %eax // restore old cr0
 	mov %eax, %cr0
 
 	popal
 	iret
+
+.align 8
+_ist_stack_btm:
+// TODO overflow check
+.skip 64 // seems to be enough
+.global _isr_stack_top
+_isr_stack_top:

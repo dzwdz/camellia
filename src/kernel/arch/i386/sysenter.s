@@ -8,26 +8,6 @@
 .set IA32_SYSENTER_EIP, 0x176
 
 .section .text
-.global _sysexit_real
-.type _sysexit_real, @function
-_sysexit_real:
-	mov $(SEG_r3data << 3 | 3), %ax
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-
-	// enable paging
-	mov %cr0, %eax
-	or $0x80000000, %eax
-	mov %eax, %cr0
-
-	// restore the registers
-	mov $_sysexit_regs, %esp
-	popal
-	sysexit
-
-
 .global sysenter_setup
 .type sysenter_setup, @function
 sysenter_setup:
@@ -38,7 +18,7 @@ sysenter_setup:
 	wrmsr
 
 	mov $IA32_SYSENTER_ESP, %ecx
-	mov $_bss_end, %eax
+	mov $0, %eax // unused
 	wrmsr
 
 	mov $IA32_SYSENTER_EIP, %ecx
@@ -46,6 +26,35 @@ sysenter_setup:
 	wrmsr
 
 	ret
+
+
+.section .text.early
+
+.global stored_eax
+stored_eax:
+.long 0
+
+.global _sysexit_real
+.type _sysexit_real, @function
+_sysexit_real:
+	mov $(SEG_r3data << 3 | 3), %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+
+	// restore the registers
+	mov $_sysexit_regs, %esp
+	popal
+
+	// enable paging
+	mov %eax, stored_eax
+	mov %cr0, %eax
+	or $0x80000000, %eax
+	mov %eax, %cr0
+	mov stored_eax, %eax
+
+	sysexit
 
 sysenter_stage1:
 	cli /* prevent random IRQs in the middle of kernel code */

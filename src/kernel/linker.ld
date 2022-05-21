@@ -2,10 +2,18 @@ ENTRY(_start)
 
 SECTIONS
 {
+	. = 0;
+	.text.early BLOCK(4K) : ALIGN(4K)
+	{
+		*(.multiboot)
+		*(.text.early)
+		_text_early_len = .;
+	}
+
 	. = 1M;
 	.text BLOCK(4K) : ALIGN(4K)
 	{
-		*(.multiboot)
+		_kern_start = .;
 		*(.text)
 	}
 	.rodata BLOCK(4K) : ALIGN(4K)

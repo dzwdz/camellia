@@ -253,6 +253,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	userptr_t goal = addr + len;
 	struct pagedir *pages = process_current->pages;
+	void *phys;
 
 	addr = (userptr_t)((int __force)addr & ~PAGE_MASK); // align to page boundary
 	for (; addr < goal; addr += PAGE_SIZE) {
@@ -261,13 +262,16 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 			continue;
 		}
 
+		phys = pagedir_virt2phys(pages, addr, false, false); 
+
 		if (!(flags & MEMFLAG_PRESENT)) {
-			page_free(pagedir_unmap(pages, addr), 1);
+			if (phys)
+				page_free(pagedir_unmap(pages, addr), 1);
 			continue;
 		}
 
-		if (!pagedir_virt2phys(pages, addr, false, false)) {
-			void *phys = page_alloc(1);
+		if (!phys) {
+			phys = page_alloc(1);
 			memset(phys, 0, PAGE_SIZE); // TODO somehow test this
 			pagedir_map(pages, addr, phys, true, true);
 		}
