@@ -266,8 +266,11 @@ int _syscall_memflag(void __user *addr, size_t len, int flags) {
 			continue;
 		}
 
-		if (!pagedir_virt2phys(pages, addr, false, false))
-			pagedir_map(pages, addr, page_alloc(1), true, true);
+		if (!pagedir_virt2phys(pages, addr, false, false)) {
+			void *phys = page_alloc(1);
+			memset(phys, 0, PAGE_SIZE); // TODO somehow test this
+			pagedir_map(pages, addr, phys, true, true);
+		}
 	}
 
 	SYSCALL_RETURN(-1);
