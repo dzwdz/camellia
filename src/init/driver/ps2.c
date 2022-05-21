@@ -1,4 +1,5 @@
 #include <init/driver/driver.h>
+#include <shared/container/ring.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
 
@@ -26,9 +27,8 @@ static const char keymap_upper[] = {
 };
 
 
-#define BACKLOG_CAPACITY 16
-static char backlog[BACKLOG_CAPACITY] = {};
-static size_t backlog_size = 0;
+static volatile uint8_t backlog_buf[16];
+static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
 static handle_t fd;
 
@@ -41,15 +41,13 @@ static void parse_scancode(uint8_t s) {
 	keys[s] = down;
 
 	char c = shift ? keymap_upper[s] : keymap_lower[s];
-
-	if (backlog_size >= BACKLOG_CAPACITY) return;
-	if (down && c)
-		backlog[backlog_size++] = c;
+	ring_put1b((void*)&backlog, c);
 }
 
 static void main_loop(void) {
 	static char buf[512];
 	struct fs_wait_response res;
+	int ret;
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
@@ -57,18 +55,15 @@ static void main_loop(void) {
 				break;
 
 			case VFSOP_READ:
-				while (backlog_size == 0) {
+				while (ring_size((void*)&backlog) == 0) {
 					/* read raw input until we have something to output */
 					int len = _syscall_read(fd, buf, sizeof buf, 0);
 					if (len == 0) break;
 					for (int i = 0; i < len; i++)
 						parse_scancode(buf[i]);
 				}
-				if (res.capacity > backlog_size)
-					res.capacity = backlog_size;
-				// TODO don't discard chars past what was read
-				backlog_size = 0;
-				_syscall_fs_respond(backlog, res.capacity);
+				ret = ring_get((void*)&backlog, buf, res.capacity);
+				_syscall_fs_respond(buf, ret);
 				break;
 
 			default:
