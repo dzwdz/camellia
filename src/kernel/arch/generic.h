@@ -30,8 +30,10 @@ struct pagedir *pagedir_new(void);
 struct pagedir *pagedir_copy(const struct pagedir *orig);
 
 void pagedir_free(struct pagedir *);
+void *pagedir_unmap(struct pagedir *dir, void __user *virt);
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable);
+bool pagedir_iskern(struct pagedir *, const void __user *virt);
 
 void pagedir_switch(struct pagedir *);
 

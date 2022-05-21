@@ -253,17 +253,21 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 int _syscall_memflag(void __user *addr, size_t len, int flags) {
 	userptr_t goal = addr + len;
 	struct pagedir *pages = process_current->pages;
-	if (flags != MEMFLAG_PRESENT) panic_unimplemented(); // TODO
 
 	addr = (userptr_t)((int __force)addr & ~PAGE_MASK); // align to page boundary
 	for (; addr < goal; addr += PAGE_SIZE) {
-		if (pagedir_virt2phys(pages, addr, false, false)) {
-			// allocated page, currently a no-op
-			// if you'll be changing this - remember to check if the pages are owned by the kernel!
-		} else {
-			// allocate the new pages
-			pagedir_map(pages, addr, page_alloc(1), true, true);
+		if (pagedir_iskern(pages, addr)) {
+			// TODO reflect failure in return value
+			continue;
 		}
+
+		if (!(flags & MEMFLAG_PRESENT)) {
+			page_free(pagedir_unmap(pages, addr), 1);
+			continue;
+		}
+
+		if (!pagedir_virt2phys(pages, addr, false, false))
+			pagedir_map(pages, addr, page_alloc(1), true, true);
 	}
 
 	SYSCALL_RETURN(-1);

@@ -1,5 +1,6 @@
 #include <init/stdlib.h>
 #include <init/tests/main.h>
+#include <shared/flags.h>
 #include <shared/syscalls.h>
 
 #define argify(str) str, sizeof(str) - 1
@@ -91,6 +92,23 @@ static void test_orphaned_fs(void) {
 	}
 }
 
+static void test_memflag(void) {
+	void *page = (void*)0x77777000;
+	_syscall_memflag(page, 4096, MEMFLAG_PRESENT); // allocate page
+	memset(page, 77, 4096); // write to it
+	_syscall_memflag(page, 4096, 0); // free it
+
+	if (!_syscall_fork(0, NULL)) {
+		memset(page, 11, 4096); // should segfault
+		_syscall_exit(0);
+	} else {
+		assert(_syscall_await() != 0); // test if the process crashed
+	}
+
+	_syscall_memflag((void*)0x100000, 4096, 0); // try to free kernel memory
+	// TODO the kernel shouldn't even be mapped in userland
+}
+
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
@@ -105,5 +123,6 @@ void test_all(void) {
 	run_forked(test_faults);
 	run_forked(test_interrupted_fs);
 	run_forked(test_orphaned_fs);
+	run_forked(test_memflag);
 	run_forked(stress_fork);
 }

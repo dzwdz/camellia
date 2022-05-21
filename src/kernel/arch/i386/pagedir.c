@@ -68,6 +68,25 @@ void pagedir_free(struct pagedir *dir) {
 	page_free(dir, 1);
 }
 
+static struct pagetable_entry*
+get_entry(struct pagedir *dir, const void __user *virt) {
+	uint32_t pd_idx = ((uintptr_t)virt) >> 22;
+	uint32_t pt_idx = ((uintptr_t)virt) >> 12 & 0x03FF;
+	struct pagetable_entry *pagetable;
+
+	if (!dir->e[pd_idx].present) return NULL;
+
+	pagetable = (void*)(dir->e[pd_idx].address << 11);
+	return &pagetable[pt_idx];
+}
+
+void *pagedir_unmap(struct pagedir *dir, void __user *virt) {
+	void *phys = pagedir_virt2phys(dir, virt, false, false);
+	struct pagetable_entry *page = get_entry(dir, virt);
+	page->present = false;
+	return phys;
+}
+
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable)
 {
@@ -146,29 +165,22 @@ struct pagedir *pagedir_copy(const struct pagedir *orig) {
 	return clone;
 }
 
+bool pagedir_iskern(struct pagedir *dir, const void __user *virt) {
+	struct pagetable_entry *page = get_entry(dir, virt);
+	return page && page->present && !page->user;
+}
+
 void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
                         bool user, bool writeable)
 {
-	uintptr_t virt_cast = (uintptr_t) virt;
+	struct pagetable_entry *page;
 	uintptr_t phys;
-	uint32_t pd_idx = virt_cast >> 22;
-	uint32_t pt_idx = virt_cast >> 12 & 0x03FF;
-	struct pagetable_entry *pagetable, page;
+	page = get_entry(dir, virt);
+	if (!page || !page->present) return NULL;
+	if (user && !page->user) return NULL;
+	if (writeable && !page->writeable) return NULL;
 
-	/* DOESN'T CHECK PERMISSIONS ON PAGE DIRS, TODO
-	 * while i don't currently see a reason to set permissions
-	 * directly on page dirs, i might see one in the future.
-	 * leaving this as-is would be a security bug */
-	if (!dir->e[pd_idx].present) return NULL;
-
-	pagetable = (void*)(dir->e[pd_idx].address << 11);
-	page      = pagetable[pt_idx];
-
-	if (!page.present)                return NULL;
-	if (user      && !page.user)      return NULL;
-	if (writeable && !page.writeable) return NULL;
-
-	phys  = page.address << 11;
-	phys |= virt_cast & 0xFFF;
+	phys  = page->address << 11;
+	phys |= ((uintptr_t)virt) & 0xFFF;
 	return (void*)phys;
 }
