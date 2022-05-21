@@ -23,8 +23,8 @@ struct pagetable_entry {
 
 struct pagedir_entry {
 	uint32_t present   : 1;
-	uint32_t writeable : 1;
-	uint32_t user      : 1;
+	uint32_t _writeable: 1; // don't use! not checked by multiple functions here
+	uint32_t _user     : 1; // ^
 	uint32_t writethru : 1;
 	uint32_t uncached  : 1;
 	uint32_t accessed  : 1;
@@ -53,7 +53,6 @@ void pagedir_free(struct pagedir *dir) {
 
 	for (int i = 0; i < 1024; i++) {
 		if (!dir->e[i].present) continue;
-		if (!dir->e[i].user)    continue;
 
 		pt = (void*)(dir->e[i].address << 11);
 
@@ -86,8 +85,8 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 
 		dir->e[pd_idx] = (struct pagedir_entry) {
 			.present   = 1,
-			.writeable = 1,
-			.user      = 1,
+			._writeable= 1,
+			._user     = 1,
 			.writethru = 1,
 			.uncached  = 0,
 			.accessed  = 0,
@@ -125,7 +124,6 @@ struct pagedir *pagedir_copy(const struct pagedir *orig) {
 	for (int i = 0; i < 1024; i++) {
 		clone->e[i] = orig->e[i];
 		if (!orig->e[i].present) continue;
-		if (!orig->e[i].user)    continue; // not really needed
 
 		orig_pt = (void*)(orig->e[i].address << 11);
 		clone_pt = page_alloc(1);
