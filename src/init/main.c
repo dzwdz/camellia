@@ -8,9 +8,6 @@
 #include <shared/syscalls.h>
 #include <stdint.h>
 
-// TODO move to shared header file
-#define argify(str) str, sizeof(str) - 1
-
 extern char _bss_start; // provided by the linker
 extern char _bss_end;
 extern char _initrd;
