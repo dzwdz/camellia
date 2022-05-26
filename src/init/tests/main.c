@@ -109,6 +109,26 @@ static void test_memflag(void) {
 	// TODO the kernel shouldn't even be mapped in userland
 }
 
+static void test_malloc(void) {
+	// not really a test
+	void *p1, *p2, *p3;
+
+	p1 = malloc(420);
+	printf("p1 = 0x%x\n", p1);
+
+	p2 = malloc(1024);
+	printf("p2 = 0x%x\n", p2);
+	free(p2);
+	p2 = malloc(256);
+	printf("p2 = 0x%x\n", p2);
+	free(p2);
+	p2 = malloc(4096);
+	printf("p2 = 0x%x\n", p2);
+	free(p2);
+
+	free(p1);
+}
+
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
@@ -124,5 +144,6 @@ void test_all(void) {
 	run_forked(test_interrupted_fs);
 	run_forked(test_orphaned_fs);
 	run_forked(test_memflag);
-	run_forked(stress_fork);
+	run_forked(test_malloc);
+//	run_forked(stress_fork);
 }

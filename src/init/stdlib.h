@@ -1,4 +1,5 @@
 #pragma once
+#include <init/malloc.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 #include <stddef.h>
