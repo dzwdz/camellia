@@ -292,29 +292,42 @@ int _syscall(int num, int a, int b, int c, int d) {
 	switch (num) {
 		case _SYSCALL_EXIT:
 			_syscall_exit(a);
+			// _syscall_exit doesn't exit
 		case _SYSCALL_AWAIT:
-			return _syscall_await();
+			_syscall_await();
+			break;
 		case _SYSCALL_FORK:
-			return _syscall_fork(a, (userptr_t)b);
+			_syscall_fork(a, (userptr_t)b);
+			break;
 		case _SYSCALL_OPEN:
-			return _syscall_open((userptr_t)a, b);
+			_syscall_open((userptr_t)a, b);
+			break;
 		case _SYSCALL_MOUNT:
-			return _syscall_mount(a, (userptr_t)b, c);
+			_syscall_mount(a, (userptr_t)b, c);
+			break;
 		case _SYSCALL_READ:
-			return _syscall_read(a, (userptr_t)b, c, d);
+			_syscall_read(a, (userptr_t)b, c, d);
+			break;
 		case _SYSCALL_WRITE:
-			return _syscall_write(a, (userptr_t)b, c, d);
+			_syscall_write(a, (userptr_t)b, c, d);
+			break;
 		case _SYSCALL_CLOSE:
-			return _syscall_close(a);
+			_syscall_close(a);
+			break;
 		case _SYSCALL_FS_WAIT:
-			return _syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
+			_syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
+			break;
 		case _SYSCALL_FS_RESPOND:
-			return _syscall_fs_respond((userptr_t)a, b);
+			_syscall_fs_respond((userptr_t)a, b);
+			break;
 		case _SYSCALL_MEMFLAG:
 			_syscall_memflag((userptr_t)a, b, c);
-			return -1; // unused anyways
+			break;
 		default:
 			kprintf("unknown syscall ");
 			panic_unimplemented(); // TODO fail gracefully
 	}
+
+	/* return value is unused. execution continues in sysenter_stage2 */
+	return -1;
 }
