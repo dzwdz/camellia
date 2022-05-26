@@ -35,6 +35,8 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable);
 bool pagedir_iskern(struct pagedir *, const void __user *virt);
 
+void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t len);
+
 void pagedir_switch(struct pagedir *);
 
 // return 0 on failure

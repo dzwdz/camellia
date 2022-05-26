@@ -105,13 +105,25 @@ static void test_memflag(void) {
 		assert(_syscall_await() != 0); // test if the process crashed
 	}
 
-	_syscall_memflag((void*)0x100000, 4096, 0); // try to free kernel memory
-	// TODO the kernel shouldn't even be mapped in userland
+	char *pages[4];
+	for (size_t i = 0; i < 4; i++) {
+		pages[i] = _syscall_memflag(NULL, 4096, MEMFLAG_FINDFREE);
+		printf("[test_memflag] findfree: 0x%x\n", pages[i]);
+
+		assert(pages[i] == _syscall_memflag(NULL, 4096, MEMFLAG_FINDFREE | MEMFLAG_PRESENT));
+		if (i > 0) assert(pages[i] != pages[i-1]);
+		*pages[i] = 0x77;
+	}
+
+	for (size_t i = 0; i < 4; i++)
+		_syscall_memflag(pages, 4096, MEMFLAG_PRESENT);
+
+	// TODO check if reclaims
 }
 
 static void test_malloc(void) {
 	// not really a test
-	void *p1, *p2, *p3;
+	void *p1, *p2;
 
 	p1 = malloc(420);
 	printf("p1 = 0x%x\n", p1);
@@ -145,5 +157,5 @@ void test_all(void) {
 	run_forked(test_orphaned_fs);
 	run_forked(test_memflag);
 	run_forked(test_malloc);
-//	run_forked(stress_fork);
+	run_forked(stress_fork);
 }

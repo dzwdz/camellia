@@ -250,34 +250,42 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 	SYSCALL_RETURN(0);
 }
 
-int _syscall_memflag(void __user *addr, size_t len, int flags) {
-	userptr_t goal = addr + len;
+void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	struct pagedir *pages = process_current->pages;
 	void *phys;
-
 	addr = (userptr_t)((int __force)addr & ~PAGE_MASK); // align to page boundary
-	for (; addr < goal; addr += PAGE_SIZE) {
-		if (pagedir_iskern(pages, addr)) {
+
+	if (flags & MEMFLAG_FINDFREE) {
+		addr = pagedir_findfree(pages, addr, len);
+		if (!(flags & MEMFLAG_PRESENT)) goto ret;
+	}
+
+
+	for (userptr_t iter = addr; iter < addr + len; iter += PAGE_SIZE) {
+		if (pagedir_iskern(pages, iter)) {
 			// TODO reflect failure in return value
 			continue;
 		}
 
-		phys = pagedir_virt2phys(pages, addr, false, false); 
+		phys = pagedir_virt2phys(pages, iter, false, false); 
 
 		if (!(flags & MEMFLAG_PRESENT)) {
 			if (phys)
-				page_free(pagedir_unmap(pages, addr), 1);
+				page_free(pagedir_unmap(pages, iter), 1);
 			continue;
 		}
 
 		if (!phys) {
 			phys = page_alloc(1);
 			memset(phys, 0, PAGE_SIZE); // TODO somehow test this
-			pagedir_map(pages, addr, phys, true, true);
+			pagedir_map(pages, iter, phys, true, true);
 		}
 	}
 
-	SYSCALL_RETURN(-1);
+ret: // the macro is too stupid to handle returning pointers
+	assert(process_current->state == PS_RUNNING); // TODO move to regs_savereturn
+	regs_savereturn(&process_current->regs, (uintptr_t)addr);
+	return addr;
 }
 
 int _syscall(int num, int a, int b, int c, int d) {
@@ -303,7 +311,8 @@ int _syscall(int num, int a, int b, int c, int d) {
 		case _SYSCALL_FS_RESPOND:
 			return _syscall_fs_respond((userptr_t)a, b);
 		case _SYSCALL_MEMFLAG:
-			return _syscall_memflag((userptr_t)a, b, c);
+			_syscall_memflag((userptr_t)a, b, c);
+			return -1; // unused anyways
 		default:
 			kprintf("unknown syscall ");
 			panic_unimplemented(); // TODO fail gracefully

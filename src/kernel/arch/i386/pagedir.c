@@ -184,3 +184,23 @@ void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
 	phys |= ((uintptr_t)virt) & 0xFFF;
 	return (void*)phys;
 }
+
+void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t len) {
+	struct pagetable_entry *page;
+	char __user *iter;
+	start = (userptr_t)(((uintptr_t __force)start + PAGE_MASK) & ~PAGE_MASK); // round up to next page
+	iter = start;
+
+	while (iter < (char __user *)0xFFF00000) { // TODO better boundary
+		page = get_entry(dir, iter);
+		if (page && page->present) {
+			start = iter + PAGE_SIZE;
+		} else {
+			if ((size_t)(iter + PAGE_SIZE - start) >= len)
+				return start;
+		}
+		iter += PAGE_SIZE;
+	}
+
+	return NULL;
+}

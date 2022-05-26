@@ -66,4 +66,13 @@ struct fs_wait_response {
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res);
 int _syscall_fs_respond(char __user *buf, int ret);
 
-int _syscall_memflag(void __user *addr, size_t len, int flags);
+/** Modifies the virtual address space.
+ *
+ * If the MEMFLAG_PRESENT flag is present - mark the memory region as allocated.
+ * Otherwise, free it.
+ *
+ * MEMFLAG_FINDFREE tries to find the first free region of length `len`.
+ *
+ * @return address of the first affected page (usually == addr)
+ */
+void __user *_syscall_memflag(void __user *addr, size_t len, int flags);

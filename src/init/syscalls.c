@@ -46,7 +46,7 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 	return _syscall(_SYSCALL_FS_RESPOND, (int)buf, ret, 0, 0);
 }
 
-int _syscall_memflag(void __user *addr, size_t len, int flags) {
+void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	return _syscall(_SYSCALL_MEMFLAG, (int)addr, (int)len, flags, 0);
 }
 
