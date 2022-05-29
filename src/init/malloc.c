@@ -47,12 +47,8 @@ void free(void *ptr) {
 }
 
 static struct mblock *expand(size_t size) {
-	size = (size + 4095) & ~4095; // round up to nearest page
-
-	static void *start = (void*)0x80000000; // TODO workaround for unimplemented feature
-	_syscall_memflag(start, size, MEMFLAG_PRESENT);
-	struct mblock *block = start;
-	start += size;
+	struct mblock *block = _syscall_memflag(0, size, MEMFLAG_PRESENT | MEMFLAG_FINDFREE);
+	if (!block) return NULL;
 
 	block->magic = MBLOCK_MAGIC;
 	block->length = size;
