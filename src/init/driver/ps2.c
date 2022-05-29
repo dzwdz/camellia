@@ -41,7 +41,7 @@ static void parse_scancode(uint8_t s) {
 	keys[s] = down;
 
 	char c = shift ? keymap_upper[s] : keymap_lower[s];
-	ring_put1b((void*)&backlog, c);
+	if (down) ring_put1b((void*)&backlog, c);
 }
 
 static void main_loop(void) {
