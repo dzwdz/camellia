@@ -23,11 +23,11 @@ _isr_stage2:
 	mov %ebx, %cr0
 
 	mov %esp, %ebp
-	mov $_bss_end, %esp // switch to kernel stack
+	mov $_isr_big_stack, %esp
 	push %eax // push the vector nr
 	call isr_stage3
 
-	mov %ebp, %esp // switch back to isr_stack
+	mov %ebp, %esp
 	pop %eax // restore old cr0
 	mov %eax, %cr0
 
@@ -35,8 +35,7 @@ _isr_stage2:
 	iret
 
 .align 8
-_ist_stack_btm:
 // TODO overflow check
 .skip 64 // seems to be enough
-.global _isr_stack_top
-_isr_stack_top:
+.global _isr_mini_stack
+_isr_mini_stack:

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern char _isr_stack_top;
+extern char _isr_mini_stack;
 
 struct gdt_entry {
 	uint64_t limit_low  : 16;
@@ -83,7 +83,7 @@ static void gdt_prepare(void) {
 	// tss
 	memset(&TSS, 0, sizeof(TSS));
 	TSS.ss0 = SEG_r0data << 3; // kernel data segment
-	TSS.esp0 = (uintptr_t) &_isr_stack_top;
+	TSS.esp0 = (uintptr_t) &_isr_mini_stack;
 
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),
