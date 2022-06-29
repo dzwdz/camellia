@@ -23,6 +23,7 @@ int main(void) {
 	printf("preinit\n");
 
 	MOUNT("/init/", tar_driver(&_initrd));
+	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
 

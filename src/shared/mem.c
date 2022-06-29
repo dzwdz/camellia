@@ -1,6 +1,15 @@
 #include <shared/mem.h>
 #include <stdint.h>
 
+void *memchr(const void *s, int c, size_t n) {
+	const unsigned char *s2 = s;
+	for (size_t i = 0; i < n; i++) {
+		if (s2[i] == (unsigned char)c)
+			return &s2[i];
+	}
+	return NULL;
+}
+
 int memcmp(const void *s1, const void *s2, size_t n) {
 	const unsigned char *c1 = s1, *c2 = s2;
 	for (size_t i = 0; i < n; i++) {

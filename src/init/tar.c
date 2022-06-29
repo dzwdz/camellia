@@ -55,6 +55,7 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 
 	ptr = tar_find(path, len, base, base_len);
 	if (!ptr) return -1;
+	// TODO this won't work if ptr > 0x80000000
 	return (int)ptr;
 }
 

@@ -2,3 +2,4 @@
 
 void ansiterm_drv(void);
 void ps2_drv(void);
+void tmpfs_drv(void);
