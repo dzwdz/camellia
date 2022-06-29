@@ -74,7 +74,7 @@ static void test_interrupted_fs(void) {
 		_syscall_exit(0);
 	} else { /* parent */
 		_syscall_mount(h, "/", 1);
-		int ret = _syscall_open("/", 1);
+		int ret = _syscall_open("/", 1, 0);
 		// the handler quits while handling that call - but this syscall should return anyways
 		_syscall_exit(ret < 0 ? 0 : -1);
 	}
@@ -86,7 +86,7 @@ static void test_orphaned_fs(void) {
 		_syscall_exit(0);
 	} else { /* parent */
 		_syscall_mount(h, "/", 1);
-		int ret = _syscall_open("/", 1);
+		int ret = _syscall_open("/", 1, 0);
 		// no handler will ever be available to handle this call - the syscall should instantly return
 		_syscall_exit(ret < 0 ? 0 : -1);
 	}

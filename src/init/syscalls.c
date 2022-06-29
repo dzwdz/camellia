@@ -18,8 +18,8 @@ int _syscall_fork(int flags, handle_t __user *fs_front) {
 	return _syscall(_SYSCALL_FORK, flags, (int)fs_front, 0, 0);
 }
 
-handle_t _syscall_open(const char __user *path, int len) {
-	return _syscall(_SYSCALL_OPEN, (int)path, len, 0, 0);
+handle_t _syscall_open(const char __user *path, int len, int flags) {
+	return _syscall(_SYSCALL_OPEN, (int)path, len, flags, 0);
 }
 
 int _syscall_mount(handle_t h, const char __user *path, int len) {

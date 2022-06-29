@@ -18,10 +18,10 @@ int printf(const char *fmt, ...) {
 	return ret;
 }
 
-int file_open(libc_file *f, const char *path) {
+int file_open(libc_file *f, const char *path, int flags) {
 	f->pos = 0;
 	f->eof = false;
-	f->fd = _syscall_open(path, strlen(path));
+	f->fd = _syscall_open(path, strlen(path), flags);
 	if (f->fd < 0) return f->fd;
 	return 0;
 }

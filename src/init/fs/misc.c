@@ -105,10 +105,10 @@ void fs_passthru(const char *prefix) {
 						memcpy(tmp, buf, res.len);
 						memcpy(buf, prefix, prefix_len);
 						memcpy(buf + prefix_len, tmp, res.len);
-						ret = _syscall_open(buf, res.len + prefix_len);
+						ret = _syscall_open(buf, res.len + prefix_len, res.flags);
 					} else ret = -1;
 				} else {
-					ret = _syscall_open(buf, res.len);
+					ret = _syscall_open(buf, res.len, res.flags);
 				}
 				_syscall_fs_respond(NULL, ret);
 				break;
@@ -147,7 +147,7 @@ void fs_dir_inject(const char *path) {
 				}
 				if (hid < 0) _syscall_fs_respond(NULL, -2); // we ran out of handles
 
-				ret = _syscall_open(buf, res.len); /* errors handled in inject handler */
+				ret = _syscall_open(buf, res.len, res.flags); /* errors handled in inject handler */
 				handles[hid].delegate = ret;
 				handles[hid].inject = NULL;
 				handles[hid].taken = true;
@@ -155,9 +155,12 @@ void fs_dir_inject(const char *path) {
 				if (buf[res.len - 1] == '/' &&
 						res.len < path_len && !memcmp(path, buf, res.len)) {
 					handles[hid].inject = path + res.len;
+
+					/* if we're making up the opened directory, disallow create */
+					if (ret < 0 && (res.flags & OPEN_CREATE)) hid = ret;
 				} else {
 					/* not injecting, don't allow opening nonexistent stuff */
-					if (ret < 0) _syscall_fs_respond(NULL, ret);
+					if (ret < 0) hid = ret;
 				}
 				_syscall_fs_respond(NULL, hid);
 				break;

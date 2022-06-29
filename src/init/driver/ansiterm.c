@@ -56,7 +56,7 @@ static void in_char(char c) {
 }
 
 void ansiterm_drv(void) {
-	vga_fd = _syscall_open("/vga", 4);
+	vga_fd = _syscall_open("/vga", 4, 0);
 	_syscall_read(vga_fd, vga, sizeof vga, 0);
 
 	// find first empty line
@@ -78,6 +78,10 @@ void ansiterm_drv(void) {
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
+				if (res.flags & OPEN_CREATE) {
+					_syscall_fs_respond(NULL, -1);
+					break;
+				}
 				// TODO check path
 				_syscall_fs_respond(NULL, 1);
 				break;

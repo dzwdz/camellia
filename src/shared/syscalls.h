@@ -4,6 +4,7 @@
 
 #define FORK_NOREAP 1
 #define FORK_NEWFS 2
+#define OPEN_CREATE 1
 
 enum {
 	// idc about stable syscall numbers just yet
@@ -47,7 +48,7 @@ int _syscall_await(void);
  */
 int _syscall_fork(int flags, handle_t __user *fs_front);
 
-handle_t _syscall_open(const char __user *path, int len);
+handle_t _syscall_open(const char __user *path, int len, int flags);
 
 int _syscall_mount(handle_t h, const char __user *path, int len);
 int _syscall_read(handle_t h, void __user *buf, size_t len, int offset);
@@ -60,6 +61,7 @@ struct fs_wait_response {
 	size_t capacity; // how much output can be accepted by the caller
 	int id;  // file id (returned by the open handler, passed to other calls)
 	int offset;
+	int flags;
 };
 /** Blocks until an fs request is made.
  * @return 0 if everything was successful */

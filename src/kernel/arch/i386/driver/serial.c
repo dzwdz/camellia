@@ -69,10 +69,11 @@ void serial_write(const char *buf, size_t len) {
 static void accept(struct vfs_request *req) {
 	static char buf[32];
 	int ret;
+	bool valid;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			ret = req->input.len == 0 ? 0 : -1;
-			vfsreq_finish(req, 0);
+			valid = req->input.len == 0 && !(req->flags & OPEN_CREATE);
+			vfsreq_finish(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:
 			if (ring_size((void*)&backlog) == 0) {

@@ -63,7 +63,7 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		}
 	}
 
-	if (file_open(&file, buf) < 0) {
+	if (file_open(&file, buf, 0) < 0) {
 		printf("couldn't open.\n");
 		return;
 	}
@@ -85,7 +85,7 @@ static void cmd_hexdump(const char *args) {
 	static uint8_t buf[512];
 	int fd, len;
 
-	fd = _syscall_open(args, strlen(args));
+	fd = _syscall_open(args, strlen(args), 0);
 	if (fd < 0) {
 		printf("couldn't open.\n");
 		return;
@@ -110,6 +110,15 @@ static void cmd_hexdump(const char *args) {
 		printf("|\n");
 	}
 
+	_syscall_close(fd);
+}
+
+static void cmd_touch(const char *args) {
+	int fd = _syscall_open(args, strlen(args), OPEN_CREATE);
+	if (fd < 0) {
+		printf("couldn't create file.\n");
+		return;
+	}
 	_syscall_close(fd);
 }
 
@@ -140,6 +149,8 @@ void shell_loop(void) {
 				cmd_cat_ls(files[i], false);
 				printf("\n");
 			}
+		} else if (!strcmp(cmd, "touch")) {
+			cmd_touch(args);
 		} else if (!strcmp(cmd, "shadow")) {
 			_syscall_mount(-1, args, strlen(args));
 		} else if (!strcmp(cmd, "exit")) {

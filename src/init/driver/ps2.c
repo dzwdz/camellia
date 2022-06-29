@@ -51,6 +51,10 @@ static void main_loop(void) {
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
+				if (res.flags & OPEN_CREATE) {
+					_syscall_fs_respond(NULL, -1);
+					break;
+				}
 				_syscall_fs_respond(NULL, 1);
 				break;
 
@@ -74,7 +78,7 @@ static void main_loop(void) {
 }
 
 void ps2_drv(void) {
-	fd = _syscall_open("/ps2", 4);
+	fd = _syscall_open("/ps2", 4, 0);
 	if (fd < 0) _syscall_exit(1);
 
 	main_loop();

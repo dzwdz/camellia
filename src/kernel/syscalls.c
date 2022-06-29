@@ -79,7 +79,7 @@ int _syscall_fork(int flags, handle_t __user *fs_front) {
 	SYSCALL_RETURN(1);
 }
 
-handle_t _syscall_open(const char __user *path, int len) {
+handle_t _syscall_open(const char __user *path, int len, int flags) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
@@ -114,6 +114,7 @@ handle_t _syscall_open(const char __user *path, int len) {
 			},
 			.caller = process_current,
 			.backend = mount->backend,
+			.flags = flags,
 		});
 	return -1; // dummy
 fail:
@@ -300,7 +301,7 @@ int _syscall(int num, int a, int b, int c, int d) {
 			_syscall_fork(a, (userptr_t)b);
 			break;
 		case _SYSCALL_OPEN:
-			_syscall_open((userptr_t)a, b);
+			_syscall_open((userptr_t)a, b, c);
 			break;
 		case _SYSCALL_MOUNT:
 			_syscall_mount(a, (userptr_t)b, c);

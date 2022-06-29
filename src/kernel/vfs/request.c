@@ -113,6 +113,7 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 	res.capacity = req->output.len;
 	res.id       = req->id;
 	res.offset   = req->offset;
+	res.flags    = req->flags;
 	res.op       = req->type;
 
 	if (!virt_cpy_to(handler->pages,

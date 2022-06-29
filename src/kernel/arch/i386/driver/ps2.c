@@ -31,10 +31,11 @@ static void accept(struct vfs_request *req) {
 	// when you fix something here go also fix it in the COM1 driver
 	static uint8_t buf[32]; // pretty damn stupid
 	int ret;
+	bool valid;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			ret = req->input.len == 0 ? 0 : -1;
-			vfsreq_finish(req, 0);
+			valid = req->input.len == 0 && !(req->flags & OPEN_CREATE);
+			vfsreq_finish(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:
 			if (ring_size((void*)&backlog) == 0) {

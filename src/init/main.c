@@ -19,7 +19,7 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	file_open(&__stdout, "/com1");
+	file_open(&__stdout, "/com1", 0);
 	printf("preinit\n");
 
 	MOUNT("/init/", tar_driver(&_initrd));
@@ -48,7 +48,7 @@ int main(void) {
 	}
 
 	if (!_syscall_fork(0, NULL)) {
-		if (file_open(&__stdout, "/com1") < 0 || file_open(&__stdin, "/com1") < 0)
+		if (file_open(&__stdout, "/com1", 0) < 0 || file_open(&__stdin, "/com1", 0) < 0)
 			_syscall_exit(1);
 
 		shell_loop();
@@ -57,10 +57,10 @@ int main(void) {
 
 
 	if (!_syscall_fork(0, NULL)) {
-		if (file_open(&__stdout, "/vga_tty") < 0)
+		if (file_open(&__stdout, "/vga_tty", 0) < 0)
 			_syscall_exit(1);
 
-		if (file_open(&__stdin, "/keyboard") < 0) {
+		if (file_open(&__stdin, "/keyboard", 0) < 0) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
@@ -71,8 +71,8 @@ int main(void) {
 
 
 	// try to find any working output
-	if (file_open(&__stdout, "/com1") < 0)
-		file_open(&__stdout, "/vga_tty");
+	if (file_open(&__stdout, "/com1", 0) < 0)
+		file_open(&__stdout, "/vga_tty", 0);
 
 	_syscall_await();
 	printf("init: quitting\n");
