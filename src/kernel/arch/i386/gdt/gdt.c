@@ -38,9 +38,9 @@ struct lgdt_arg {
 	uint32_t base;
 } __attribute__((packed));
 
-__attribute__((section(".text.early")))
+__attribute__((section(".shared")))
 static struct gdt_entry GDT[SEG_end];
-__attribute__((section(".text.early")))
+__attribute__((section(".shared")))
 static struct tss_entry TSS;
 static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
 

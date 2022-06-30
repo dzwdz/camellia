@@ -23,7 +23,7 @@ struct lidt_arg {
 	uint32_t base;
 } __attribute__((packed));
 
-__attribute__((section(".text.early")))
+__attribute__((section(".shared")))
 static struct idt_entry IDT[256];
 static struct lidt_arg lidt_arg;
 

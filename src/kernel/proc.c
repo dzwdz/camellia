@@ -26,9 +26,9 @@ struct process *process_seed(struct kmain_info *info) {
 	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
 	process_first->regs.esp = (userptr_t) ~0xF;
 
-	// map .text.early
-	extern char _text_early_len;
-	for (size_t p = 0; p < (size_t)&_text_early_len; p += PAGE_SIZE)
+	// map .shared
+	extern char _shared_len;
+	for (size_t p = 0; p < (size_t)&_shared_len; p += PAGE_SIZE)
 		pagedir_map(process_first->pages, (userptr_t)p, (void*)p, false, true);
 
 	// map the init module as rw

@@ -28,7 +28,7 @@ sysenter_setup:
 	ret
 
 
-.section .text.early
+.section .shared
 
 .global stored_eax
 stored_eax:

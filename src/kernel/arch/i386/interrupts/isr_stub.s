@@ -1,4 +1,4 @@
-.section .text.early
+.section .shared
 
 .global _isr_stubs
 _isr_stubs:

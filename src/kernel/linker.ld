@@ -3,11 +3,11 @@ ENTRY(_start)
 SECTIONS
 {
 	. = 0;
-	.text.early BLOCK(4K) : ALIGN(4K)
+	.shared BLOCK(4K) : ALIGN(4K)
 	{
 		*(.multiboot)
-		*(.text.early)
-		_text_early_len = .;
+		*(.shared)
+		_shared_len = .;
 	}
 
 	. = 1M;
