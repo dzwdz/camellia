@@ -14,7 +14,10 @@ BEGIN {
 	sub(/;/, " {");
 	print $0;
 
-	name   = substr($0, match($0, /_syscall_[^(]+/), RLENGTH);
+	name = substr($0, match($0, /_syscall_[^(]+/), RLENGTH);
+	rets = substr($0, 0, RSTART - 1);
+	sub(/ *$/, "", rets)
+
 	params = substr($0, match($0, /\(.+\)/) + 1, RLENGTH - 2);
 	if (params == "void") params = ""
 
@@ -36,7 +39,10 @@ BEGIN {
 	}
 
 	printf "\t";
-	if (!index($0, "_Noreturn")) printf "return ";
+	if (!index($0, "_Noreturn")) {
+		printf "return ";
+		if (rets != "int") printf "(%s)", rets;
+	}
 	printf "_syscall(%s, %s, %s, %s, %s);\n", toupper(name), p[1], p[2], p[3], p[4];
 	if (index($0, "_Noreturn")) print "\t__builtin_unreachable();";
 

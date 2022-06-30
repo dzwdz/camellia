@@ -19,7 +19,7 @@ int _syscall_fork(int flags, handle_t __user *fs_front) {
 }
 
 handle_t _syscall_open(const char __user *path, int len, int flags) {
-	return _syscall(_SYSCALL_OPEN, (int)path, len, flags, 0);
+	return (handle_t)_syscall(_SYSCALL_OPEN, (int)path, len, flags, 0);
 }
 
 int _syscall_mount(handle_t h, const char __user *path, int len) {
@@ -47,6 +47,6 @@ int _syscall_fs_respond(char __user *buf, int ret) {
 }
 
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
-	return _syscall(_SYSCALL_MEMFLAG, (int)addr, (int)len, flags, 0);
+	return (void __user *)_syscall(_SYSCALL_MEMFLAG, (int)addr, (int)len, flags, 0);
 }
 
