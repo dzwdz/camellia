@@ -8,11 +8,10 @@
 #include <kernel/arch/i386/interrupts/idt.h>
 #include <kernel/arch/i386/interrupts/irq.h>
 #include <kernel/arch/i386/multiboot.h>
+#include <kernel/arch/i386/tty/tty.h>
 #include <kernel/main.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
-
-void tty_init(void); // TODO put this in a header file
 
 static void find_init(struct multiboot_info *multiboot, struct kmain_info *info)
 {

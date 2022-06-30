@@ -3,6 +3,8 @@
 #include <kernel/main.h>
 #include <stddef.h>
 
+extern struct malloc_hdr *malloc_last;
+
 void mem_init(struct kmain_info *);
 void mem_debugprint(void);
 
