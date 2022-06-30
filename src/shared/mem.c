@@ -5,7 +5,7 @@ void *memchr(const void *s, int c, size_t n) {
 	const unsigned char *s2 = s;
 	for (size_t i = 0; i < n; i++) {
 		if (s2[i] == (unsigned char)c)
-			return &s2[i];
+			return (void*)&s2[i];
 	}
 	return NULL;
 }
