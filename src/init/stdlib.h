@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 int printf(const char *fmt, ...);
+int snprintf(char *str, size_t len, const char *fmt, ...);
 
 typedef struct {
 	int fd;
