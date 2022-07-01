@@ -9,6 +9,7 @@ bool fork2_n_mount(const char *path) {
 	handle_t h;
 	if (_syscall_fork(FORK_NEWFS, &h) > 0) { /* parent */
 		_syscall_mount(h, path, strlen(path));
+		_syscall_close(h);
 		return true;
 	}
 	return false;
