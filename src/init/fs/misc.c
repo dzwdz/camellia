@@ -122,6 +122,34 @@ void fs_passthru(const char *prefix) {
 	_syscall_exit(0);
 }
 
+void fs_whitelist(const char **list) {
+	struct fs_wait_response res;
+	static char buf[1024];
+	bool allow;
+
+	while (!_syscall_fs_wait(buf, sizeof(buf), &res)) {
+		switch (res.op) {
+			case VFSOP_OPEN:
+				allow = false;
+				// TODO reverse dir_inject
+				for (const char **iter = list; *iter; iter++) {
+					size_t len = strlen(*iter); // inefficient, whatever
+					if (len <= res.len && !memcmp(buf, *iter, len)) {
+						allow = true;
+						break;
+					}
+				}
+				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1);
+				break;
+
+			default:
+				fs_respond_delegate(&res, res.id, buf);
+				break;
+		}
+	}
+	_syscall_exit(0);
+}
+
 
 void fs_dir_inject(const char *path) {
 	struct fs_dir_handle {

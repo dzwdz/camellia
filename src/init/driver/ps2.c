@@ -78,7 +78,7 @@ static void main_loop(void) {
 }
 
 void ps2_drv(void) {
-	fd = _syscall_open("/ps2", 4, 0);
+	fd = _syscall_open("/kdev/ps2", 9, 0);
 	if (fd < 0) _syscall_exit(1);
 
 	main_loop();

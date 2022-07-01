@@ -56,7 +56,7 @@ static void in_char(char c) {
 }
 
 void ansiterm_drv(void) {
-	vga_fd = _syscall_open("/vga", 4, 0);
+	vga_fd = _syscall_open("/kdev/vga", 9, 0);
 	_syscall_read(vga_fd, vga, sizeof vga, 0);
 
 	// find first empty line

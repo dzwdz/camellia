@@ -22,6 +22,14 @@ int main(void) {
 	file_open(&__stdout, "/com1", 0);
 	printf("preinit\n");
 
+	/* move everything provided by the kernel to /kdev */
+	MOUNT("/kdev/", fs_passthru(NULL));
+	if (!fork2_n_mount("/")) {
+		const char *l[] = {"/kdev/", NULL};
+		fs_whitelist(l);
+	}
+	if (!fork2_n_mount("/")) fs_dir_inject("/kdev/"); // TODO should be part of fs_whitelist
+
 	MOUNT("/init/", tar_driver(&_initrd));
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
@@ -49,7 +57,7 @@ int main(void) {
 	}
 
 	if (!_syscall_fork(0, NULL)) {
-		if (file_open(&__stdout, "/com1", 0) < 0 || file_open(&__stdin, "/com1", 0) < 0)
+		if (file_open(&__stdout, "/kdev/com1", 0) < 0 || file_open(&__stdin, "/kdev/com1", 0) < 0)
 			_syscall_exit(1);
 
 		shell_loop();
@@ -72,8 +80,8 @@ int main(void) {
 
 
 	// try to find any working output
-	if (file_open(&__stdout, "/com1", 0) < 0)
-		file_open(&__stdout, "/vga_tty", 0);
+	if (file_open(&__stdout, "/kdev/com1", 0) < 0)
+		file_open(&__stdout, "/kdev/vga_tty", 0);
 
 	_syscall_await();
 	printf("init: quitting\n");
