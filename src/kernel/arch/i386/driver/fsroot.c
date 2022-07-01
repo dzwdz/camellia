@@ -74,7 +74,9 @@ static int handle(struct vfs_request *req) {
 						"ps2\0"
 						"ata/";
 					int len = min((size_t) req->output.len, sizeof(src));
-					virt_cpy_to(req->caller->pages, req->output.buf, src, len);
+					if (req->offset > len) return 0;
+					virt_cpy_to(req->caller->pages, req->output.buf,
+							src + req->offset, len - req->offset);
 					return len;
 				}
 				case HANDLE_VGA: {
