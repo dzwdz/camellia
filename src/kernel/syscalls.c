@@ -290,11 +290,12 @@ ret: // the macro is too stupid to handle returning pointers
 }
 
 void _syscall_debug_klog(const void __user *buf, size_t len) {
-	static char kbuf[256];
-	if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
-	virt_cpy_from(process_current->pages, kbuf, buf, len);
-	kbuf[len] = '\0';
-	kprintf("[klog] %x\t%s\n", process_current->id, kbuf);
+	(void)buf; (void)len;
+	// static char kbuf[256];
+	// if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
+	// virt_cpy_from(process_current->pages, kbuf, buf, len);
+	// kbuf[len] = '\0';
+	// kprintf("[klog] %x\t%s\n", process_current->id, kbuf);
 }
 
 int _syscall(int num, int a, int b, int c, int d) {
