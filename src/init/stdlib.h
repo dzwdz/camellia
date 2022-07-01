@@ -7,6 +7,8 @@
 int printf(const char *fmt, ...);
 int snprintf(char *str, size_t len, const char *fmt, ...);
 
+int _klogf(const char *fmt, ...); // for kernel debugging only
+
 typedef struct {
 	int fd;
 	int pos;

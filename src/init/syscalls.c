@@ -50,3 +50,7 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	return (void __user *)_syscall(_SYSCALL_MEMFLAG, (int)addr, (int)len, flags, 0);
 }
 
+void _syscall_debug_klog(const void __user *buf, size_t len) {
+	return (void)_syscall(_SYSCALL_DEBUG_KLOG, (int)buf, (int)len, 0, 0);
+}
+

@@ -37,6 +37,20 @@ int snprintf(char *str, size_t len, const char *fmt, ...) {
 	return ret;
 }
 
+int _klogf(const char *fmt, ...) {
+	// idiotic. however, this hack won't matter anyways
+	char buf[256];
+	int ret = 0;
+	char *ptrs[2] = {buf, buf + sizeof buf};
+	va_list argp;
+	va_start(argp, fmt);
+	ret = __printf_internal(fmt, argp, backend_buf, &ptrs);
+	va_end(argp);
+	if (ptrs[0] < ptrs[1]) *ptrs[0] = '\0';
+	_syscall_debug_klog(buf, ret);
+	return ret;
+}
+
 
 int file_open(libc_file *f, const char *path, int flags) {
 	f->pos = 0;

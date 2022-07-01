@@ -24,6 +24,8 @@ enum {
 	_SYSCALL_FS_RESPOND,
 
 	_SYSCALL_MEMFLAG,
+
+	_SYSCALL_DEBUG_KLOG,
 };
 
 int _syscall(int, int, int, int, int);
@@ -78,3 +80,5 @@ int _syscall_fs_respond(char __user *buf, int ret);
  * @return address of the first affected page (usually == addr)
  */
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
+
+void _syscall_debug_klog(const void __user *buf, size_t len);
