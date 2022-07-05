@@ -35,13 +35,17 @@ static handle_t fd;
 static bool keys[0x80] = {0};
 
 static void parse_scancode(uint8_t s) {
+	bool ctrl  = keys[0x1D];
 	bool shift = keys[0x2A] || keys[0x36];
 	bool down = !(s & 0x80);
+	char c;
 	s &= 0x7f;
 	keys[s] = down;
 
-	char c = shift ? keymap_upper[s] : keymap_lower[s];
-	if (down) ring_put1b((void*)&backlog, c);
+	c = shift ? keymap_upper[s] : keymap_lower[s];
+	if (ctrl && keymap_upper[s] >= 'A' && keymap_upper[s] <= 'Z')
+		c = keymap_upper[s] - 'A' + 1;
+	if (down && c) ring_put1b((void*)&backlog, c);
 }
 
 static void main_loop(void) {
