@@ -263,6 +263,7 @@ void process_transition(struct process *p, enum process_state state) {
 		case PS_WAITS4CHILDDEATH:
 		case PS_WAITS4FS:
 		case PS_WAITS4REQUEST:
+		case PS_WAITS4PIPE:
 			assert(last == PS_RUNNING);
 			break;
 

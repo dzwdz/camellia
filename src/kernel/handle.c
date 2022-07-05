@@ -3,9 +3,11 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
+#include <shared/mem.h>
 
 struct handle *handle_init(enum handle_type type) {
 	struct handle *h = kmalloc(sizeof *h);
+	memset(h, 0, sizeof *h);
 	h->type = type;
 	h->refcount = 1;
 	return h;
@@ -25,7 +27,8 @@ void handle_close(struct handle *h) {
 			});
 	}
 
-	vfs_backend_refdown(h->backend);
+	if (h->backend)
+		vfs_backend_refdown(h->backend);
 
 	// TODO sanity check to check if refcount is true. handle_sanity?
 

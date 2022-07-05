@@ -173,36 +173,78 @@ fail:
 }
 
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
-	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
-	if (!handle) SYSCALL_RETURN(-1);
-	vfsreq_create((struct vfs_request) {
-			.type = VFSOP_READ,
-			.output = {
-				.buf = (userptr_t) buf,
-				.len = len,
-			},
-			.id = handle->file_id,
-			.offset = offset,
-			.caller = process_current,
-			.backend = handle->backend,
-		});
+	struct handle *h;
+	// TODO get rid of the type argument in process_handle_get
+	if ((h = process_handle_get(process_current, handle_num, HANDLE_FILE))) {
+		vfsreq_create((struct vfs_request) {
+				.type = VFSOP_READ,
+				.output = {
+					.buf = (userptr_t) buf,
+					.len = len,
+				},
+				.id = h->file_id,
+				.offset = offset,
+				.caller = process_current,
+				.backend = h->backend,
+			});
+	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
+		if (h->pipe.stuck && h->pipe.wants_write)
+			panic_unimplemented(); // TODO pipe queue
+
+		if (h->pipe.stuck) {
+			assert(h->pipe.stuck->state == PS_WAITS4PIPE);
+			panic_unimplemented();
+		} else {
+			process_transition(process_current, PS_WAITS4PIPE);
+			h->pipe.stuck = process_current;
+			h->pipe.wants_write = true;
+			process_current->waits4pipe.pipe = h;
+			process_current->waits4pipe.buf = buf;
+			process_current->waits4pipe.len = len;
+		}
+	} else {
+		SYSCALL_RETURN(-1);
+	}
 	return -1; // dummy
 }
 
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
-	struct handle *handle = process_handle_get(process_current, handle_num, HANDLE_FILE);
-	if (!handle) SYSCALL_RETURN(-1);
-	vfsreq_create((struct vfs_request) {
-			.type = VFSOP_WRITE,
-			.input = {
-				.buf = (userptr_t) buf,
-				.len = len,
-			},
-			.id = handle->file_id,
-			.offset = offset,
-			.caller = process_current,
-			.backend = handle->backend,
-		});
+	struct handle *h;
+	if ((h = process_handle_get(process_current, handle_num, HANDLE_FILE))) {
+		vfsreq_create((struct vfs_request) {
+				.type = VFSOP_WRITE,
+				.input = {
+					.buf = (userptr_t) buf,
+					.len = len,
+				},
+				.id = h->file_id,
+				.offset = offset,
+				.caller = process_current,
+				.backend = h->backend,
+			});
+	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
+		if (h->pipe.stuck && !h->pipe.wants_write)
+			panic_unimplemented(); // TODO pipe queue
+
+		if (h->pipe.stuck) {
+			struct process *p = h->pipe.stuck;
+			assert(p->state == PS_WAITS4PIPE);
+			if (len <= p->waits4pipe.len) {
+				bool succ = virt_cpy(
+						p->pages, p->waits4pipe.buf,
+						process_current->pages, buf, len);
+				if (!succ) panic_unimplemented();
+				process_transition(p, PS_RUNNING);
+				regs_savereturn(&p->regs, len);
+
+				SYSCALL_RETURN(len);
+			} else panic_unimplemented();
+		} else {
+			panic_unimplemented();
+		}
+	} else {
+		SYSCALL_RETURN(-1);
+	}
 	return -1; // dummy
 }
 
@@ -289,6 +331,16 @@ ret: // the macro is too stupid to handle returning pointers
 	return addr;
 }
 
+handle_t _syscall_pipe(int flags) {
+	if (flags) return -1;
+
+	handle_t h = process_find_free_handle(process_current, 0);
+	if (h < 0) return -1;
+	process_current->handles[h] = handle_init(HANDLE_PIPE);
+	assert(process_current->handles[h]->pipe.stuck == NULL);
+	SYSCALL_RETURN(h);
+}
+
 void _syscall_debug_klog(const void __user *buf, size_t len) {
 	(void)buf; (void)len;
 	// static char kbuf[256];
@@ -332,6 +384,9 @@ int _syscall(int num, int a, int b, int c, int d) {
 			break;
 		case _SYSCALL_MEMFLAG:
 			_syscall_memflag((userptr_t)a, b, c);
+			break;
+		case _SYSCALL_PIPE:
+			_syscall_pipe(a);
 			break;
 		case _SYSCALL_DEBUG_KLOG:
 			_syscall_debug_klog((userptr_t)a, b);

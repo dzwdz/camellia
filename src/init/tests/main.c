@@ -141,6 +141,28 @@ static void test_malloc(void) {
 	free(p1);
 }
 
+static void test_pipe(void) {
+	const char *msgs[2] = {"hello", "world"};
+	char buf[16];
+	int ret;
+	handle_t pipe = _syscall_pipe(0);
+	assert(pipe > 0);
+
+	if (!_syscall_fork(0, NULL)) {
+		ret = _syscall_write(pipe, msgs[0], 5, -1);
+		assert(ret == 5);
+		_syscall_exit(0);
+	} else {
+		ret = _syscall_read(pipe, buf, 16, 0);
+		assert(ret == 5);
+		assert(!memcmp(buf, msgs[0], 5));
+	}
+
+	// TODO vice versa
+	// TODO partial reads, writes
+	// TODO kill process that's waiting on a pipe
+}
+
 static void stress_fork(void) {
 	/* run a lot of processes */
 	for (size_t i = 0; i < 2048; i++) {
@@ -157,5 +179,6 @@ void test_all(void) {
 	run_forked(test_orphaned_fs);
 	run_forked(test_memflag);
 	run_forked(test_malloc);
+	run_forked(test_pipe);
 	run_forked(stress_fork);
 }

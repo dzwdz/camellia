@@ -14,6 +14,7 @@ enum process_state {
 	PS_WAITS4CHILDDEATH,
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
+	PS_WAITS4PIPE,
 
 	PS_LAST,
 };
@@ -42,6 +43,11 @@ struct process {
 			size_t max_len;
 			struct fs_wait_response __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
+		struct {
+			struct handle *pipe;
+			char __user *buf;
+			size_t len;
+		} waits4pipe;
 	};
 	struct vfs_request *handled_req;
 

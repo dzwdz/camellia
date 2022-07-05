@@ -9,14 +9,18 @@ enum handle_type; // forward declaration for proc.h
 enum handle_type {
 	HANDLE_INVALID = 0,
 	HANDLE_FILE,
-
+	HANDLE_PIPE,
 	HANDLE_FS_FRONT,
 };
 
 struct handle {
 	enum handle_type type;
-	struct vfs_backend *backend;
+	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	int file_id; // only applicable to HANDLE_FILE
+	struct {
+		struct process *stuck;
+		bool wants_write; // refers to the waiting process
+	} pipe;
 
 	size_t refcount;
 };
