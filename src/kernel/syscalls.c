@@ -365,8 +365,8 @@ int _syscall(int num, int a, int b, int c, int d) {
 			_syscall_debug_klog((userptr_t)a, b);
 			break;
 		default:
-			kprintf("unknown syscall ");
-			panic_unimplemented(); // TODO fail gracefully
+			regs_savereturn(&process_current->regs, -1);
+			break;
 	}
 
 	/* return value is unused. execution continues in sysenter_stage2 */
