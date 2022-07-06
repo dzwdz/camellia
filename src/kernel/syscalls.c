@@ -2,6 +2,7 @@
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/pipe.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/path.h>
 #include <shared/flags.h>
@@ -28,7 +29,7 @@ int _syscall_await(void) {
 	{
 		if (iter->noreap) continue;
 		has_children = true;
-		if (iter->state == PS_DEAD)
+		if (iter->state == PS_DEAD) // TODO this path crashes
 			SYSCALL_RETURN(process_try2collect(iter));
 	}
 
@@ -188,20 +189,8 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 				.backend = h->backend,
 			});
 	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
-		if (h->pipe.stuck && h->pipe.wants_write)
-			panic_unimplemented(); // TODO pipe queue
-
-		if (h->pipe.stuck) {
-			assert(h->pipe.stuck->state == PS_WAITS4PIPE);
-			panic_unimplemented();
-		} else {
-			process_transition(process_current, PS_WAITS4PIPE);
-			h->pipe.stuck = process_current;
-			h->pipe.wants_write = true;
-			process_current->waits4pipe.pipe = h;
-			process_current->waits4pipe.buf = buf;
-			process_current->waits4pipe.len = len;
-		}
+		pipe_joinqueue(h, true, process_current, buf, len);
+		pipe_trytransfer(h);
 	} else {
 		SYSCALL_RETURN(-1);
 	}
@@ -223,25 +212,8 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 				.backend = h->backend,
 			});
 	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
-		if (h->pipe.stuck && !h->pipe.wants_write)
-			panic_unimplemented(); // TODO pipe queue
-
-		if (h->pipe.stuck) {
-			struct process *p = h->pipe.stuck;
-			assert(p->state == PS_WAITS4PIPE);
-			if (len <= p->waits4pipe.len) {
-				bool succ = virt_cpy(
-						p->pages, p->waits4pipe.buf,
-						process_current->pages, buf, len);
-				if (!succ) panic_unimplemented();
-				process_transition(p, PS_RUNNING);
-				regs_savereturn(&p->regs, len);
-
-				SYSCALL_RETURN(len);
-			} else panic_unimplemented();
-		} else {
-			panic_unimplemented();
-		}
+		pipe_joinqueue(h, false, process_current, (void __user *)buf, len);
+		pipe_trytransfer(h);
 	} else {
 		SYSCALL_RETURN(-1);
 	}
@@ -337,7 +309,8 @@ handle_t _syscall_pipe(int flags) {
 	handle_t h = process_find_free_handle(process_current, 0);
 	if (h < 0) return -1;
 	process_current->handles[h] = handle_init(HANDLE_PIPE);
-	assert(process_current->handles[h]->pipe.stuck == NULL);
+	assert(process_current->handles[h]->pipe.reader == NULL);
+	assert(process_current->handles[h]->pipe.writer == NULL);
 	SYSCALL_RETURN(h);
 }
 

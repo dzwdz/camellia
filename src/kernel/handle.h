@@ -18,8 +18,7 @@ struct handle {
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	int file_id; // only applicable to HANDLE_FILE
 	struct {
-		struct process *stuck;
-		bool wants_write; // refers to the waiting process
+		struct process *reader, *writer;
 	} pipe;
 
 	size_t refcount;
