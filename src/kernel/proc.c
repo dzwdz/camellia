@@ -86,7 +86,7 @@ struct process *process_fork(struct process *parent, int flags) {
 void process_kill(struct process *p, int ret) {
 	if (p->state != PS_DEAD) {
 		if (p->handled_req) {
-			vfsreq_finish(p->handled_req, -1);
+			vfsreq_finish(p->handled_req, -1, 0, NULL);
 			p->handled_req = NULL;
 		}
 
@@ -99,7 +99,7 @@ void process_kill(struct process *p, int ret) {
 				struct vfs_request *q = p->controlled->queue;
 				while (q) {
 					struct vfs_request *q2 = q->queue_next;
-					vfsreq_finish(q, -1);
+					vfsreq_finish(q, -1, 0, NULL);
 					q = q2;
 				}
 				p->controlled->queue = NULL;

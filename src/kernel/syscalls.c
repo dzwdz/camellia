@@ -261,7 +261,7 @@ int _syscall_fs_respond(char __user *buf, int ret, int flags) {
 	}
 
 	process_current->handled_req = NULL;
-	vfsreq_finish(req, ret);
+	vfsreq_finish(req, ret, flags, process_current);
 	SYSCALL_RETURN(0);
 }
 

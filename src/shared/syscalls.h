@@ -5,6 +5,7 @@
 #define FORK_NOREAP 1
 #define FORK_NEWFS 2
 #define OPEN_CREATE 1
+#define FSR_DELEGATE 1
 
 enum {
 	// idc about stable syscall numbers just yet

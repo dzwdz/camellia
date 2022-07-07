@@ -111,11 +111,11 @@ void fs_passthru(const char *prefix) {
 				} else {
 					ret = _syscall_open(buf, res.len, res.flags);
 				}
-				_syscall_fs_respond(NULL, ret, 0);
+				_syscall_fs_respond(NULL, ret, FSR_DELEGATE);
 				break;
 
 			default:
-				fs_respond_delegate(&res, res.id, buf);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}
@@ -139,11 +139,11 @@ void fs_whitelist(const char **list) {
 						break;
 					}
 				}
-				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1, 0);
+				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1, FSR_DELEGATE);
 				break;
 
 			default:
-				fs_respond_delegate(&res, res.id, buf);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}
@@ -183,15 +183,18 @@ void fs_dir_inject(const char *path) {
 
 				if (buf[res.len - 1] == '/' &&
 						res.len < path_len && !memcmp(path, buf, res.len)) {
+					/* we're injecting */
 					handles[hid].inject = path + res.len;
 
 					/* if we're making up the opened directory, disallow create */
 					if (ret < 0 && (res.flags & OPEN_CREATE)) hid = ret;
+					_syscall_fs_respond(NULL, hid, 0);
 				} else {
 					/* not injecting, don't allow opening nonexistent stuff */
-					if (ret < 0) hid = ret;
+
+					handles[hid].taken = false;
+					_syscall_fs_respond(NULL, ret, FSR_DELEGATE);
 				}
-				_syscall_fs_respond(NULL, hid, 0);
 				break;
 
 			case VFSOP_CLOSE:

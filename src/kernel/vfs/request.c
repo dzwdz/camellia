@@ -19,7 +19,7 @@ void vfsreq_create(struct vfs_request req_) {
 	}
 
 	if (!req->backend || !req->backend->potential_handlers)
-		vfsreq_finish(req, -1);
+		vfsreq_finish(req, -1, 0, NULL);
 
 	struct vfs_request **iter = &req->backend->queue;
 	while (*iter != NULL) // find free spot in queue
@@ -29,27 +29,37 @@ void vfsreq_create(struct vfs_request req_) {
 	vfs_backend_tryaccept(req->backend);
 }
 
-void vfsreq_finish(struct vfs_request *req, int ret) {
+void vfsreq_finish(struct vfs_request *req, int ret, int flags, struct process *handler) {
 	if (req->type == VFSOP_OPEN && ret >= 0) {
-		// open() calls need special handling
-		// we need to wrap the id returned by the VFS in a handle passed to
-		// the client
-		if (req->caller) {
-			handle_t handle = process_find_free_handle(req->caller, 0);
-			if (handle < 0)
-				panic_invalid_state(); // we check for free handles before the open() call
+		// TODO write tests for caller getting killed while opening a file
+		if (!req->caller) panic_unimplemented();
 
+		handle_t handle = process_find_free_handle(req->caller, 0);
+		if (handle < 0)
+			panic_invalid_state(); // we check for free handles before the open() call
+
+		if (!(flags & FSR_DELEGATE)) {
+			/* default behavior - create a new handle for the file, wrap the id */
 			struct handle *backing = handle_init(HANDLE_FILE);
 			backing->backend = req->backend;
 			req->backend->refcount++;
+			// TODO file ids can only be 31bit long, so they can't be pointers
 			backing->file_id = ret;
 			req->caller->handles[handle] = backing;
-			ret = handle;
 		} else {
-			// caller got killed
-			// TODO write tests & implement
-			panic_unimplemented();
+			/* delegating - moving a handle to the caller */
+			assert(handler);
+
+			struct handle *h = handler->handles[ret];
+			if (!h) {
+				kprintf("tried delegating an invalid handle\n");
+				handle = -1; // return error
+			} else {
+				req->caller->handles[handle] = h;
+				handler->handles[ret] = NULL;
+			}
 		}
+		ret = handle;
 	}
 
 	if (req->input.kern)
