@@ -65,26 +65,26 @@ static void fs_respond_delegate(struct fs_wait_response *res, handle_t delegate,
 			// TODO instead of truncating the size, allocate a bigger buffer
 			size = res->capacity < sizeof(buf) ? res->capacity : sizeof(buf);
 			ret = _syscall_read(delegate, buf, size, res->offset);
-			_syscall_fs_respond(buf, ret);
+			_syscall_fs_respond(buf, ret, 0);
 			_syscall_exit(0);
 			break;
 
 		// TODO proper writing (see above)
 		case VFSOP_WRITE:
 			ret = _syscall_write(delegate, og_buf, res->len, res->offset);
-			_syscall_fs_respond(NULL, ret);
+			_syscall_fs_respond(NULL, ret, 0);
 			break;
 
 		case VFSOP_CLOSE:
 			_syscall_close(delegate);
 			// isn't it kinda weird that i even have to respond to close()s?
 			// i suppose it makes the API more consistent
-			_syscall_fs_respond(NULL, 0);
+			_syscall_fs_respond(NULL, 0, 0);
 			break;
 
 		default:
 			/* unsupported / unexpected */
-			_syscall_fs_respond(NULL, -1);
+			_syscall_fs_respond(NULL, -1, 0);
 			break;
 	}
 }
@@ -111,7 +111,7 @@ void fs_passthru(const char *prefix) {
 				} else {
 					ret = _syscall_open(buf, res.len, res.flags);
 				}
-				_syscall_fs_respond(NULL, ret);
+				_syscall_fs_respond(NULL, ret, 0);
 				break;
 
 			default:
@@ -139,7 +139,7 @@ void fs_whitelist(const char **list) {
 						break;
 					}
 				}
-				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1);
+				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1, 0);
 				break;
 
 			default:
@@ -174,7 +174,7 @@ void fs_dir_inject(const char *path) {
 						break;
 					}
 				}
-				if (hid < 0) _syscall_fs_respond(NULL, -2); // we ran out of handles
+				if (hid < 0) _syscall_fs_respond(NULL, -2, 0); // we ran out of handles
 
 				ret = _syscall_open(buf, res.len, res.flags); /* errors handled in inject handler */
 				handles[hid].delegate = ret;
@@ -191,19 +191,19 @@ void fs_dir_inject(const char *path) {
 					/* not injecting, don't allow opening nonexistent stuff */
 					if (ret < 0) hid = ret;
 				}
-				_syscall_fs_respond(NULL, hid);
+				_syscall_fs_respond(NULL, hid, 0);
 				break;
 
 			case VFSOP_CLOSE:
 				if (handles[res.id].delegate >= 0)
 					_syscall_close(handles[res.id].delegate);
 				handles[res.id].taken = false;
-				_syscall_fs_respond(NULL, 0);
+				_syscall_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
 				if (handles[res.id].inject) {
-					if (res.offset > 0) _syscall_fs_respond(NULL, 0); // TODO working offsets
+					if (res.offset > 0) _syscall_fs_respond(NULL, 0, 0); // TODO working offsets
 					struct fs_dir_handle h = handles[res.id];
 
 					int out_len = 0;
@@ -222,7 +222,7 @@ void fs_dir_inject(const char *path) {
 						// TODO deduplicate entries
 					}
 
-					_syscall_fs_respond(buf, out_len);
+					_syscall_fs_respond(buf, out_len, 0);
 					break;
 				}
 
@@ -231,7 +231,7 @@ void fs_dir_inject(const char *path) {
 			default: {
 				struct fs_dir_handle h = handles[res.id];
 				if (h.delegate < 0)
-					_syscall_fs_respond(NULL, -1);
+					_syscall_fs_respond(NULL, -1, 0);
 				else
 					fs_respond_delegate(&res, h.delegate, buf);
 				break;

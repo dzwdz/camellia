@@ -51,13 +51,13 @@ void tmpfs_drv(void) {
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
-				_syscall_fs_respond(NULL, tmpfs_open(buf, &res));
+				_syscall_fs_respond(NULL, tmpfs_open(buf, &res), 0);
 				break;
 
 			case VFSOP_READ:
 				if (res.id != 0) {
 					// rw unimplemented
-					_syscall_fs_respond(NULL, -1);
+					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
 				size_t buf_pos = 0;
@@ -79,11 +79,11 @@ void tmpfs_drv(void) {
 					buf[buf_pos++] = '\0';
 					to_skip = 0;
 				}
-				_syscall_fs_respond(buf, buf_pos);
+				_syscall_fs_respond(buf, buf_pos, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

@@ -69,7 +69,7 @@ struct fs_wait_response {
 /** Blocks until an fs request is made.
  * @return 0 if everything was successful */
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res);
-int _syscall_fs_respond(char __user *buf, int ret);
+int _syscall_fs_respond(char __user *buf, int ret, int flags);
 
 /** Modifies the virtual address space.
  *

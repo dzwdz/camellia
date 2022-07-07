@@ -56,10 +56,10 @@ static void main_loop(void) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (res.flags & OPEN_CREATE) {
-					_syscall_fs_respond(NULL, -1);
+					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
-				_syscall_fs_respond(NULL, 1);
+				_syscall_fs_respond(NULL, 1, 0);
 				break;
 
 			case VFSOP_READ:
@@ -71,11 +71,11 @@ static void main_loop(void) {
 						parse_scancode(buf[i]);
 				}
 				ret = ring_get((void*)&backlog, buf, res.capacity);
-				_syscall_fs_respond(buf, ret);
+				_syscall_fs_respond(buf, ret, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

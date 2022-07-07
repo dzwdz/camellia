@@ -42,8 +42,8 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	return _syscall(_SYSCALL_FS_WAIT, (int)buf, max_len, (int)res, 0);
 }
 
-int _syscall_fs_respond(char __user *buf, int ret) {
-	return _syscall(_SYSCALL_FS_RESPOND, (int)buf, ret, 0, 0);
+int _syscall_fs_respond(char __user *buf, int ret, int flags) {
+	return _syscall(_SYSCALL_FS_RESPOND, (int)buf, ret, flags, 0);
 }
 
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {

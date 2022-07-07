@@ -79,22 +79,22 @@ void ansiterm_drv(void) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (res.flags & OPEN_CREATE) {
-					_syscall_fs_respond(NULL, -1);
+					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
 				// TODO check path
-				_syscall_fs_respond(NULL, 1);
+				_syscall_fs_respond(NULL, 1, 0);
 				break;
 
 			case VFSOP_WRITE:
 				for (size_t i = 0; i < res.len; i++)
 					in_char(buf[i]);
 				/* if (pendingFlush) */ flush();
-				_syscall_fs_respond(NULL, res.len);
+				_syscall_fs_respond(NULL, res.len, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

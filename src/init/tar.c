@@ -22,10 +22,10 @@ void tar_driver(void *base) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (res.flags & OPEN_CREATE) {
-					_syscall_fs_respond(NULL, -1);
+					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
-				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0));
+				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0), 0);
 				break;
 
 			case VFSOP_READ:
@@ -33,7 +33,7 @@ void tar_driver(void *base) {
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1); // unsupported
+				_syscall_fs_respond(NULL, -1, 0); // unsupported
 				break;
 		}
 	}
@@ -76,9 +76,9 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 			size = tar_size(meta);
 			if (res->offset < 0 || res->offset > size) {
 				// TODO support negative offsets
-				_syscall_fs_respond(NULL, -1);
+				_syscall_fs_respond(NULL, -1, 0);
 			} else {
-				_syscall_fs_respond(meta + 512 + res->offset, size - res->offset);
+				_syscall_fs_respond(meta + 512 + res->offset, size - res->offset, 0);
 			}
 			break;
 
@@ -124,11 +124,11 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 				off += (size + 511) & ~511; // skip the data sectors
 			}
 
-			_syscall_fs_respond(buf, buf_pos);
+			_syscall_fs_respond(buf, buf_pos, 0);
 			break;
 
 		default:
-			_syscall_fs_respond(NULL, -1);
+			_syscall_fs_respond(NULL, -1, 0);
 			break;
 	}
 }
