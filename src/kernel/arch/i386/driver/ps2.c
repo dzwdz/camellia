@@ -35,7 +35,7 @@ static void accept(struct vfs_request *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			valid = req->input.len == 0 && !(req->flags & OPEN_CREATE);
-			vfsreq_finish(req, valid ? 0 : -1, 0, NULL);
+			vfsreq_finish_short(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:
 			if (ring_size((void*)&backlog) == 0) {
@@ -45,13 +45,13 @@ static void accept(struct vfs_request *req) {
 				ret = clamp(0, req->output.len, sizeof buf);
 				ret = ring_get((void*)&backlog, buf, ret);
 				virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
-				vfsreq_finish(req, ret, 0, NULL);
+				vfsreq_finish_short(req, ret);
 			} else {
-				vfsreq_finish(req, -1, 0, NULL);
+				vfsreq_finish_short(req, -1);
 			}
 			break;
 		default:
-			vfsreq_finish(req, -1, 0, NULL);
+			vfsreq_finish_short(req, -1);
 			break;
 	}
 }

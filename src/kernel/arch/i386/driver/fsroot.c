@@ -134,9 +134,9 @@ static int handle(struct vfs_request *req) {
 
 static void accept(struct vfs_request *req) {
 	if (req->caller) {
-		vfsreq_finish(req, handle(req), 0, NULL);
+		vfsreq_finish_short(req, handle(req));
 	} else {
-		vfsreq_finish(req, -1, 0, NULL);
+		vfsreq_finish_short(req, -1);
 	}
 }
 

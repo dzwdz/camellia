@@ -61,6 +61,10 @@ struct vfs_request {
 void vfsreq_create(struct vfs_request);
 void vfsreq_finish(struct vfs_request*, int ret, int flags, struct process *handler);
 
+static inline void vfsreq_finish_short(struct vfs_request *req, int ret) {
+	vfsreq_finish(req, ret, 0, NULL);
+}
+
 /** Try to accept an enqueued request */
 void vfs_backend_tryaccept(struct vfs_backend *);
 void vfs_backend_user_accept(struct vfs_request *req);
