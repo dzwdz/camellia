@@ -29,7 +29,9 @@ void vfsreq_create(struct vfs_request req_) {
 	vfs_backend_tryaccept(req->backend);
 }
 
-void vfsreq_finish(struct vfs_request *req, int ret, int flags, struct process *handler) {
+void vfsreq_finish(struct vfs_request *req, char __user *stored, int ret,
+		int flags, struct process *handler)
+{
 	if (req->type == VFSOP_OPEN && ret >= 0) {
 		// TODO write tests for caller getting killed while opening a file
 		if (!req->caller) panic_unimplemented();
@@ -43,8 +45,7 @@ void vfsreq_finish(struct vfs_request *req, int ret, int flags, struct process *
 			struct handle *backing = handle_init(HANDLE_FILE);
 			backing->backend = req->backend;
 			req->backend->refcount++;
-			// TODO file ids can only be 31bit long, so they can't be pointers
-			backing->file_id = ret;
+			backing->file_id = stored;
 			req->caller->handles[handle] = backing;
 		} else {
 			/* delegating - moving a handle to the caller */

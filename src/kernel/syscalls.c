@@ -246,7 +246,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	return -1; // dummy
 }
 
-int _syscall_fs_respond(char __user *buf, int ret, int flags) {
+int _syscall_fs_respond(void __user *buf, int ret, int flags) {
 	struct vfs_request *req = process_current->handled_req;
 	if (!req) SYSCALL_RETURN(-1);
 
@@ -261,7 +261,7 @@ int _syscall_fs_respond(char __user *buf, int ret, int flags) {
 	}
 
 	process_current->handled_req = NULL;
-	vfsreq_finish(req, ret, flags, process_current);
+	vfsreq_finish(req, buf, ret, flags, process_current);
 	SYSCALL_RETURN(0);
 }
 

@@ -188,7 +188,7 @@ void fs_dir_inject(const char *path) {
 
 					/* if we're making up the opened directory, disallow create */
 					if (ret < 0 && (res.flags & OPEN_CREATE)) hid = ret;
-					_syscall_fs_respond(NULL, hid, 0);
+					_syscall_fs_respond((void*)hid, hid, 0);
 				} else {
 					/* not injecting, don't allow opening nonexistent stuff */
 
@@ -198,16 +198,16 @@ void fs_dir_inject(const char *path) {
 				break;
 
 			case VFSOP_CLOSE:
-				if (handles[res.id].delegate >= 0)
-					_syscall_close(handles[res.id].delegate);
-				handles[res.id].taken = false;
+				if (handles[(int)res.id].delegate >= 0)
+					_syscall_close(handles[(int)res.id].delegate);
+				handles[(int)res.id].taken = false;
 				_syscall_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
-				if (handles[res.id].inject) {
+				if (handles[(int)res.id].inject) {
 					if (res.offset > 0) _syscall_fs_respond(NULL, 0, 0); // TODO working offsets
-					struct fs_dir_handle h = handles[res.id];
+					struct fs_dir_handle h = handles[(int)res.id];
 
 					int out_len = 0;
 					while (h.inject[out_len] && h.inject[out_len] != '/')
@@ -232,7 +232,7 @@ void fs_dir_inject(const char *path) {
 			/* fallthrough */
 
 			default: {
-				struct fs_dir_handle h = handles[res.id];
+				struct fs_dir_handle h = handles[(int)res.id];
 				if (h.delegate < 0)
 					_syscall_fs_respond(NULL, -1, 0);
 				else

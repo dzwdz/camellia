@@ -5,7 +5,7 @@
 
 #define BUF_SIZE 64
 
-static int tar_open(const char *path, int len, void *base, size_t base_len);
+static void *tar_open(const char *path, int len, void *base, size_t base_len);
 static void tar_read(struct fs_wait_response *res, void *base, size_t base_len);
 static int tar_size(void *sector);
 static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
@@ -18,6 +18,7 @@ static const char *root_fakemeta = ""; /* see comment in tar_open */
 void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
 	struct fs_wait_response res;
+	void *ptr;
 	while (!_syscall_fs_wait(buf, BUF_SIZE, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
@@ -25,7 +26,8 @@ void tar_driver(void *base) {
 					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
-				_syscall_fs_respond(NULL, tar_open(buf, res.len, base, ~0), 0);
+				ptr = tar_open(buf, res.len, base, ~0);
+				_syscall_fs_respond(ptr, ptr ? 0 : -1, 0);
 				break;
 
 			case VFSOP_READ:
@@ -40,10 +42,8 @@ void tar_driver(void *base) {
 	_syscall_exit(0);
 }
 
-static int tar_open(const char *path, int len, void *base, size_t base_len) {
-	void *ptr;
-
-	if (len <= 0) return -1;
+static void *tar_open(const char *path, int len, void *base, size_t base_len) {
+	if (len <= 0) return NULL;
 	path += 1; // skip the leading slash
 	len  -= 1;
 
@@ -51,12 +51,9 @@ static int tar_open(const char *path, int len, void *base, size_t base_len) {
 	 * returning a fake one. this isn't a full entry because i'm currently too
 	 * lazy to create a full one - thus, it has to be special cased in tar_read */
 	if (len == 0)
-		return (int)root_fakemeta;
+		return (void*)root_fakemeta;
 
-	ptr = tar_find(path, len, base, base_len);
-	if (!ptr) return -1;
-	// TODO this won't work if ptr > 0x80000000
-	return (int)ptr;
+	return tar_find(path, len, base, base_len);
 }
 
 static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) {

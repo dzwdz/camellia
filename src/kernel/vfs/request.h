@@ -47,7 +47,7 @@ struct vfs_request {
 		size_t len;
 	} output;
 
-	int id; // handle.file.id
+	void __user *id; // handle.file.id
 	int offset;
 	int flags;
 
@@ -59,10 +59,10 @@ struct vfs_request {
 
 /** Assigns the vfs_request to the caller, and dispatches the call */
 void vfsreq_create(struct vfs_request);
-void vfsreq_finish(struct vfs_request*, int ret, int flags, struct process *handler);
+void vfsreq_finish(struct vfs_request*, char __user *stored, int ret, int flags, struct process *handler);
 
 static inline void vfsreq_finish_short(struct vfs_request *req, int ret) {
-	vfsreq_finish(req, ret, 0, NULL);
+	vfsreq_finish(req, (void __user *)ret, ret, 0, NULL);
 }
 
 /** Try to accept an enqueued request */

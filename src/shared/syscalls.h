@@ -63,14 +63,14 @@ struct fs_wait_response {
 	enum vfs_operation op;
 	size_t len; // how much was put in *buf
 	size_t capacity; // how much output can be accepted by the caller
-	int id;  // file id (returned by the open handler, passed to other calls)
+	void __user *id;  // file id (returned by the open handler, passed to other calls)
 	int offset;
 	int flags;
 };
 /** Blocks until an fs request is made.
  * @return 0 if everything was successful */
 int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res);
-int _syscall_fs_respond(char __user *buf, int ret, int flags);
+int _syscall_fs_respond(void __user *buf, int ret, int flags);
 
 /** Modifies the virtual address space.
  *

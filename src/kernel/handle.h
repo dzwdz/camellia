@@ -16,7 +16,7 @@ enum handle_type {
 struct handle {
 	enum handle_type type;
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
-	int file_id; // only applicable to HANDLE_FILE
+	void __user *file_id; // only applicable to HANDLE_FILE
 	struct {
 		struct process *reader, *writer;
 	} pipe;

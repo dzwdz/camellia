@@ -83,7 +83,7 @@ void ansiterm_drv(void) {
 					break;
 				}
 				// TODO check path
-				_syscall_fs_respond(NULL, 1, 0);
+				_syscall_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_WRITE:

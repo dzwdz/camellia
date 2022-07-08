@@ -45,6 +45,7 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 
 static int handle(struct vfs_request *req) {
 	assert(req->caller);
+	int id = (int)req->id;
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (req->flags & OPEN_CREATE) return -1;
@@ -65,7 +66,7 @@ static int handle(struct vfs_request *req) {
 			return -1;
 
 		case VFSOP_READ:
-			switch (req->id) {
+			switch (id) {
 				case HANDLE_ROOT: {
 					// TODO document directory read format
 					const char src[] =
@@ -106,7 +107,7 @@ static int handle(struct vfs_request *req) {
 					char buf[512];
 					uint32_t sector = req->offset / 512;
 					size_t len = min(req->output.len, 512 - ((size_t)req->offset & 511));
-					ata_read(req->id - HANDLE_ATA, sector, buf);
+					ata_read(id - HANDLE_ATA, sector, buf);
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				}
@@ -114,7 +115,7 @@ static int handle(struct vfs_request *req) {
 			}
 
 		case VFSOP_WRITE:
-			switch (req->id) {
+			switch (id) {
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
 					req_preprocess(req, 80*25*2);
