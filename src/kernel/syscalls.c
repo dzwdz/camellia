@@ -11,8 +11,10 @@
 #include <stdint.h>
 
 #define SYSCALL_RETURN(val) do { \
+	uint32_t ret = (uint32_t)val; \
 	assert(process_current->state == PS_RUNNING); \
-	return regs_savereturn(&process_current->regs, val); \
+	regs_savereturn(&process_current->regs, ret); \
+	return 0; \
 } while (0)
 
 _Noreturn void _syscall_exit(int ret) {
@@ -29,7 +31,7 @@ int _syscall_await(void) {
 	{
 		if (iter->noreap) continue;
 		has_children = true;
-		if (iter->state == PS_DEAD) // TODO this path crashes
+		if (iter->state == PS_DEAD) // TODO this path used to crash, still untested
 			SYSCALL_RETURN(process_try2collect(iter));
 	}
 
@@ -272,7 +274,8 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 
 	if (flags & MEMFLAG_FINDFREE) {
 		addr = pagedir_findfree(pages, addr, len);
-		if (!(flags & MEMFLAG_PRESENT)) goto ret;
+		if (!(flags & MEMFLAG_PRESENT))
+			SYSCALL_RETURN((uintptr_t)addr);
 	}
 
 
@@ -296,11 +299,7 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 			pagedir_map(pages, iter, phys, true, true);
 		}
 	}
-
-ret: // the macro is too stupid to handle returning pointers
-	assert(process_current->state == PS_RUNNING); // TODO move to regs_savereturn
-	regs_savereturn(&process_current->regs, (uintptr_t)addr);
-	return addr;
+	SYSCALL_RETURN((uintptr_t)addr);
 }
 
 handle_t _syscall_pipe(int flags) {

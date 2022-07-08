@@ -6,6 +6,7 @@ CHECK   = sparse
 CFLAGS += -g -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration -ftrack-macro-expansion=0
 CFLAGS += -mgeneral-regs-only
 CFLAGS += -Isrc/
+SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc
 QFLAGS  = -no-reboot
 ifndef QEMU_DISPLAY
@@ -45,7 +46,7 @@ lint:
 	@tools/linter/main.rb
 
 check: $(shell find src/kernel/ -type f -name *.c)
-	@echo $^ | xargs -n 1 sparse $(CFLAGS)
+	@echo $^ | xargs -n 1 sparse $(CFLAGS) $(SPARSEFLAGS)
 
 clean:
 	rm -rv out/
