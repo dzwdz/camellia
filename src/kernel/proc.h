@@ -82,6 +82,6 @@ struct process *process_next(struct process *);
 struct process *process_find(enum process_state);
 
 handle_t process_find_free_handle(struct process *proc, handle_t start_at);
-struct handle *process_handle_get(struct process *, handle_t, enum handle_type);
+struct handle *process_handle_get(struct process *, handle_t);
 
 void process_transition(struct process *, enum process_state);

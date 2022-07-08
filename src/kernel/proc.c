@@ -241,13 +241,9 @@ handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
 	return handle;
 }
 
-struct handle*
-process_handle_get(struct process *p, handle_t id, enum handle_type type) {
-	struct handle *h;
+struct handle *process_handle_get(struct process *p, handle_t id) {
 	if (id < 0 || id >= HANDLE_MAX) return NULL;
-	h = p->handles[id];
-	if (h == NULL || h->type != type) return NULL;
-	return h;
+	return p->handles[id];
 }
 
 void process_transition(struct process *p, enum process_state state) {

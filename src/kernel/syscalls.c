@@ -148,8 +148,9 @@ int _syscall_mount(handle_t hid, const char __user *path, int len) {
 	}
 
 	if (hid >= 0) { // mounting a real backend?
-		struct handle *handle = process_handle_get(process_current, hid, HANDLE_FS_FRONT);
-		if (!handle) goto fail;
+		struct handle *handle = process_handle_get(process_current, hid);
+		if (!handle || handle->type != HANDLE_FS_FRONT)
+			goto fail;
 		backend = handle->backend;
 		backend->refcount++;
 	} // otherwise backend == NULL
@@ -176,48 +177,55 @@ fail:
 }
 
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
-	struct handle *h;
-	// TODO get rid of the type argument in process_handle_get
-	if ((h = process_handle_get(process_current, handle_num, HANDLE_FILE))) {
-		vfsreq_create((struct vfs_request) {
-				.type = VFSOP_READ,
-				.output = {
-					.buf = (userptr_t) buf,
-					.len = len,
-				},
-				.id = h->file_id,
-				.offset = offset,
-				.caller = process_current,
-				.backend = h->backend,
-			});
-	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
-		pipe_joinqueue(h, true, process_current, buf, len);
-		pipe_trytransfer(h);
-	} else {
-		SYSCALL_RETURN(-1);
+	struct handle *h = process_handle_get(process_current, handle_num);
+	if (!h) SYSCALL_RETURN(-1);
+	switch (h->type) {
+		case HANDLE_FILE:
+			vfsreq_create((struct vfs_request) {
+					.type = VFSOP_READ,
+					.output = {
+						.buf = (userptr_t) buf,
+						.len = len,
+					},
+					.id = h->file_id,
+					.offset = offset,
+					.caller = process_current,
+					.backend = h->backend,
+				});
+			break;
+		case HANDLE_PIPE:
+			pipe_joinqueue(h, true, process_current, buf, len);
+			pipe_trytransfer(h);
+			break;
+		default:
+			SYSCALL_RETURN(-1);
 	}
 	return -1; // dummy
 }
 
 int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
-	struct handle *h;
-	if ((h = process_handle_get(process_current, handle_num, HANDLE_FILE))) {
-		vfsreq_create((struct vfs_request) {
-				.type = VFSOP_WRITE,
-				.input = {
-					.buf = (userptr_t) buf,
-					.len = len,
-				},
-				.id = h->file_id,
-				.offset = offset,
-				.caller = process_current,
-				.backend = h->backend,
-			});
-	} else if ((h = process_handle_get(process_current, handle_num, HANDLE_PIPE))) {
-		pipe_joinqueue(h, false, process_current, (void __user *)buf, len);
-		pipe_trytransfer(h);
-	} else {
-		SYSCALL_RETURN(-1);
+	struct handle *h = process_handle_get(process_current, handle_num);
+	if (!h) SYSCALL_RETURN(-1);
+	switch (h->type) {
+		case HANDLE_FILE:
+			vfsreq_create((struct vfs_request) {
+					.type = VFSOP_WRITE,
+					.input = {
+						.buf = (userptr_t) buf,
+						.len = len,
+					},
+					.id = h->file_id,
+					.offset = offset,
+					.caller = process_current,
+					.backend = h->backend,
+				});
+			break;
+		case HANDLE_PIPE:
+			pipe_joinqueue(h, false, process_current, (void __user *)buf, len);
+			pipe_trytransfer(h);
+			break;
+		default:
+			SYSCALL_RETURN(-1);
 	}
 	return -1; // dummy
 }
