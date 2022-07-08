@@ -74,11 +74,10 @@ static int handle(struct vfs_request *req) {
 						"com1\0"
 						"ps2\0"
 						"ata/";
-					int len = min((size_t) req->output.len, sizeof(src));
-					if (req->offset > len) return 0;
+					req_preprocess(req, sizeof src);
 					virt_cpy_to(req->caller->pages, req->output.buf,
-							src + req->offset, len - req->offset);
-					return len;
+							src + req->offset, req->output.len);
+					return req->output.len;
 				}
 				case HANDLE_VGA: {
 					char *vga = (void*)0xB8000;
@@ -88,7 +87,6 @@ static int handle(struct vfs_request *req) {
 					return req->output.len;
 				}
 				case HANDLE_ATA_ROOT: {
-					// TODO offset
 					char list[8] = {};
 					size_t len = 0;
 					for (int i = 0; i < 4; i++) {
@@ -97,9 +95,10 @@ static int handle(struct vfs_request *req) {
 							len += 2;
 						}
 					}
-					len = min((size_t) req->output.len, len);
-					virt_cpy_to(req->caller->pages, req->output.buf, list, len);
-					return len;
+					req_preprocess(req, len);
+					virt_cpy_to(req->caller->pages, req->output.buf,
+							list + req->offset, req->output.len);
+					return req->output.len;
 				}
 				case HANDLE_ATA:   case HANDLE_ATA+1:
 				case HANDLE_ATA+2: case HANDLE_ATA+3: {
