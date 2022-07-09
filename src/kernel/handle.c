@@ -1,6 +1,7 @@
 #include <kernel/handle.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
+#include <kernel/pipe.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
@@ -25,6 +26,12 @@ void handle_close(struct handle *h) {
 				.caller = NULL,
 				.backend = h->backend,
 			});
+	} else if (h->type == HANDLE_PIPE) {
+		assert(!h->pipe.queued);
+		if (h->pipe.sister) {
+			pipe_invalidate_end(h->pipe.sister);
+			h->pipe.sister->pipe.sister = NULL;
+		}
 	}
 
 	if (h->backend)

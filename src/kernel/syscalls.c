@@ -194,8 +194,10 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 				});
 			break;
 		case HANDLE_PIPE:
-			pipe_joinqueue(h, true, process_current, buf, len);
-			pipe_trytransfer(h);
+			if (pipe_joinqueue(h, true, process_current, buf, len))
+				pipe_trytransfer(h);
+			else
+				SYSCALL_RETURN(-1);
 			break;
 		default:
 			SYSCALL_RETURN(-1);
@@ -221,8 +223,10 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 				});
 			break;
 		case HANDLE_PIPE:
-			pipe_joinqueue(h, false, process_current, (void __user *)buf, len);
-			pipe_trytransfer(h);
+			if (pipe_joinqueue(h, false, process_current, (void __user *)buf, len))
+				pipe_trytransfer(h);
+			else
+				SYSCALL_RETURN(-1);
 			break;
 		default:
 			SYSCALL_RETURN(-1);
@@ -310,15 +314,24 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	SYSCALL_RETURN((uintptr_t)addr);
 }
 
-handle_t _syscall_pipe(int flags) {
-	if (flags) return -1;
+int _syscall_pipe(handle_t __user user_ends[2], int flags) {
+	if (flags) SYSCALL_RETURN(-1);
+	handle_t ends[2];
+	struct handle *rend, *wend;
 
-	handle_t h = process_find_free_handle(process_current, 0);
-	if (h < 0) return -1;
-	process_current->handles[h] = handle_init(HANDLE_PIPE);
-	assert(process_current->handles[h]->pipe.reader == NULL);
-	assert(process_current->handles[h]->pipe.writer == NULL);
-	SYSCALL_RETURN(h);
+	ends[0] = process_find_free_handle(process_current, 0);
+	if (ends[0] < 0) SYSCALL_RETURN(-1);
+	ends[1] = process_find_free_handle(process_current, ends[0]+1);
+	if (ends[1] < 0) SYSCALL_RETURN(-1);
+
+	rend = process_current->handles[ends[0]] = handle_init(HANDLE_PIPE);
+	wend = process_current->handles[ends[1]] = handle_init(HANDLE_PIPE);
+	wend->pipe.write_end = true;
+	wend->pipe.sister = rend;
+	rend->pipe.sister = wend;
+
+	virt_cpy_to(process_current->pages, user_ends, ends, sizeof ends);
+	SYSCALL_RETURN(0);
 }
 
 void _syscall_debug_klog(const void __user *buf, size_t len) {
@@ -366,7 +379,7 @@ int _syscall(int num, int a, int b, int c, int d) {
 			_syscall_memflag((userptr_t)a, b, c);
 			break;
 		case _SYSCALL_PIPE:
-			_syscall_pipe(a);
+			_syscall_pipe((userptr_t)a, b);
 			break;
 		case _SYSCALL_DEBUG_KLOG:
 			_syscall_debug_klog((userptr_t)a, b);

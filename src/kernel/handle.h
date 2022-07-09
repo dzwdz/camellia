@@ -18,7 +18,9 @@ struct handle {
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	void __user *file_id; // only applicable to HANDLE_FILE
 	struct {
-		struct process *reader, *writer;
+		struct process *queued;
+		bool write_end;
+		struct handle *sister; // the other end, not included in refcount
 	} pipe;
 
 	size_t refcount;

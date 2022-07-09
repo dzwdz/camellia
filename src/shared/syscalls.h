@@ -82,6 +82,6 @@ int _syscall_fs_respond(void __user *buf, int ret, int flags);
  * @return address of the first affected page (usually == addr)
  */
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
-handle_t _syscall_pipe(int flags);
+int _syscall_pipe(handle_t __user user_ends[2], int flags);
 
 void _syscall_debug_klog(const void __user *buf, size_t len);

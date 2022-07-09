@@ -19,6 +19,7 @@ BEGIN {
 	sub(/ *$/, "", rets)
 
 	params = substr($0, match($0, /\(.+\)/) + 1, RLENGTH - 2);
+	gsub(/\[[^\]]\]/, "", params);
 	if (params == "void") params = ""
 
 	split(params, p, /,/);
