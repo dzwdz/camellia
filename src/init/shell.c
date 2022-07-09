@@ -161,6 +161,8 @@ void shell_loop(void) {
 			else level++;
 		} else if (!strcmp(cmd, "run_tests")) {
 			test_all();
+		} else if (!strcmp(cmd, "stress")) {
+			stress_all();
 		} else {
 			printf("unknown command :(\n");
 		}

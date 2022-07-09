@@ -137,14 +137,6 @@ static void test_misc(void) {
 	assert(_syscall(~0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
 
-static void stress_fork(void) {
-	/* run a lot of processes */
-	for (size_t i = 0; i < 2048; i++) {
-		if (!_syscall_fork(0, NULL)) _syscall_exit(0);
-		_syscall_await();
-	}
-}
-
 
 void test_all(void) {
 	run_forked(test_await);
@@ -155,5 +147,4 @@ void test_all(void) {
 	run_forked(test_malloc);
 	run_forked(test_pipe);
 	run_forked(test_misc);
-	run_forked(stress_fork);
 }
