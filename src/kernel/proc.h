@@ -47,6 +47,7 @@ struct process {
 			struct handle *pipe;
 			char __user *buf;
 			size_t len;
+			struct process *next;
 		} waits4pipe;
 	};
 	struct vfs_request *handled_req;

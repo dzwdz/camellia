@@ -9,16 +9,19 @@ bool pipe_joinqueue(struct handle *h, bool wants_write,
 	assert(h && h->type == HANDLE_PIPE);
 	if (wants_write == h->pipe.write_end) return false;
 	if (!h->pipe.sister) return false;
-	if (h->pipe.queued) {
-		assert(h->pipe.queued->state == PS_WAITS4PIPE);
-		panic_unimplemented();
+
+	struct process **slot = &h->pipe.queued;
+	while (*slot) {
+		assert((*slot)->state == PS_WAITS4PIPE);
+		slot = &((*slot)->waits4pipe.next);
 	}
 
 	process_transition(proc, PS_WAITS4PIPE);
-	h->pipe.queued = proc;
+	*slot = proc;
 	proc->waits4pipe.pipe = h;
 	proc->waits4pipe.buf = pbuf;
 	proc->waits4pipe.len = pbuflen;
+	proc->waits4pipe.next = NULL;
 	return true;
 }
 
@@ -46,19 +49,21 @@ void pipe_trytransfer(struct handle *h) {
 	{
 		panic_unimplemented();
 	}
+	h->pipe.queued = h->pipe.queued->waits4pipe.next;
+	h->pipe.sister->pipe.queued = h->pipe.sister->pipe.queued->waits4pipe.next;
 	process_transition(rdr, PS_RUNNING);
 	process_transition(wtr, PS_RUNNING);
-	h->pipe.queued = NULL;
-	h->pipe.sister->pipe.queued = NULL;
 	regs_savereturn(&rdr->regs, len);
 	regs_savereturn(&wtr->regs, len);
 }
 
 void pipe_invalidate_end(struct handle *h) {
 	struct process *p = h->pipe.queued;
-	if (p) {
+	while (p) {
+		assert(p->state == PS_WAITS4PIPE);
 		process_transition(p, PS_RUNNING);
 		regs_savereturn(&p->regs, -1);
+		p = p->waits4pipe.next;
 	}
 	h->pipe.queued = NULL;
 }
