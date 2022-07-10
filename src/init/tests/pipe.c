@@ -113,6 +113,4 @@ void test_pipe(void) {
 
 	// not a to.do detect when all processes that can read are stuck on writing to the pipe and vice versa
 	// it seems like linux just lets the process hang endlessly.
-
-	// TODO kill process that's waiting on a pipe
 }

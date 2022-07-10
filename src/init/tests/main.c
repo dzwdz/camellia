@@ -146,5 +146,6 @@ void test_all(void) {
 	run_forked(test_memflag);
 	run_forked(test_malloc);
 	run_forked(test_pipe);
+	run_forked(test_semaphore);
 	run_forked(test_misc);
 }

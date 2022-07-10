@@ -4,6 +4,7 @@ void stress_all(void);
 void test_all(void);
 
 void test_pipe(void);
+void test_semaphore(void);
 
 #ifdef TEST_MACROS
 
