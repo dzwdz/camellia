@@ -116,8 +116,15 @@ void process_kill(struct process *p, int ret) {
 		if (p->state == PS_WAITS4FS)
 			p->waits4fs.req->caller = NULL;
 
-		if (p->state == PS_WAITS4PIPE)
-			panic_unimplemented();
+		if (p->state == PS_WAITS4PIPE) {
+			struct process **iter = &p->waits4pipe.pipe->pipe.queued;
+			while (*iter && *iter != p) {
+				assert((*iter)->state == PS_WAITS4PIPE);
+				iter = &(*iter)->waits4pipe.next;
+			}
+			assert(iter && *iter == p);
+			*iter = p->waits4pipe.next;
+		}
 
 		for (handle_t h = 0; h < HANDLE_MAX; h++)
 			handle_close(p->handles[h]);
