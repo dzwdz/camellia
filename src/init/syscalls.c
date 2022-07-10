@@ -26,6 +26,10 @@ int _syscall_mount(handle_t h, const char __user *path, int len) {
 	return _syscall(_SYSCALL_MOUNT, (int)h, (int)path, len, 0);
 }
 
+handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
+	return (handle_t)_syscall(_SYSCALL_DUP, (int)from, (int)to, flags, 0);
+}
+
 int _syscall_read(handle_t h, void __user *buf, size_t len, int offset) {
 	return _syscall(_SYSCALL_READ, (int)h, (int)buf, (int)len, offset);
 }

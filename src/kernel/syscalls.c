@@ -176,6 +176,30 @@ fail:
 	SYSCALL_RETURN(-1);
 }
 
+handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
+	struct handle *fromh, **toh;
+	if (flags) SYSCALL_RETURN(-1);
+
+	if (to < 0) {
+		to = process_find_free_handle(process_current, 0);
+		if (to < 0) SYSCALL_RETURN(-1);
+	} else if (to >= HANDLE_MAX) {
+		SYSCALL_RETURN(-1);
+	}
+
+	if (to == from)
+		SYSCALL_RETURN(to);
+	toh = &process_current->handles[to];
+	fromh = (from >= 0 && from < HANDLE_MAX) ?
+		process_current->handles[from] : NULL;
+
+	if (*toh) handle_close(*toh);
+	*toh = fromh;
+	if (fromh) fromh->refcount++;
+
+	SYSCALL_RETURN(to);
+}
+
 int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
 	struct handle *h = process_handle_get(process_current, handle_num);
 	if (!h) SYSCALL_RETURN(-1);
@@ -359,6 +383,9 @@ int _syscall(int num, int a, int b, int c, int d) {
 			break;
 		case _SYSCALL_MOUNT:
 			_syscall_mount(a, (userptr_t)b, c);
+			break;
+		case _SYSCALL_DUP:
+			_syscall_dup(a, b, c);
 			break;
 		case _SYSCALL_READ:
 			_syscall_read(a, (userptr_t)b, c, d);

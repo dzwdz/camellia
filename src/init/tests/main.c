@@ -113,6 +113,59 @@ static void test_memflag(void) {
 	// TODO check if reclaims
 }
 
+static void test_dup(void) {
+	handle_t pipe[2];
+	handle_t h1, h2;
+	assert(_syscall_pipe(pipe, 0) >= 0);
+
+	if (!_syscall_fork(0, NULL)) {
+		_syscall_close(pipe[0]);
+
+		h1 = _syscall_dup(pipe[1], -1, 0);
+		assert(h1 >= 0);
+		assert(h1 != pipe[1]);
+		h2 = _syscall_dup(h1, -1, 0);
+		assert(h2 >= 0);
+		assert(h2 != pipe[1] && h2 != h1);
+
+		_syscall_write(pipe[1], "og", 2, 0);
+		_syscall_write(h1, "h1", 2, 0);
+		_syscall_write(h2, "h2", 2, 0);
+
+		_syscall_close(pipe[1]);
+		_syscall_write(h1, "h1", 2, 0);
+		_syscall_write(h2, "h2", 2, 0);
+
+		assert(_syscall_dup(h1, pipe[1], 0) == pipe[1]);
+		assert(_syscall_dup(h2, pipe[1], 0) == pipe[1]);
+		assert(_syscall_dup(h1, pipe[1], 0) == pipe[1]);
+		assert(_syscall_dup(h2, pipe[1], 0) == pipe[1]);
+		_syscall_close(h1);
+		_syscall_close(h2);
+
+		assert(_syscall_dup(pipe[1], h2, 0) == h2);
+		_syscall_write(h2, "h2", 2, 0);
+		_syscall_close(h2);
+
+		assert(_syscall_dup(pipe[1], h1, 0) == h1);
+		_syscall_write(h1, "h1", 2, 0);
+		_syscall_close(h1);
+
+		_syscall_exit(0);
+	} else {
+		char buf[16];
+		size_t count = 0;
+		_syscall_close(pipe[1]);
+		while (_syscall_read(pipe[0], buf, sizeof buf, 0) >= 0)
+			count++;
+		assert(count == 7);
+		_syscall_await();
+	}
+
+
+	_syscall_close(pipe[0]);
+}
+
 static void test_malloc(void) {
 	// not really a test
 	void *p1, *p2;
@@ -144,6 +197,7 @@ void test_all(void) {
 	run_forked(test_interrupted_fs);
 	run_forked(test_orphaned_fs);
 	run_forked(test_memflag);
+	run_forked(test_dup);
 	run_forked(test_malloc);
 	run_forked(test_pipe);
 	run_forked(test_semaphore);
