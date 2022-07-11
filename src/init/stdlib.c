@@ -2,7 +2,11 @@
 #include <shared/printf.h>
 #include <shared/syscalls.h>
 
-libc_file *stdin, *stdout;
+// TODO oh god this garbage - malloc, actually open, [...]
+static libc_file _stdin_null  = { .fd = 0 };
+static libc_file _stdout_null = { .fd = 1 };
+
+libc_file *stdin = &_stdin_null, *stdout = &_stdout_null;
 
 static void backend_file(void *arg, const char *buf, size_t len) {
 	file_write((libc_file*)arg, buf, len);
@@ -67,6 +71,29 @@ libc_file *file_open(const char *path, int flags) {
 	return f;
 }
 
+libc_file *file_reopen(libc_file *f, const char *path, int flags) {
+	/* partially based on the musl implementation of freopen */
+	libc_file *f2;
+	if (!path) goto fail;
+	f2 = file_open(path, flags);
+	if (!f2) goto fail;
+
+	/* shouldn't happen, but if it happens, let's roll with it. */
+	if (f->fd == f2->fd) f2->fd = -1;
+
+	if (_syscall_dup(f2->fd, f->fd, 0) < 0) goto fail2;
+	f->pos = f2->pos;
+	f->eof = f2->eof;
+	file_close(f2);
+	return f;
+
+fail2:
+	file_close(f2);
+fail:
+	file_close(f);
+	return NULL;
+}
+
 int file_read(libc_file *f, char *buf, size_t len) {
 	if (f->fd < 0) return -1;
 
@@ -88,5 +115,6 @@ int file_write(libc_file *f, const char *buf, size_t len) {
 
 void file_close(libc_file *f) {
 	if (f->fd > 0) _syscall_close(f->fd);
-	free(f);
+	if (f != &_stdin_null && f != &_stdout_null)
+		free(f);
 }

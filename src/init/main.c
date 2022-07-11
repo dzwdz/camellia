@@ -19,7 +19,7 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	stdout = file_open("/com1", 0);
+	file_reopen(stdout, "/com1", 0);
 	printf("preinit\n");
 
 	/* move everything provided by the kernel to /kdev */
@@ -55,12 +55,14 @@ int main(void) {
 	}
 
 	if (!_syscall_fork(0, NULL)) {
-		libc_file *new = file_open("/kdev/com1", 0);
-		if (!new) {
+		if (!file_reopen(stdout, "/kdev/com1", 0)) {
+			printf("couldn't open /kdev/com1\n"); // TODO borked
+			_syscall_exit(1);
+		}
+		if (!file_reopen(stdin, "/kdev/com1", 0)) {
 			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
 		}
-		stdout = stdin = new; // TODO file_clone, this is bad
 
 		shell_loop();
 		_syscall_exit(1);
@@ -68,17 +70,11 @@ int main(void) {
 
 
 	if (!_syscall_fork(0, NULL)) {
-		libc_file *new;
-		new = file_open("/vga_tty", 0);
-		if (!new) {
-			printf("couldn't open /vga_tty\n");
+		if (!file_reopen(stdout, "/vga_tty", 0)) {
+			printf("couldn't open /vga_tty\n"); // TODO borked
 			_syscall_exit(1);
 		}
-		file_close(stdout);
-		stdout = new;
-
-		stdin = file_open("/keyboard", 0);
-		if (!stdin) {
+		if (!file_reopen(stdin, "/keyboard", 0)) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
