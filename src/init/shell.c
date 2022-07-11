@@ -18,7 +18,7 @@ static char *split(char *base) {
 static int readline(char *buf, size_t max) {
 	char c;
 	size_t pos = 0;
-	while (file_read(&__stdin, &c, 1)) {
+	while (file_read(stdin, &c, 1)) {
 		switch (c) {
 			case '\b':
 			case 0x7f:
@@ -45,7 +45,7 @@ static int readline(char *buf, size_t max) {
 }
 
 static void cmd_cat_ls(const char *args, bool ls) {
-	libc_file file;
+	libc_file *file;
 	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
 
@@ -63,22 +63,23 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		}
 	}
 
-	if (file_open(&file, buf, 0) < 0) {
+	file = file_open(buf, 0);
+	if (!file) {
 		printf("couldn't open.\n");
 		return;
 	}
 
-	while (!file.eof) {
-		int len = file_read(&file, buf, sizeof buf);
+	while (!file->eof) {
+		int len = file_read(file, buf, sizeof buf);
 		if (len <= 0) break;
 
 		if (ls) {
 			for (int i = 0; i < len; i++)
 				if (buf[i] == '\0') buf[i] = '\n';
 		}
-		file_write(&__stdout, buf, len);
+		file_write(stdout, buf, len);
 	}
-	file_close(&file);
+	file_close(file);
 }
 
 static void cmd_hexdump(const char *args) {

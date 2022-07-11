@@ -2,8 +2,7 @@
 #include <shared/printf.h>
 #include <shared/syscalls.h>
 
-libc_file __stdin  = {.fd = -1};
-libc_file __stdout = {.fd = -1};
+libc_file *stdin, *stdout;
 
 static void backend_file(void *arg, const char *buf, size_t len) {
 	file_write((libc_file*)arg, buf, len);
@@ -13,7 +12,7 @@ int printf(const char *fmt, ...) {
 	int ret = 0;
 	va_list argp;
 	va_start(argp, fmt);
-	ret = __printf_internal(fmt, argp, backend_file, (void*)&__stdout);
+	ret = __printf_internal(fmt, argp, backend_file, (void*)stdout);
 	va_end(argp);
 	return ret;
 }
@@ -52,12 +51,20 @@ int _klogf(const char *fmt, ...) {
 }
 
 
-int file_open(libc_file *f, const char *path, int flags) {
+libc_file *file_open(const char *path, int flags) {
+	handle_t h = _syscall_open(path, strlen(path), flags);
+	libc_file *f;
+	if (h < 0) return NULL;
+
+	f = malloc(sizeof *f);
+	if (!f) {
+		_syscall_close(h);
+		return NULL;
+	}
 	f->pos = 0;
 	f->eof = false;
-	f->fd = _syscall_open(path, strlen(path), flags);
-	if (f->fd < 0) return f->fd;
-	return 0;
+	f->fd = h;
+	return f;
 }
 
 int file_read(libc_file *f, char *buf, size_t len) {
@@ -81,4 +88,5 @@ int file_write(libc_file *f, const char *buf, size_t len) {
 
 void file_close(libc_file *f) {
 	if (f->fd > 0) _syscall_close(f->fd);
+	free(f);
 }

@@ -19,7 +19,7 @@ int main(void) {
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	file_open(&__stdout, "/com1", 0);
+	stdout = file_open("/com1", 0);
 	printf("preinit\n");
 
 	/* move everything provided by the kernel to /kdev */
@@ -36,8 +36,6 @@ int main(void) {
 	MOUNT("/vga_tty", ansiterm_drv());
 
 	MOUNT("/bind/", fs_passthru(NULL));
-
-	file_close(&__stdout);
 
 	if (_syscall_fork(0, NULL)) {
 		/* (used to) expose a bug in the kernel
@@ -57,8 +55,12 @@ int main(void) {
 	}
 
 	if (!_syscall_fork(0, NULL)) {
-		if (file_open(&__stdout, "/kdev/com1", 0) < 0 || file_open(&__stdin, "/kdev/com1", 0) < 0)
+		libc_file *new = file_open("/kdev/com1", 0);
+		if (!new) {
+			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
+		}
+		stdout = stdin = new; // TODO file_clone, this is bad
 
 		shell_loop();
 		_syscall_exit(1);
@@ -66,10 +68,17 @@ int main(void) {
 
 
 	if (!_syscall_fork(0, NULL)) {
-		if (file_open(&__stdout, "/vga_tty", 0) < 0)
+		libc_file *new;
+		new = file_open("/vga_tty", 0);
+		if (!new) {
+			printf("couldn't open /vga_tty\n");
 			_syscall_exit(1);
+		}
+		file_close(stdout);
+		stdout = new;
 
-		if (file_open(&__stdin, "/keyboard", 0) < 0) {
+		stdin = file_open("/keyboard", 0);
+		if (!stdin) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
@@ -77,11 +86,6 @@ int main(void) {
 		shell_loop();
 		_syscall_exit(1);
 	}
-
-
-	// try to find any working output
-	if (file_open(&__stdout, "/kdev/com1", 0) < 0)
-		file_open(&__stdout, "/kdev/vga_tty", 0);
 
 	_syscall_await();
 	printf("init: quitting\n");
