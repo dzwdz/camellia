@@ -62,7 +62,7 @@ libc_file *file_open(const char *path, int flags) {
 
 	f = malloc(sizeof *f);
 	if (!f) {
-		_syscall_close(h);
+		close(h);
 		return NULL;
 	}
 	f->pos = 0;
@@ -114,7 +114,16 @@ int file_write(libc_file *f, const char *buf, size_t len) {
 }
 
 void file_close(libc_file *f) {
-	if (f->fd > 0) _syscall_close(f->fd);
+	if (f->fd > 0) close(f->fd);
 	if (f != &_stdin_null && f != &_stdout_null)
 		free(f);
+}
+
+
+int fork(void) {
+	return _syscall_fork(0, NULL);
+}
+
+int close(handle_t h) {
+	return _syscall_close(h);
 }

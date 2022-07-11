@@ -5,7 +5,7 @@
 #include <shared/syscalls.h>
 
 static void run_forked(void (*fn)()) {
-	if (!_syscall_fork(0, NULL)) {
+	if (!fork()) {
 		fn();
 		_syscall_exit(0);
 	} else {
@@ -24,7 +24,7 @@ static void test_await(void) {
 	int counts[16] = {0};
 
 	for (int i = 0; i < 16; i++)
-		if (!_syscall_fork(0, NULL))
+		if (!fork())
 			_syscall_exit(i);
 
 	while ((ret = _syscall_await()) != ~0) {
@@ -42,12 +42,12 @@ static void test_faults(void) {
 	 * reap all its children */
 	int await_cnt = 0;
 
-	if (!_syscall_fork(0, NULL)) { // invalid memory access
+	if (!fork()) { // invalid memory access
 		asm volatile("movb $69, 0" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
 	}
-	if (!_syscall_fork(0, NULL)) { // #GP
+	if (!fork()) { // #GP
 		asm volatile("hlt" ::: "memory");
 		printf("this shouldn't happen");
 		_syscall_exit(-1);
@@ -90,7 +90,7 @@ static void test_memflag(void) {
 	memset(page, 77, 4096); // write to it
 	_syscall_memflag(page, 4096, 0); // free it
 
-	if (!_syscall_fork(0, NULL)) {
+	if (!fork()) {
 		memset(page, 11, 4096); // should segfault
 		_syscall_exit(0);
 	} else {
@@ -118,8 +118,8 @@ static void test_dup(void) {
 	handle_t h1, h2;
 	assert(_syscall_pipe(pipe, 0) >= 0);
 
-	if (!_syscall_fork(0, NULL)) {
-		_syscall_close(pipe[0]);
+	if (!fork()) {
+		close(pipe[0]);
 
 		h1 = _syscall_dup(pipe[1], -1, 0);
 		assert(h1 >= 0);
@@ -132,7 +132,7 @@ static void test_dup(void) {
 		_syscall_write(h1, "h1", 2, 0);
 		_syscall_write(h2, "h2", 2, 0);
 
-		_syscall_close(pipe[1]);
+		close(pipe[1]);
 		_syscall_write(h1, "h1", 2, 0);
 		_syscall_write(h2, "h2", 2, 0);
 
@@ -140,22 +140,22 @@ static void test_dup(void) {
 		assert(_syscall_dup(h2, pipe[1], 0) == pipe[1]);
 		assert(_syscall_dup(h1, pipe[1], 0) == pipe[1]);
 		assert(_syscall_dup(h2, pipe[1], 0) == pipe[1]);
-		_syscall_close(h1);
-		_syscall_close(h2);
+		close(h1);
+		close(h2);
 
 		assert(_syscall_dup(pipe[1], h2, 0) == h2);
 		_syscall_write(h2, "h2", 2, 0);
-		_syscall_close(h2);
+		close(h2);
 
 		assert(_syscall_dup(pipe[1], h1, 0) == h1);
 		_syscall_write(h1, "h1", 2, 0);
-		_syscall_close(h1);
+		close(h1);
 
 		_syscall_exit(0);
 	} else {
 		char buf[16];
 		size_t count = 0;
-		_syscall_close(pipe[1]);
+		close(pipe[1]);
 		while (_syscall_read(pipe[0], buf, sizeof buf, 0) >= 0)
 			count++;
 		assert(count == 7);
@@ -163,7 +163,7 @@ static void test_dup(void) {
 	}
 
 
-	_syscall_close(pipe[0]);
+	close(pipe[0]);
 }
 
 static void test_malloc(void) {

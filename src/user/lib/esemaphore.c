@@ -21,7 +21,7 @@ struct evil_sem *esem_new(int value) {
 	if (!(sem = malloc(sizeof *sem))) goto fail_malloc;
 
 	if (!_syscall_fork(FORK_NOREAP, NULL)) {
-		_syscall_close(ends_signal[1]);
+		close(ends_signal[1]);
 		while (_syscall_read(ends_signal[0], NULL, 0, 0) >= 0) {
 			if (!_syscall_fork(FORK_NOREAP, NULL)) {
 				_syscall_write(ends_wait[1], NULL, 0, 0);
@@ -30,8 +30,8 @@ struct evil_sem *esem_new(int value) {
 		}
 		_syscall_exit(0);
 	}
-	_syscall_close(ends_signal[0]);
-	_syscall_close(ends_wait[1]);
+	close(ends_signal[0]);
+	close(ends_wait[1]);
 
 	sem->wait = ends_wait[0];
 	sem->signal = ends_signal[1];
@@ -40,16 +40,16 @@ struct evil_sem *esem_new(int value) {
 	return sem;
 
 fail_malloc:
-	_syscall_close(ends_signal[0]);
-	_syscall_close(ends_signal[1]);
+	close(ends_signal[0]);
+	close(ends_signal[1]);
 fail_signal:
-	_syscall_close(ends_wait[0]);
-	_syscall_close(ends_wait[1]);
+	close(ends_wait[0]);
+	close(ends_wait[1]);
 	return NULL;
 }
 
 void esem_free(struct evil_sem *sem) {
-	_syscall_close(sem->wait);
-	_syscall_close(sem->signal);
+	close(sem->wait);
+	close(sem->signal);
 	free(sem);
 }

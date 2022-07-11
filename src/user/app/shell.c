@@ -111,7 +111,7 @@ static void cmd_hexdump(const char *args) {
 		printf("|\n");
 	}
 
-	_syscall_close(fd);
+	close(fd);
 }
 
 static void cmd_touch(const char *args) {
@@ -120,7 +120,7 @@ static void cmd_touch(const char *args) {
 		printf("couldn't create file.\n");
 		return;
 	}
-	_syscall_close(fd);
+	close(fd);
 }
 
 void shell_loop(void) {
@@ -157,7 +157,7 @@ void shell_loop(void) {
 		} else if (!strcmp(cmd, "exit")) {
 			_syscall_exit(0);
 		} else if (!strcmp(cmd, "fork")) {
-			if (_syscall_fork(0, NULL))
+			if (fork())
 				_syscall_await();
 			else level++;
 		} else if (!strcmp(cmd, "run_tests")) {

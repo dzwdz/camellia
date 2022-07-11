@@ -1,8 +1,9 @@
 #pragma once
-#include <user/lib/malloc.h>
 #include <shared/mem.h>
+#include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <user/lib/malloc.h>
 
 int printf(const char *fmt, ...);
 int snprintf(char *str, size_t len, const char *fmt, ...);
@@ -21,3 +22,6 @@ int file_write(libc_file*, const char *buf, size_t len);
 void file_close(libc_file*);
 
 extern libc_file *stdin, *stdout;
+
+int fork(void);
+int close(handle_t h);

@@ -9,7 +9,7 @@ bool fork2_n_mount(const char *path) {
 	handle_t h;
 	if (_syscall_fork(FORK_NEWFS, &h) > 0) { /* parent */
 		_syscall_mount(h, path, strlen(path));
-		_syscall_close(h);
+		close(h);
 		return true;
 	}
 	return false;
@@ -129,7 +129,7 @@ void fs_dir_inject(const char *path) {
 
 			case VFSOP_CLOSE:
 				if (data->delegate >= 0)
-					_syscall_close(data->delegate);
+					close(data->delegate);
 				_syscall_fs_respond(NULL, 0, 0);
 				break;
 

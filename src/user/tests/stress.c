@@ -5,7 +5,7 @@
 #include <shared/syscalls.h>
 
 static void run_forked(void (*fn)()) {
-	if (!_syscall_fork(0, NULL)) {
+	if (!fork()) {
 		fn();
 		_syscall_exit(0);
 	} else {
@@ -18,7 +18,7 @@ static void run_forked(void (*fn)()) {
 
 static void stress_fork(void) {
 	for (size_t i = 0; i < 2048; i++) {
-		if (!_syscall_fork(0, NULL)) _syscall_exit(0);
+		if (!fork()) _syscall_exit(0);
 		_syscall_await();
 	}
 }
