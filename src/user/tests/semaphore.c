@@ -1,7 +1,7 @@
 #define TEST_MACROS
-#include <init/lib/esemaphore.h>
-#include <init/stdlib.h>
-#include <init/tests/main.h>
+#include <user/lib/esemaphore.h>
+#include <user/lib/stdlib.h>
+#include <user/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 

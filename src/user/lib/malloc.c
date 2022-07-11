@@ -1,9 +1,9 @@
-#include <init/malloc.h>
+#include <user/lib/malloc.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
 
-#include <init/stdlib.h>
+#include <user/lib/stdlib.h>
 
 #define MBLOCK_MAGIC 0x1337BABE
 

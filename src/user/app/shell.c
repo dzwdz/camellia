@@ -1,6 +1,6 @@
-#include <init/shell.h>
-#include <init/stdlib.h>
-#include <init/tests/main.h>
+#include <user/app/shell.h>
+#include <user/lib/stdlib.h>
+#include <user/tests/main.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
 

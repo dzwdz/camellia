@@ -1,9 +1,9 @@
-#include <init/driver/driver.h>
-#include <init/fs/misc.h>
-#include <init/shell.h>
-#include <init/stdlib.h>
-#include <init/tar.h>
-#include <init/tests/main.h>
+#include <user/driver/driver.h>
+#include <user/fs/misc.h>
+#include <user/app/shell.h>
+#include <user/lib/stdlib.h>
+#include <user/fs/tar.h>
+#include <user/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>

@@ -1,5 +1,5 @@
-#include <init/fs/misc.h>
-#include <init/stdlib.h>
+#include <user/fs/misc.h>
+#include <user/lib/stdlib.h>
 #include <shared/flags.h>
 #include <shared/mem.h>
 #include <shared/syscalls.h>

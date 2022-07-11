@@ -1,4 +1,4 @@
-#include <init/stdlib.h>
+#include <user/lib/stdlib.h>
 #include <shared/printf.h>
 #include <shared/syscalls.h>
 

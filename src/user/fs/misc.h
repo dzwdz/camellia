@@ -1,5 +1,5 @@
 #pragma once
-#include <init/stdlib.h>
+#include <user/lib/stdlib.h>
 #include <stdbool.h>
 
 bool fork2_n_mount(const char *path);

@@ -60,7 +60,7 @@ out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/) $
 	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-out/raw_init: src/init/linker.ld $(call from_sources, src/init/) $(call from_sources, src/shared/)
+out/raw_init: src/user/linker.ld $(call from_sources, src/user/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
@@ -87,5 +87,5 @@ out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
 
-src/init/syscalls.c: tools/syscall_wrappers.awk src/shared/syscalls.h
+src/user/lib/syscall.c: src/user/lib/syscall.c.awk src/shared/syscalls.h
 	awk -f $^ > $@
