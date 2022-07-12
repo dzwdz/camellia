@@ -4,9 +4,14 @@
 #include <shared/syscalls.h>
 #include <stdbool.h>
 
-static char *split(char *base) {
+static bool isspace(char c) {
+	return c == ' ' || c == '\t' || c == '\n';
+}
+
+static char *strsplit(char *base, char delim) {
+	if (!base) return NULL;
 	while (*base) {
-		if (*base == ' ' || *base == '\t') {
+		if (delim ? *base == delim : isspace(*base)) {
 			*base++ = '\0';
 			return base;
 		}
@@ -14,6 +19,17 @@ static char *split(char *base) {
 	}
 	return NULL;
 }
+
+static char *strtrim(char *s) {
+	char *end;
+	if (!s) return NULL;
+	while (isspace(*s)) s++;
+	end = s + strlen(s);
+	while (end > s && isspace(end[-1])) end--;
+	*end = '\0';
+	return s;
+}
+
 
 static int readline(char *buf, size_t max) {
 	char c;
@@ -124,14 +140,23 @@ static void cmd_touch(const char *args) {
 }
 
 void shell_loop(void) {
-	static char cmd[256];
+	static char buf[256];
 	int level = 0;
-	char *args;
+	char *cmd, *args, *redir;
 
 	for (;;) {
 		printf("%x$ ", level);
-		readline(cmd, 256);
-		args = split(cmd);
+
+		readline(buf, 256);
+		redir = strtrim(strsplit(buf, '>'));
+		cmd = strtrim(buf);
+		args = strtrim(strsplit(cmd, 0));
+
+		if (redir) {
+			printf("redirections aren't supported just yet :(\n");
+			continue;
+		}
+
 		if (!strcmp(cmd, "echo")) {
 			printf("%s\n", args);
 		} else if (!strcmp(cmd, "cat")) {
