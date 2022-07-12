@@ -5,8 +5,10 @@
 
 struct node {
 	const char *name;
-	size_t len;
+	size_t namelen;
 	struct node *next;
+	char *buf;
+	size_t size, capacity;
 };
 
 struct node *root = NULL;
@@ -14,7 +16,7 @@ static struct node special_root;
 
 static struct node *lookup(const char *path, size_t len) {
 	for (struct node *iter = root; iter; iter = iter->next) {
-		if (iter->len == len && !memcmp(path, iter->name, len))
+		if (iter->namelen == len && !memcmp(path, iter->name, len))
 			return iter;
 	}
 	return NULL;
@@ -33,10 +35,12 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 	if (res->flags & OPEN_CREATE) {
 		if (lookup(path, res->len)) return NULL; /* already exists */
 		struct node *new = malloc(sizeof *new);
+		memset(new, 0, sizeof *new);
+
 		char *namebuf = malloc(res->len);
 		memcpy(namebuf, path, res->len);
 		new->name = namebuf;
-		new->len = res->len;
+		new->namelen = res->len;
 		new->next = root;
 		root = new;
 		return new;
@@ -58,31 +62,65 @@ void tmpfs_drv(void) {
 				break;
 
 			case VFSOP_READ:
-				if (res.id != &special_root) {
-					// rw unimplemented
+				ptr = (void*)res.id;
+				if (ptr == &special_root) {
+					size_t buf_pos = 0;
+					size_t to_skip = res.offset;
+
+					for (struct node *iter = root; iter; iter = iter->next) {
+						if (iter->namelen <= to_skip) {
+							to_skip -= iter->namelen;
+							continue;
+						}
+
+						if (iter->namelen + buf_pos - to_skip >= sizeof(buf)) {
+							memcpy(buf + buf_pos, iter->name + to_skip, sizeof(buf) - buf_pos - to_skip);
+							buf_pos = sizeof(buf);
+							break;
+						}
+						memcpy(buf + buf_pos, iter->name + to_skip, iter->namelen - to_skip);
+						buf_pos += iter->namelen - to_skip;
+						buf[buf_pos++] = '\0';
+						to_skip = 0;
+					}
+					_syscall_fs_respond(buf, buf_pos, 0);
+				} else {
+					// TODO offset
+					if (res.offset)
+						_syscall_fs_respond(NULL, 0, 0);
+					else
+						_syscall_fs_respond(ptr->buf, ptr->size, 0);
+					break;
+				}
+				break;
+
+			case VFSOP_WRITE:
+				ptr = (void*)res.id;
+				if (ptr == &special_root) {
 					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
-				size_t buf_pos = 0;
-				size_t to_skip = res.offset;
-
-				for (struct node *iter = root; iter; iter = iter->next) {
-					if (iter->len <= to_skip) {
-						to_skip -= iter->len;
-						continue;
-					}
-
-					if (iter->len + buf_pos - to_skip >= sizeof(buf)) {
-						memcpy(buf + buf_pos, iter->name + to_skip, sizeof(buf) - buf_pos - to_skip);
-						buf_pos = sizeof(buf);
+				if (res.len == 0) {
+					_syscall_fs_respond(NULL, 0, 0);
+					break;
+				}
+				if (!ptr->buf) {
+					ptr->buf = malloc(256);
+					if (!ptr->buf) {
+						_syscall_fs_respond(NULL, -1, 0);
 						break;
 					}
-					memcpy(buf + buf_pos, iter->name + to_skip, iter->len - to_skip);
-					buf_pos += iter->len - to_skip;
-					buf[buf_pos++] = '\0';
-					to_skip = 0;
+					memset(ptr->buf, 0, 256);
+					ptr->capacity = 256;
 				}
-				_syscall_fs_respond(buf, buf_pos, 0);
+
+				size_t len = res.len;
+				if (len > ptr->capacity - res.offset)
+					len = ptr->capacity - res.offset;
+				memcpy(ptr->buf + res.offset, buf, len);
+				if (ptr->size < res.offset + len)
+					ptr->size = res.offset + len;
+				_syscall_fs_respond(NULL, len, 0);
 				break;
 
 			default:
