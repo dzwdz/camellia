@@ -72,7 +72,7 @@ static void accept(struct vfs_request *req) {
 	bool valid;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			valid = req->input.len == 0 && !(req->flags & OPEN_CREATE);
+			valid = req->input.len == 0;
 			vfsreq_finish_short(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:

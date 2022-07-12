@@ -22,10 +22,6 @@ void tar_driver(void *base) {
 	while (!_syscall_fs_wait(buf, BUF_SIZE, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
-				if (res.flags & OPEN_CREATE) {
-					_syscall_fs_respond(NULL, -1, 0);
-					break;
-				}
 				ptr = tar_open(buf, res.len, base, ~0);
 				_syscall_fs_respond(ptr, ptr ? 0 : -1, 0);
 				break;

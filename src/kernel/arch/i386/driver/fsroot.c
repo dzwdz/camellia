@@ -48,8 +48,6 @@ static int handle(struct vfs_request *req) {
 	int id = (int)req->id;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			if (req->flags & OPEN_CREATE) return -1;
-
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
 			if (exacteq(req, "/vga"))	return HANDLE_VGA;
 

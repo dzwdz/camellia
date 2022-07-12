@@ -55,10 +55,6 @@ static void main_loop(void) {
 	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
-				if (res.flags & OPEN_CREATE) {
-					_syscall_fs_respond(NULL, -1, 0);
-					break;
-				}
 				_syscall_fs_respond(NULL, 1, 0);
 				break;
 

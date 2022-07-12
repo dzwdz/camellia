@@ -104,11 +104,6 @@ void fs_dir_inject(const char *path) {
 				{
 					/* opening a directory that we're injecting into */
 
-					if (res.flags & OPEN_CREATE) {
-						_syscall_fs_respond(NULL, -1, 0);
-						break;
-					}
-
 					data = malloc(sizeof *data);
 					data->delegate = _syscall_open(buf, res.len, res.flags);
 					data->inject = path + res.len;
