@@ -152,45 +152,55 @@ void shell_loop(void) {
 		cmd = strtrim(buf);
 		args = strtrim(strsplit(cmd, 0));
 
-		if (redir) {
-			printf("redirections aren't supported just yet :(\n");
+		/* "special" commands that can't be handled in a subprocess */
+		if (!strcmp(cmd, "shadow")) {
+			_syscall_mount(-1, args, strlen(args));
+			continue;
+		} else if (!strcmp(cmd, "exit")) {
+			_syscall_exit(0);
+			continue;
+		} else if (!strcmp(cmd, "fork")) {
+			if (!fork()) level++;
+			else _syscall_await();
 			continue;
 		}
 
-		if (!strcmp(cmd, "echo")) {
-			printf("%s\n", args);
-		} else if (!strcmp(cmd, "cat")) {
-			cmd_cat_ls(args, false);
-		} else if (!strcmp(cmd, "ls")) {
-			cmd_cat_ls(args, true);
-		} else if (!strcmp(cmd, "hexdump")) {
-			cmd_hexdump(args);
-		} else if (!strcmp(cmd, "catall")) {
-			const char *files[] = {
-				"/init/fake.txt",
-				"/init/1.txt", "/init/2.txt",
-				"/init/dir/3.txt", NULL};
-			for (int i = 0; files[i]; i++) {
-				printf("%s:\n", files[i]);
-				cmd_cat_ls(files[i], false);
-				printf("\n");
+		if (!fork()) {
+			if (redir && !file_reopen(stdout, redir, OPEN_CREATE)) {
+				// TODO stderr
+				_syscall_exit(0);
 			}
-		} else if (!strcmp(cmd, "touch")) {
-			cmd_touch(args);
-		} else if (!strcmp(cmd, "shadow")) {
-			_syscall_mount(-1, args, strlen(args));
-		} else if (!strcmp(cmd, "exit")) {
+
+			if (!strcmp(cmd, "echo")) {
+				printf("%s\n", args);
+			} else if (!strcmp(cmd, "cat")) {
+				cmd_cat_ls(args, false);
+			} else if (!strcmp(cmd, "ls")) {
+				cmd_cat_ls(args, true);
+			} else if (!strcmp(cmd, "hexdump")) {
+				cmd_hexdump(args);
+			} else if (!strcmp(cmd, "catall")) {
+				const char *files[] = {
+					"/init/fake.txt",
+					"/init/1.txt", "/init/2.txt",
+					"/init/dir/3.txt", NULL};
+				for (int i = 0; files[i]; i++) {
+					printf("%s:\n", files[i]);
+					cmd_cat_ls(files[i], false);
+					printf("\n");
+				}
+			} else if (!strcmp(cmd, "touch")) {
+				cmd_touch(args);
+			} else if (!strcmp(cmd, "run_tests")) {
+				test_all();
+			} else if (!strcmp(cmd, "stress")) {
+				stress_all();
+			} else {
+				printf("unknown command :(\n");
+			}
 			_syscall_exit(0);
-		} else if (!strcmp(cmd, "fork")) {
-			if (fork())
-				_syscall_await();
-			else level++;
-		} else if (!strcmp(cmd, "run_tests")) {
-			test_all();
-		} else if (!strcmp(cmd, "stress")) {
-			stress_all();
 		} else {
-			printf("unknown command :(\n");
+			_syscall_await();
 		}
 	}
 }
