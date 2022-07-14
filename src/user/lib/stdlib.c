@@ -94,6 +94,23 @@ fail:
 	return NULL;
 }
 
+libc_file *file_clone(const libc_file *f) {
+	handle_t h = _syscall_dup(f->fd, -1, 0);
+	libc_file *f2;
+	if (h < 0) return NULL;
+
+	// TODO file_wrapfd
+	f2 = malloc(sizeof *f2);
+	if (!f2) {
+		close(h);
+		return NULL;
+	}
+	f2->pos = f->pos;
+	f2->eof = f->eof;
+	f2->fd = h;
+	return f2;
+}
+
 int file_read(libc_file *f, char *buf, size_t len) {
 	if (f->fd < 0) return -1;
 

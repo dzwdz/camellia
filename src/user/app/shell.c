@@ -46,21 +46,24 @@ static void cmd_cat_ls(const char *args, bool ls) {
 	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
 
-	if (!args) args = "/";
-	len = strlen(args);
-	memcpy(buf, args, len + 1); // no overflow check - the shell is just a PoC
+	if (args) {
+		len = strlen(args);
+		memcpy(buf, args, len + 1); // no overflow check - the shell is just a PoC
 
-	if (ls) { // paths to directories always have a trailing slash
-		char *p = buf;
-		while (*p) p++;
-		if (p[-1] != '/') {
-			p[0] = '/';
-			p[1] = '\0';
-			len++;
+		if (ls) { // paths to directories always have a trailing slash
+			if (buf[len-1] != '/') {
+				buf[len] = '/';
+				buf[len+1] = '\0';
+			}
 		}
+
+		file = file_open(buf, 0);
+	} else if (ls) { /* ls default argument */
+		file = file_open("/", 0);
+	} else { /* cat default argument */
+		file = file_clone(stdin);
 	}
 
-	file = file_open(buf, 0);
 	if (!file) {
 		printf("couldn't open.\n");
 		return;

@@ -28,8 +28,12 @@ static void line_editor(handle_t input, handle_t output) {
 					}
 					break;
 				case 4: /* EOT, C-d */
-					w_output(output, linebuf, linepos);
-					linepos = 0;
+					if (linepos > 0) {
+						w_output(output, linebuf, linepos);
+						linepos = 0;
+					} else {
+						_syscall_write(output, NULL, 0, 0); // eof
+					}
 					break;
 				case '\n':
 				case '\r':
