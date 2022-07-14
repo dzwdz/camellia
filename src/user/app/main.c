@@ -63,6 +63,7 @@ int main(void) {
 			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
 		}
+		termcook();
 
 		shell_loop();
 		_syscall_exit(1);
@@ -78,6 +79,7 @@ int main(void) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
+		termcook();
 
 		shell_loop();
 		_syscall_exit(1);

@@ -31,33 +31,14 @@ static char *strtrim(char *s) {
 }
 
 
+// TODO fgets
 static int readline(char *buf, size_t max) {
-	char c;
+	char c = '\0';
 	size_t pos = 0;
-	while (file_read(stdin, &c, 1)) {
-		switch (c) {
-			case '\b':
-			case 0x7f:
-				/* for some reason backspace outputs 0x7f (DEL) */
-				if (pos != 0) {
-					printf("\b \b");
-					pos--;
-				}
-				break;
-			case '\n':
-			case '\r':
-				printf("\n");
-				buf[pos++] = '\0';
-				return pos;
-			default:
-				if (pos < max) {
-					printf("%c", c);
-					buf[pos] = c;
-					pos++;
-				}
-		}
-	}
-	return -1; // error
+	while (pos < (max-1) && c != '\n' && file_read(stdin, &c, 1))
+		buf[pos++] = c;
+	buf[pos++] = '\0';
+	return pos;
 }
 
 static void cmd_cat_ls(const char *args, bool ls) {
