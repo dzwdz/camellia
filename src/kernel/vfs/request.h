@@ -55,6 +55,9 @@ struct vfs_request {
 	struct vfs_backend *backend;
 
 	struct vfs_request *queue_next;
+	struct vfs_request *postqueue_next; /* used by kernel backends */
+	/* only one of these queues is in use at a given moment, they could
+	 * be merged into a single field */
 };
 
 /** Assigns the vfs_request to the caller, and dispatches the call */

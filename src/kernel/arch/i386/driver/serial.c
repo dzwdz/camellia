@@ -77,8 +77,12 @@ static void accept(struct vfs_request *req) {
 			break;
 		case VFSOP_READ:
 			if (ring_size((void*)&backlog) == 0) {
-				// nothing to read
-				blocked_on = req;
+				/* nothing to read, join queue */
+				assert(!req->postqueue_next);
+				struct vfs_request **slot = &blocked_on;
+				while (*slot)
+					slot = &(*slot)->postqueue_next;
+				*slot = req;
 			} else if (req->caller) {
 				ret = clamp(0, req->output.len, sizeof buf);
 				ret = ring_get((void*)&backlog, buf, ret);
@@ -106,5 +110,5 @@ static void accept(struct vfs_request *req) {
 }
 
 static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
-	return blocked_on == NULL;
+	return true;
 }
