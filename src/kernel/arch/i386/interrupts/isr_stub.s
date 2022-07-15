@@ -3,16 +3,30 @@
 .global _isr_stubs
 _isr_stubs:
 .rept 256
-	pushal
+	.set _stub_start, .
+
+	cli
 	call _isr_stage2
+
+	.if . - _stub_start > 8
+		.error "isr stubs over maximum size"
+		.abort
+	.endif
 	.align 8
 .endr
 
 _isr_stage2:
-	cli
+	// pushal order, without %esp
+	push %eax
+	push %ecx
+	push %edx
+	push %ebx
+	push %ebp
+	push %esi
+	push %edi
 
 	// convert the return address into the vector nr
-	pop %eax
+	mov 28(%esp), %eax
 	add $-_isr_stubs, %eax
 	shr $3, %eax
 
@@ -31,7 +45,16 @@ _isr_stage2:
 	pop %eax // restore old cr0
 	mov %eax, %cr0
 
-	popal
+	// restore registers
+	pop %edi
+	pop %esi
+	pop %ebp
+	pop %ebx
+	pop %edx
+	pop %ecx
+	pop %eax
+
+	add $4, %esp // skip call's return address
 	iret
 
 .align 8
