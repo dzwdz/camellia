@@ -45,7 +45,14 @@ _sysexit_real:
 
 	// restore the registers
 	mov $_sysexit_regs, %esp
-	popal
+	pop %edi
+	pop %esi
+	pop %ebp
+	add $4, %esp
+	pop %ebx
+	pop %edx
+	pop %ecx
+	pop %eax
 
 	// enable paging
 	mov %eax, stored_eax
@@ -69,7 +76,14 @@ sysenter_stage1:
 
 	// save the registers
 	mov $(_sysexit_regs + 32), %esp
-	pushal
+	push %eax
+	push %ecx
+	push %edx
+	push %ebx
+	push $0x0 // pushal pushes %esp here, but that's worthless
+	push %ebp
+	push %esi
+	push %edi
 
 	mov $_bss_end, %esp
 	jmp sysenter_stage2
