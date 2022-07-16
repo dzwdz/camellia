@@ -122,14 +122,10 @@ get_entry(struct pagedir *dir, const void __user *virt) {
 }
 
 void *pagedir_unmap(struct pagedir *dir, void __user *virt) {
-	(void)dir; (void)virt;
-	panic_unimplemented();
-	/* unset the present bit
-	void *phys = pagedir_virt2phys(dir, virt, false, false);
-	struct pagetable_entry *page = get_entry(dir, virt);
+	pe_generic_t *page = get_entry(dir, virt);
+	if (!page) return NULL;
 	page->present = false;
-	return phys;
-	*/
+	return addr_extract(*page);
 }
 
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,

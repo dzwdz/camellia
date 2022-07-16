@@ -63,12 +63,11 @@ int main(void) {
 			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
 		}
-		//termcook();
+		termcook();
 
 		shell_loop();
 		_syscall_exit(1);
 	}
-
 
 	if (!fork()) {
 		if (!file_reopen(stdout, "/vga_tty", 0)) {
@@ -79,7 +78,7 @@ int main(void) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
-		//termcook();
+		termcook();
 
 		shell_loop();
 		_syscall_exit(1);
