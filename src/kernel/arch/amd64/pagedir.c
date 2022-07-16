@@ -129,6 +129,7 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 
 	pml4e = &dir->e[v.pml4];
 	if (!pml4e->present) {
+		kprintf("allocating pdpt\n");
 		pml4e->as_ptr = addr_validate(page_zalloc(1));
 		pml4e->present = 1;
 		pml4e->writeable = 1;
@@ -138,6 +139,7 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 
 	pdpte = &((pe_generic_t*)addr_extract(*pml4e))[v.pdpt];
 	if (!pdpte->present) {
+		kprintf("allocating pd\n");
 		pdpte->as_ptr = addr_validate(page_zalloc(1));
 		pdpte->present = 1;
 		pdpte->writeable = 1;
@@ -147,6 +149,7 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 
 	pde = &((pe_generic_t*)addr_extract(*pdpte))[v.pd];
 	if (!pde->present) {
+		kprintf("allocating pt\n");
 		pde->as_ptr = addr_validate(page_zalloc(1));
 		pde->present = 1;
 		pde->writeable = 1;
@@ -156,7 +159,7 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 
 	pte = &((pe_generic_t*)addr_extract(*pde))[v.pt];
 	if (!pte->present) {
-		pte->as_ptr = addr_validate(page_zalloc(1));
+		pte->address = ((uintptr_t)phys) >> 12;
 		pte->present = 1;
 		pte->writeable = writeable;
 		pte->user = user;

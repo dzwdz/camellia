@@ -16,6 +16,7 @@ void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
 int main(void) {
+	_syscall(1, 2, 3, 4, 5);
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 

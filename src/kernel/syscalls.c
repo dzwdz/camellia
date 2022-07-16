@@ -368,6 +368,7 @@ void _syscall_debug_klog(const void __user *buf, size_t len) {
 }
 
 int _syscall(int num, int a, int b, int c, int d) {
+	kprintf("%x %x %x %x %x\n", num, a, b, c, d);
 	switch (num) {
 		case _SYSCALL_EXIT:
 			_syscall_exit(a);

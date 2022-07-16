@@ -4,7 +4,6 @@ boot64:
 	mov $(5 << 3 | 3), %ax // SEG_TSS
 	ltr %ax
 
-	xchgw %bx, %bx
 	push %rdi // preserve multiboot struct
 	call sysenter_setup
 	pop %rdi

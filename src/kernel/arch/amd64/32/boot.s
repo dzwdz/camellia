@@ -25,7 +25,7 @@ _start:
 
 	mov $0xC0000080, %ecx // EFER MSR
 	rdmsr
-	or $(1 | 1<<8 | 1<<11), %eax // sysenter | long mode | NX
+	or $(1 | 1<<8 | 1<<11), %eax // syscall/ret | long mode | NX
 	wrmsr
 
 	mov %cr0, %eax

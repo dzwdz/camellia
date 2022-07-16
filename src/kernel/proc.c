@@ -23,8 +23,10 @@ struct process *process_seed(struct kmain_info *info) {
 	process_first->id    = next_pid++;
 
 	// map the stack to the last page in memory
-	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_alloc(1), true, true);
-	process_first->regs.esp = (userptr_t) ~0xF;
+	kprintf("0x%x\n", (userptr_t)~PAGE_MASK);
+	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_zalloc(1), true, true);
+	process_first->regs.rsp = (userptr_t) ~0xF;
+	kprintf("post stack\n");
 
 	// map .shared
 	extern char _shared_len;
@@ -36,7 +38,7 @@ struct process *process_seed(struct kmain_info *info) {
 	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
 		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
 		            true, true);
-	process_first->regs.eip = init_base;
+	process_first->regs.rcx = init_base; // SYSRET jumps to %rcx
 
 	return process_first;
 }

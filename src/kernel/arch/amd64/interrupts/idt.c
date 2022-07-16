@@ -57,11 +57,8 @@ static void idt_load(void) {
 }
 
 static void idt_test(void) {
-	kprintf("idt test?\n");
-	asm("xchgw %%bx, %%bx" ::: "memory");
 	asm("int $0x34" : : : "memory");
 	assert(isr_test_interrupt_called);
-	kprintf("done.\n");
 }
 
 void idt_init(void) {
