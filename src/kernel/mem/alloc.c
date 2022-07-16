@@ -93,6 +93,12 @@ void *page_alloc(size_t pages) {
 	panic_unimplemented();
 }
 
+void *page_zalloc(size_t pages) {
+	void *p = page_alloc(pages);
+	memset(p, 0, pages * PAGE_SIZE);
+	return p;
+}
+
 // frees `pages` consecutive pages starting from *first
 void page_free(void *first_addr, size_t pages) {
 	size_t first = (uintptr_t)(first_addr - page_bitmap_start) / PAGE_SIZE;

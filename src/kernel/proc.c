@@ -196,7 +196,6 @@ void process_forget(struct process *p) {
 }
 
 static _Noreturn void process_switch(struct process *proc) {
-	kprintf("process_switch\n");
 	assert(proc->state == PS_RUNNING);
 	process_current = proc;
 	pagedir_switch(proc->pages);

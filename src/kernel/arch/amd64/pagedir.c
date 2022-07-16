@@ -1,5 +1,6 @@
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
+#include <kernel/panic.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
@@ -8,45 +9,69 @@
  * <heat> you can't change them atomically and the way they're layed out
  *        in memory is implementation defined iirc
  */
-struct pagetable_entry {
-	uint32_t present   : 1;
-	uint32_t writeable : 1;
-	uint32_t user      : 1;
-	uint32_t writethru : 1;
-	uint32_t uncached  : 1;
-	uint32_t dirty     : 1;
-	uint32_t always0   : 1; // memory type thing?
-	uint32_t global    : 1;
-	uint32_t _unused   : 3;
-	uint32_t address   : 21;
+// TODO move to single shared header file for the 32bit bootstrap
+typedef union pe_generic_t {
+	struct {
+		uint64_t present   : 1;
+		uint64_t writeable : 1;
+		uint64_t user      : 1;
+		uint64_t writethru : 1;
+
+		uint64_t uncached  : 1;
+		uint64_t accessed  : 1;
+		uint64_t dirty     : 1;
+		uint64_t large     : 1; // also PAT
+
+		uint64_t global    : 1; // TODO enable CR4.PGE
+		uint64_t _unused2  : 2;
+		uint64_t _unused3  : 1; // HLAT
+
+		uint64_t address   : 40;
+
+		uint64_t _unused4  : 7;
+		uint64_t pke       : 4;
+		uint64_t noexec    : 1;
+	} __attribute__((packed));
+	void *as_ptr;
+} pe_generic_t; // pageentry_generic
+
+struct pagedir { // actually pml4, TODO rename to a more generic name
+	pe_generic_t e[512];
+} __attribute__((packed));
+
+
+union virt_addr {
+	void __user *full;
+	struct {
+		uint64_t off_4k : 12; //   4Kb // offset in page
+		uint64_t pt     :  9; //   2Mb // page table index
+		uint64_t pd     :  9; //   1Gb // page directory index
+		uint64_t pdpt   :  9; // 512Gb // page directory pointer table index
+		uint64_t pml4   :  9; // 256Tb // page map level 4 index
+		uint64_t sign   : 16;
+	} __attribute__((packed));
 };
 
-struct pagedir_entry {
-	uint32_t present   : 1;
-	uint32_t _writeable: 1; // don't use! not checked by multiple functions here
-	uint32_t _user     : 1; // ^
-	uint32_t writethru : 1;
-	uint32_t uncached  : 1;
-	uint32_t accessed  : 1;
-	uint32_t always0   : 1;
-	uint32_t large     : 1; // 4 MiB instead of 4 KiB
-	uint32_t _unused   : 3;
-	uint32_t address   : 21;
-} __attribute__((packed));
+static void *addr_extract(pe_generic_t pe) {
+	return (void*)(uintptr_t)(pe.address << 12);
+}
 
-struct pagedir {
-	struct pagedir_entry e[1024];
-} __attribute__((packed));
-
+static void *addr_validate(void *addr) {
+	pe_generic_t pe = {.as_ptr = addr};
+	assert(addr_extract(pe) == addr);
+	return addr;
+}
 
 struct pagedir *pagedir_new(void) {
 	struct pagedir *dir = page_alloc(1);
-	for (int i = 0; i < 1024; i++)
-		dir->e[i].present = 0;
+	memset(dir, 0, sizeof *dir);
 	return dir;
 }
 
 void pagedir_free(struct pagedir *dir) {
+	(void)dir;
+	panic_unimplemented();
+	/*
 	// assumes all user pages are unique and can be freed
 	struct pagetable_entry *pt;
 	void *page;
@@ -66,8 +91,10 @@ void pagedir_free(struct pagedir *dir) {
 		page_free(pt, 1);
 	}
 	page_free(dir, 1);
+	*/
 }
 
+/*
 static struct pagetable_entry*
 get_entry(struct pagedir *dir, const void __user *virt) {
 	uint32_t pd_idx = ((uintptr_t)virt) >> 22;
@@ -79,61 +106,63 @@ get_entry(struct pagedir *dir, const void __user *virt) {
 	pagetable = (void*)(dir->e[pd_idx].address << 11);
 	return &pagetable[pt_idx];
 }
+*/
 
 void *pagedir_unmap(struct pagedir *dir, void __user *virt) {
+	(void)dir; (void)virt;
+	panic_unimplemented();
+	/* unset the present bit
 	void *phys = pagedir_virt2phys(dir, virt, false, false);
 	struct pagetable_entry *page = get_entry(dir, virt);
 	page->present = false;
 	return phys;
+	*/
 }
 
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable)
 {
-	kprintf("in pagedir_map, dir 0x%x\n", dir);
-	uintptr_t virt_cast = (uintptr_t) virt;
-	uint32_t pd_idx = virt_cast >> 22;
-	uint32_t pt_idx = virt_cast >> 12 & 0x03FF;
-	struct pagetable_entry *pagetable;
+	pe_generic_t *pml4e, *pdpte, *pde, *pte;
+	const union virt_addr v = {.full = virt};
 
-	kprintf("pre-if, accessing 0x%x because 0x%x\n", &dir->e[pd_idx], pd_idx);
-	if (dir->e[pd_idx].present) {
-		kprintf("present already\n");
-		pagetable = (void*) (dir->e[pd_idx].address << 11);
-	} else {
-		kprintf("allocing\n");
-		pagetable = page_alloc(1);
-		kprintf("alloc successful\n");
-		for (int i = 0; i < 1024; i++)
-			pagetable[i].present = 0;
+	// TODO check if sign extension is valid
 
-		dir->e[pd_idx] = (struct pagedir_entry) {
-			.present   = 1,
-			._writeable= 1,
-			._user     = 1,
-			.writethru = 1,
-			.uncached  = 0,
-			.accessed  = 0,
-			.always0   = 0,
-			.large     = 0,
-			._unused   = 0,
-			.address   = (uintptr_t) pagetable >> 11
-		};
+	pml4e = &dir->e[v.pml4];
+	if (!pml4e->present) {
+		pml4e->as_ptr = addr_validate(page_zalloc(1));
+		pml4e->present = 1;
+		pml4e->writeable = 1;
+		pml4e->user = 1;
 	}
+	assert(!pml4e->large);
 
-	pagetable[pt_idx] = (struct pagetable_entry) {
-		.present   = 1,
-		.writeable = writeable,
-		.user      = user,
-		.writethru = 1,
-		.uncached  = 0,
-		.dirty     = 0,
-		.always0   = 0,
-		.global    = 0,
-		._unused   = 0,
-		.address   = (uintptr_t) phys >> 11
-	};
-	kprintf("out pagedir_map\n");
+	pdpte = &((pe_generic_t*)addr_extract(*pml4e))[v.pdpt];
+	if (!pdpte->present) {
+		pdpte->as_ptr = addr_validate(page_zalloc(1));
+		pdpte->present = 1;
+		pdpte->writeable = 1;
+		pdpte->user = 1;
+	}
+	assert(!pdpte->large);
+
+	pde = &((pe_generic_t*)addr_extract(*pdpte))[v.pd];
+	if (!pde->present) {
+		pde->as_ptr = addr_validate(page_zalloc(1));
+		pde->present = 1;
+		pde->writeable = 1;
+		pde->user = 1;
+	}
+	assert(!pde->large);
+
+	pte = &((pe_generic_t*)addr_extract(*pde))[v.pt];
+	if (!pte->present) {
+		pte->as_ptr = addr_validate(page_zalloc(1));
+		pte->present = 1;
+		pte->writeable = writeable;
+		pte->user = user;
+	} else {
+		panic_invalid_state();
+	}
 }
 
 extern void *pagedir_current;
@@ -143,6 +172,7 @@ void pagedir_switch(struct pagedir *dir) {
 
 // creates a new pagedir with exact copies of the user pages
 struct pagedir *pagedir_copy(const struct pagedir *orig) {
+	/*
 	struct pagedir *clone = page_alloc(1);
 	struct pagetable_entry *orig_pt, *clone_pt;
 	void *orig_page, *clone_page;
@@ -170,16 +200,22 @@ struct pagedir *pagedir_copy(const struct pagedir *orig) {
 	}
 
 	return clone;
+	*/
+	panic_unimplemented();
 }
 
 bool pagedir_iskern(struct pagedir *dir, const void __user *virt) {
+	/*
 	struct pagetable_entry *page = get_entry(dir, virt);
 	return page && page->present && !page->user;
+	*/
+	panic_unimplemented();
 }
 
 void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
                         bool user, bool writeable)
 {
+	/*
 	struct pagetable_entry *page;
 	uintptr_t phys;
 	page = get_entry(dir, virt);
@@ -190,9 +226,12 @@ void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
 	phys  = page->address << 11;
 	phys |= ((uintptr_t)virt) & 0xFFF;
 	return (void*)phys;
+	*/
+	panic_unimplemented();
 }
 
 void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t len) {
+	/*
 	struct pagetable_entry *page;
 	char __user *iter;
 	start = (userptr_t)(((uintptr_t __force)start + PAGE_MASK) & ~PAGE_MASK); // round up to next page
@@ -208,6 +247,7 @@ void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t le
 		}
 		iter += PAGE_SIZE;
 	}
-
 	return NULL;
+	*/
+	panic_unimplemented();
 }

@@ -9,6 +9,7 @@ void sysexit(struct registers regs) {
 	_sysexit_regs = regs;
 	_sysexit_regs.ecx = (uintptr_t) regs.esp;
 	_sysexit_regs.edx = (uintptr_t) regs.eip;
+	kprintf("here we go!\n");
 	_sysexit_real();
 	__builtin_unreachable();
 }
