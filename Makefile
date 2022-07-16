@@ -4,7 +4,7 @@ AS      = x86_64-elf-as
 CC      = x86_64-elf-gcc
 CHECK   = sparse
 CFLAGS += -g -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration -ftrack-macro-expansion=0
-CFLAGS += -mgeneral-regs-only
+CFLAGS += -mgeneral-regs-only -Wno-address-of-packed-member
 CFLAGS += -Isrc/
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch

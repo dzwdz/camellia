@@ -23,6 +23,8 @@ int main(void) {
 	file_reopen(stdout, "/com1", 0);
 	printf("preinit\n");
 
+	_syscall_exit(0); // temporary
+
 	/* move everything provided by the kernel to /kdev */
 	MOUNT("/kdev/", fs_passthru(NULL));
 	if (!fork2_n_mount("/")) {

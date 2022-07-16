@@ -2,7 +2,7 @@
 
 void *debug_caller(size_t depth) {
 	void **rbp;
-	asm("mov %%rbp, %0" 
+	asm("mov %%rbp, %0"
 	    : "=r" (rbp));
 	while (depth--) {
 		if (!rbp) return NULL;
