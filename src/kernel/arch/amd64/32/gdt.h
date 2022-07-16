@@ -8,6 +8,7 @@ enum {
 	SEG_r3code,
 	SEG_r3data,
 	SEG_TSS,
+	SEG_TSS2,
 
 	SEG_end
 };

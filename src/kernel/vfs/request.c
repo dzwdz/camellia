@@ -1,4 +1,4 @@
-#include <kernel/arch/i386/driver/fsroot.h>
+#include <kernel/arch/amd64/driver/fsroot.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>

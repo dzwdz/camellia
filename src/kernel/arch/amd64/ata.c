@@ -1,5 +1,5 @@
-#include <kernel/arch/i386/ata.h>
-#include <kernel/arch/i386/port_io.h>
+#include <kernel/arch/amd64/ata.h>
+#include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 

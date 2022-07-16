@@ -47,9 +47,9 @@ modifier_break:
 						break;
 
 					case 'x':
-						unsigned int n = va_arg(argp, int);
+						unsigned long n = va_arg(argp, long);
 						size_t i = 4; // nibbles * 4
-						while (n >> i && i < (sizeof(int) * 8))
+						while (n >> i && i < (sizeof(n) * 8))
 							i += 4;
 
 						if (i < pad_len * 4)

@@ -1,8 +1,8 @@
-#include <kernel/arch/i386/driver/ps2.h>
-#include <kernel/arch/i386/driver/serial.h>
-#include <kernel/arch/i386/interrupts/irq.h>
-#include <kernel/arch/i386/interrupts/isr.h>
-#include <kernel/arch/i386/port_io.h>
+#include <kernel/arch/amd64/driver/ps2.h>
+#include <kernel/arch/amd64/driver/serial.h>
+#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/interrupts/isr.h>
+#include <kernel/arch/amd64/port_io.h>
 #include <kernel/arch/generic.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -11,12 +11,22 @@
 
 bool isr_test_interrupt_called = false;
 
-void isr_stage3(int interrupt) {
+void isr_stage3(int interrupt, uint64_t *stackframe) {
+	if (interrupt == 0xe) stackframe++;
+	kprintf("interrupt %x, rip = k/%08x, cs 0x%x\n", interrupt, stackframe[0], stackframe[1]);
 	switch (interrupt) {
 		case 0x08: // double fault
 			kprintf("#DF");
 			panic_invalid_state();
+
+		case 0xe:
+			uint64_t addr = 0x69;
+			asm("mov %%cr2, %0" : "=r"(addr));
+			kprintf("error code 0x%x, addr 0x%x\n", stackframe[-1], addr);
+			panic_unimplemented();
+
 		case 0x34:
+			asm("nop" ::: "memory");
 			isr_test_interrupt_called = true;
 			return;
 

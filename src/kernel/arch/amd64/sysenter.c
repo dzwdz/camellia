@@ -1,5 +1,5 @@
 #include <kernel/arch/generic.h>
-#include <kernel/arch/i386/sysenter.h>
+#include <kernel/arch/amd64/sysenter.h>
 #include <kernel/proc.h>
 #include <shared/syscalls.h>
 
@@ -14,6 +14,7 @@ void sysexit(struct registers regs) {
 }
 
 _Noreturn void sysenter_stage2(void) {
+	kprintf("ring0 again!\n");
 	struct registers *regs = &process_current->regs;
 
 	*regs = _sysexit_regs; // save the registers

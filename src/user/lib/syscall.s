@@ -2,23 +2,24 @@
 .global _syscall
 .type _syscall, @function
 _syscall:
-	push %ebx // preserve registers
-	push %esi
-	push %edi
-	push %ebp
+	push %rbx // preserve registers
+	push %rsi
+	push %rdi
+	push %rbp
 
-	mov 20(%esp), %eax
-	mov 24(%esp), %ebx
-	mov %esp, %ecx
-	mov $_syscall_ret, %edx
-	mov 28(%esp), %esi
-	mov 32(%esp), %edi
-	mov 36(%esp), %ebp
+	// NOT the calling convention TODO you lazy fuck
+	mov 20(%rsp), %rax
+	mov 24(%rsp), %rbx
+	mov %rsp, %rcx
+	mov $_syscall_ret, %rdx
+	mov 28(%rsp), %rsi
+	mov 32(%rsp), %rdi
+	mov 36(%rsp), %rbp
 	sysenter
 
 _syscall_ret:
-	pop %ebp
-	pop %edi
-	pop %esi
-	pop %ebx
+	pop %rbp
+	pop %rdi
+	pop %rsi
+	pop %rbx
 	ret

@@ -1,5 +1,5 @@
-#include <kernel/arch/i386/driver/ps2.h>
-#include <kernel/arch/i386/interrupts/irq.h>
+#include <kernel/arch/amd64/driver/ps2.h>
+#include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/vfs/request.h>

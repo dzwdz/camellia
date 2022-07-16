@@ -11,7 +11,7 @@ HASHES
 export PREFIX="$(pwd)/toolchain/"
 export CACHE="$(pwd)/toolchain/cache/"
 export PATH="$(pwd)/toolchain/bin/:$PATH"
-export TARGET=i686-elf
+export TARGET=x86_64-elf
 
 
 # ensure that we're in the repo root

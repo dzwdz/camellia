@@ -1,5 +1,5 @@
-#include <kernel/arch/i386/interrupts/irq.h>
-#include <kernel/arch/i386/port_io.h>
+#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/port_io.h>
 #include <stdint.h>
 
 static const int PIC1 = 0x20;

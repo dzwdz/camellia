@@ -1,14 +1,14 @@
 #include <kernel/arch/generic.h>
 
 void *debug_caller(size_t depth) {
-	void **ebp;
-	asm("mov %%ebp, %0" 
-	    : "=r" (ebp));
+	void **rbp;
+	asm("mov %%rbp, %0" 
+	    : "=r" (rbp));
 	while (depth--) {
-		if (!ebp) return NULL;
-		ebp = *ebp;
+		if (!rbp) return NULL;
+		rbp = *rbp;
 	}
-	return ebp[1];
+	return rbp[1];
 }
 
 void debug_stacktrace(void) {

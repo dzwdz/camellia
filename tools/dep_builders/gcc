@@ -11,7 +11,7 @@ HASHES
 export PREFIX="$(pwd)/toolchain/"
 export CACHE="$(pwd)/toolchain/cache/"
 export PATH="$(pwd)/toolchain/bin/:$PATH"
-export TARGET=i686-elf
+export TARGET=x86_64-elf
 
 
 # ensure that we're in the repo root
@@ -48,7 +48,7 @@ mkdir $CACHE/$TOOL-$VER/builddir
 cd $CACHE/$TOOL-$VER/builddir
 
 ../configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c --without-headers
-make all-gcc
-make all-target-libgcc
-make install-gcc
-make install-target-libgcc
+make -j4 all-gcc
+make -j4 all-target-libgcc
+make -j4 install-gcc
+make -j4 install-target-libgcc

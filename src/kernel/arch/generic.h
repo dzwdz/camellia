@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kernel/arch/i386/registers.h>
+#include <kernel/arch/amd64/registers.h>
 #include <shared/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -15,7 +15,7 @@
 extern char _bss_end;
 
 __attribute__((noreturn))
-void halt_cpu(void);
+void cpu_halt(void);
 __attribute__((noreturn))
 void cpu_shutdown(void);
 

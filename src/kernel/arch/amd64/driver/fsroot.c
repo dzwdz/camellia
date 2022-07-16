@@ -1,9 +1,9 @@
-#include <kernel/arch/i386/ata.h>
+#include <kernel/arch/amd64/ata.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
-#include <kernel/arch/i386/driver/fsroot.h>
+#include <kernel/arch/amd64/driver/fsroot.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 

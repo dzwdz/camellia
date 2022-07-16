@@ -7,7 +7,7 @@
 	kprintf(__func__); \
 	kprintf(" (" __FILE__ ":" NUM2STR(__LINE__) ")\n"); \
 	debug_stacktrace(); \
-	halt_cpu(); \
+	cpu_halt(); \
 } while (0)
 
 #define panic_invalid_state() _panic("invalid state")

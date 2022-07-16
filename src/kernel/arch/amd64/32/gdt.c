@@ -1,6 +1,5 @@
+#include <kernel/arch/amd64/32/gdt.h>
 #include <kernel/arch/generic.h>
-#include <kernel/arch/i386/gdt.h>
-#include <shared/mem.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -27,10 +26,12 @@ struct gdt_entry {
 } __attribute__((packed));
 
 struct tss_entry {
-	uint32_t _unused0;
-	uint32_t esp0; // kernel mode stack pointer
-	uint32_t ss0;  // kernel mode stack segment
-	uint8_t  _unused1[0x5c];
+	uint32_t reserved0;
+	uint64_t rsp[3];
+	uint64_t ist[8];
+	uint64_t reserved2;
+	uint16_t reserved3;
+	uint16_t iopb;
 } __attribute__((packed));
 
 struct lgdt_arg {
@@ -39,14 +40,19 @@ struct lgdt_arg {
 } __attribute__((packed));
 
 __attribute__((section(".shared")))
-static struct gdt_entry GDT[SEG_end];
+struct gdt_entry GDT[SEG_end];
 __attribute__((section(".shared")))
-static struct tss_entry TSS;
-static struct lgdt_arg lgdt_arg; // probably doesn't need to be global
+struct tss_entry TSS;
 
-static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code);
-static void gdt_prepare(void);
-static void gdt_load(void);
+struct lgdt_arg lgdt_arg;
+
+
+static void *memset32(void *s, int c, size_t n) {
+	uint8_t *s2 = s;
+	for (size_t i = 0; i < n; i++)
+		s2[i] = c;
+	return s;
+}
 
 
 static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
@@ -54,7 +60,7 @@ static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
 		// set up the identity mapping
 		.limit_low  = 0xFFFF,
 		.limit_high = 0xF,
-		.gran       = 1, // 4KB * 0xFFFFF = (almost) 4GB
+		.gran       = 1,
 		.base_low   = 0,
 		.base_high  = 0,
 
@@ -66,13 +72,13 @@ static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
 		.conforming = 0,
 		.codeordata = 1,
 		.present    = 1,
-		.long_mode  = 0, // ???
-		.available  = 1, // ???
-		.x32        = 1,
+		.long_mode  = 1,
+		.available  = 1,
+		.x32        = 0,
 	};
 }
 
-static void gdt_prepare(void) {
+void gdt_init(void) {
 	GDT[SEG_null].present = 0;
 
 	gdt_fillout(&GDT[SEG_r0code], 0, true);
@@ -80,51 +86,33 @@ static void gdt_prepare(void) {
 	gdt_fillout(&GDT[SEG_r3code], 3, true);
 	gdt_fillout(&GDT[SEG_r3data], 3, false);
 
-	// tss
-	memset(&TSS, 0, sizeof(TSS));
-	TSS.ss0 = SEG_r0data << 3; // kernel data segment
-	TSS.esp0 = (uintptr_t) &_isr_mini_stack;
+	lgdt_arg.limit = sizeof(GDT) - 1;
+	lgdt_arg.base = (uint64_t) &GDT;
 
+
+	memset32(&TSS, 0, sizeof(TSS));
+	for (int i = 0; i < 3; i++)
+		TSS.rsp[i] = (uint64_t) &_isr_mini_stack;
+	TSS.ist[1] = (uint64_t) &_isr_mini_stack;
+
+	uint64_t tss_addr = (uint64_t) &TSS;
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),
 		.limit_high = sizeof(TSS) >> 16,
 		.gran       = 0,
-		.base_low   =  (uintptr_t) &TSS,
-		.base_high  = ((uintptr_t) &TSS) >> 24,
+		.base_low   = tss_addr,
+		.base_high  = tss_addr >> 24,
 
-		.accessed   = 1, // 1 for TSS
-		.rw         = 0, // 1 busy / 0 not busy
-		.conforming = 0, // 0 for TSS
-		.code       = 1, // 32bit
-		.codeordata = 0, // is a system entry
-		.ring       = 3,
+		.accessed   = 1,
+		.rw         = 0,
+		.conforming = 0,
+		.code       = 1,
+		.codeordata = 0,
+		.ring       = 0, // was 3 pre-port
 		.present    = 1,
-		.available  = 0, // 0 for TSS
+		.available  = 1,
 		.long_mode  = 0,
-		.x32        = 0, // idk
+		.x32        = 0,
 	};
-}
-
-static void gdt_load(void) {
-	lgdt_arg.limit = sizeof(GDT) - 1;
-	lgdt_arg.base = (uintptr_t) &GDT;
-	asm("lgdt (%0)" 
-	    : : "r" (&lgdt_arg) : "memory");
-
-	asm("ltr %%ax"
-	    : : "a" (SEG_TSS << 3 | 3) : "memory");
-
-	// update all segment registers
-	gdt_farjump(SEG_r0code << 3);
-	asm("mov %0, %%ds;"
-	    "mov %0, %%ss;"
-	    "mov %0, %%es;"
-	    "mov %0, %%fs;"
-	    "mov %0, %%gs;"
-	    : : "r" (SEG_r0data << 3) : "memory");
-}
-
-void gdt_init(void) {
-	gdt_prepare();
-	gdt_load();
+	*((uint64_t*)&GDT[SEG_TSS2]) = (tss_addr >> 32);
 }

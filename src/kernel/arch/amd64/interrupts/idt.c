@@ -1,26 +1,28 @@
-#include <kernel/arch/i386/gdt.h>
-#include <kernel/arch/i386/interrupts/idt.h>
-#include <kernel/arch/i386/interrupts/isr.h>
+#include <kernel/arch/amd64/32/gdt.h>
+#include <kernel/arch/amd64/interrupts/idt.h>
+#include <kernel/arch/amd64/interrupts/isr.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 struct idt_entry {
-	uint16_t offset_low   ;
-	uint16_t code_seg     ;
-	uint8_t  zero         ; // unused, has to be 0
-	uint8_t  type      : 4; // 16/32 bit, task/interrupt/task gate
-	uint8_t  storage   : 1; // 0 for interrupt/trap gates
-	uint8_t  ring      : 2;
-	uint8_t  present   : 1;
-	uint16_t offset_high  ;
+	uint16_t offset_low;
+	uint16_t seg;
+	uint8_t ist;
+	uint8_t type    : 4; // 0xE - interrupt, 0xF - trap
+	uint8_t zero1   : 1;
+	uint8_t ring    : 2;
+	uint8_t present : 1;
+	uint16_t offset_mid;
+	uint32_t offset_high;
+	uint32_t zero2;
 } __attribute__((packed));
 
 // is exactly the same as lgdt_arg, i should combine them into a single struct
 // later
 struct lidt_arg {
 	uint16_t limit;
-	uint32_t base;
+	uintptr_t base;
 } __attribute__((packed));
 
 __attribute__((section(".shared")))
@@ -33,19 +35,17 @@ static void idt_test(void);
 
 
 static void idt_prepare(void) {
-	uintptr_t offset;
 	for (int i = 0; i < 256; i++) {
-		offset = (uintptr_t) &_isr_stubs + i * 8;
+		uintptr_t offset = (uintptr_t) &_isr_stubs + i * 8;
 
 		IDT[i] = (struct idt_entry) {
 			.offset_low  = offset,
-			.offset_high = offset >> 16,
-			.code_seg    = SEG_r0code << 3,
-			.zero        = 0,
-			.present     = 1,
-			.ring        = 0,
-			.storage     = 0,
-			.type        = 0xE, // 32-bit interrupt gate
+			.offset_mid  = offset >> 16,
+			.offset_high = offset >> 32,
+			.seg = SEG_r0code << 3,
+			.present = 1,
+			.type = 0xE,
+			.ist = 1,
 		};
 	}
 }
@@ -57,8 +57,11 @@ static void idt_load(void) {
 }
 
 static void idt_test(void) {
+	kprintf("idt test?\n");
+	asm("xchgw %%bx, %%bx" ::: "memory");
 	asm("int $0x34" : : : "memory");
 	assert(isr_test_interrupt_called);
+	kprintf("done.\n");
 }
 
 void idt_init(void) {

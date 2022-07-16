@@ -1,6 +1,6 @@
-#include <kernel/arch/i386/driver/serial.h>
-#include <kernel/arch/i386/interrupts/irq.h>
-#include <kernel/arch/i386/port_io.h>
+#include <kernel/arch/amd64/driver/serial.h>
+#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <shared/container/ring.h>

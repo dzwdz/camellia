@@ -1,4 +1,4 @@
 #pragma once
-#include <kernel/arch/i386/multiboot.h>
+#include <kernel/arch/amd64/multiboot.h>
 
 void kmain_early(struct multiboot_info *multiboot);

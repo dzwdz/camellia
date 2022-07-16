@@ -90,15 +90,20 @@ void *pagedir_unmap(struct pagedir *dir, void __user *virt) {
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable)
 {
+	kprintf("in pagedir_map, dir 0x%x\n", dir);
 	uintptr_t virt_cast = (uintptr_t) virt;
 	uint32_t pd_idx = virt_cast >> 22;
 	uint32_t pt_idx = virt_cast >> 12 & 0x03FF;
 	struct pagetable_entry *pagetable;
 
+	kprintf("pre-if, accessing 0x%x because 0x%x\n", &dir->e[pd_idx], pd_idx);
 	if (dir->e[pd_idx].present) {
+		kprintf("present already\n");
 		pagetable = (void*) (dir->e[pd_idx].address << 11);
 	} else {
+		kprintf("allocing\n");
 		pagetable = page_alloc(1);
+		kprintf("alloc successful\n");
 		for (int i = 0; i < 1024; i++)
 			pagetable[i].present = 0;
 
@@ -128,10 +133,12 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 		._unused   = 0,
 		.address   = (uintptr_t) phys >> 11
 	};
+	kprintf("out pagedir_map\n");
 }
 
+extern void *pagedir_current;
 void pagedir_switch(struct pagedir *dir) {
-	asm volatile("mov %0, %%cr3;" : : "r" (dir) : "memory");
+	pagedir_current = dir;
 }
 
 // creates a new pagedir with exact copies of the user pages
