@@ -12,15 +12,16 @@
 .global sysenter_setup
 .type sysenter_setup, @function
 sysenter_setup:
-	xor %rdx, %rdx
 
 	// the intel docs don't mention the lower 32 bits
-	mov $( ((SEG_r3code << 3 | 3) << 48) | ((SEG_r0code << 3) << 32) ), %rax
+	mov $0, %eax
+	mov $( ((SEG_r3code << 3 | 3) << 16) | (SEG_r0code << 3) ), %edx
 	mov $IA32_STAR, %rcx
 	wrmsr
 
+	mov $sysenter_stage1, %eax
+	mov $0, %edx
 	mov $IA32_LSTAR, %rcx
-	mov $sysenter_stage1, %rax
 	wrmsr
 
 	// hoping that the default RFLAGS mask is fine...
@@ -50,8 +51,6 @@ _sysexit_real:
 	mov %ax, %gs
 	*/
 
-	xchgw %bx, %bx
-
 	mov $_sysexit_regs, %rsp
 	pop %r15
 	pop %r14
@@ -77,12 +76,10 @@ _sysexit_real:
 	mov (pagedir_current), %rsp
 	mov %rsp, %cr3
 	mov (stored_rsp), %rsp
-	nop
 	sysretq
 
 sysenter_stage1:
 	cli
-	xchgw %bx, %bx
 
 	mov %rsp, (stored_rsp)
 

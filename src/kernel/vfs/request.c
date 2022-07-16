@@ -29,7 +29,7 @@ void vfsreq_create(struct vfs_request req_) {
 	vfs_backend_tryaccept(req->backend);
 }
 
-void vfsreq_finish(struct vfs_request *req, char __user *stored, int ret,
+void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		int flags, struct process *handler)
 {
 	if (req->type == VFSOP_OPEN && ret >= 0) {

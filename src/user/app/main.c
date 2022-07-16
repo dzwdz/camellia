@@ -16,14 +16,11 @@ void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
 int main(void) {
-	_syscall(1, 2, 3, 4, 5);
 	// allocate bss
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
 	file_reopen(stdout, "/com1", 0);
 	printf("preinit\n");
-
-	_syscall_exit(0); // temporary
 
 	/* move everything provided by the kernel to /kdev */
 	MOUNT("/kdev/", fs_passthru(NULL));
@@ -66,7 +63,7 @@ int main(void) {
 			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
 		}
-		termcook();
+		//termcook();
 
 		shell_loop();
 		_syscall_exit(1);
@@ -82,7 +79,7 @@ int main(void) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}
-		termcook();
+		//termcook();
 
 		shell_loop();
 		_syscall_exit(1);

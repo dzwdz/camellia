@@ -31,7 +31,7 @@ BEGIN {
 			if (length(words) != 1) {
 				var = words[length(words)];
 				sub(/\*/, "", var);
-				if (words[1] != "int") var = "(int)" var;
+				if (words[1] != "long") var = "(long)" var;
 			}
 			p[i] = var;
 		} else {
@@ -42,7 +42,7 @@ BEGIN {
 	printf "\t";
 	if (!index($0, "_Noreturn")) {
 		printf "return ";
-		if (rets != "int") printf "(%s)", rets;
+		if (rets != "long") printf "(%s)", rets;
 	}
 	printf "_syscall(%s, %s, %s, %s, %s);\n", toupper(name), p[1], p[2], p[3], p[4];
 	if (index($0, "_Noreturn")) print "\t__builtin_unreachable();";

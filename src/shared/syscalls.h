@@ -31,17 +31,16 @@ enum {
 	_SYSCALL_DEBUG_KLOG,
 };
 
-int _syscall(int, int, int, int, int);
+long _syscall(long, long, long, long, long);
 
 /** Kills the current process.
- * TODO: what happens to the children?
  */
-_Noreturn void _syscall_exit(int ret);
+_Noreturn void _syscall_exit(long ret);
 
 /** Waits for a child to exit.
  * @return the value the child passed to exit()
  */
-int _syscall_await(void);
+long _syscall_await(void);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.
@@ -51,28 +50,28 @@ int _syscall_await(void);
  *
  * @return 0 in the child, a meaningless positive value in the parent.
  */
-int _syscall_fork(int flags, handle_t __user *fs_front);
+long _syscall_fork(int flags, handle_t __user *fs_front);
 
-handle_t _syscall_open(const char __user *path, int len, int flags);
-int _syscall_mount(handle_t h, const char __user *path, int len);
+handle_t _syscall_open(const char __user *path, long len, int flags);
+long _syscall_mount(handle_t h, const char __user *path, long len);
 handle_t _syscall_dup(handle_t from, handle_t to, int flags);
 
-int _syscall_read(handle_t h, void __user *buf, size_t len, int offset);
-int _syscall_write(handle_t h, const void __user *buf, size_t len, int offset);
-int _syscall_close(handle_t h);
+long _syscall_read(handle_t h, void __user *buf, size_t len, long offset);
+long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset);
+long _syscall_close(handle_t h);
 
 struct fs_wait_response {
 	enum vfs_operation op;
 	size_t len; // how much was put in *buf
 	size_t capacity; // how much output can be accepted by the caller
 	void __user *id;  // file id (returned by the open handler, passed to other calls)
-	int offset;
+	long offset;
 	int flags;
 };
 /** Blocks until an fs request is made.
  * @return 0 if everything was successful */
-int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res);
-int _syscall_fs_respond(void __user *buf, int ret, int flags);
+long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res);
+long _syscall_fs_respond(void __user *buf, long ret, int flags);
 
 /** Modifies the virtual address space.
  *
@@ -84,6 +83,6 @@ int _syscall_fs_respond(void __user *buf, int ret, int flags);
  * @return address of the first affected page (usually == addr)
  */
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
-int _syscall_pipe(handle_t __user user_ends[2], int flags);
+long _syscall_pipe(handle_t __user user_ends[2], int flags);
 
 void _syscall_debug_klog(const void __user *buf, size_t len);

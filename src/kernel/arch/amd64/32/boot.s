@@ -80,6 +80,7 @@ cpu_halt:
 .global cpu_pause
 .type cpu_pause, @function
 cpu_pause:
+	xchgw %bx, %bx
 	sti
 	hlt
 	cli

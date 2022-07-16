@@ -15,13 +15,13 @@
 
 static void find_init(struct multiboot_info *multiboot, struct kmain_info *info)
 {
-	struct multiboot_mod *module = (void*)multiboot->mods;
+	struct multiboot_mod *module = (void*)(long)multiboot->mods;
 	kprintf("mods count 0x%x", multiboot->mods_count);
 	if (multiboot->mods_count < 1) {
 		kprintf("can't find init! ");
 		panic_invalid_state();
 	}
-	info->init.at   = module->start;
+	info->init.at   = (void*)(long)module->start;
 	info->init.size = module->end - module->start;
 }
 
@@ -34,7 +34,7 @@ void kmain_early(struct multiboot_info *multiboot) {
 	kprintf("irq...");
 	irq_init();
 
-	info.memtop = (void*) (multiboot->mem_upper * 1024);
+	info.memtop = (void*)(long)(multiboot->mem_upper * 1024);
 	find_init(multiboot, &info);
 	kprintf("mem...\n");
 	mem_init(&info);

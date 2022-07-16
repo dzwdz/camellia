@@ -11,18 +11,18 @@
 #include <stdint.h>
 
 #define SYSCALL_RETURN(val) do { \
-	uint32_t ret = (uint32_t)val; \
+	long ret = (long)val; \
 	assert(process_current->state == PS_RUNNING); \
 	regs_savereturn(&process_current->regs, ret); \
 	return 0; \
 } while (0)
 
-_Noreturn void _syscall_exit(int ret) {
+_Noreturn void _syscall_exit(long ret) {
 	process_kill(process_current, ret);
 	process_switch_any();
 }
 
-int _syscall_await(void) {
+long _syscall_await(void) {
 	bool has_children = false;
 	process_transition(process_current, PS_WAITS4CHILDDEATH);
 
@@ -43,7 +43,7 @@ int _syscall_await(void) {
 	return -1; // dummy
 }
 
-int _syscall_fork(int flags, handle_t __user *fs_front) {
+long _syscall_fork(int flags, handle_t __user *fs_front) {
 	struct process *child;
 	handle_t front;
 
@@ -82,7 +82,7 @@ int _syscall_fork(int flags, handle_t __user *fs_front) {
 	SYSCALL_RETURN(1);
 }
 
-handle_t _syscall_open(const char __user *path, int len, int flags) {
+handle_t _syscall_open(const char __user *path, long len, int flags) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
@@ -125,7 +125,7 @@ fail:
 	SYSCALL_RETURN(-1);
 }
 
-int _syscall_mount(handle_t hid, const char __user *path, int len) {
+long _syscall_mount(handle_t hid, const char __user *path, long len) {
 	struct vfs_mount *mount = NULL;
 	struct vfs_backend *backend = NULL;
 	char *path_buf = NULL;
@@ -200,7 +200,7 @@ handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
 	SYSCALL_RETURN(to);
 }
 
-int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset) {
+long _syscall_read(handle_t handle_num, void __user *buf, size_t len, long offset) {
 	struct handle *h = process_handle_get(process_current, handle_num);
 	if (!h) SYSCALL_RETURN(-1);
 	switch (h->type) {
@@ -229,7 +229,7 @@ int _syscall_read(handle_t handle_num, void __user *buf, size_t len, int offset)
 	return -1; // dummy
 }
 
-int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int offset) {
+long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, long offset) {
 	struct handle *h = process_handle_get(process_current, handle_num);
 	if (!h) SYSCALL_RETURN(-1);
 	switch (h->type) {
@@ -258,7 +258,7 @@ int _syscall_write(handle_t handle_num, const void __user *buf, size_t len, int 
 	return -1; // dummy
 }
 
-int _syscall_close(handle_t hid) {
+long _syscall_close(handle_t hid) {
 	if (hid < 0 || hid >= HANDLE_MAX) return -1;
 	struct handle **h = &process_current->handles[hid];
 	if (!*h) SYSCALL_RETURN(-1);
@@ -267,7 +267,7 @@ int _syscall_close(handle_t hid) {
 	SYSCALL_RETURN(0);
 }
 
-int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __user *res) {
+long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
 	struct vfs_backend *backend = process_current->controlled;
 	if (!backend) SYSCALL_RETURN(-1);
 
@@ -284,7 +284,7 @@ int _syscall_fs_wait(char __user *buf, int max_len, struct fs_wait_response __us
 	return -1; // dummy
 }
 
-int _syscall_fs_respond(void __user *buf, int ret, int flags) {
+long _syscall_fs_respond(void __user *buf, long ret, int flags) {
 	struct vfs_request *req = process_current->handled_req;
 	if (!req) SYSCALL_RETURN(-1);
 
@@ -306,7 +306,7 @@ int _syscall_fs_respond(void __user *buf, int ret, int flags) {
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	struct pagedir *pages = process_current->pages;
 	void *phys;
-	addr = (userptr_t)((int __force)addr & ~PAGE_MASK); // align to page boundary
+	addr = (userptr_t)((uintptr_t __force)addr & ~PAGE_MASK); // align to page boundary
 
 	if (flags & MEMFLAG_FINDFREE) {
 		addr = pagedir_findfree(pages, addr, len);
@@ -321,7 +321,7 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 			continue;
 		}
 
-		phys = pagedir_virt2phys(pages, iter, false, false); 
+		phys = pagedir_virt2phys(pages, iter, false, false);
 
 		if (!(flags & MEMFLAG_PRESENT)) {
 			if (phys)
@@ -338,7 +338,7 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	SYSCALL_RETURN((uintptr_t)addr);
 }
 
-int _syscall_pipe(handle_t __user user_ends[2], int flags) {
+long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	if (flags) SYSCALL_RETURN(-1);
 	handle_t ends[2];
 	struct handle *rend, *wend;
@@ -367,7 +367,7 @@ void _syscall_debug_klog(const void __user *buf, size_t len) {
 	// kprintf("[klog] %x\t%s\n", process_current->id, kbuf);
 }
 
-int _syscall(int num, int a, int b, int c, int d) {
+long _syscall(long num, long a, long b, long c, long d) {
 	switch (num) {
 		case _SYSCALL_EXIT:
 			_syscall_exit(a);

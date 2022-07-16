@@ -45,7 +45,7 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 
 static int handle(struct vfs_request *req) {
 	assert(req->caller);
-	int id = (int)req->id;
+	int id = (int)(long)req->id;
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;

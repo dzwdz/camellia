@@ -36,7 +36,9 @@ struct process *process_seed(struct kmain_info *info) {
 	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
 		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
 		            true, true);
-	process_first->regs.rcx = init_base; // SYSRET jumps to %rcx
+	process_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
+
+	process_first->pages = pagedir_copy(process_first->pages); // TODO remove this
 
 	return process_first;
 }

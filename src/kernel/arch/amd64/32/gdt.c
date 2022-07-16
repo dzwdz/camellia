@@ -87,15 +87,15 @@ void gdt_init(void) {
 	gdt_fillout(&GDT[SEG_r3data], 3, false);
 
 	lgdt_arg.limit = sizeof(GDT) - 1;
-	lgdt_arg.base = (uint64_t) &GDT;
+	lgdt_arg.base = (uint64_t)(int)&GDT;
 
 
 	memset32(&TSS, 0, sizeof(TSS));
 	for (int i = 0; i < 3; i++)
-		TSS.rsp[i] = (uint64_t) &_isr_mini_stack;
-	TSS.ist[1] = (uint64_t) &_isr_mini_stack;
+		TSS.rsp[i] = (uint64_t)(int)&_isr_mini_stack;
+	TSS.ist[1] = (uint64_t)(int)&_isr_mini_stack;
 
-	uint64_t tss_addr = (uint64_t) &TSS;
+	uint64_t tss_addr = (uint64_t)(int)&TSS;
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),
 		.limit_high = sizeof(TSS) >> 16,

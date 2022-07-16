@@ -69,35 +69,39 @@ struct pagedir *pagedir_new(void) {
 }
 
 void pagedir_free(struct pagedir *dir) {
-	(void)dir;
-	panic_unimplemented();
-	/*
-	// assumes all user pages are unique and can be freed
-	struct pagetable_entry *pt;
-	void *page;
-
-	for (int i = 0; i < 1024; i++) {
+	for (int i = 0; i < 512; i++) {
 		if (!dir->e[i].present) continue;
+		assert(!dir->e[i].large);
+		pe_generic_t *pdpt = addr_extract(dir->e[i]);
 
-		pt = (void*)(dir->e[i].address << 11);
+		for (int j = 0; j < 512; j++) {
+			if (!pdpt[j].present) continue;
+			assert(!pdpt[j].large);
+			pe_generic_t *pd = addr_extract(pdpt[j]);
 
-		for (int j = 0; j < 1024; j++) {
-			if (!pt[j].present) continue;
-			if (!pt[j].user)    continue;
+			for (int k = 0; k < 512; k++) {
+				if (!pd[k].present) continue;
+				assert(!pd[k].large);
+				pe_generic_t *pt = addr_extract(pd[k]);
 
-			page = (void*)(pt[j].address << 11);
-			page_free(page, 1);
+				for (int l = 0; l < 512; l++) {
+					if (!pt[l].present) continue;
+					if (!pt[l].user) continue;
+					page_free(addr_extract(pt[l]), 1);
+				}
+				page_free(pt, 1);
+			}
+			page_free(pd, 1);
 		}
-		page_free(pt, 1);
+		page_free(pdpt, 1);
 	}
 	page_free(dir, 1);
-	*/
 }
 
 static pe_generic_t*
 get_entry(struct pagedir *dir, const void __user *virt) {
 	pe_generic_t *pml4e, *pdpte, *pde, *pte;
-	const union virt_addr v = {.full = (void*)virt};
+	const union virt_addr v = {.full = (void __user *)virt};
 
 	// TODO check if sign extension is valid
 
@@ -208,11 +212,12 @@ struct pagedir *pagedir_copy(const struct pagedir *pml4_old) {
 				pd_new[k].address = (uintptr_t) pt_new >> 12;
 
 				for (int l = 0; l < 512; l++) {
-					if (!pt_old[l].present || !pt_old[l].user)
-						continue;
+					if (!pt_old[l].present) continue;
+					pt_new[l] = pt_old[l];
+
+					if (!pt_old[l].user) continue;
 					void *page_new = page_alloc(1);
 					memcpy(page_new, addr_extract(pt_old[l]), PAGE_SIZE);
-					pt_new[l] = pt_old[l];
 					pt_new[l].address = (uintptr_t) page_new >> 12;
 				}
 			}

@@ -48,7 +48,7 @@ struct vfs_request {
 	} output;
 
 	void __user *id; // handle.file.id
-	int offset;
+	long offset;
 	int flags;
 
 	struct process *caller;
@@ -62,9 +62,9 @@ struct vfs_request {
 
 /** Assigns the vfs_request to the caller, and dispatches the call */
 void vfsreq_create(struct vfs_request);
-void vfsreq_finish(struct vfs_request*, char __user *stored, int ret, int flags, struct process *handler);
+void vfsreq_finish(struct vfs_request*, char __user *stored, long ret, int flags, struct process *handler);
 
-static inline void vfsreq_finish_short(struct vfs_request *req, int ret) {
+static inline void vfsreq_finish_short(struct vfs_request *req, long ret) {
 	vfsreq_finish(req, (void __user *)ret, ret, 0, NULL);
 }
 

@@ -11,20 +11,19 @@
 
 bool isr_test_interrupt_called = false;
 
-void isr_stage3(int interrupt, uint64_t *stackframe) {
-	if (interrupt == 0xe) stackframe++;
-	kprintf("interrupt %x, rip = k/%08x, cs 0x%x\n", interrupt, stackframe[0], stackframe[1]);
+static void log_interrupt(int interrupt, uint64_t *stackframe) {
+	kprintf("interrupt %x, rip = k/%08x, cs 0x%x, code 0x%x\n",
+			interrupt, stackframe[0], stackframe[1], stackframe[-1]);
 	if (interrupt == 0xe) {
 		uint64_t addr = 0x69;
 		asm("mov %%cr2, %0" : "=r"(addr));
-		kprintf("error code 0x%x, addr 0x%x\n", stackframe[-1], addr);
+		kprintf("addr 0x%x\n", addr);
 	}
+}
 
+void isr_stage3(int interrupt, uint64_t *stackframe) {
+	if (interrupt == 0xe || interrupt == 0xd) stackframe++;
 	switch (interrupt) {
-		case 0x08: // double fault
-			kprintf("#DF");
-			panic_invalid_state();
-
 		case 0x34:
 			asm("nop" ::: "memory");
 			isr_test_interrupt_called = true;
@@ -41,8 +40,8 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 			return;
 
 		default:
-			if (stackframe[1] & 0x3 == 0) {
-				kprintf("bye o7\n");
+			if ((stackframe[1] & 0x3) == 0) {
+				log_interrupt(interrupt, stackframe);
 				cpu_halt();
 			} else {
 				process_kill(process_current, interrupt);
