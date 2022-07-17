@@ -15,6 +15,12 @@ static void *addr_validate(void *addr) {
 	return addr;
 }
 
+static bool addr_canonical(const __user void *addr) {
+	const int addr_bits = 48;
+	uintptr_t n = (uintptr_t)addr >> addr_bits;
+	return (n == 0) || ((~n) << addr_bits == 0);
+}
+
 
 struct pagedir *pagedir_new(void) {
 	struct pagedir *dir = page_alloc(1);
@@ -57,7 +63,7 @@ get_entry(struct pagedir *dir, const void __user *virt) {
 	pe_generic_t *pml4e, *pdpte, *pde, *pte;
 	const union virt_addr v = {.full = (void __user *)virt};
 
-	// TODO check if sign extension is valid
+	if (!addr_canonical(virt)) return NULL;
 
 	pml4e = &dir->e[v.pml4];
 	if (!pml4e->present) return NULL;
@@ -88,7 +94,7 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 	pe_generic_t *pml4e, *pdpte, *pde, *pte;
 	const union virt_addr v = {.full = virt};
 
-	// TODO check if sign extension is valid
+	if (!addr_canonical(virt)) return;
 
 	pml4e = &dir->e[v.pml4];
 	if (!pml4e->present) {
