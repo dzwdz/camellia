@@ -18,6 +18,10 @@ struct virt_iter {
 	bool _writeable;
 };
 
+struct virt_cpy_error {
+	bool read_fail, write_fail;
+};
+
 /* if pages == NULL, create an iterator over physical memory. */
 void virt_iter_new(
 		struct virt_iter *iter, void __user *virt, size_t length,
@@ -25,17 +29,20 @@ void virt_iter_new(
 
 bool virt_iter_next(struct virt_iter *);
 
-bool virt_cpy(
+size_t virt_cpy(
 		struct pagedir *dest_pages,       void __user *dest,
-		struct pagedir  *src_pages, const void __user *src, size_t length);
+		struct pagedir  *src_pages, const void __user *src,
+		size_t length, struct virt_cpy_error *err);
 
 
-static inline bool virt_cpy_to(struct pagedir *dest_pages, // physical -> virtual
+/* copies to virtual memory, returns true on success */
+static inline bool virt_cpy_to(struct pagedir *dest_pages,
 		void __user *dest, const void *src, size_t length) {
-	return virt_cpy(dest_pages, dest, NULL, (userptr_t)src, length);
+	return length == virt_cpy(dest_pages, dest, NULL, (userptr_t)src, length, NULL);
 }
 
-static inline bool virt_cpy_from(struct pagedir *src_pages, // virtual -> physical
+/* copies from virtual memory, returns true on success */
+static inline bool virt_cpy_from(struct pagedir *src_pages,
 		void *dest, const void __user *src, size_t length) {
-	return virt_cpy(NULL, (userptr_t)dest, src_pages, src, length);
+	return length == virt_cpy(NULL, (userptr_t)dest, src_pages, src, length, NULL);
 }

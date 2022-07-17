@@ -4,6 +4,7 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
+#include <shared/errno.h>
 #include <shared/mem.h>
 
 void vfsreq_create(struct vfs_request req_) {
@@ -102,6 +103,7 @@ void vfs_backend_tryaccept(struct vfs_backend *backend) {
 void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
 	struct fs_wait_response res = {0};
+	struct virt_cpy_error cpyerr;
 	int len = 0;
 
 	assert(req && req->backend && req->backend->user.handler);
@@ -115,9 +117,15 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 
 	if (req->input.buf) {
 		len = min(req->input.len, handler->awaited_req.max_len);
-		if (!virt_cpy(handler->pages, handler->awaited_req.buf, 
-					req->input.kern ? NULL : req->caller->pages, req->input.buf, len))
-			goto fail; // can't copy buffer
+		virt_cpy(handler->pages, handler->awaited_req.buf,
+				 req->input.kern ? NULL : req->caller->pages, req->input.buf,
+				 len, &cpyerr);
+		if (cpyerr.write_fail)
+			panic_unimplemented();
+		if (cpyerr.read_fail) {
+			vfsreq_finish_short(req, -EFAULT);
+			return;
+		}
 	}
 
 	res.len      = len;
@@ -129,15 +137,15 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 
 	if (!virt_cpy_to(handler->pages,
 				handler->awaited_req.res, &res, sizeof res))
-		goto fail; // can't copy response struct
+	{
+		panic_unimplemented();
+	}
 
 	process_transition(handler, PS_RUNNING);
 	handler->handled_req = req;
 	req->backend->user.handler = NULL;
 	regs_savereturn(&handler->regs, 0);
 	return;
-fail:
-	panic_unimplemented(); // TODO
 }
 
 void vfs_backend_refdown(struct vfs_backend *b) {

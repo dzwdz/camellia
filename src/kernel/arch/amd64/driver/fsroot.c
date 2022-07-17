@@ -1,9 +1,10 @@
 #include <kernel/arch/amd64/ata.h>
+#include <kernel/arch/amd64/driver/fsroot.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
-#include <kernel/arch/amd64/driver/fsroot.h>
+#include <shared/errno.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 
@@ -42,6 +43,16 @@ static void req_preprocess(struct vfs_request *req, size_t max_len) {
 	assert(req->input.len + req->offset <= max_len);
 }
 
+static int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
+	assert(req->type == VFSOP_READ);
+	req_preprocess(req, len);
+	virt_cpy_to(
+			req->caller->pages, req->output.buf,
+			buf + req->offset, req->output.len);
+	/* read errors are ignored. TODO write docs */
+	return req->output.len;
+}
+
 
 static int handle(struct vfs_request *req) {
 	assert(req->caller);
@@ -72,18 +83,10 @@ static int handle(struct vfs_request *req) {
 						"com1\0"
 						"ps2\0"
 						"ata/";
-					req_preprocess(req, sizeof src);
-					virt_cpy_to(req->caller->pages, req->output.buf,
-							src + req->offset, req->output.len);
-					return req->output.len;
+					return req_readcopy(req, src, sizeof src);
 				}
-				case HANDLE_VGA: {
-					char *vga = (void*)0xB8000;
-					req_preprocess(req, 80*25*2);
-					virt_cpy_to(req->caller->pages, req->output.buf,
-							vga + req->offset, req->output.len);
-					return req->output.len;
-				}
+				case HANDLE_VGA:
+					return req_readcopy(req, (void*)0xB8000, 80*25*2);
 				case HANDLE_ATA_ROOT: {
 					char list[8] = {};
 					size_t len = 0;
@@ -93,13 +96,10 @@ static int handle(struct vfs_request *req) {
 							len += 2;
 						}
 					}
-					req_preprocess(req, len);
-					virt_cpy_to(req->caller->pages, req->output.buf,
-							list + req->offset, req->output.len);
-					return req->output.len;
+					return req_readcopy(req, list, len);
 				}
 				case HANDLE_ATA:   case HANDLE_ATA+1:
-				case HANDLE_ATA+2: case HANDLE_ATA+3: {
+				case HANDLE_ATA+2: case HANDLE_ATA+3:
 					if (req->offset < 0) return 0;
 					char buf[512];
 					uint32_t sector = req->offset / 512;
@@ -107,7 +107,6 @@ static int handle(struct vfs_request *req) {
 					ata_read(id - HANDLE_ATA, sector, buf);
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
-				}
 				default: panic_invalid_state();
 			}
 
@@ -116,8 +115,11 @@ static int handle(struct vfs_request *req) {
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
 					req_preprocess(req, 80*25*2);
-					virt_cpy_from(req->caller->pages, vga + req->offset,
-							req->input.buf, req->input.len);
+					if (!virt_cpy_from(req->caller->pages, vga + req->offset,
+							req->input.buf, req->input.len))
+					{
+						return -EFAULT;
+					}
 					return req->input.len;
 				}
 				default: return -1;

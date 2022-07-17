@@ -23,6 +23,7 @@ static struct node *lookup(const char *path, size_t len) {
 }
 
 static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
+	struct node *node;
 	if (res->len == 0) return NULL;
 	path++;
 	res->len--;
@@ -32,21 +33,19 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 	// no directory support (yet)
 	if (memchr(path, '/', res->len)) return NULL;
 
-	if (res->flags & OPEN_CREATE) {
-		if (lookup(path, res->len)) return NULL; /* already exists */
-		struct node *new = malloc(sizeof *new);
-		memset(new, 0, sizeof *new);
+	node = lookup(path, res->len);
+	if (!node && (res->flags & OPEN_CREATE)) {
+		node = malloc(sizeof *node);
+		memset(node, 0, sizeof *node);
 
 		char *namebuf = malloc(res->len);
 		memcpy(namebuf, path, res->len);
-		new->name = namebuf;
-		new->namelen = res->len;
-		new->next = root;
-		root = new;
-		return new;
+		node->name = namebuf;
+		node->namelen = res->len;
+		node->next = root;
+		root = node;
 	}
-
-	return lookup(path, res->len);
+	return node;
 }
 
 void tmpfs_drv(void) {

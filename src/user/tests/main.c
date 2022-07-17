@@ -1,8 +1,9 @@
 #define TEST_MACROS
-#include <user/lib/stdlib.h>
-#include <user/tests/main.h>
+#include <shared/errno.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
+#include <user/lib/stdlib.h>
+#include <user/tests/main.h>
 
 static void run_forked(void (*fn)()) {
 	if (!fork()) {
@@ -16,6 +17,7 @@ static void run_forked(void (*fn)()) {
 }
 
 
+const char *tmpfilepath = "/tmp/.test_internal";
 
 static void test_await(void) {
 	/* creates 16 child processes, each returning a different value. then checks
@@ -186,6 +188,17 @@ static void test_malloc(void) {
 	free(p1);
 }
 
+static void test_efault(void) {
+	char *invalid = (void*)0x1000;
+	handle_t h;
+
+	assert((h = _syscall_open(tmpfilepath, strlen(tmpfilepath), OPEN_CREATE)));
+	assert(_syscall_write(h, "dzwdz sucks ass!", 16, 0) == 16);
+	assert(_syscall_write(h, invalid, 16, 0) == -EFAULT);
+	assert(_syscall_write(h, "dzwdz is cool!!!", 16, 0) == 16);
+	close(h);
+}
+
 static void test_misc(void) {
 	assert(_syscall(~0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
@@ -201,5 +214,6 @@ void test_all(void) {
 	run_forked(test_malloc);
 	run_forked(test_pipe);
 	run_forked(test_semaphore);
+	run_forked(test_efault);
 	run_forked(test_misc);
 }

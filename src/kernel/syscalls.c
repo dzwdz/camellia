@@ -292,10 +292,13 @@ long _syscall_fs_respond(void __user *buf, long ret, int flags) {
 		// if this vfsop outputs data and ret is positive, it's the length of the buffer
 		// TODO document
 		ret = min(ret, capped_cast32(req->output.len));
-		if (!virt_cpy(req->caller->pages, req->output.buf,
-					process_current->pages, buf, ret)) {
-			// how should this error even be handled? TODO
-		}
+		struct virt_cpy_error err;
+		virt_cpy(req->caller->pages, req->output.buf,
+				process_current->pages, buf, ret, &err);
+
+		if (err.read_fail)
+			panic_unimplemented();
+		/* write failures are ignored */
 	}
 
 	process_current->handled_req = NULL;
