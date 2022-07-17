@@ -1,4 +1,4 @@
-/* TODO include gdt.h */
+// gdt.h
 .set SEG_r0code, 1
 .set SEG_r3code, 3
 .set SEG_r3data, 4
@@ -43,7 +43,7 @@ pagedir_current:
 .global _sysexit_real
 .type _sysexit_real, @function
 _sysexit_real:
-	/*
+	/* TODO check if SYSRET correctly sets segments
 	mov $(SEG_r3data << 3 | 3), %ax
 	mov %ax, %ds
 	mov %ax, %es

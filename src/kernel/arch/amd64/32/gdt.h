@@ -14,4 +14,5 @@ enum {
 };
 
 void gdt_init(void);
-void gdt_farjump(int segment);
+
+extern struct lgdt_arg lgdt_arg; // used by amd64/32/boot.s

@@ -37,27 +37,20 @@ _start:
 
 	pop %edi
 
-	// TODO import gdt.h for globals
-	mov $(2<<3), %eax
-	mov %eax, %ds // SEG_r0data
+	mov $(2 << 3), %eax // SEG_r0data
+	mov %eax, %ds
 	mov %eax, %ss
 	mov %eax, %es
 	mov %eax, %fs
 	mov %eax, %gs
 
-	ljmp $(1<<3), $boot64 // SEG_r0code
+	ljmp $(1 << 3), $boot64 // SEG_r0code
 
 panic_early:
 	// output a vga Fuck
 	movl $0x4F754F46, 0xB872A
 	movl $0x4F6B4F63, 0xB872E
 	jmp cpu_halt
-
-// TODO not part of anything yet
-	call sysenter_setup
-	// TODO will fail
-	push %ebx // address of the Multiboot struct
-	call kmain_early
 
 .global cpu_shutdown
 .type cpu_shutdown, @function
@@ -80,7 +73,6 @@ cpu_halt:
 .global cpu_pause
 .type cpu_pause, @function
 cpu_pause:
-	xchgw %bx, %bx
 	sti
 	hlt
 	cli

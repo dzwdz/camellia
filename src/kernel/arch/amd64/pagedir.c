@@ -1,56 +1,9 @@
+#include <kernel/arch/amd64/paging.h>
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <shared/mem.h>
 #include <stdint.h>
-
-/* <heat> nitpick: I highly recommend you dont use bitfields for paging
- *        structures
- * <heat> you can't change them atomically and the way they're layed out
- *        in memory is implementation defined iirc
- */
-// TODO move to single shared header file for the 32bit bootstrap
-typedef union pe_generic_t {
-	struct {
-		uint64_t present   : 1;
-		uint64_t writeable : 1;
-		uint64_t user      : 1;
-		uint64_t writethru : 1;
-
-		uint64_t uncached  : 1;
-		uint64_t accessed  : 1;
-		uint64_t dirty     : 1;
-		uint64_t large     : 1; // also PAT
-
-		uint64_t global    : 1; // TODO enable CR4.PGE
-		uint64_t _unused2  : 2;
-		uint64_t _unused3  : 1; // HLAT
-
-		uint64_t address   : 40;
-
-		uint64_t _unused4  : 7;
-		uint64_t pke       : 4;
-		uint64_t noexec    : 1;
-	} __attribute__((packed));
-	void *as_ptr;
-} pe_generic_t; // pageentry_generic
-
-struct pagedir { // actually pml4, TODO rename to a more generic name
-	pe_generic_t e[512];
-} __attribute__((packed));
-
-
-union virt_addr {
-	void __user *full;
-	struct {
-		uint64_t off_4k : 12; //   4Kb // offset in page
-		uint64_t pt     :  9; //   2Mb // page table index
-		uint64_t pd     :  9; //   1Gb // page directory index
-		uint64_t pdpt   :  9; // 512Gb // page directory pointer table index
-		uint64_t pml4   :  9; // 256Tb // page map level 4 index
-		uint64_t sign   : 16;
-	} __attribute__((packed));
-};
 
 static void *addr_extract(pe_generic_t pe) {
 	return (void*)(uintptr_t)(pe.address << 12);
@@ -61,6 +14,7 @@ static void *addr_validate(void *addr) {
 	assert(addr_extract(pe) == addr);
 	return addr;
 }
+
 
 struct pagedir *pagedir_new(void) {
 	struct pagedir *dir = page_alloc(1);

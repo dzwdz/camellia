@@ -38,8 +38,6 @@ struct process *process_seed(struct kmain_info *info) {
 		            true, true);
 	process_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
 
-	process_first->pages = pagedir_copy(process_first->pages); // TODO remove this
-
 	return process_first;
 }
 

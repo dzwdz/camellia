@@ -1,5 +1,5 @@
 #include <kernel/arch/amd64/32/gdt.h>
-#include <kernel/arch/generic.h>
+#include <kernel/arch/amd64/32/util.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -40,20 +40,11 @@ struct lgdt_arg {
 } __attribute__((packed));
 
 __attribute__((section(".shared")))
-struct gdt_entry GDT[SEG_end];
+static struct gdt_entry GDT[SEG_end];
 __attribute__((section(".shared")))
-struct tss_entry TSS;
+static struct tss_entry TSS;
 
 struct lgdt_arg lgdt_arg;
-
-
-static void *memset32(void *s, int c, size_t n) {
-	uint8_t *s2 = s;
-	for (size_t i = 0; i < n; i++)
-		s2[i] = c;
-	return s;
-}
-
 
 static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
 	*entry = (struct gdt_entry) {
@@ -78,6 +69,7 @@ static void gdt_fillout(struct gdt_entry* entry, uint8_t ring, bool code) {
 	};
 }
 
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 void gdt_init(void) {
 	GDT[SEG_null].present = 0;
 
@@ -87,15 +79,15 @@ void gdt_init(void) {
 	gdt_fillout(&GDT[SEG_r3data], 3, false);
 
 	lgdt_arg.limit = sizeof(GDT) - 1;
-	lgdt_arg.base = (uint64_t)(int)&GDT;
+	lgdt_arg.base = (uint64_t)&GDT;
 
 
 	memset32(&TSS, 0, sizeof(TSS));
 	for (int i = 0; i < 3; i++)
-		TSS.rsp[i] = (uint64_t)(int)&_isr_mini_stack;
-	TSS.ist[1] = (uint64_t)(int)&_isr_mini_stack;
+		TSS.rsp[i] = (uint64_t)&_isr_mini_stack;
+	TSS.ist[1] = (uint64_t)&_isr_mini_stack;
 
-	uint64_t tss_addr = (uint64_t)(int)&TSS;
+	uint64_t tss_addr = (uint64_t)&TSS;
 	GDT[SEG_TSS] = (struct gdt_entry) {
 		.limit_low  = sizeof(TSS),
 		.limit_high = sizeof(TSS) >> 16,
@@ -114,5 +106,5 @@ void gdt_init(void) {
 		.long_mode  = 0,
 		.x32        = 0,
 	};
-	*((uint64_t*)&GDT[SEG_TSS2]) = (tss_addr >> 32);
+	memset32(&GDT[SEG_TSS2], 0, sizeof GDT[SEG_TSS2]);
 }
