@@ -64,8 +64,16 @@ out/raw_init: src/user/linker.ld $(call from_sources, src/user/) $(call from_sou
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
-out/initrd.tar: $(shell find initrd/)
-	cd initrd; tar cf ../$@ *
+initrd/test.elf: out/test.elf
+	@# dummy
+
+out/test.elf: src/usertestelf.ld out/obj/usertestelf.c.o out/obj/user/lib/syscall.s.o $(call from_sources, src/shared/)
+	@mkdir -p $(@D)
+	@$(CC) $(LFLAGS) -T $^ -o $@
+
+# TODO automatically resolve symlinks
+out/initrd.tar: $(shell find initrd/) out/test.elf
+	cd initrd; tar chf ../$@ *
 
 out/fs/boot/init: out/raw_init out/initrd.tar
 	@mkdir -p $(@D)
@@ -86,6 +94,14 @@ out/obj/%.s.o: src/%.s
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
+
+out/obj/usertestelf.c.o: src/usertestelf.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -fPIE -c $^ -o $@
+
+out/obj/shared/%.c.o: src/shared/%.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -fPIC -c $^ -o $@
 
 out/obj/kernel/arch/amd64/32/%.c.o: src/kernel/arch/amd64/32/%.c
 	@mkdir -p $(@D)

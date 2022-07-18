@@ -1,8 +1,9 @@
-#include <user/app/shell.h>
-#include <user/lib/stdlib.h>
-#include <user/tests/main.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
+#include <user/app/shell.h>
+#include <user/lib/elfload.h>
+#include <user/lib/stdlib.h>
+#include <user/tests/main.h>
 
 static bool isspace(char c) {
 	return c == ' ' || c == '\t' || c == '\n';
@@ -157,6 +158,15 @@ void shell_loop(void) {
 
 			if (!strcmp(cmd, "echo")) {
 				printf("%s\n", args);
+			} else if (!strcmp(cmd, "exec")) {
+				libc_file *file = file_open(args, 0);
+				if (!file) {
+					printf("couldn't open file\n");
+				} else {
+					elf_execf(file);
+					file_close(file);
+					printf("elf_execf failed\n");
+				}
 			} else if (!strcmp(cmd, "cat")) {
 				cmd_cat_ls(args, false);
 			} else if (!strcmp(cmd, "ls")) {
