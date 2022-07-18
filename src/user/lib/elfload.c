@@ -48,6 +48,19 @@ static bool load_phdr(const void *elf, void *exebase, size_t idx) {
 	return true;
 }
 
+static size_t elf_spread(const void *elf) {
+	const struct Elf64_Ehdr *ehdr = elf;
+	uintptr_t high = 0, low = ~0;
+	for (size_t phi = 0; phi < ehdr->e_phnum; phi++) {
+		const struct Elf64_Phdr *phdr = elf + ehdr->e_phoff + phi * ehdr->e_phentsize;
+		if (high < phdr->p_vaddr + phdr->p_memsz)
+			high = phdr->p_vaddr + phdr->p_memsz;
+		if (low > phdr->p_vaddr)
+			low = phdr->p_vaddr;
+	}
+	return high - low;
+}
+
 void elf_exec(void *base) {
 	struct Elf64_Ehdr *ehdr = base;
 	void *exebase;
@@ -57,7 +70,11 @@ void elf_exec(void *base) {
 			exebase = (void*)0;
 			break;
 		case ET_DYN:
-			exebase = (void*)0x800000; // TODO search for free memory
+			exebase = _syscall_memflag((void*)0x1000, elf_spread(base), MEMFLAG_FINDFREE);
+			if (!exebase) {
+				printf("elf: out of memory\n");
+				_syscall_exit(1);
+			}
 			break;
 		default:
 			return;
@@ -66,6 +83,7 @@ void elf_exec(void *base) {
 		if (!load_phdr(base, exebase, phi))
 			return;
 	}
+	// TODO free memory
 	((void(*)())exebase + ehdr->e_entry)();
 	_syscall_exit(1);
 }

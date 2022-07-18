@@ -33,7 +33,6 @@ static struct Elf64_Dyn *dyn_gettag(Elf64_Xword tag) {
 }
 
 static void reloc(void) {
-	printf("hi?\n");
 	// TODO DT_REL
 	if (dyn_gettag(DT_PLTGOT) || dyn_gettag(DT_JMPREL)) {
 		printf("elf: unimplemented tag in _DYNAMIC\n");
@@ -61,6 +60,7 @@ static void reloc(void) {
 }
 
 int main(void) {
+	printf("loaded at %x\n", &_image_base);
 	reloc();
 	printf(str);
 	printf(str2);
