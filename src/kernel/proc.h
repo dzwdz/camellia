@@ -57,6 +57,12 @@ struct process {
 
 	struct vfs_mount *mount;
 
+	struct {
+		void *buf;
+		size_t len;
+		size_t pos;
+	} execbuf;
+
 	struct handle *handles[HANDLE_MAX];
 };
 

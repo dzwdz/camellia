@@ -361,6 +361,25 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	SYSCALL_RETURN(0);
 }
 
+long _syscall_execbuf(void __user *ubuf, size_t len) {
+	if (len == 0) SYSCALL_RETURN(0);
+	if (len > sizeof(uint64_t) * 6 * 4) // TODO specify max size somewhere
+		SYSCALL_RETURN(-1);
+	if (process_current->execbuf.buf)
+		SYSCALL_RETURN(-1); /* no nesting */
+	// actually TODO, nesting makes sense for infinite loops. maybe
+
+	char *kbuf = kmalloc(len);
+	if (!virt_cpy_from(process_current->pages, kbuf, ubuf, len)) {
+		kfree(kbuf);
+		SYSCALL_RETURN(-1);
+	}
+	process_current->execbuf.buf = kbuf;
+	process_current->execbuf.len = len;
+	process_current->execbuf.pos = 0;
+	SYSCALL_RETURN(0);
+}
+
 void _syscall_debug_klog(const void __user *buf, size_t len) {
 	(void)buf; (void)len;
 	// static char kbuf[256];
@@ -371,10 +390,12 @@ void _syscall_debug_klog(const void __user *buf, size_t len) {
 }
 
 long _syscall(long num, long a, long b, long c, long d) {
+	/* note: this isn't the only place where syscalls get called from!
+	 *       see execbuf */
 	switch (num) {
 		case _SYSCALL_EXIT:
 			_syscall_exit(a);
-			// _syscall_exit doesn't exit
+			// _syscall_exit doesn't return
 		case _SYSCALL_AWAIT:
 			_syscall_await();
 			break;
@@ -410,6 +431,9 @@ long _syscall(long num, long a, long b, long c, long d) {
 			break;
 		case _SYSCALL_PIPE:
 			_syscall_pipe((userptr_t)a, b);
+			break;
+		case _SYSCALL_EXECBUF:
+			_syscall_execbuf((userptr_t)a, b);
 			break;
 		case _SYSCALL_DEBUG_KLOG:
 			_syscall_debug_klog((userptr_t)a, b);

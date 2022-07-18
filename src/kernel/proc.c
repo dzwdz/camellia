@@ -1,4 +1,5 @@
 #include <kernel/arch/generic.h>
+#include <kernel/execbuf.h>
 #include <kernel/main.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
@@ -135,6 +136,11 @@ void process_kill(struct process *p, int ret) {
 		process_transition(p, PS_DEAD);
 		p->death_msg = ret;
 
+		if (p->execbuf.buf) {
+			kfree(p->execbuf.buf);
+			p->execbuf.buf = NULL;
+		}
+
 		if (p->parent)
 			pagedir_free(p->pages); // TODO put init's pages in the allocator
 
@@ -199,7 +205,10 @@ static _Noreturn void process_switch(struct process *proc) {
 	assert(proc->state == PS_RUNNING);
 	process_current = proc;
 	pagedir_switch(proc->pages);
-	sysexit(proc->regs);
+	if (proc->execbuf.buf)
+		execbuf_run(proc);
+	else
+		sysexit(proc->regs);
 }
 
 _Noreturn void process_switch_any(void) {

@@ -28,6 +28,8 @@ enum {
 	_SYSCALL_MEMFLAG,
 	_SYSCALL_PIPE,
 
+	_SYSCALL_EXECBUF,
+
 	_SYSCALL_DEBUG_KLOG,
 };
 
@@ -84,5 +86,8 @@ long _syscall_fs_respond(void __user *buf, long ret, int flags);
  */
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
 long _syscall_pipe(handle_t __user user_ends[2], int flags);
+
+/* see shared/execbuf.h */
+long _syscall_execbuf(void __user *buf, size_t len);
 
 void _syscall_debug_klog(const void __user *buf, size_t len);

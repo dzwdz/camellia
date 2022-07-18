@@ -1,5 +1,6 @@
 #define TEST_MACROS
 #include <shared/errno.h>
+#include <shared/execbuf.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <user/lib/stdlib.h>
@@ -221,6 +222,19 @@ static void test_efault(void) {
 	close(h);
 }
 
+static void test_execbuf(void) {
+	// not really a test, TODO
+	const char str1[] = "test_execbuf: string 1\n";
+	const char str2[] = "test_execbuf: and 2\n";
+	uint64_t buf[] = {
+		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str1, sizeof(str1) - 1, -1,
+		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str2, sizeof(str2) - 1, -1,
+		EXECBUF_SYSCALL, _SYSCALL_EXIT, 0, 0, 0, 0,
+	};
+	_syscall_execbuf(buf, sizeof buf);
+	test_fail();
+}
+
 static void test_misc(void) {
 	assert(_syscall(~0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
@@ -237,5 +251,6 @@ void test_all(void) {
 	run_forked(test_pipe);
 	run_forked(test_semaphore);
 	run_forked(test_efault);
+	run_forked(test_execbuf);
 	run_forked(test_misc);
 }

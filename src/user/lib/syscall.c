@@ -58,6 +58,10 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	return _syscall(_SYSCALL_PIPE, (long)user_ends, (long)flags, 0, 0);
 }
 
+long _syscall_execbuf(void __user *buf, size_t len) {
+	return _syscall(_SYSCALL_EXECBUF, (long)buf, (long)len, 0, 0);
+}
+
 void _syscall_debug_klog(const void __user *buf, size_t len) {
 	return (void)_syscall(_SYSCALL_DEBUG_KLOG, (long)buf, (long)len, 0, 0);
 }
