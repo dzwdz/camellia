@@ -69,7 +69,7 @@ initrd/test.elf: out/test.elf
 
 out/test.elf: src/usertestelf.ld out/obj/usertestelf.c.o out/obj/user/lib/syscall.s.o $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -T $^ -o $@
+	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
 
 # TODO automatically resolve symlinks
 out/initrd.tar: $(shell find initrd/) out/test.elf

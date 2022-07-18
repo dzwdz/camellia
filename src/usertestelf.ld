@@ -2,7 +2,7 @@ ENTRY(main)
 
 SECTIONS
 {
-	. = 8M;
+	_image_base = .;
 	.text BLOCK(4K) : ALIGN(4K)
 	{
 		*(.text)
