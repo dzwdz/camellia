@@ -1,3 +1,4 @@
+#include <shared/execbuf.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <user/lib/elf.h>
@@ -65,12 +66,13 @@ void elf_exec(void *base) {
 	struct Elf64_Ehdr *ehdr = base;
 	void *exebase;
 	if (!valid_ehdr(ehdr)) return;
+	size_t spread = elf_spread(base);
 	switch (ehdr->e_type) {
 		case ET_EXEC:
 			exebase = (void*)0;
 			break;
 		case ET_DYN:
-			exebase = _syscall_memflag((void*)0x1000, elf_spread(base), MEMFLAG_FINDFREE);
+			exebase = _syscall_memflag((void*)0x1000, spread, MEMFLAG_FINDFREE);
 			if (!exebase) {
 				printf("elf: out of memory\n");
 				_syscall_exit(1);
@@ -83,7 +85,12 @@ void elf_exec(void *base) {
 		if (!load_phdr(base, exebase, phi))
 			return;
 	}
-	// TODO free memory
-	((void(*)())exebase + ehdr->e_entry)();
-	_syscall_exit(1);
+
+	uint64_t buf[] = {
+		// TODO free lower memory
+		//EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, exebase + spread, ~0 - 0xF0000, 0, 0, // free upper memory
+		EXECBUF_JMP, (uintptr_t)exebase + ehdr->e_entry,
+	};
+	_syscall_execbuf(buf, sizeof buf);
+	printf("elf: execbuf failed?");
 }

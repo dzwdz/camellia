@@ -31,6 +31,10 @@ _Noreturn void execbuf_run(struct process *proc) {
 				try_fetch(proc, buf, 5);
 				_syscall(buf[0], buf[1], buf[2], buf[3], buf[4]);
 				break;
+			case EXECBUF_JMP:
+				try_fetch(proc, buf, 1);
+				proc->regs.rcx = buf[0];
+				break;
 			default:
 				halt(proc);
 		}

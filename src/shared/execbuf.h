@@ -3,3 +3,5 @@
 
 /* takes 5 arguments */
 #define EXECBUF_SYSCALL 0xF0000001
+/* takes 1 argument, changes %rip */
+#define EXECBUF_JMP 0xF0000002
