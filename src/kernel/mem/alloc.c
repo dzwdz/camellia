@@ -101,6 +101,8 @@ void *page_zalloc(size_t pages) {
 
 // frees `pages` consecutive pages starting from *first
 void page_free(void *first_addr, size_t pages) {
+	if (first_addr < page_bitmap_start) // TODO unimplemented
+		return;
 	size_t first = (uintptr_t)(first_addr - page_bitmap_start) / PAGE_SIZE;
 	for (size_t i = 0; i < pages; i++) {
 		assert(bitmap_get(first + i));

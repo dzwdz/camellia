@@ -21,6 +21,14 @@ static bool addr_canonical(const __user void *addr) {
 	return (n == 0) || ((~n) << addr_bits == 0);
 }
 
+/* the types here are idiotic because C is idiotic */
+static __user void *addr_canonize(const __user void *addr) {
+	union virt_addr v = {.full = (void __force*)addr};
+	v.sign = (((uintptr_t)addr >> 47) & 1) * 0xFFFF;
+	assert(addr_canonical(addr));
+	return v.full;
+}
+
 
 struct pagedir *pagedir_new(void) {
 	struct pagedir *dir = page_alloc(1);
@@ -81,11 +89,60 @@ get_entry(struct pagedir *dir, const void __user *virt) {
 	return pte;
 }
 
-void *pagedir_unmap(struct pagedir *dir, void __user *virt) {
-	pe_generic_t *page = get_entry(dir, virt);
-	if (!page) return NULL;
-	page->present = false;
-	return addr_extract(*page);
+void pagedir_unmap_user(struct pagedir *dir, void __user *virt, size_t len) {
+	// TODO rewrite this
+	const void __user *end = addr_canonize(virt + len);
+	union virt_addr v = {.full = virt};
+	v.off_4k = 0;
+
+	for (int pml4i = v.pml4; v.full < end && pml4i < 512; pml4i++) {
+		v.pml4 = pml4i;
+		v.full = addr_canonize(v.full);
+		if (v.full >= end) return;
+		if (!dir->e[v.pml4].present) {
+			v.pdpt = 0;
+			v.pd = 0;
+			v.pt = 0;
+			continue;
+		}
+		assert(!dir->e[v.pml4].large);
+		pe_generic_t *pdpt = addr_extract(dir->e[v.pml4]);
+
+		for (int pdpti = v.pdpt; v.full < end && pdpti < 512; pdpti++) {
+			v.pdpt = pdpti;
+			if (v.full >= end) return;
+			if (!pdpt[v.pdpt].present) {
+				v.pd = 0;
+				v.pt = 0;
+				continue;
+			}
+			assert(!pdpt[v.pdpt].large);
+			pe_generic_t *pd = addr_extract(pdpt[v.pdpt]);
+
+			for (int pdi = v.pd; v.full < end && pdi < 512; pdi++) {
+				v.pd = pdi;
+				if (v.full >= end) return;
+				if (!pd[v.pd].present) {
+					v.pt = 0;
+					continue;
+				}
+				assert(!pd[v.pd].large);
+				pe_generic_t *pt = addr_extract(pd[v.pd]);
+
+				for (int pti = v.pt; v.full < end && pti < 512; pti++) {
+					v.pt = pti;
+					if (v.full >= end) return;
+					if (!pt[v.pt].present) continue;
+					if (!pt[v.pt].user) continue;
+					page_free(addr_extract(pt[v.pt]), 1);
+					pt[v.pt].present = 0;
+				}
+				v.pt = 0;
+			}
+			v.pd = 0;
+		}
+		v.pdpt = 0;
+	}
 }
 
 void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,

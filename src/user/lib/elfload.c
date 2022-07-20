@@ -62,6 +62,16 @@ static size_t elf_spread(const void *elf) {
 	return high - low;
 }
 
+/* frees memory outside of [low; high] and jumps to *entry */
+static void freejmp(void *entry, void *low, void *high) {
+	uint64_t buf[] = {
+		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0,
+		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, (uintptr_t)high, ~0 - 0xF000 - (uintptr_t)high, 0, 0,
+		EXECBUF_JMP, (uintptr_t)entry,
+	};
+	_syscall_execbuf(buf, sizeof buf);
+}
+
 void elf_exec(void *base) {
 	struct Elf64_Ehdr *ehdr = base;
 	void *exebase;
@@ -86,11 +96,6 @@ void elf_exec(void *base) {
 			return;
 	}
 
-	uint64_t buf[] = {
-		// TODO free lower memory
-		//EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, exebase + spread, ~0 - 0xF0000, 0, 0, // free upper memory
-		EXECBUF_JMP, (uintptr_t)exebase + ehdr->e_entry,
-	};
-	_syscall_execbuf(buf, sizeof buf);
+	freejmp(exebase + ehdr->e_entry, exebase, exebase + spread + 0x1000);
 	printf("elf: execbuf failed?");
 }

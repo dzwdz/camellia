@@ -317,6 +317,11 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 			SYSCALL_RETURN((uintptr_t)addr);
 	}
 
+	if (!(flags & MEMFLAG_PRESENT)) {
+		pagedir_unmap_user(pages, addr, len);
+		SYSCALL_RETURN((uintptr_t)addr);
+	}
+
 
 	for (userptr_t iter = addr; iter < addr + len; iter += PAGE_SIZE) {
 		if (pagedir_iskern(pages, iter)) {
@@ -325,13 +330,6 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 		}
 
 		phys = pagedir_virt2phys(pages, iter, false, false);
-
-		if (!(flags & MEMFLAG_PRESENT)) {
-			if (phys)
-				page_free(pagedir_unmap(pages, iter), 1);
-			continue;
-		}
-
 		if (!phys) {
 			phys = page_alloc(1);
 			memset(phys, 0, PAGE_SIZE); // TODO somehow test this
