@@ -23,7 +23,7 @@ static bool addr_canonical(const __user void *addr) {
 
 /* the types here are idiotic because C is idiotic */
 static __user void *addr_canonize(const __user void *addr) {
-	union virt_addr v = {.full = (void __force*)addr};
+	union virt_addr v = {.full = (void __user*)addr};
 	v.sign = (((uintptr_t)addr >> 47) & 1) * 0xFFFF;
 	assert(addr_canonical(addr));
 	return v.full;

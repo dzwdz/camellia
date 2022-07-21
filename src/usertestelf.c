@@ -8,7 +8,7 @@ __attribute__((visibility("hidden")))
 extern struct Elf64_Dyn _DYNAMIC[];
 
 __attribute__((visibility("hidden")))
-extern char _image_base;
+extern char _image_base[];
 
 static void printf_backend(void *arg, const char *buf, size_t len) {
 	(void)arg;
@@ -45,12 +45,12 @@ static void reloc(void) {
 		size_t relasz = dyn_gettag(DT_RELASZ)->d_val;
 		size_t relaent = dyn_gettag(DT_RELAENT)->d_val;
 		for (size_t o = 0; o < relasz; o += relaent) {
-			struct Elf64_Rela *r = &_image_base + rela_tag->d_ptr + o;
-			uintptr_t *target = &_image_base + r->r_offset;
+			struct Elf64_Rela *r = (void*)_image_base + rela_tag->d_ptr + o;
+			uintptr_t *target = (void*)_image_base + r->r_offset;
 
 			switch (ELF64_R_TYPE(r->r_info)) {
 				case R_X86_64_RELATIVE:
-					*target = &_image_base + r->r_addend;
+					*target = (uintptr_t)&_image_base + r->r_addend;
 					break;
 				default:
 					printf("elf: unsupported relocation type\n");

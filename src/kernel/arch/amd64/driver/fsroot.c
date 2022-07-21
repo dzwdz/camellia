@@ -56,7 +56,7 @@ static int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
 
 static int handle(struct vfs_request *req) {
 	assert(req->caller);
-	int id = (int)(long)req->id;
+	int id = (int)(long __force)req->id;
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
