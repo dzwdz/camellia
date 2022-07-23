@@ -13,6 +13,7 @@ extern char _image_base[];
 static void printf_backend(void *arg, const char *buf, size_t len) {
 	(void)arg;
 	_syscall_write(1, buf, len, -1);
+	_syscall_debug_klog(buf, len);
 }
 
 int printf(const char *fmt, ...) {

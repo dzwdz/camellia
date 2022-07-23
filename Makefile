@@ -14,8 +14,8 @@ QFLAGS += -display none
 endif
 
 define from_sources
-  $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f -name '*.s')) \
-  $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f -name '*.c'))
+  $(patsubst src/%.s,out/obj/%.s.o,$(shell find $(1) -type f,l -name '*.s')) \
+  $(patsubst src/%.c,out/obj/%.c.o,$(shell find $(1) -type f,l -name '*.c'))
 endef
 
 
@@ -60,7 +60,7 @@ out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/) $
 	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-out/raw_init: src/user/linker.ld $(call from_sources, src/user/) $(call from_sources, src/shared/)
+out/bootstrap: src/user_bootstrap/linker.ld $(call from_sources, src/user_bootstrap/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
@@ -75,7 +75,7 @@ out/test.elf: src/usertestelf.ld out/obj/usertestelf.c.o out/obj/user/lib/syscal
 out/initrd.tar: $(shell find initrd/) out/test.elf
 	cd initrd; tar chf ../$@ *
 
-out/fs/boot/init: out/raw_init out/initrd.tar
+out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
 	@cat $^ > $@
 
