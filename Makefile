@@ -49,7 +49,7 @@ check: $(shell find src/kernel/ -type f -name *.c)
 	@echo $^ | xargs -n 1 sparse $(CFLAGS) $(SPARSEFLAGS)
 
 clean:
-	rm -rv out/
+	rm -r out/
 
 
 out/boot.iso: out/fs/boot/kernel.bin out/fs/boot/grub/grub.cfg out/fs/boot/init
@@ -100,19 +100,11 @@ out/obj/%.s.o: src/%.s
 
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -c $^ -o $@
-
-out/obj/user/%.c.o: src/user/%.c
-	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -fPIE -c $^ -o $@
-
-out/obj/usertestelf.c.o: src/usertestelf.c
-	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -fPIE -c $^ -o $@
-
-out/obj/shared/%.c.o: src/shared/%.c
-	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -fPIC -c $^ -o $@
+
+out/obj/user_bootstrap/%.c.o: src/user_bootstrap/%.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c $^ -o $@
 
 out/obj/kernel/arch/amd64/32/%.c.o: src/kernel/arch/amd64/32/%.c
 	@mkdir -p $(@D)
