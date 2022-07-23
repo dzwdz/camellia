@@ -76,6 +76,7 @@ void elf_exec(void *base) {
 	struct Elf64_Ehdr *ehdr = base;
 	void *exebase;
 	if (!valid_ehdr(ehdr)) return;
+	_syscall_debug_klog("here", 4);
 	size_t spread = elf_spread(base);
 	switch (ehdr->e_type) {
 		case ET_EXEC:

@@ -67,12 +67,19 @@ out/bootstrap: src/user_bootstrap/linker.ld $(call from_sources, src/user_bootst
 initrd/test.elf: out/test.elf
 	@# dummy
 
+initrd/init.elf: out/init.elf
+	@# dummy
+
 out/test.elf: src/usertestelf.ld out/obj/usertestelf.c.o out/obj/user/lib/syscall.s.o $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
 
+out/init.elf: src/user/linker.ld $(call from_sources, src/user/) $(call from_sources, src/shared/)
+	@mkdir -p $(@D)
+	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
+
 # TODO automatically resolve symlinks
-out/initrd.tar: $(shell find initrd/) out/test.elf
+out/initrd.tar: $(shell find initrd/) out/test.elf out/init.elf
 	cd initrd; tar chf ../$@ *
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
@@ -94,6 +101,10 @@ out/obj/%.s.o: src/%.s
 out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
+
+out/obj/user/%.c.o: src/user/%.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -fPIE -c $^ -o $@
 
 out/obj/usertestelf.c.o: src/usertestelf.c
 	@mkdir -p $(@D)

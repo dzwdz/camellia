@@ -15,6 +15,7 @@ void vfsreq_create(struct vfs_request req_) {
 		req->backend->refcount++;
 
 	if (req->caller) {
+		// TODO after running `run_tests` from vga, this is entered with state == PS_WAITS4FS
 		process_transition(req->caller, PS_WAITS4FS);
 		req->caller->waits4fs.req = req;
 	}

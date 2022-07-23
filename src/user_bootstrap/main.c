@@ -51,7 +51,7 @@ __attribute__((section(".text.startup")))
 int main(void) {
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
-	void *init = tar_find(&_initrd, "test.elf");
+	void *init = tar_find(&_initrd, "init.elf");
 	elf_exec(init);
 	_syscall_debug_klog("bootstrap failed", sizeof("bootstrap failed"));
 

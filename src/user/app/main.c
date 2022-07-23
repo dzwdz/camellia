@@ -1,23 +1,21 @@
-#include <user/driver/driver.h>
-#include <user/fs/misc.h>
-#include <user/app/shell.h>
-#include <user/lib/stdlib.h>
-#include <user/fs/tar.h>
-#include <user/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
+#include <user/app/shell.h>
+#include <user/driver/driver.h>
+#include <user/fs/misc.h>
+#include <user/fs/tar.h>
+#include <user/lib/elfload.h>
+#include <user/lib/stdlib.h>
+#include <user/tests/main.h>
 
-extern char _bss_start; // provided by the linker
-extern char _bss_end;
-extern char _initrd;
+// extern char _initrd;
 
 void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
 int main(void) {
-	// allocate bss
-	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
+	elf_selfreloc();
 
 	file_reopen(stdout, "/com1", 0);
 	printf("preinit\n");
@@ -30,7 +28,7 @@ int main(void) {
 	}
 	if (!fork2_n_mount("/")) fs_dir_inject("/kdev/"); // TODO should be part of fs_whitelist
 
-	MOUNT("/init/", tar_driver(&_initrd));
+	// MOUNT("/init/", tar_driver(&_initrd));
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
