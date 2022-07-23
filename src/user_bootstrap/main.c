@@ -10,7 +10,7 @@ extern char _initrd;
 /* libc stubs */
 int printf(const char *fmt, ...) {(void)fmt; return 0;}
 void *malloc(size_t size) {(void)size; _syscall_exit(1);}
-void free(void *ptr) {}
+void free(void *ptr) {(void)ptr;}
 int file_read(libc_file *f, char *buf, size_t len) {(void)f; (void)buf; (void)len; _syscall_exit(1);}
 
 
@@ -52,8 +52,12 @@ int main(void) {
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
 	void *init = tar_find(&_initrd, "init.elf");
-	elf_exec(init);
-	_syscall_debug_klog("bootstrap failed", sizeof("bootstrap failed"));
-
+	void (*entry)(void*) = elf_partialexec(init);
+	if (entry) {
+		// TODO dynamically link initrd
+		entry(&_initrd);
+	} else {
+		_syscall_debug_klog("bootstrap failed", sizeof("bootstrap failed"));
+	}
 	_syscall_exit(0);
 }

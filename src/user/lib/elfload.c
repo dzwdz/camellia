@@ -62,41 +62,58 @@ static size_t elf_spread(const void *elf) {
 	return high - low;
 }
 
-/* frees memory outside of [low; high] and jumps to *entry */
-static void freejmp(void *entry, void *low, void *high) {
+/* frees memory outside of [low; low + len] and jumps to *entry */
+static void freejmp(void *entry, void *low, size_t len) {
+	uintptr_t high = (uintptr_t)low + len;
 	uint64_t buf[] = {
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0,
-		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, (uintptr_t)high, ~0 - 0xF000 - (uintptr_t)high, 0, 0,
+		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
 	_syscall_execbuf(buf, sizeof buf);
+	// should never return
 }
 
-void elf_exec(void *base) {
-	struct Elf64_Ehdr *ehdr = base;
+static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
 	void *exebase;
-	if (!valid_ehdr(ehdr)) return;
-	_syscall_debug_klog("here", 4);
-	size_t spread = elf_spread(base);
+	size_t spread = elf_spread(ehdr);
 	switch (ehdr->e_type) {
 		case ET_EXEC:
 			exebase = (void*)0;
 			break;
 		case ET_DYN:
 			exebase = _syscall_memflag((void*)0x1000, spread, MEMFLAG_FINDFREE);
-			if (!exebase) {
-				printf("elf: out of memory\n");
-				_syscall_exit(1);
-			}
+			if (!exebase)
+				return NULL;
 			break;
 		default:
-			return;
+			return NULL;
 	}
 	for (size_t phi = 0; phi < ehdr->e_phnum; phi++) {
-		if (!load_phdr(base, exebase, phi))
-			return;
+		if (!load_phdr((void*)ehdr, exebase, phi)) {
+			_syscall_memflag(exebase, spread, 0);
+			return NULL;
+		}
 	}
+	return exebase;
+}
 
-	freejmp(exebase + ehdr->e_entry, exebase, exebase + spread + 0x1000);
-	printf("elf: execbuf failed?");
+void elf_exec(void *base) {
+	struct Elf64_Ehdr *ehdr = base;
+	if (!valid_ehdr(ehdr)) return;
+
+	void *exebase = elf_loadmem(ehdr);
+	if (!exebase) return;
+
+	freejmp(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000);
+}
+
+void *elf_partialexec(void *base) {
+	struct Elf64_Ehdr *ehdr = base;
+	if (!valid_ehdr(ehdr)) return NULL;
+
+	void *exebase = elf_loadmem(ehdr);
+	if (!exebase) return NULL;
+
+	return exebase + ehdr->e_entry;
 }

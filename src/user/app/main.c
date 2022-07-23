@@ -9,16 +9,17 @@
 #include <user/lib/stdlib.h>
 #include <user/tests/main.h>
 
-// extern char _initrd;
+__attribute__((visibility("hidden")))
+extern char _image_base[];
 
 void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
-int main(void) {
+int main(void *initrd) {
 	elf_selfreloc();
 
 	file_reopen(stdout, "/com1", 0);
-	printf("preinit\n");
+	printf("in init, loaded at 0x%x\n", &_image_base);
 
 	/* move everything provided by the kernel to /kdev */
 	MOUNT("/kdev/", fs_passthru(NULL));
@@ -28,7 +29,7 @@ int main(void) {
 	}
 	if (!fork2_n_mount("/")) fs_dir_inject("/kdev/"); // TODO should be part of fs_whitelist
 
-	// MOUNT("/init/", tar_driver(&_initrd));
+	MOUNT("/init/", tar_driver(initrd));
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
