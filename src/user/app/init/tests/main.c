@@ -4,7 +4,7 @@
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <user/lib/stdlib.h>
-#include <user/tests/main.h>
+#include <user/app/init/tests/main.h>
 
 static void run_forked(void (*fn)()) {
 	if (!fork()) {

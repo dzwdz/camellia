@@ -1,6 +1,6 @@
 #include <shared/syscalls.h>
 #include <user/lib/stdlib.h>
-#include <user/driver/driver.h>
+#include <user/app/init/driver/driver.h>
 
 static void w_output(handle_t output, const char *buf, size_t len) {
 	size_t pos = 0;

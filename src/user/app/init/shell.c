@@ -1,9 +1,9 @@
 #include <shared/syscalls.h>
 #include <stdbool.h>
-#include <user/app/shell.h>
+#include <user/app/init/shell.h>
 #include <user/lib/elfload.h>
 #include <user/lib/stdlib.h>
-#include <user/tests/main.h>
+#include <user/app/init/tests/main.h>
 
 static bool isspace(char c) {
 	return c == ' ' || c == '\t' || c == '\n';

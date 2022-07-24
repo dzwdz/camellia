@@ -1,6 +1,6 @@
 #define TEST_MACROS
 #include <user/lib/stdlib.h>
-#include <user/tests/main.h>
+#include <user/app/init/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 

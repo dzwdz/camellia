@@ -1,13 +1,13 @@
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
-#include <user/app/shell.h>
-#include <user/driver/driver.h>
-#include <user/fs/misc.h>
-#include <user/fs/tar.h>
+#include <user/app/init/shell.h>
+#include <user/app/init/driver/driver.h>
+#include <user/lib/fs/misc.h>
+#include <user/app/init/driver/tar.h>
 #include <user/lib/elfload.h>
 #include <user/lib/stdlib.h>
-#include <user/tests/main.h>
+#include <user/app/init/tests/main.h>
 
 __attribute__((visibility("hidden")))
 extern char _image_base[];

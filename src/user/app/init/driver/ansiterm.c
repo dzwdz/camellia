@@ -1,4 +1,4 @@
-#include <user/driver/driver.h>
+#include <user/app/init/driver/driver.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
 
