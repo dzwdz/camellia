@@ -64,22 +64,22 @@ out/bootstrap: src/user_bootstrap/linker.ld $(call from_sources, src/user_bootst
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
-initrd/test.elf: out/test.elf
+initrd/testelf.elf: out/testelf.elf
 	@# dummy
 
 initrd/init.elf: out/init.elf
 	@# dummy
 
-out/test.elf: src/usertestelf.ld out/obj/usertestelf.c.o out/obj/user/lib/syscall.s.o $(call from_sources, src/shared/)
+out/testelf.elf: src/user/linker.ld $(call from_sources, src/user/app/testelf/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
 
-out/init.elf: src/user/linker.ld $(call from_sources, src/user/) $(call from_sources, src/shared/)
+out/init.elf: src/user/linker.ld $(call from_sources, src/user/app/init/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
 
 # TODO automatically resolve symlinks
-out/initrd.tar: $(shell find initrd/) out/test.elf out/init.elf
+out/initrd.tar: $(shell find initrd/) out/testelf.elf out/init.elf
 	cd initrd; tar chf ../$@ *
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
