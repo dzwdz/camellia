@@ -64,23 +64,22 @@ out/bootstrap: src/user_bootstrap/linker.ld $(call from_sources, src/user_bootst
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
-initrd/testelf.elf: out/testelf.elf
-	@# dummy
+define userbin_template =
+out/initrd/$(1).elf: src/user/linker.ld $(call from_sources, src/user/app/$(1)/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
+	@mkdir -p $$(@D)
+	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $$^ -o $$@
+endef
+USERBINS := $(shell ls src/user/app)
+$(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))
 
-initrd/init.elf: out/init.elf
-	@# dummy
-
-out/testelf.elf: src/user/linker.ld $(call from_sources, src/user/app/testelf/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
+out/initrd/%: initrd/%
 	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
+	@cp $< $@
 
-out/init.elf: src/user/linker.ld $(call from_sources, src/user/app/init/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
-	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $^ -o $@
-
-# TODO automatically resolve symlinks
-out/initrd.tar: $(shell find initrd/) out/testelf.elf out/init.elf
-	cd initrd; tar chf ../$@ *
+out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
+                $(patsubst %,out/initrd/%.elf,$(USERBINS))
+	echo $^
+	cd out/initrd; tar chf ../initrd.tar *
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
