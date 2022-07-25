@@ -4,7 +4,6 @@
 #include <user/app/init/shell.h>
 #include <user/app/init/driver/driver.h>
 #include <user/lib/fs/misc.h>
-#include <user/app/init/driver/tar.h>
 #include <user/lib/elfload.h>
 #include <user/lib/stdlib.h>
 #include <user/app/init/tests/main.h>
@@ -15,21 +14,12 @@ extern char _image_base[];
 void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
-int main(void *initrd) {
+int main(void) {
 	elf_selfreloc();
 
-	file_reopen(stdout, "/com1", 0);
-	printf("in init, loaded at 0x%x\n", &_image_base);
+	file_reopen(stdout, "/kdev/com1", 0);
+	printf("in init (stage 2), loaded at 0x%x\n", &_image_base);
 
-	/* move everything provided by the kernel to /kdev */
-	MOUNT("/kdev/", fs_passthru(NULL));
-	if (!fork2_n_mount("/")) {
-		const char *l[] = {"/kdev/", NULL};
-		fs_whitelist(l);
-	}
-	if (!fork2_n_mount("/")) fs_dir_inject("/kdev/"); // TODO should be part of fs_whitelist
-
-	MOUNT("/init/", tar_driver(initrd));
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());

@@ -1,14 +1,15 @@
-#include <user/lib/stdlib.h>
 #include <shared/flags.h>
+#include <shared/mem.h>
 #include <shared/syscalls.h>
 #include <stdint.h>
+
+#include "tar.h"
 
 #define BUF_SIZE 64
 
 static void *tar_open(const char *path, int len, void *base, size_t base_len);
 static void tar_read(struct fs_wait_response *res, void *base, size_t base_len);
 static int tar_size(void *sector);
-static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len);
 static int oct_parse(char *str, size_t len);
 
 
@@ -130,7 +131,7 @@ static int tar_size(void *sector) {
 	return oct_parse(sector + 124, 11);
 }
 
-static void *tar_find(const char *path, size_t path_len, void *base, size_t base_len) {
+void *tar_find(const char *path, size_t path_len, void *base, size_t base_len) {
 	int size;
 	if (path_len > 100) return NULL; // illegal path
 
