@@ -60,7 +60,7 @@ out/fs/boot/kernel.bin: src/kernel/linker.ld $(call from_sources, src/kernel/) $
 	@$(CC) $(LFLAGS) -T $^ -o $@
 	grub-file --is-x86-multiboot $@
 
-out/bootstrap: src/user_bootstrap/linker.ld $(call from_sources, src/user_bootstrap/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
+out/bootstrap: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) $(call from_sources, src/user/lib/) $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
 
@@ -101,7 +101,7 @@ out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -fPIC -c $^ -o $@
 
-out/obj/user_bootstrap/%.c.o: src/user_bootstrap/%.c
+out/obj/user/bootstrap/%.c.o: src/user/bootstrap/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
 
