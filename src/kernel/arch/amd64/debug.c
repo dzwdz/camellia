@@ -13,6 +13,9 @@ void *debug_caller(size_t depth) {
 
 void debug_stacktrace(void) {
 	for (size_t i = 0; i < 16; i++) {
-		kprintf("  k/%08x\n", (uintptr_t)debug_caller(i));
+		void *ptr = debug_caller(i);
+		if (!ptr) break;
+		kprintf(" k/%08x", (uintptr_t)ptr);
 	}
+	kprintf("\n");
 }

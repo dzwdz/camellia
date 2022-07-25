@@ -108,4 +108,5 @@ sysenter_stage1:
 	push %r15
 
 	mov $_bss_end, %rsp
+	push $0 // for stacktraces
 	jmp sysenter_stage2
