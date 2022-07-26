@@ -38,7 +38,7 @@ static char *strtrim(char *s) {
 static int readline(char *buf, size_t max) {
 	char c = '\0';
 	size_t pos = 0;
-	while (pos < (max-1) && c != '\n' && file_read(stdin, &c, 1))
+	while (pos < (max-1) && c != '\n' && fread(&c, 1, 1, stdin))
 		buf[pos++] = c;
 	buf[pos++] = '\0';
 	return pos;
@@ -73,16 +73,16 @@ static void cmd_cat_ls(const char *args, bool ls) {
 	}
 
 	while (!file->eof) {
-		int len = file_read(file, buf, sizeof buf);
+		int len = fread(buf, 1, sizeof buf, file);
 		if (len <= 0) break;
 
 		if (ls) {
 			for (int i = 0; i < len; i++)
 				if (buf[i] == '\0') buf[i] = '\n';
 		}
-		file_write(stdout, buf, len);
+		fwrite(buf, 1, len, stdout);
 	}
-	file_close(file);
+	fclose(file);
 }
 
 static void cmd_hexdump(const char *args) {
@@ -166,7 +166,7 @@ void shell_loop(void) {
 					printf("couldn't open file\n");
 				} else {
 					elf_execf(file);
-					file_close(file);
+					fclose(file);
 					printf("elf_execf failed\n");
 				}
 			} else if (!strcmp(cmd, "cat")) {

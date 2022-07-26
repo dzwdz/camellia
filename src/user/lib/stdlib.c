@@ -15,7 +15,7 @@ FILE *const stdin = &_stdin_null, *const stdout = &_stdout_null;
 int errno = 0;
 
 static void backend_file(void *arg, const char *buf, size_t len) {
-	file_write((FILE*)arg, buf, len);
+	fwrite(buf, 1, len, (FILE *)arg);
 }
 
 int printf(const char *fmt, ...) {
@@ -93,13 +93,13 @@ FILE *fopen(const char *path, const char *mode) {
 	}
 	f->pos = f2->pos;
 	f->eof = f2->eof;
-	file_close(f2);
+	fclose(f2);
 	return f;
 
 fail2:
-	file_close(f2);
+	fclose(f2);
 fail:
-	file_close(f);
+	fclose(f);
 	return NULL;
 }
 
@@ -110,6 +110,7 @@ FILE *fdopen(int fd, const char *mode) {
 	f->pos = mode[0] == 'a' ? -1 : 0;
 	f->eof = false;
 	f->fd = fd;
+	f->error = false;
 	return f;
 }
 
@@ -129,34 +130,74 @@ FILE *file_clone(const FILE *f) {
 	return f2;
 }
 
-int file_read(FILE *f, char *buf, size_t len) {
-	if (f->fd < 0) return -1;
-
-	int res = _syscall_read(f->fd, buf, len, f->pos);
-	if (res < 0) return res;
-	if (res == 0 && len > 0) f->eof = true;
-
-	bool negative_pos = f->pos < 0;
-	f->pos += res;
-	if (negative_pos && f->pos >= 0)
+static void fadvance(long amt, FILE *f) {
+	bool pos_neg = f->pos < 0;
+	f->pos += amt;
+	if (pos_neg && f->pos >= 0)
 		f->pos = -1;
-
-	return res;
 }
 
-int file_write(FILE *f, const char *buf, size_t len) {
-	if (f->fd < 0) return -1;
+size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
+	size_t total = size*nitems, pos = 0;
+	unsigned char *buf = ptr;
 
-	int res = _syscall_write(f->fd, buf, len, f->pos);
-	if (res < 0) return res;
-	f->pos += res;
-	return res;
+	if (f->fd < 0) {
+		errno = EBADF;
+		return 0;
+	}
+	if (size == 0)
+		return 0;
+
+	while (pos < total) {
+		long res = _syscall_read(f->fd, buf + pos, total - pos, f->pos);
+		if (res < 0) {
+			f->error = true;
+			errno = -res;
+			return pos/size;
+		} else if (res == 0) {
+			f->eof = true;
+			return pos/size;
+		} else {
+			pos += res;
+			fadvance(res, f);
+		}
+	}
+	return nitems;
 }
 
-void file_close(FILE *f) {
+size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
+	size_t total = size*nitems, pos = 0;
+	const unsigned char *buf = ptr;
+
+	if (f->fd < 0) {
+		errno = EBADF;
+		return 0;
+	}
+	if (size == 0)
+		return 0;
+
+	while (pos < total) {
+		long res = _syscall_write(f->fd, buf + pos, total - pos, f->pos);
+		if (res < 0) {
+			f->error = true;
+			errno = -res;
+			return pos/size;
+		} else if (res == 0) {
+			f->eof = true;
+			return pos/size;
+		} else {
+			pos += res;
+			fadvance(res, f);
+		}
+	}
+	return nitems;
+}
+
+int fclose(FILE *f) {
 	if (f->fd > 0) close(f->fd);
 	if (f != &_stdin_null && f != &_stdout_null)
 		free(f);
+	return 0;
 }
 
 
