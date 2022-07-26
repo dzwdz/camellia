@@ -2,6 +2,7 @@
 #include <camellia/syscalls.h>
 #include <shared/container/ring.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 
 static const char keymap_lower[] = {
@@ -79,8 +80,8 @@ static void main_loop(void) {
 
 void ps2_drv(void) {
 	fd = _syscall_open("/kdev/ps2", 9, 0);
-	if (fd < 0) _syscall_exit(1);
+	if (fd < 0) exit(1);
 
 	main_loop();
-	_syscall_exit(0);
+	exit(0);
 }

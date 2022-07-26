@@ -63,7 +63,7 @@ void termcook(void) {
 	if (!fork()) {
 		close(stdin_pipe[0]);
 		line_editor(0, stdin_pipe[1]);
-		_syscall_exit(0);
+		exit(0);
 	}
 	/* 0 is stdin, like in unix */
 	_syscall_dup(stdin_pipe[0], 0, 0);

@@ -3,3 +3,4 @@
 
 int fork(void);
 int close(handle_t h);
+_Noreturn void exit(int);

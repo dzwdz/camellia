@@ -38,40 +38,40 @@ int main(void) {
 		 * of a dead process, which is invalid state
 		 */
 		_syscall_await();
-		_syscall_exit(1);
+		exit(1);
 	}
 
 	if (!fork()) {
 		if (!freopen("/kdev/com1", "a+", stdout)) {
 			printf("couldn't open /kdev/com1\n"); // TODO borked
-			_syscall_exit(1);
+			exit(1);
 		}
 		if (!freopen("/kdev/com1", "r", stdin)) {
 			printf("couldn't open /kdev/com1\n");
-			_syscall_exit(1);
+			exit(1);
 		}
 		termcook();
 
 		shell_loop();
-		_syscall_exit(1);
+		exit(1);
 	}
 
 	if (!fork()) {
 		if (!freopen("/vga_tty", "a+", stdout)) {
 			printf("couldn't open /vga_tty\n"); // TODO borked
-			_syscall_exit(1);
+			exit(1);
 		}
 		if (!freopen("/keyboard", "r", stdin)) {
 			printf("couldn't open /keyboard\n");
-			_syscall_exit(1);
+			exit(1);
 		}
 		termcook();
 
 		shell_loop();
-		_syscall_exit(1);
+		exit(1);
 	}
 
 	_syscall_await();
 	printf("init: quitting\n");
-	_syscall_exit(0);
+	exit(0);
 }

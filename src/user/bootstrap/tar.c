@@ -1,9 +1,9 @@
+#include "tar.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stdint.h>
-
-#include "tar.h"
+#include <unistd.h>
 
 #define BUF_SIZE 64
 
@@ -36,7 +36,7 @@ void tar_driver(void *base) {
 				break;
 		}
 	}
-	_syscall_exit(0);
+	exit(0);
 }
 
 static void *tar_open(const char *path, int len, void *base, size_t base_len) {

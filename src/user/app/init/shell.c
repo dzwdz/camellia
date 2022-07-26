@@ -136,7 +136,7 @@ void shell_loop(void) {
 
 		readline(buf, 256);
 		if (feof(stdin))
-			_syscall_exit(0);
+			exit(0);
 		redir = strtrim(strsplit(buf, '>'));
 		cmd = strtrim(buf);
 		args = strtrim(strsplit(cmd, 0));
@@ -146,7 +146,7 @@ void shell_loop(void) {
 			_syscall_mount(-1, args, strlen(args));
 			continue;
 		} else if (!strcmp(cmd, "exit")) {
-			_syscall_exit(0);
+			exit(0);
 			continue;
 		} else if (!strcmp(cmd, "fork")) {
 			if (!fork()) level++;
@@ -157,7 +157,7 @@ void shell_loop(void) {
 		if (!fork()) {
 			if (redir && !freopen(redir, "w", stdout)) {
 				// TODO stderr
-				_syscall_exit(0);
+				exit(0);
 			}
 
 			if (!strcmp(cmd, "echo")) {
@@ -196,7 +196,7 @@ void shell_loop(void) {
 			} else {
 				printf("unknown command :(\n");
 			}
-			_syscall_exit(0);
+			exit(0);
 		} else {
 			_syscall_await();
 		}

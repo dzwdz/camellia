@@ -1,6 +1,7 @@
 #include "driver.h"
 #include <camellia/syscalls.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 struct vga_cell {
 	unsigned char c;
@@ -95,5 +96,5 @@ void ansiterm_drv(void) {
 		}
 	}
 
-	_syscall_exit(1);
+	exit(1);
 }

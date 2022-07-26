@@ -23,7 +23,7 @@ void fs_passthru(const char *prefix) {
 	const size_t buf_len = 1024;
 	char *buf = malloc(buf_len);
 	int prefix_len = prefix ? strlen(prefix) : 0;
-	if (!buf) _syscall_exit(1);
+	if (!buf) exit(1);
 
 	while (!_syscall_fs_wait(buf, buf_len, &res)) {
 		switch (res.op) {
@@ -49,7 +49,7 @@ void fs_passthru(const char *prefix) {
 				break;
 		}
 	}
-	_syscall_exit(0);
+	exit(0);
 }
 
 void fs_whitelist(const char **list) {
@@ -57,7 +57,7 @@ void fs_whitelist(const char **list) {
 	const size_t buf_len = 1024;
 	char *buf = malloc(buf_len);
 	bool allow;
-	if (!buf) _syscall_exit(1);
+	if (!buf) exit(1);
 
 	while (!_syscall_fs_wait(buf, buf_len, &res)) {
 		switch (res.op) {
@@ -79,7 +79,7 @@ void fs_whitelist(const char **list) {
 				break;
 		}
 	}
-	_syscall_exit(0);
+	exit(0);
 }
 
 
@@ -96,7 +96,7 @@ void fs_dir_inject(const char *path) {
 	char *buf = malloc(buf_len);
 	int ret, inject_len;
 
-	if (!buf) _syscall_exit(1);
+	if (!buf) exit(1);
 
 	while (!_syscall_fs_wait(buf, buf_len, &res)) {
 		data = res.id;
@@ -162,5 +162,5 @@ void fs_dir_inject(const char *path) {
 				break;
 		}
 	}
-	_syscall_exit(0);
+	exit(0);
 }

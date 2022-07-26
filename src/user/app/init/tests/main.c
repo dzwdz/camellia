@@ -11,7 +11,7 @@
 static void run_forked(void (*fn)()) {
 	if (!fork()) {
 		fn();
-		_syscall_exit(0);
+		exit(0);
 	} else {
 		/* successful tests must return 0
 		 * TODO add a better fail msg */
@@ -30,7 +30,7 @@ static void test_await(void) {
 
 	for (int i = 0; i < 16; i++)
 		if (!fork())
-			_syscall_exit(i);
+			exit(i);
 
 	while ((ret = _syscall_await()) != ~0) {
 		assert(0 <= ret && ret < 16);
@@ -50,12 +50,12 @@ static void test_faults(void) {
 	if (!fork()) { // invalid memory access
 		asm volatile("movb $69, 0" ::: "memory");
 		printf("this shouldn't happen");
-		_syscall_exit(-1);
+		exit(-1);
 	}
 	if (!fork()) { // #GP
 		asm volatile("hlt" ::: "memory");
 		printf("this shouldn't happen");
-		_syscall_exit(-1);
+		exit(-1);
 	}
 
 	while (_syscall_await() != ~0) await_cnt++;
@@ -68,24 +68,24 @@ static void test_interrupted_fs(void) {
 		// TODO make a similar test with all 0s passed to fs_wait
 		struct fs_wait_response res;
 		_syscall_fs_wait(NULL, 0, &res);
-		_syscall_exit(0);
+		exit(0);
 	} else { /* parent */
 		_syscall_mount(h, "/", 1);
 		int ret = _syscall_open("/", 1, 0);
 		// the handler quits while handling that call - but this syscall should return anyways
-		_syscall_exit(ret < 0 ? 0 : -1);
+		exit(ret < 0 ? 0 : -1);
 	}
 }
 
 static void test_orphaned_fs(void) {
 	handle_t h;
 	if (_syscall_fork(FORK_NEWFS, &h)) { /* child */
-		_syscall_exit(0);
+		exit(0);
 	} else { /* parent */
 		_syscall_mount(h, "/", 1);
 		int ret = _syscall_open("/", 1, 0);
 		// no handler will ever be available to handle this call - the syscall should instantly return
-		_syscall_exit(ret < 0 ? 0 : -1);
+		exit(ret < 0 ? 0 : -1);
 	}
 }
 
@@ -97,7 +97,7 @@ static void test_memflag(void) {
 
 	if (!fork()) {
 		memset(page, 11, 4096); // should segfault
-		_syscall_exit(0);
+		exit(0);
 	} else {
 		assert(_syscall_await() != 0); // test if the process crashed
 	}
@@ -156,7 +156,7 @@ static void test_dup(void) {
 		_syscall_write(h1, "h1", 2, 0);
 		close(h1);
 
-		_syscall_exit(0);
+		exit(0);
 	} else {
 		char buf[16];
 		size_t count = 0;

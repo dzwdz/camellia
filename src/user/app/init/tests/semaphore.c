@@ -45,7 +45,7 @@ void test_semaphore(void) {
 		assert(sem1 && sem2);
 		if (!fork()) {
 			odd(pipe[1], sem1, sem2);
-			_syscall_exit(69);
+			exit(69);
 		} else {
 			even(pipe[1], sem1, sem2);
 			assert(_syscall_await() == 69);
@@ -60,7 +60,7 @@ void test_semaphore(void) {
 		assert(sem1 && sem2);
 		if (!fork()) {
 			even(pipe[1], sem1, sem2);
-			_syscall_exit(69);
+			exit(69);
 		} else {
 			odd(pipe[1], sem1, sem2);
 			assert(_syscall_await() == 69);
@@ -69,7 +69,7 @@ void test_semaphore(void) {
 		esem_free(sem1);
 		esem_free(sem2);
 
-		_syscall_exit(0);
+		exit(0);
 	} else {
 		close(pipe[1]);
 

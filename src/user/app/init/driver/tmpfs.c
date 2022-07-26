@@ -2,6 +2,7 @@
 #include <shared/mem.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct node {
 	const char *name;
@@ -128,5 +129,5 @@ void tmpfs_drv(void) {
 		}
 	}
 
-	_syscall_exit(1);
+	exit(1);
 }

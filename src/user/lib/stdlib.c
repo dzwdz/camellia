@@ -10,3 +10,7 @@ int fork(void) {
 int close(handle_t h) {
 	return _syscall_close(h);
 }
+
+_Noreturn void exit(int c) {
+	_syscall_exit(c);
+}

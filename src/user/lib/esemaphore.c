@@ -26,10 +26,10 @@ struct evil_sem *esem_new(int value) {
 		while (_syscall_read(ends_signal[0], NULL, 0, 0) >= 0) {
 			if (!_syscall_fork(FORK_NOREAP, NULL)) {
 				_syscall_write(ends_wait[1], NULL, 0, 0);
-				_syscall_exit(0);
+				exit(0);
 			}
 		}
-		_syscall_exit(0);
+		exit(0);
 	}
 	close(ends_signal[0]);
 	close(ends_wait[1]);
