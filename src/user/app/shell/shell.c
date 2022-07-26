@@ -1,5 +1,3 @@
-#include "shell.h"
-#include "tests/tests.h"
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -127,7 +125,7 @@ static void cmd_touch(const char *args) {
 	close(fd);
 }
 
-void shell_loop(void) {
+int main(void) {
 	static char buf[256];
 	int level = 0;
 	char *cmd, *args, *redir;
@@ -137,7 +135,7 @@ void shell_loop(void) {
 
 		readline(buf, 256);
 		if (feof(stdin))
-			exit(0);
+			return 0;
 
 		cmd = strtrim(buf);
 		if (!*cmd) continue;
@@ -151,8 +149,7 @@ void shell_loop(void) {
 			_syscall_mount(-1, args, strlen(args));
 			continue;
 		} else if (!strcmp(cmd, "exit")) {
-			exit(0);
-			continue;
+			return 0;
 		} else if (!strcmp(cmd, "fork")) {
 			if (!fork()) level++;
 			else _syscall_await();
@@ -185,10 +182,6 @@ void shell_loop(void) {
 				}
 			} else if (!strcmp(cmd, "touch")) {
 				cmd_touch(args);
-			} else if (!strcmp(cmd, "run_tests")) {
-				test_all();
-			} else if (!strcmp(cmd, "stress")) {
-				stress_all();
 			} else {
 				char *binname = cmd;
 				if (*cmd != '/') {

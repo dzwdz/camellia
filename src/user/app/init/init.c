@@ -1,19 +1,14 @@
 #include "driver/driver.h"
-#include "shell.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <user/lib/elfload.h>
 #include <user/lib/fs/misc.h>
-
-__attribute__((visibility("hidden")))
-extern char _image_base[];
 
 int main(void) {
 	freopen("/kdev/com1", "a+", stdout);
-	printf("in init (stage 2), loaded at 0x%x\n", &_image_base);
+	printf("in init (stage 2), main at 0x%x\n", &main);
 
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
@@ -47,8 +42,7 @@ int main(void) {
 			exit(1);
 		}
 		termcook();
-
-		shell_loop();
+		execv("/bin/shell", NULL);
 		exit(1);
 	}
 
@@ -62,8 +56,7 @@ int main(void) {
 			exit(1);
 		}
 		termcook();
-
-		shell_loop();
+		execv("/bin/shell", NULL);
 		exit(1);
 	}
 

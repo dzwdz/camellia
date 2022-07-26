@@ -242,7 +242,7 @@ static void test_misc(void) {
 }
 
 
-void test_all(void) {
+int main(void) {
 	run_forked(test_await);
 	run_forked(test_faults);
 	run_forked(test_interrupted_fs);
@@ -255,4 +255,5 @@ void test_all(void) {
 	run_forked(test_efault);
 	run_forked(test_execbuf);
 	run_forked(test_misc);
+	return 1;
 }
