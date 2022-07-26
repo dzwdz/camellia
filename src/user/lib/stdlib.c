@@ -1,12 +1,15 @@
 #include <camellia/syscalls.h>
 #include <shared/printf.h>
-#include <user/lib/stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 // TODO oh god this garbage - malloc, actually open, [...]
 static libc_file _stdin_null  = { .fd = 0 };
 static libc_file _stdout_null = { .fd = 1 };
 
-libc_file *stdin = &_stdin_null, *stdout = &_stdout_null;
+libc_file *const stdin = &_stdin_null, *const stdout = &_stdout_null;
 
 static void backend_file(void *arg, const char *buf, size_t len) {
 	file_write((libc_file*)arg, buf, len);

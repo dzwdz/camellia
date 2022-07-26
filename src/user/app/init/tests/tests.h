@@ -1,4 +1,6 @@
 #pragma once
+#include <camellia/syscalls.h>
+#include <stdio.h>
 
 void stress_all(void);
 void test_all(void);

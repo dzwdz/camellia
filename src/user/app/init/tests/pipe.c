@@ -1,8 +1,9 @@
 #define TEST_MACROS
+#include "tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
-#include <user/app/init/tests/main.h>
-#include <user/lib/stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 static const char *pipe_msgs[2] = {"hello", "world"};
 

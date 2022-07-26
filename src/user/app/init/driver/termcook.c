@@ -1,6 +1,7 @@
+#include "driver.h"
 #include <camellia/syscalls.h>
-#include <user/app/init/driver/driver.h>
-#include <user/lib/stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 static void w_output(handle_t output, const char *buf, size_t len) {
 	size_t pos = 0;

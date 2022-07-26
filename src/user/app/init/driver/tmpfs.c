@@ -1,7 +1,7 @@
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stddef.h>
-#include <user/lib/malloc.h>
+#include <stdlib.h>
 
 struct node {
 	const char *name;

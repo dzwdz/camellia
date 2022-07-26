@@ -10,7 +10,7 @@ CFLAGS += -mgeneral-regs-only -Wno-address-of-packed-member
 CFLAGS += -Isrc/ -Isrc/shared/include/
 
 KERNEL_CFLAGS  = $(CFLAGS)
-USER_CFLAGS    = $(CFLAGS)
+USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch

@@ -1,9 +1,11 @@
 #define TEST_MACROS
+#include "tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
-#include <user/app/init/tests/main.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <user/lib/esemaphore.h>
-#include <user/lib/stdlib.h>
 
 static void odd(handle_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
 	_syscall_write(out, "1", 1, -1);

@@ -1,9 +1,11 @@
+#include "shell.h"
+#include "tests/tests.h"
 #include <camellia/syscalls.h>
 #include <stdbool.h>
-#include <user/app/init/shell.h>
-#include <user/app/init/tests/main.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <user/lib/elfload.h>
-#include <user/lib/stdlib.h>
 
 static bool isspace(char c) {
 	return c == ' ' || c == '\t' || c == '\n';

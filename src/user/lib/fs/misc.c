@@ -2,8 +2,11 @@
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <user/lib/fs/misc.h>
-#include <user/lib/stdlib.h>
 
 bool fork2_n_mount(const char *path) {
 	handle_t h;

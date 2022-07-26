@@ -1,8 +1,8 @@
 #define TEST_MACROS
+#include "tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
-#include <user/app/init/tests/main.h>
-#include <user/lib/stdlib.h>
+#include <unistd.h>
 
 static void run_forked(void (*fn)()) {
 	if (!fork()) {

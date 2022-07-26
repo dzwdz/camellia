@@ -1,9 +1,8 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdbool.h>
-#include <user/lib/malloc.h>
-
-#include <user/lib/stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define MBLOCK_MAGIC 0x1337BABE
 

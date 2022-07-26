@@ -1,8 +1,7 @@
 #include <camellia/syscalls.h>
-#include <shared/printf.h>
+#include <stdio.h>
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
-#include <user/lib/stdlib.h>
 
 const char *str = "Hello!\n", *str2 = "World.\n";
 

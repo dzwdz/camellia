@@ -1,17 +1,14 @@
+#include "driver/driver.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdint.h>
-#include <user/app/init/driver/driver.h>
-#include <user/app/init/shell.h>
-#include <user/app/init/tests/main.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <user/lib/elfload.h>
 #include <user/lib/fs/misc.h>
-#include <user/lib/stdlib.h>
 
 __attribute__((visibility("hidden")))
 extern char _image_base[];
-
-void read_file(const char *path, size_t len);
 
 __attribute__((section(".text.startup")))
 int main(void) {
