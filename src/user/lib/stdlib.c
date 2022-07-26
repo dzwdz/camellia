@@ -1,3 +1,4 @@
+#include "file.h"
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <shared/printf.h>
@@ -198,6 +199,14 @@ int fclose(FILE *f) {
 	if (f != &_stdin_null && f != &_stdout_null)
 		free(f);
 	return 0;
+}
+
+int feof(FILE *f) {
+	return f->eof;
+}
+
+int ferror(FILE *f) {
+	return f->error;
 }
 
 

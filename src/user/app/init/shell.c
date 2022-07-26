@@ -72,7 +72,7 @@ static void cmd_cat_ls(const char *args, bool ls) {
 		return;
 	}
 
-	while (!file->eof) {
+	while (!feof(file)) {
 		int len = fread(buf, 1, sizeof buf, file);
 		if (len <= 0) break;
 
@@ -135,6 +135,8 @@ void shell_loop(void) {
 		printf("%x$ ", level);
 
 		readline(buf, 256);
+		if (feof(stdin))
+			_syscall_exit(0);
 		redir = strtrim(strsplit(buf, '>'));
 		cmd = strtrim(buf);
 		args = strtrim(strsplit(cmd, 0));
