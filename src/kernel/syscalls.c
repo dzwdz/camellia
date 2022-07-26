@@ -1,3 +1,5 @@
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
@@ -5,9 +7,7 @@
 #include <kernel/pipe.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/path.h>
-#include <shared/flags.h>
 #include <shared/mem.h>
-#include <shared/syscalls.h>
 #include <stdint.h>
 
 #define SYSCALL_RETURN(val) do { \

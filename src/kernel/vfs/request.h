@@ -1,7 +1,7 @@
 #pragma once
+#include <camellia/flags.h>
+#include <camellia/types.h>
 #include <kernel/proc.h>
-#include <shared/flags.h>
-#include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
 

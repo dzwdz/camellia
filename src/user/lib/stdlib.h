@@ -1,6 +1,6 @@
 #pragma once
+#include <camellia/types.h>
 #include <shared/mem.h>
-#include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <user/lib/malloc.h>

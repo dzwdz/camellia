@@ -1,6 +1,6 @@
-#include <shared/execbuf.h>
-#include <shared/flags.h>
-#include <shared/syscalls.h>
+#include <camellia/execbuf.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
 

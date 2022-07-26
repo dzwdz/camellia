@@ -2,8 +2,8 @@
 
 enum handle_type; // forward declaration for proc.h
 
+#include <camellia/types.h>
 #include <kernel/vfs/mount.h>
-#include <shared/types.h>
 #include <stddef.h>
 
 enum handle_type {

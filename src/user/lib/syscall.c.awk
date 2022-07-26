@@ -4,7 +4,7 @@ BEGIN {
  * don't modify manually, instead run:\n\
  *     make src/user/lib/syscall.c\n\
  */\n\
-#include <shared/syscalls.h>\n\
+#include <camellia/syscalls.h>\n\
 \n";
 }
 

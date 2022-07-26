@@ -1,7 +1,7 @@
+#include <camellia/execbuf.h>
 #include <kernel/execbuf.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
-#include <shared/execbuf.h>
 #include <shared/mem.h>
 
 _Noreturn static void halt(struct process *proc) {

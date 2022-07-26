@@ -1,3 +1,4 @@
+#include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>
 #include <kernel/main.h>
@@ -7,7 +8,6 @@
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
-#include <shared/syscalls.h>
 #include <stdint.h>
 
 struct process *process_first;

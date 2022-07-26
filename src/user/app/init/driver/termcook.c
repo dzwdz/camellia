@@ -1,4 +1,4 @@
-#include <shared/syscalls.h>
+#include <camellia/syscalls.h>
 #include <user/app/init/driver/driver.h>
 #include <user/lib/stdlib.h>
 

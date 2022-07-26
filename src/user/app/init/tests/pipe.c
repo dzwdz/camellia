@@ -1,6 +1,6 @@
 #define TEST_MACROS
-#include <shared/flags.h>
-#include <shared/syscalls.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <user/app/init/tests/main.h>
 #include <user/lib/stdlib.h>
 

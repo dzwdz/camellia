@@ -1,5 +1,5 @@
 #pragma once
-#include <shared/types.h>
+#include <camellia/types.h>
 #include <stddef.h>
 
 #define FORK_NOREAP 1

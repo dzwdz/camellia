@@ -1,5 +1,5 @@
-#include <shared/flags.h>
-#include <shared/syscalls.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <stdint.h>
 #include <user/app/init/driver/driver.h>
 #include <user/app/init/shell.h>

@@ -1,5 +1,5 @@
 #pragma once
-#include <shared/types.h>
+#include <camellia/types.h>
 
 struct evil_sem {
 	handle_t wait, signal;

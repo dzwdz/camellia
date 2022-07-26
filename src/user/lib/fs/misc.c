@@ -1,6 +1,6 @@
-#include <shared/flags.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <shared/mem.h>
-#include <shared/syscalls.h>
 #include <stdbool.h>
 #include <user/lib/fs/misc.h>
 #include <user/lib/stdlib.h>

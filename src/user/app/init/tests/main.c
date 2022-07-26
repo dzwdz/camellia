@@ -1,8 +1,8 @@
 #define TEST_MACROS
-#include <shared/errno.h>
-#include <shared/execbuf.h>
-#include <shared/flags.h>
-#include <shared/syscalls.h>
+#include <camellia/errno.h>
+#include <camellia/execbuf.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <user/app/init/tests/main.h>
 #include <user/lib/stdlib.h>
 

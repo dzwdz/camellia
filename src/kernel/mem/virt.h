@@ -1,7 +1,7 @@
 /* contains utilities for interacting with virtual memory */
 #pragma once
+#include <camellia/types.h>
 #include <kernel/mem/alloc.h>
-#include <shared/types.h>
 #include <stdbool.h>
 #include <stddef.h>
 

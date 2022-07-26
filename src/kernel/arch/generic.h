@@ -1,7 +1,7 @@
 #pragma once
 
+#include <camellia/types.h>
 #include <kernel/arch/amd64/registers.h>
-#include <shared/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>

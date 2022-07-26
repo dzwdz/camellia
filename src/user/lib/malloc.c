@@ -1,5 +1,5 @@
-#include <shared/flags.h>
-#include <shared/syscalls.h>
+#include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <user/lib/malloc.h>
 

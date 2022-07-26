@@ -1,5 +1,5 @@
+#include <camellia/syscalls.h>
 #include <shared/printf.h>
-#include <shared/syscalls.h>
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
 #include <user/lib/stdlib.h>

@@ -1,5 +1,5 @@
 #pragma once
-#include <shared/types.h>
+#include <camellia/types.h>
 
 /* <heat> nitpick: I highly recommend you dont use bitfields for paging
  *        structures

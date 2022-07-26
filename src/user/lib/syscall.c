@@ -2,7 +2,7 @@
  * don't modify manually, instead run:
  *     make src/user/lib/syscall.c
  */
-#include <shared/syscalls.h>
+#include <camellia/syscalls.h>
 
 
 _Noreturn void _syscall_exit(long ret) {

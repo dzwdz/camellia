@@ -5,7 +5,7 @@ CC      = x86_64-elf-gcc
 CHECK   = sparse
 CFLAGS += -g -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration -ftrack-macro-expansion=0
 CFLAGS += -mgeneral-regs-only -Wno-address-of-packed-member
-CFLAGS += -Isrc/
+CFLAGS += -Isrc/ -Isrc/shared/include/
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
 QFLAGS  = -no-reboot
@@ -78,7 +78,6 @@ out/initrd/%: initrd/%
 
 out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
                 $(patsubst %,out/initrd/%.elf,$(USERBINS))
-	echo $^
 	cd out/initrd; tar chf ../initrd.tar *
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
@@ -113,5 +112,5 @@ out/obj/kernel/arch/amd64/32/%.s.o: src/kernel/arch/amd64/32/%.s
 	@mkdir -p $(@D)
 	@$(CC) -m32 -c $^ -o $@
 
-src/user/lib/syscall.c: src/user/lib/syscall.c.awk src/shared/syscalls.h
+src/user/lib/syscall.c: src/user/lib/syscall.c.awk src/shared/include/camellia/syscalls.h
 	awk -f $^ > $@

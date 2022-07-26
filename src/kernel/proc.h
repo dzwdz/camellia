@@ -1,9 +1,9 @@
 #pragma once
+#include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
 #include <kernel/handle.h>
 #include <kernel/main.h>
 #include <kernel/vfs/mount.h>
-#include <shared/syscalls.h>
 #include <stdbool.h>
 
 #define HANDLE_MAX 16
