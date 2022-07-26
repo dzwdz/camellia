@@ -45,7 +45,7 @@ static int readline(char *buf, size_t max) {
 }
 
 static void cmd_cat_ls(const char *args, bool ls) {
-	libc_file *file;
+	FILE *file;
 	static char buf[512];
 	int len; // first used for strlen(args), then length of buffer
 
@@ -60,9 +60,9 @@ static void cmd_cat_ls(const char *args, bool ls) {
 			}
 		}
 
-		file = file_open(buf, 0);
+		file = fopen(buf, "r");
 	} else if (ls) { /* ls default argument */
-		file = file_open("/", 0);
+		file = fopen("/", "r");
 	} else { /* cat default argument */
 		file = file_clone(stdin);
 	}
@@ -153,7 +153,7 @@ void shell_loop(void) {
 		}
 
 		if (!fork()) {
-			if (redir && !file_reopen(stdout, redir, OPEN_CREATE)) {
+			if (redir && !freopen(redir, "w", stdout)) {
 				// TODO stderr
 				_syscall_exit(0);
 			}
@@ -161,7 +161,7 @@ void shell_loop(void) {
 			if (!strcmp(cmd, "echo")) {
 				printf("%s\n", args);
 			} else if (!strcmp(cmd, "exec")) {
-				libc_file *file = file_open(args, 0);
+				FILE *file = fopen(args, "r");
 				if (!file) {
 					printf("couldn't open file\n");
 				} else {

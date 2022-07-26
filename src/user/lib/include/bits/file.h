@@ -1,9 +1,9 @@
 #pragma once
 #include <stdbool.h>
 // TODO make opaque
-struct libc_file {
+struct FILE {
 	int fd;
 	int pos;
 	bool eof;
 };
-typedef struct libc_file libc_file;
+typedef struct FILE FILE;

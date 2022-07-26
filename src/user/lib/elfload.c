@@ -7,7 +7,7 @@
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
 
-void elf_execf(libc_file *f) {
+void elf_execf(FILE *f) {
 	const size_t cap = 0x60000;
 	size_t pos = 0;
 	void *buf = malloc(cap); // TODO a way to get file size

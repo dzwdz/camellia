@@ -26,7 +26,7 @@ void *malloc(size_t size) {
 	}
 
 	if (!iter) iter = expand(size);
-	if (!iter) return NULL;
+	if (!iter) return NULL; // TODO set errno
 
 	iter->used = true;
 	// TODO truncate and split

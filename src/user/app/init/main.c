@@ -15,7 +15,7 @@ __attribute__((section(".text.startup")))
 int main(void) {
 	elf_selfreloc();
 
-	file_reopen(stdout, "/kdev/com1", 0);
+	freopen("/kdev/com1", "a+", stdout);
 	printf("in init (stage 2), loaded at 0x%x\n", &_image_base);
 
 	MOUNT("/tmp/", tmpfs_drv());
@@ -42,11 +42,11 @@ int main(void) {
 	}
 
 	if (!fork()) {
-		if (!file_reopen(stdout, "/kdev/com1", 0)) {
+		if (!freopen("/kdev/com1", "a+", stdout)) {
 			printf("couldn't open /kdev/com1\n"); // TODO borked
 			_syscall_exit(1);
 		}
-		if (!file_reopen(stdin, "/kdev/com1", 0)) {
+		if (!freopen("/kdev/com1", "r", stdin)) {
 			printf("couldn't open /kdev/com1\n");
 			_syscall_exit(1);
 		}
@@ -57,11 +57,11 @@ int main(void) {
 	}
 
 	if (!fork()) {
-		if (!file_reopen(stdout, "/vga_tty", 0)) {
+		if (!freopen("/vga_tty", "a+", stdout)) {
 			printf("couldn't open /vga_tty\n"); // TODO borked
 			_syscall_exit(1);
 		}
-		if (!file_reopen(stdin, "/keyboard", 0)) {
+		if (!freopen("/keyboard", "r", stdin)) {
 			printf("couldn't open /keyboard\n");
 			_syscall_exit(1);
 		}

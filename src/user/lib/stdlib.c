@@ -1,4 +1,5 @@
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <shared/printf.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,13 +7,15 @@
 #include <unistd.h>
 
 // TODO oh god this garbage - malloc, actually open, [...]
-static libc_file _stdin_null  = { .fd = 0 };
-static libc_file _stdout_null = { .fd = 1 };
+static FILE _stdin_null  = { .fd = 0 };
+static FILE _stdout_null = { .fd = 1 };
 
-libc_file *const stdin = &_stdin_null, *const stdout = &_stdout_null;
+FILE *const stdin = &_stdin_null, *const stdout = &_stdout_null;
+
+int errno = 0;
 
 static void backend_file(void *arg, const char *buf, size_t len) {
-	file_write((libc_file*)arg, buf, len);
+	file_write((FILE*)arg, buf, len);
 }
 
 int printf(const char *fmt, ...) {
@@ -58,30 +61,38 @@ int _klogf(const char *fmt, ...) {
 }
 
 
-libc_file *file_open(const char *path, int flags) {
-	handle_t h = _syscall_open(path, strlen(path), flags);
-	libc_file *f;
-	if (h < 0) return NULL;
+FILE *fopen(const char *path, const char *mode) {
+	FILE *f;
+	handle_t h;
+	int flags = 0;
+	if (mode[0] == 'w' || mode[0] == 'a')
+		flags |= OPEN_CREATE;
+	// TODO truncate on w
+
+	h = _syscall_open(path, strlen(path), flags);
+	if (h < 0) {
+		errno = -h;
+		return NULL;
+	}
 
 	f = malloc(sizeof *f);
 	if (!f) {
 		close(h);
 		return NULL;
 	}
-	f->pos = 0;
+	f->pos = mode[0] == 'a' ? -1 : 0;
 	f->eof = false;
 	f->fd = h;
 	return f;
 }
 
-libc_file *file_reopen(libc_file *f, const char *path, int flags) {
+ FILE *freopen(const char *path, const char *mode, FILE *f) {
 	/* partially based on the musl implementation of freopen */
-	libc_file *f2;
+	FILE *f2;
 	if (!path) goto fail;
-	f2 = file_open(path, flags);
+	f2 = fopen(path, mode);
 	if (!f2) goto fail;
 
-	/* shouldn't happen, but if it happens, let's roll with it. */
 	if (f->fd == f2->fd) f2->fd = -1;
 
 	if (_syscall_dup(f2->fd, f->fd, 0) < 0) goto fail2;
@@ -97,9 +108,9 @@ fail:
 	return NULL;
 }
 
-libc_file *file_clone(const libc_file *f) {
+FILE *file_clone(const FILE *f) {
 	handle_t h = _syscall_dup(f->fd, -1, 0);
-	libc_file *f2;
+	FILE *f2;
 	if (h < 0) return NULL;
 
 	// TODO file_wrapfd
@@ -114,17 +125,22 @@ libc_file *file_clone(const libc_file *f) {
 	return f2;
 }
 
-int file_read(libc_file *f, char *buf, size_t len) {
+int file_read(FILE *f, char *buf, size_t len) {
 	if (f->fd < 0) return -1;
 
 	int res = _syscall_read(f->fd, buf, len, f->pos);
 	if (res < 0) return res;
 	if (res == 0 && len > 0) f->eof = true;
+
+	bool negative_pos = f->pos < 0;
 	f->pos += res;
+	if (negative_pos && f->pos >= 0)
+		f->pos = -1;
+
 	return res;
 }
 
-int file_write(libc_file *f, const char *buf, size_t len) {
+int file_write(FILE *f, const char *buf, size_t len) {
 	if (f->fd < 0) return -1;
 
 	int res = _syscall_write(f->fd, buf, len, f->pos);
@@ -133,7 +149,7 @@ int file_write(libc_file *f, const char *buf, size_t len) {
 	return res;
 }
 
-void file_close(libc_file *f) {
+void file_close(FILE *f) {
 	if (f->fd > 0) close(f->fd);
 	if (f != &_stdin_null && f != &_stdout_null)
 		free(f);
