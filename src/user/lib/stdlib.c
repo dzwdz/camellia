@@ -74,15 +74,8 @@ FILE *fopen(const char *path, const char *mode) {
 		errno = -h;
 		return NULL;
 	}
-
-	f = malloc(sizeof *f);
-	if (!f) {
-		close(h);
-		return NULL;
-	}
-	f->pos = mode[0] == 'a' ? -1 : 0;
-	f->eof = false;
-	f->fd = h;
+	f = fdopen(h, mode);
+	if (!f) close(h);
 	return f;
 }
 
@@ -93,9 +86,11 @@ FILE *fopen(const char *path, const char *mode) {
 	f2 = fopen(path, mode);
 	if (!f2) goto fail;
 
-	if (f->fd == f2->fd) f2->fd = -1;
-
-	if (_syscall_dup(f2->fd, f->fd, 0) < 0) goto fail2;
+	if (f->fd == f2->fd) {
+		f2->fd = -1;
+	} else {
+		if (_syscall_dup(f2->fd, f->fd, 0) < 0) goto fail2;
+	}
 	f->pos = f2->pos;
 	f->eof = f2->eof;
 	file_close(f2);
@@ -108,13 +103,22 @@ fail:
 	return NULL;
 }
 
+FILE *fdopen(int fd, const char *mode) {
+	FILE *f;
+	f = malloc(sizeof *f);
+	if (!f) return NULL;
+	f->pos = mode[0] == 'a' ? -1 : 0;
+	f->eof = false;
+	f->fd = fd;
+	return f;
+}
+
 FILE *file_clone(const FILE *f) {
 	handle_t h = _syscall_dup(f->fd, -1, 0);
 	FILE *f2;
 	if (h < 0) return NULL;
 
-	// TODO file_wrapfd
-	f2 = malloc(sizeof *f2);
+	f2 = fdopen(h, "r+");
 	if (!f2) {
 		close(h);
 		return NULL;
