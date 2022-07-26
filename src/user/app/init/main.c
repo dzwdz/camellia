@@ -1,4 +1,5 @@
 #include "driver/driver.h"
+#include "shell.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdint.h>
