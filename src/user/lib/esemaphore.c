@@ -1,7 +1,7 @@
-#include <user/lib/esemaphore.h>
-#include <user/lib/stdlib.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
+#include <user/lib/esemaphore.h>
+#include <user/lib/stdlib.h>
 
 void esem_signal(struct evil_sem *sem) {
 	_syscall_write(sem->signal, NULL, 0, 0);

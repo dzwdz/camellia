@@ -1,9 +1,9 @@
 #define TEST_MACROS
-#include <user/lib/esemaphore.h>
-#include <user/lib/stdlib.h>
-#include <user/app/init/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
+#include <user/app/init/tests/main.h>
+#include <user/lib/esemaphore.h>
+#include <user/lib/stdlib.h>
 
 static void odd(handle_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
 	_syscall_write(out, "1", 1, -1);

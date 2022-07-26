@@ -3,8 +3,8 @@
 #include <shared/execbuf.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
-#include <user/lib/stdlib.h>
 #include <user/app/init/tests/main.h>
+#include <user/lib/stdlib.h>
 
 static void run_forked(void (*fn)()) {
 	if (!fork()) {

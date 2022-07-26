@@ -1,7 +1,7 @@
-#include <user/lib/malloc.h>
 #include <shared/mem.h>
 #include <shared/syscalls.h>
 #include <stddef.h>
+#include <user/lib/malloc.h>
 
 struct node {
 	const char *name;

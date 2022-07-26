@@ -1,6 +1,6 @@
-#include <kernel/arch/generic.h>
 #include <kernel/arch/amd64/driver/serial.h>
 #include <kernel/arch/amd64/tty/tty.h>
+#include <kernel/arch/generic.h>
 #include <shared/printf.h>
 
 void tty_init(void) {

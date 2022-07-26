@@ -1,7 +1,7 @@
-#include <user/lib/malloc.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
+#include <user/lib/malloc.h>
 
 #include <user/lib/stdlib.h>
 

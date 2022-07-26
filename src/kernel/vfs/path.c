@@ -1,5 +1,5 @@
-#include <kernel/vfs/path.h>
 #include <kernel/panic.h>
+#include <kernel/vfs/path.h>
 #include <shared/mem.h>
 
 int path_simplify(const char *in, char *out, size_t len) {

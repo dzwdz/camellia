@@ -1,5 +1,5 @@
-#include <kernel/arch/generic.h>
 #include <kernel/arch/amd64/sysenter.h>
+#include <kernel/arch/generic.h>
 #include <kernel/proc.h>
 #include <shared/syscalls.h>
 

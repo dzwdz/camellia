@@ -1,8 +1,8 @@
 #define TEST_MACROS
-#include <user/lib/stdlib.h>
-#include <user/app/init/tests/main.h>
 #include <shared/flags.h>
 #include <shared/syscalls.h>
+#include <user/app/init/tests/main.h>
+#include <user/lib/stdlib.h>
 
 static const char *pipe_msgs[2] = {"hello", "world"};
 

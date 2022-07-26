@@ -1,6 +1,6 @@
-#include <user/lib/stdlib.h>
 #include <shared/printf.h>
 #include <shared/syscalls.h>
+#include <user/lib/stdlib.h>
 
 // TODO oh god this garbage - malloc, actually open, [...]
 static libc_file _stdin_null  = { .fd = 0 };

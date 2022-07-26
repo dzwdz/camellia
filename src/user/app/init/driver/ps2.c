@@ -1,7 +1,7 @@
-#include <user/app/init/driver/driver.h>
 #include <shared/container/ring.h>
 #include <shared/syscalls.h>
 #include <stdbool.h>
+#include <user/app/init/driver/driver.h>
 
 
 static const char keymap_lower[] = {
