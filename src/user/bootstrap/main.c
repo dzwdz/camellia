@@ -11,7 +11,7 @@ extern char _bss_end;
 extern char _initrd;
 
 __attribute__((section(".text.startup")))
-int main(void) {
+void _start(void) {
 	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
 
 	/* move everything provided by the kernel to /kdev */
@@ -34,3 +34,5 @@ int main(void) {
 	}
 	_syscall_exit(1);
 }
+
+int main(void) {return 0;} // dummy, needed to link

@@ -11,10 +11,7 @@
 __attribute__((visibility("hidden")))
 extern char _image_base[];
 
-__attribute__((section(".text.startup")))
 int main(void) {
-	elf_selfreloc();
-
 	freopen("/kdev/com1", "a+", stdout);
 	printf("in init (stage 2), loaded at 0x%x\n", &_image_base);
 
@@ -73,5 +70,5 @@ int main(void) {
 
 	_syscall_await();
 	printf("init: quitting\n");
-	exit(0);
+	return 0;
 }
