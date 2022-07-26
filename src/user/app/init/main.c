@@ -18,8 +18,7 @@ int main(void) {
 	MOUNT("/tmp/", tmpfs_drv());
 	MOUNT("/keyboard", ps2_drv());
 	MOUNT("/vga_tty", ansiterm_drv());
-
-	MOUNT("/bind/", fs_passthru(NULL));
+	MOUNT("/bin/", fs_passthru("/init/bin"));
 
 	if (fork()) {
 		/* (used to) expose a bug in the kernel

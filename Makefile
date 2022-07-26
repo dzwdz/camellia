@@ -87,7 +87,7 @@ out/hdd:
 
 
 define userbin_template =
-out/initrd/$(1).elf: src/user/linker.ld \
+out/initrd/bin/$(1): src/user/linker.ld \
                      $(call from_sources, src/user/app/$(1)/) \
                      $(call from_sources, src/user/lib/) \
                      $(call from_sources, src/shared/)
@@ -102,7 +102,7 @@ out/initrd/%: initrd/%
 	@cp $< $@
 
 out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
-                $(patsubst %,out/initrd/%.elf,$(USERBINS))
+                $(patsubst %,out/initrd/bin/%,$(USERBINS))
 	@cd out/initrd; tar chf ../initrd.tar *
 
 

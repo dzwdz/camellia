@@ -3,6 +3,7 @@
 #include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <user/lib/elfload.h>
@@ -137,8 +138,12 @@ void shell_loop(void) {
 		readline(buf, 256);
 		if (feof(stdin))
 			exit(0);
-		redir = strtrim(strsplit(buf, '>'));
+
 		cmd = strtrim(buf);
+		if (!*cmd) continue;
+
+		redir = strtrim(strsplit(cmd, '>'));
+		cmd = strtrim(cmd);
 		args = strtrim(strsplit(cmd, 0));
 
 		/* "special" commands that can't be handled in a subprocess */
@@ -162,15 +167,6 @@ void shell_loop(void) {
 
 			if (!strcmp(cmd, "echo")) {
 				printf("%s\n", args);
-			} else if (!strcmp(cmd, "exec")) {
-				FILE *file = fopen(args, "r");
-				if (!file) {
-					printf("couldn't open file\n");
-				} else {
-					elf_execf(file);
-					fclose(file);
-					printf("elf_execf failed\n");
-				}
 			} else if (!strcmp(cmd, "cat")) {
 				cmd_cat_ls(args, false);
 			} else if (!strcmp(cmd, "ls")) {
@@ -194,7 +190,28 @@ void shell_loop(void) {
 			} else if (!strcmp(cmd, "stress")) {
 				stress_all();
 			} else {
-				printf("unknown command :(\n");
+				char *binname = cmd;
+				if (*cmd != '/') {
+					size_t cmdlen = strlen(cmd);
+					binname = malloc(cmdlen);
+					if (!binname) {
+						printf("sh: out of memory.\n");
+						exit(1);
+					}
+					memcpy(binname, "/bin/", 5);
+					memcpy(binname + 5, cmd, cmdlen + 1);
+				}
+
+				FILE *file = fopen(binname, "r");
+				if (!file) {
+					printf("unknown command: %s\n", cmd);
+				} else {
+					elf_execf(file);
+					fclose(file);
+					printf("couldn't execute %s\n", binname);
+				}
+				if (binname != cmd)
+					free(binname);
 			}
 			exit(0);
 		} else {

@@ -24,7 +24,7 @@ void _start(void) {
 
 	MOUNT("/init/", tar_driver(&_initrd));
 
-	void *init = tar_find("init.elf", 8, &_initrd, ~0) + 512;
+	void *init = tar_find("bin/init", 8, &_initrd, ~0) + 512;
 	if (init) {
 		_klogf("execing init.elf");
 		elf_exec(init);
