@@ -4,3 +4,5 @@
 int fork(void);
 int close(handle_t h);
 _Noreturn void exit(int);
+
+int execv(const char *path, char *const argv[]);

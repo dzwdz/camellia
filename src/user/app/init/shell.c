@@ -1,12 +1,12 @@
 #include "shell.h"
 #include "tests/tests.h"
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/elfload.h>
 
 static bool isspace(char c) {
 	return c == ' ' || c == '\t' || c == '\n';
@@ -202,14 +202,13 @@ void shell_loop(void) {
 					memcpy(binname + 5, cmd, cmdlen + 1);
 				}
 
-				FILE *file = fopen(binname, "r");
-				if (!file) {
-					printf("unknown command: %s\n", cmd);
+				execv(binname, NULL);
+				if (errno == EINVAL) {
+					printf("%s isn't a valid executable\n", cmd);
 				} else {
-					elf_execf(file);
-					fclose(file);
-					printf("couldn't execute %s\n", binname);
+					printf("unknown command: %s\n", cmd);
 				}
+
 				if (binname != cmd)
 					free(binname);
 			}
