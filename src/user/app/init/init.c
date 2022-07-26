@@ -6,6 +6,23 @@
 #include <unistd.h>
 #include <user/lib/fs/misc.h>
 
+void redirect(const char *exe, const char *out, const char *in) {
+	if (!fork()) {
+		if (!freopen(out, "a+", stdout)) {
+			printf("init: couldn't open %s\n", out); // TODO borked
+			exit(1);
+		}
+		if (!freopen(in, "r", stdin)) {
+			printf("init: couldn't open %s\n", in);
+			exit(1);
+		}
+		termcook();
+		execv(exe, NULL);
+		printf("couldn't start %s\n", exe);
+		exit(1);
+	}
+}
+
 int main(void) {
 	freopen("/kdev/com1", "a+", stdout);
 	printf("in init (stage 2), main at 0x%x\n", &main);
@@ -16,49 +33,14 @@ int main(void) {
 	MOUNT("/bin/", fs_passthru("/init/bin"));
 
 	if (fork()) {
-		/* (used to) expose a bug in the kernel
-		 * the program will flow like this:
-		 * 1. we launch the forked init
-		 * 2. the forked init launches both shells
-		 * 3. one of the shells quit
-		 * 4. the forked init picks it up and quits
-		 *
-		 * then, in process_kill, the other shell will be deathbedded
-		 *
-		 * before i implement(ed) reparenting, it was a lingering running child
-		 * of a dead process, which is invalid state
-		 */
+		/* used to trigger a kernel bug
+		 * 7c96f9c03502e0c60f23f4c550d12a629f3b3daf */
 		_syscall_await();
 		exit(1);
 	}
 
-	if (!fork()) {
-		if (!freopen("/kdev/com1", "a+", stdout)) {
-			printf("couldn't open /kdev/com1\n"); // TODO borked
-			exit(1);
-		}
-		if (!freopen("/kdev/com1", "r", stdin)) {
-			printf("couldn't open /kdev/com1\n");
-			exit(1);
-		}
-		termcook();
-		execv("/bin/shell", NULL);
-		exit(1);
-	}
-
-	if (!fork()) {
-		if (!freopen("/vga_tty", "a+", stdout)) {
-			printf("couldn't open /vga_tty\n"); // TODO borked
-			exit(1);
-		}
-		if (!freopen("/keyboard", "r", stdin)) {
-			printf("couldn't open /keyboard\n");
-			exit(1);
-		}
-		termcook();
-		execv("/bin/shell", NULL);
-		exit(1);
-	}
+	redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
+	redirect("/bin/shell", "/vga_tty", "/keyboard");
 
 	_syscall_await();
 	printf("init: quitting\n");

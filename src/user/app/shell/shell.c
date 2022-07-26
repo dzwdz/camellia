@@ -1,3 +1,4 @@
+#include "builtins.h"
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -5,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+int main();
 
 static bool isspace(char c) {
 	return c == ' ' || c == '\t' || c == '\n';
@@ -43,171 +46,93 @@ static int readline(char *buf, size_t max) {
 	return pos;
 }
 
-static void cmd_cat_ls(const char *args, bool ls) {
-	FILE *file;
-	static char buf[512];
-	int len; // first used for strlen(args), then length of buffer
-
-	if (args) {
-		len = strlen(args);
-		memcpy(buf, args, len + 1); // no overflow check - the shell is just a PoC
-
-		if (ls) { // paths to directories always have a trailing slash
-			if (buf[len-1] != '/') {
-				buf[len] = '/';
-				buf[len+1] = '\0';
-			}
-		}
-
-		file = fopen(buf, "r");
-	} else if (ls) { /* ls default argument */
-		file = fopen("/", "r");
-	} else { /* cat default argument */
-		file = file_clone(stdin);
-	}
-
-	if (!file) {
-		printf("couldn't open.\n");
+static void execp(const char *cmd) {
+	if (*cmd == '/') {
+		execv(cmd, NULL);
 		return;
 	}
 
-	while (!feof(file)) {
-		int len = fread(buf, 1, sizeof buf, file);
-		if (len <= 0) break;
-
-		if (ls) {
-			for (int i = 0; i < len; i++)
-				if (buf[i] == '\0') buf[i] = '\n';
-		}
-		fwrite(buf, 1, len, stdout);
+	size_t cmdlen = strlen(cmd);
+	char *s = malloc(cmdlen);
+	if (!s) {
+		printf("sh: out of memory.\n");
+		exit(1);
 	}
-	fclose(file);
+	memcpy(s, "/bin/", 5);
+	memcpy(s + 5, cmd, cmdlen + 1);
+
+	execv(s, NULL);
+	free(s);
 }
 
-static void cmd_hexdump(const char *args) {
-	static uint8_t buf[512];
-	int fd, len;
+static void run(char *cmd) {
+	char *args, *redir;
+	cmd = strtrim(cmd);
+	if (!*cmd) return;
 
-	fd = _syscall_open(args, strlen(args), 0);
-	if (fd < 0) {
-		printf("couldn't open.\n");
+	redir = strtrim(strsplit(cmd, '>'));
+	cmd = strtrim(cmd);
+	args = strtrim(strsplit(cmd, 0));
+
+	/* "special" commands that can't be handled in a subprocess */
+	if (!strcmp(cmd, "shadow")) {
+		// TODO process groups
+		_syscall_mount(-1, args, strlen(args));
+		return;
+	} else if (!strcmp(cmd, "exit")) {
+		exit(0);
+	}
+
+	if (fork()) {
+		_syscall_await();
 		return;
 	}
 
-	len = _syscall_read(fd, buf, sizeof buf, 0);
-	for (int i = 0; i < len; i += 16) {
-		printf("%08x  ", i);
+	if (redir && !freopen(redir, "w", stdout)) {
+		// TODO stderr
+		exit(0);
+	}
 
-		for (int j = i; j < i + 8 && j < len; j++)
-			printf("%02x ", buf[j]);
-		printf(" ");
-		for (int j = i + 8; j < i + 16 && j < len; j++)
-			printf("%02x ", buf[j]);
-		printf(" |");
-
-		for (int j = i; j < i + 16 && j < len; j++) {
-			char c = '.';
-			if (0x20 <= buf[j] && buf[j] < 0x7f) c = buf[j];
-			printf("%c", c);
+	if (!strcmp(cmd, "echo")) {
+		printf("%s\n", args);
+	} else if (!strcmp(cmd, "fork")) {
+		main();
+	} else if (!strcmp(cmd, "cat")) {
+		cmd_cat_ls(args, false);
+	} else if (!strcmp(cmd, "ls")) {
+		cmd_cat_ls(args, true);
+	} else if (!strcmp(cmd, "hexdump")) {
+		cmd_hexdump(args);
+	} else if (!strcmp(cmd, "catall")) {
+		const char *files[] = {
+			"/init/fake.txt",
+			"/init/1.txt", "/init/2.txt",
+			"/init/dir/3.txt", NULL};
+		for (int i = 0; files[i]; i++) {
+			printf("%s:\n", files[i]);
+			cmd_cat_ls(files[i], false);
+			printf("\n");
 		}
-		printf("|\n");
+	} else if (!strcmp(cmd, "touch")) {
+		cmd_touch(args);
+	} else {
+		execp(cmd);
+		if (errno == EINVAL) {
+			printf("%s isn't a valid executable\n", cmd);
+		} else {
+			printf("unknown command: %s\n", cmd);
+		}
 	}
-
-	close(fd);
+	exit(0); /* kills the subprocess */
 }
 
-static void cmd_touch(const char *args) {
-	int fd = _syscall_open(args, strlen(args), OPEN_CREATE);
-	if (fd < 0) {
-		printf("couldn't create file.\n");
-		return;
-	}
-	close(fd);
-}
 
 int main(void) {
 	static char buf[256];
-	int level = 0;
-	char *cmd, *args, *redir;
-
 	for (;;) {
-		printf("%x$ ", level);
-
+		printf("$ ");
 		readline(buf, 256);
-		if (feof(stdin))
-			return 0;
-
-		cmd = strtrim(buf);
-		if (!*cmd) continue;
-
-		redir = strtrim(strsplit(cmd, '>'));
-		cmd = strtrim(cmd);
-		args = strtrim(strsplit(cmd, 0));
-
-		/* "special" commands that can't be handled in a subprocess */
-		if (!strcmp(cmd, "shadow")) {
-			_syscall_mount(-1, args, strlen(args));
-			continue;
-		} else if (!strcmp(cmd, "exit")) {
-			return 0;
-		} else if (!strcmp(cmd, "fork")) {
-			if (!fork()) level++;
-			else _syscall_await();
-			continue;
-		}
-
-		if (!fork()) {
-			if (redir && !freopen(redir, "w", stdout)) {
-				// TODO stderr
-				exit(0);
-			}
-
-			if (!strcmp(cmd, "echo")) {
-				printf("%s\n", args);
-			} else if (!strcmp(cmd, "cat")) {
-				cmd_cat_ls(args, false);
-			} else if (!strcmp(cmd, "ls")) {
-				cmd_cat_ls(args, true);
-			} else if (!strcmp(cmd, "hexdump")) {
-				cmd_hexdump(args);
-			} else if (!strcmp(cmd, "catall")) {
-				const char *files[] = {
-					"/init/fake.txt",
-					"/init/1.txt", "/init/2.txt",
-					"/init/dir/3.txt", NULL};
-				for (int i = 0; files[i]; i++) {
-					printf("%s:\n", files[i]);
-					cmd_cat_ls(files[i], false);
-					printf("\n");
-				}
-			} else if (!strcmp(cmd, "touch")) {
-				cmd_touch(args);
-			} else {
-				char *binname = cmd;
-				if (*cmd != '/') {
-					size_t cmdlen = strlen(cmd);
-					binname = malloc(cmdlen);
-					if (!binname) {
-						printf("sh: out of memory.\n");
-						exit(1);
-					}
-					memcpy(binname, "/bin/", 5);
-					memcpy(binname + 5, cmd, cmdlen + 1);
-				}
-
-				execv(binname, NULL);
-				if (errno == EINVAL) {
-					printf("%s isn't a valid executable\n", cmd);
-				} else {
-					printf("unknown command: %s\n", cmd);
-				}
-
-				if (binname != cmd)
-					free(binname);
-			}
-			exit(0);
-		} else {
-			_syscall_await();
-		}
+		if (feof(stdin)) return 0;
+		run(buf);
 	}
 }
