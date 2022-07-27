@@ -61,7 +61,9 @@ static void execp(const char *cmd) {
 	memcpy(s, "/bin/", 5);
 	memcpy(s + 5, cmd, cmdlen + 1);
 
-	execv(s, NULL);
+	char *argv[] = {(char*)cmd, NULL};
+
+	execv(s, argv);
 	free(s);
 }
 

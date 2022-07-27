@@ -8,13 +8,14 @@
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
 
-void elf_execf(FILE *f) {
+void elf_execf(FILE *f, char **argv, char **envp) {
 	const size_t cap = 0x60000;
 	size_t pos = 0;
 	void *buf = malloc(cap); // TODO a way to get file size
 	fseek(f, 0, SEEK_SET);
+
 	if (buf && fread(buf, 1, cap - pos, f))
-		elf_exec(buf);
+		elf_exec(buf, argv, envp);
 	free(buf);
 }
 
@@ -58,16 +59,40 @@ static size_t elf_spread(const void *elf) {
 	return high - low;
 }
 
-/* frees memory outside of [low; low + len] and jumps to *entry */
-static void freejmp(void *entry, void *low, size_t len) {
+/* frees memory outside of [low; low + len] and jumps to *entry
+ * also sets up main's stack */
+void _freejmp_chstack(void *entry, void *low, size_t len, char **argv, char **envp, void *stack); // elfload.s
+_Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
+void _freejmp(void *entry, void *low, size_t len, char **argv, char **envp) {
+	void *stack = (void*)~0;
+	size_t *stack_w;
+	int argc = 0;
+	if (argv) {
+		size_t len;
+		for (int i = 0; argv[i]; i++) {
+			len = strlen(argv[i]) + 1; // including the null byte
+			stack -= len;
+			memcpy(stack, argv[i], len);
+			argv[i] = stack;
+			argc++;
+		}
+		len = sizeof(char*) * argc;
+		stack -= len;
+		memcpy(stack, argv, len);
+		argv = stack;
+	}
+	stack_w = stack;
+	*--stack_w = (uintptr_t)envp;
+	*--stack_w = (uintptr_t)argv;
+	*--stack_w = argc;
+
 	uintptr_t high = (uintptr_t)low + len;
 	uint64_t buf[] = {
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0,
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
-	_syscall_execbuf(buf, sizeof buf);
-	// should never return
+	execbuf_chstack(stack_w, buf, sizeof buf);
 }
 
 static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
@@ -94,14 +119,17 @@ static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
 	return exebase;
 }
 
-void elf_exec(void *base) {
+void elf_exec(void *base, char **argv, char **envp) {
 	struct Elf64_Ehdr *ehdr = base;
 	if (!valid_ehdr(ehdr)) return;
 
 	void *exebase = elf_loadmem(ehdr);
 	if (!exebase) return;
 
-	freejmp(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000);
+	void *newstack = _syscall_memflag((void*)0x1000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
+	if (!newstack) return;
+
+	_freejmp_chstack(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000, argv, envp, newstack);
 }
 
 void *elf_partialexec(void *base) {

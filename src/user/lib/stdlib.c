@@ -25,7 +25,7 @@ int execv(const char *path, char *const argv[]) {
 	if (!file)
 		return -1;
 
-	elf_execf(file);
+	elf_execf(file, (void*)argv, NULL);
 	fclose(file);
 	errno = EINVAL;
 	return -1;

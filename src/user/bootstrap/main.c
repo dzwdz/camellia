@@ -27,7 +27,7 @@ void _start(void) {
 	void *init = tar_find("bin/init", 8, &_initrd, ~0) + 512;
 	if (init) {
 		_klogf("execing init.elf");
-		elf_exec(init);
+		elf_exec(init, NULL, NULL);
 		_klogf("elf_exec failed");
 	} else {
 		_klogf("couldn't find init.elf");
