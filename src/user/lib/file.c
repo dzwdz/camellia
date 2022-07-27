@@ -143,10 +143,45 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 	return nitems;
 }
 
+int fseek(FILE *f, long offset, int whence) {
+	if (fflush(f))
+		return -1;
+
+	switch (whence) {
+		case SEEK_SET:
+			f->pos = 0;
+			break;
+		case SEEK_CUR:
+			break;
+		case SEEK_END:
+			f->pos = -1;
+			// TODO doesn't -1 put the cursor before the last byte? i need to fix up the drivers
+			break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
+	bool pos_neg = f->pos < 0;
+	f->pos += offset;
+	if (pos_neg && f->pos >= 0) {
+		errno = ENOSYS; // TODO
+		return -1;
+	}
+	f->eof = false;
+	return 0;
+}
+
 int fclose(FILE *f) {
+	fflush(f);
 	if (f->fd > 0) close(f->fd);
 	if (f != &_stdin_null && f != &_stdout_null)
 		free(f);
+	return 0;
+}
+
+int fflush(FILE *f) {
+	(void)f;
 	return 0;
 }
 
