@@ -25,6 +25,7 @@ int fflush(FILE *f);
 
 size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict);
 size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict);
+char *fgets(char *buf, int size, FILE *f);
 int fseek(FILE *f, long offset, int whence);
 
 int feof(FILE *);

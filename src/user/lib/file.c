@@ -143,6 +143,18 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 	return nitems;
 }
 
+char *fgets(char *buf, int size, FILE *f) {
+	char c = '\0';
+	size_t pos = 0;
+	while (pos < (size-1) && c != '\n' && fread(&c, 1, 1, f))
+		buf[pos++] = c;
+	buf[pos++] = '\0';
+
+	if (f->eof && pos == 1) return NULL;
+	if (f->error) return NULL;
+	return buf;
+}
+
 int fseek(FILE *f, long offset, int whence) {
 	if (fflush(f))
 		return -1;

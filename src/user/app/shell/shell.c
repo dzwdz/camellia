@@ -10,15 +10,6 @@
 
 int main();
 
-static int readline(char *buf, size_t max, FILE *f) {
-	char c = '\0';
-	size_t pos = 0;
-	while (pos < (max-1) && c != '\n' && fread(&c, 1, 1, f))
-		buf[pos++] = c;
-	buf[pos++] = '\0';
-	return pos;
-}
-
 static void execp(char **argv) {
 	if (!argv || !*argv) return;
 	if (argv[0][0] == '/') {
@@ -125,8 +116,8 @@ int main(int argc, char **argv) {
 	for (;;) {
 		if (f == stdin)
 			printf("$ ");
-		readline(buf, 256, f);
-		if (feof(f)) return 0;
+		if (!fgets(buf, 256, f))
+			return 0;
 		run(buf);
 	}
 }
