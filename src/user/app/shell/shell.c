@@ -10,11 +10,10 @@
 
 int main();
 
-// TODO fgets
-static int readline(char *buf, size_t max) {
+static int readline(char *buf, size_t max, FILE *f) {
 	char c = '\0';
 	size_t pos = 0;
-	while (pos < (max-1) && c != '\n' && fread(&c, 1, 1, stdin))
+	while (pos < (max-1) && c != '\n' && fread(&c, 1, 1, f))
 		buf[pos++] = c;
 	buf[pos++] = '\0';
 	return pos;
@@ -111,12 +110,23 @@ static void run(char *cmd) {
 }
 
 
-int main(void) {
+int main(int argc, char **argv) {
 	static char buf[256];
+	FILE *f = stdin;
+
+	if (argc > 1) {
+		f = fopen(argv[1], "r");
+		if (!f) {
+			printf("sh: couldn't open %s\n", argv[1]);
+			return 1;
+		}
+	}
+
 	for (;;) {
-		printf("$ ");
-		readline(buf, 256);
-		if (feof(stdin)) return 0;
+		if (f == stdin)
+			printf("$ ");
+		readline(buf, 256, f);
+		if (feof(f)) return 0;
 		run(buf);
 	}
 }

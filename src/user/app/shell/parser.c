@@ -13,11 +13,16 @@ static char skipspace(char **sp) {
 	return *s;
 }
 
+static bool isspecial(char c) {
+	return c == '>' || c == '#';
+}
+
 static char *parg(char **sp) {
 	char *s = *sp;
 	char *res = NULL;
 
 	if (skipspace(&s)) {
+		// TODO incorrectly handles strings like a"b"
 		switch (*s) {
 			case '"':
 				s++;
@@ -27,8 +32,13 @@ static char *parg(char **sp) {
 				break;
 			default:
 				res = s;
-				while (*s && !isspace(*s) && *s != '>')
+				while (*s && !isspace(*s) && !isspecial(*s))
 					s++;
+				if (*s == '#') {
+					*s = '\0'; /* end parsing early */
+					if (res == s) /* don't output an empty arg */
+						res = NULL;
+				}
 				break;
 		}
 		if (*s) *s++ = '\0';
