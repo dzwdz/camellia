@@ -12,7 +12,6 @@ void elf_execf(FILE *f, char **argv, char **envp) {
 	const size_t cap = 0x60000;
 	size_t pos = 0;
 	void *buf = malloc(cap); // TODO a way to get file size
-	fseek(f, 0, SEEK_SET);
 
 	if (buf && fread(buf, 1, cap - pos, f))
 		elf_exec(buf, argv, envp);

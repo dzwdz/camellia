@@ -1,3 +1,4 @@
+#!/bin/shell
 # equalivent to the old "catall" builtin, meant to demo shadowing
 # TODO shadow here
 echo /init/fake.txt:
