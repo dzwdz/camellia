@@ -76,7 +76,7 @@ static void run(char *cmd) {
 	if (!strcmp(argv[0], "echo")) {
 		printf("%s", argv[1]);
 		for (int i = 2; argv[i]; i++)
-			printf(" %s", argv[1]);
+			printf(" %s", argv[i]);
 		printf("\n");
 	} else if (!strcmp(argv[0], "fork")) {
 		main();
