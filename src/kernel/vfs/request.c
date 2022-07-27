@@ -20,8 +20,10 @@ void vfsreq_create(struct vfs_request req_) {
 		req->caller->waits4fs.req = req;
 	}
 
-	if (!req->backend || !req->backend->potential_handlers)
+	if (!req->backend || !req->backend->potential_handlers) {
 		vfsreq_finish_short(req, -1);
+		return;
+	}
 
 	struct vfs_request **iter = &req->backend->queue;
 	while (*iter != NULL) // find free spot in queue
@@ -74,7 +76,9 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		process_transition(req->caller, PS_RUNNING);
 	}
 
-	vfs_backend_refdown(req->backend);
+	if (req->backend)
+		vfs_backend_refdown(req->backend);
+
 	kfree(req);
 	return;
 }
