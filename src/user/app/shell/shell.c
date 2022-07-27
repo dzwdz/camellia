@@ -1,4 +1,5 @@
 #include "builtins.h"
+#include "shell.h"
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -8,33 +9,6 @@
 #include <unistd.h>
 
 int main();
-
-static bool isspace(char c) {
-	return c == ' ' || c == '\t' || c == '\n';
-}
-
-static char *strsplit(char *base, char delim) {
-	if (!base) return NULL;
-	while (*base) {
-		if (delim ? *base == delim : isspace(*base)) {
-			*base++ = '\0';
-			return base;
-		}
-		base++;
-	}
-	return NULL;
-}
-
-static char *strtrim(char *s) {
-	char *end;
-	if (!s) return NULL;
-	while (isspace(*s)) s++;
-	end = s + strlen(s);
-	while (end > s && isspace(end[-1])) end--;
-	*end = '\0';
-	return s;
-}
-
 
 // TODO fgets
 static int readline(char *buf, size_t max) {
@@ -46,42 +20,46 @@ static int readline(char *buf, size_t max) {
 	return pos;
 }
 
-static void execp(const char *cmd) {
-	if (*cmd == '/') {
-		execv(cmd, NULL);
+static void execp(char **argv) {
+	if (!argv || !*argv) return;
+	if (argv[0][0] == '/') {
+		execv(argv[0], argv);
 		return;
 	}
 
-	size_t cmdlen = strlen(cmd);
+	size_t cmdlen = strlen(argv[0]);
 	char *s = malloc(cmdlen);
 	if (!s) {
 		printf("sh: out of memory.\n");
 		exit(1);
 	}
 	memcpy(s, "/bin/", 5);
-	memcpy(s + 5, cmd, cmdlen + 1);
-
-	char *argv[] = {(char*)cmd, NULL};
+	memcpy(s + 5, argv[0], cmdlen + 1);
+	argv[0] = s;
 
 	execv(s, argv);
 	free(s);
 }
 
 static void run(char *cmd) {
-	char *args, *redir;
-	cmd = strtrim(cmd);
-	if (!*cmd) return;
+	#define ARGV_MAX 16
+	char *argv[ARGV_MAX];
+	char *redir;
 
-	redir = strtrim(strsplit(cmd, '>'));
-	cmd = strtrim(cmd);
-	args = strtrim(strsplit(cmd, 0));
+	int ret = parse(cmd, argv, ARGV_MAX, &redir);
+	if (ret < 0) {
+		printf("sh: error parsing command\n");
+		return;
+	}
+
+	if (!*argv) return;
 
 	/* "special" commands that can't be handled in a subprocess */
-	if (!strcmp(cmd, "shadow")) {
+	if (!strcmp(argv[0], "shadow")) {
 		// TODO process groups
-		_syscall_mount(-1, args, strlen(args));
+		_syscall_mount(-1, argv[1], strlen(argv[1]));
 		return;
-	} else if (!strcmp(cmd, "exit")) {
+	} else if (!strcmp(argv[0], "exit")) {
 		exit(0);
 	}
 
@@ -95,17 +73,21 @@ static void run(char *cmd) {
 		exit(0);
 	}
 
-	if (!strcmp(cmd, "echo")) {
-		printf("%s\n", args);
-	} else if (!strcmp(cmd, "fork")) {
+	if (!strcmp(argv[0], "echo")) {
+		printf("%s", argv[1]);
+		for (int i = 2; argv[i]; i++)
+			printf(" %s", argv[1]);
+		printf("\n");
+	} else if (!strcmp(argv[0], "fork")) {
 		main();
-	} else if (!strcmp(cmd, "cat")) {
-		cmd_cat_ls(args, false);
-	} else if (!strcmp(cmd, "ls")) {
-		cmd_cat_ls(args, true);
-	} else if (!strcmp(cmd, "hexdump")) {
-		cmd_hexdump(args);
-	} else if (!strcmp(cmd, "catall")) {
+	} else if (!strcmp(argv[0], "cat")) {
+		// TODO better argv handling
+		cmd_cat_ls(argv[1], false);
+	} else if (!strcmp(argv[0], "ls")) {
+		cmd_cat_ls(argv[1], true);
+	} else if (!strcmp(argv[0], "hexdump")) {
+		cmd_hexdump(argv[1]);
+	} else if (!strcmp(argv[0], "catall")) {
 		const char *files[] = {
 			"/init/fake.txt",
 			"/init/1.txt", "/init/2.txt",
@@ -115,14 +97,14 @@ static void run(char *cmd) {
 			cmd_cat_ls(files[i], false);
 			printf("\n");
 		}
-	} else if (!strcmp(cmd, "touch")) {
-		cmd_touch(args);
+	} else if (!strcmp(argv[0], "touch")) {
+		cmd_touch(argv[1]);
 	} else {
-		execp(cmd);
+		execp(argv);
 		if (errno == EINVAL) {
-			printf("%s isn't a valid executable\n", cmd);
+			printf("%s isn't a valid executable\n", argv[0]);
 		} else {
-			printf("unknown command: %s\n", cmd);
+			printf("unknown command: %s\n", argv[0]);
 		}
 	}
 	exit(0); /* kills the subprocess */
