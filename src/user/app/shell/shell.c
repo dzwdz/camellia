@@ -34,7 +34,7 @@ static void execp(char **argv) {
 static void run(char *cmd) {
 	#define ARGV_MAX 16
 	char *argv[ARGV_MAX];
-	char *redir;
+	struct redir redir;
 
 	int ret = parse(cmd, argv, ARGV_MAX, &redir);
 	if (ret < 0) {
@@ -58,7 +58,7 @@ static void run(char *cmd) {
 		return;
 	}
 
-	if (redir && !freopen(redir, "w", stdout)) {
+	if (redir.stdout && !freopen(redir.stdout, redir.append ? "a" : "w", stdout)) {
 		// TODO stderr
 		exit(0);
 	}

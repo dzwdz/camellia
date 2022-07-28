@@ -48,19 +48,24 @@ static char *parg(char **sp) {
 	return res;
 }
 
-int parse(char *s, char **argv, size_t argvlen, char **redir) {
+int parse(char *s, char **argv, size_t argvlen, struct redir *redir) {
 	if (argvlen == 0) return -1;
 	size_t argc = 0;
 	char *arg;
 
 	*argv = NULL;
-	*redir = NULL;
+	redir->stdout = NULL;
+	redir->append = false;
 
 	while (skipspace(&s)) {
 		switch (*s) {
 			case '>':
 				s++;
-				*redir = parg(&s);
+				if (*s == '>') {
+					s++;
+					redir->append = true;
+				}
+				redir->stdout = parg(&s);
 				break;
 			default:
 				arg = parg(&s);
