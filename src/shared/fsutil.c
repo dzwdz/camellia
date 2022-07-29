@@ -45,11 +45,9 @@ void fs_normslice(long *restrict offset, size_t *restrict length, size_t max, bo
 	}
 
 end:
-	if (*length > 0) {
-		assert(0 <= *offset);
-		if (!expand)
-			assert(*offset + *length <= max);
-	} else {
-		/* EOF, *offset is undefined. */
-	}
+	if (*length == 0) *offset = 0;
+
+	assert(0 <= *offset);
+	if (!expand)
+		assert(*offset + *length <= max);
 }

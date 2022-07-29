@@ -3,7 +3,6 @@
 #include <stddef.h>
 
 /** Normalizes the offset and length passed to a fs into safe values.
- * If returns *length == 0, *offset is meaningless.
  *
  * @param expand Can this operation expand the target file?
  *                true  if writing to a file with an adjustable size
