@@ -1,3 +1,4 @@
+#include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stddef.h>
@@ -64,6 +65,7 @@ void tmpfs_drv(void) {
 			case VFSOP_READ:
 				ptr = (void*)res.id;
 				if (ptr == &special_root) {
+					// TODO directory offset handling
 					size_t buf_pos = 0;
 					size_t to_skip = res.offset;
 
@@ -85,11 +87,8 @@ void tmpfs_drv(void) {
 					}
 					_syscall_fs_respond(buf, buf_pos, 0);
 				} else {
-					// TODO offset
-					if (res.offset)
-						_syscall_fs_respond(NULL, 0, 0);
-					else
-						_syscall_fs_respond(ptr->buf, ptr->size, 0);
+					fs_normslice(&res.offset, &res.len, ptr->size, false);
+					_syscall_fs_respond(ptr->buf + res.offset, res.len, 0);
 					break;
 				}
 				break;
@@ -114,13 +113,17 @@ void tmpfs_drv(void) {
 					ptr->capacity = 256;
 				}
 
-				size_t len = res.len;
-				if (len > ptr->capacity - res.offset)
-					len = ptr->capacity - res.offset;
-				memcpy(ptr->buf + res.offset, buf, len);
-				if (ptr->size < res.offset + len)
-					ptr->size = res.offset + len;
-				_syscall_fs_respond(NULL, len, 0);
+				fs_normslice(&res.offset, &res.len, ptr->size, true);
+				if (res.offset + res.len >= ptr->capacity) {
+					// TODO
+					_syscall_fs_respond(NULL, -1, 0);
+					break;
+				}
+
+				memcpy(ptr->buf + res.offset, buf, res.len);
+				if (ptr->size < res.offset + res.len)
+					ptr->size = res.offset + res.len;
+				_syscall_fs_respond(NULL, res.len, 0);
 				break;
 
 			default:

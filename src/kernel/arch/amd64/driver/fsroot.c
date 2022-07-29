@@ -1,4 +1,5 @@
 #include <camellia/errno.h>
+#include <camellia/fsutil.h>
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/driver/fsroot.h>
 #include <kernel/mem/virt.h>
@@ -22,30 +23,9 @@ static bool exacteq(struct vfs_request *req, const char *str) {
 	return req->input.len == len && !memcmp(req->input.buf_kern, str, len);
 }
 
-/* truncates the length */
-static void req_preprocess(struct vfs_request *req, size_t max_len) {
-	if (req->offset < 0) {
-		// TODO negative offsets
-		req->offset = 0;
-	}
-
-	if (req->offset >= capped_cast32(max_len)) {
-		req->input.len = 0;
-		req->output.len = 0;
-		req->offset = max_len;
-		return;
-	}
-
-	req->input.len  = min(req->input.len,  max_len - req->offset);
-	req->output.len = min(req->output.len, max_len - req->offset);
-
-	assert(req->input.len + req->offset <= max_len);
-	assert(req->input.len + req->offset <= max_len);
-}
-
 static int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
 	assert(req->type == VFSOP_READ);
-	req_preprocess(req, len);
+	fs_normslice(&req->offset, &req->output.len, len, false);
 	virt_cpy_to(
 			req->caller->pages, req->output.buf,
 			buf + req->offset, req->output.len);
@@ -100,7 +80,7 @@ static int handle(struct vfs_request *req) {
 				}
 				case HANDLE_ATA:   case HANDLE_ATA+1:
 				case HANDLE_ATA+2: case HANDLE_ATA+3:
-					if (req->offset < 0) return 0;
+					if (req->offset < 0) return -1;
 					char buf[512];
 					uint32_t sector = req->offset / 512;
 					size_t len = min(req->output.len, 512 - ((size_t)req->offset & 511));
@@ -114,7 +94,7 @@ static int handle(struct vfs_request *req) {
 			switch (id) {
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
-					req_preprocess(req, 80*25*2);
+					fs_normslice(&req->offset, &req->input.len, 80*25*2, false);
 					if (!virt_cpy_from(req->caller->pages, vga + req->offset,
 							req->input.buf, req->input.len))
 					{

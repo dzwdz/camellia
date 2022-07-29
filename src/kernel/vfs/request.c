@@ -109,7 +109,7 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
 	struct fs_wait_response res = {0};
 	struct virt_cpy_error cpyerr;
-	int len = 0;
+	int len;
 
 	assert(req && req->backend && req->backend->user.handler);
 	handler = req->backend->user.handler;
@@ -131,6 +131,8 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, -EFAULT);
 			return;
 		}
+	} else {
+		len = req->output.len;
 	}
 
 	res.len      = len;

@@ -1,5 +1,6 @@
 #include "tar.h"
 #include <camellia/flags.h>
+#include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stdint.h>
@@ -68,17 +69,17 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 		case '\0':
 		case '0': /* normal files */
 			size = tar_size(meta);
-			if (res->offset < 0 || res->offset > size) {
-				// TODO support negative offsets
-				_syscall_fs_respond(NULL, -1, 0);
-			} else {
-				_syscall_fs_respond(meta + 512 + res->offset, size - res->offset, 0);
-			}
+			fs_normslice(&res->offset, &res->len, size, false);
+			_syscall_fs_respond(meta + 512 + res->offset, res->len, 0);
 			break;
 
 		case '5': /* directory */
-			meta_len = strlen(meta);
+			if (res->offset < 0) {
+				_syscall_fs_respond(NULL, -1, 0);
+				break;
+			}
 			size_t to_skip = res->offset;
+			meta_len = strlen(meta);
 
 			/* find files in dir */
 			for (size_t off = 0; off < base_len;) {

@@ -132,7 +132,7 @@ void fs_dir_inject(const char *path) {
 				break;
 
 			case VFSOP_READ:
-				if (res.offset > 0) _syscall_fs_respond(NULL, 0, 0); // TODO working offsets
+				if (res.offset != 0) _syscall_fs_respond(NULL, -1, 0); // TODO working offsets
 
 				int out_len = data->inject_len;
 				memcpy(buf, data->inject, out_len);
