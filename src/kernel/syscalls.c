@@ -233,7 +233,7 @@ long _syscall_read(handle_t handle_num, void __user *buf, size_t len, long offse
 long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, long offset, int flags) {
 	struct handle *h = process_handle_get(process_current, handle_num);
 	if (!h) SYSCALL_RETURN(-1);
-	if (flags != 0)
+	if (flags & ~(WRITE_TRUNCATE))
 		SYSCALL_RETURN(-ENOSYS);
 	switch (h->type) {
 		case HANDLE_FILE:

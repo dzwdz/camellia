@@ -99,11 +99,7 @@ void tmpfs_drv(void) {
 					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}
-				if (res.len == 0) {
-					_syscall_fs_respond(NULL, 0, 0);
-					break;
-				}
-				if (!ptr->buf) {
+				if (res.len > 0 && !ptr->buf) {
 					ptr->buf = malloc(256);
 					if (!ptr->buf) {
 						_syscall_fs_respond(NULL, -1, 0);
@@ -121,8 +117,9 @@ void tmpfs_drv(void) {
 				}
 
 				memcpy(ptr->buf + res.offset, buf, res.len);
-				if (ptr->size < res.offset + res.len)
+				if ((res.flags & WRITE_TRUNCATE) || ptr->size < res.offset + res.len) {
 					ptr->size = res.offset + res.len;
+				}
 				_syscall_fs_respond(NULL, res.len, 0);
 				break;
 

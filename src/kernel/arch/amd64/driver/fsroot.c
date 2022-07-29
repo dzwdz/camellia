@@ -94,6 +94,8 @@ static int handle(struct vfs_request *req) {
 			switch (id) {
 				case HANDLE_VGA: {
 					void *vga = (void*)0xB8000;
+					if (req->flags)
+						return -1;
 					fs_normslice(&req->offset, &req->input.len, 80*25*2, false);
 					if (!virt_cpy_from(req->caller->pages, vga + req->offset,
 							req->input.buf, req->input.len))

@@ -93,7 +93,7 @@ static void accept(struct vfs_request *req) {
 			}
 			break;
 		case VFSOP_WRITE:
-			if (req->caller) {
+			if (req->caller && !req->flags) {
 				struct virt_iter iter;
 				virt_iter_new(&iter, req->input.buf, req->input.len,
 						req->caller->pages, true, false);

@@ -17,13 +17,16 @@ FILE *fopen(const char *path, const char *mode) {
 	int flags = 0;
 	if (mode[0] == 'w' || mode[0] == 'a')
 		flags |= OPEN_CREATE;
-	// TODO truncate on w
 
 	h = _syscall_open(path, strlen(path), flags);
 	if (h < 0) {
 		errno = -h;
 		return NULL;
 	}
+
+	if (mode[0] == 'w')
+		_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
+
 	f = fdopen(h, mode);
 	if (!f) close(h);
 	return f;
