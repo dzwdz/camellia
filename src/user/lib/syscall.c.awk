@@ -23,7 +23,7 @@ BEGIN {
 	if (params == "void") params = ""
 
 	split(params, p, /,/);
-	for (i = 0; i <= 4; i += 1) {
+	for (i = 0; i < 6; i += 1) {
 		if (p[i]) {
 			# p[i] is a parameter, convert it into an expression to pass to _syscall()
 			sub(/^ */, "", p[i]); # strip
@@ -44,7 +44,7 @@ BEGIN {
 		printf "return ";
 		if (rets != "long") printf "(%s)", rets;
 	}
-	printf "_syscall(%s, %s, %s, %s, %s);\n", toupper(name), p[1], p[2], p[3], p[4];
+	printf "_syscall(%s, %s, %s, %s, %s, %s);\n", toupper(name), p[1], p[2], p[3], p[4], p[5];
 	if (index($0, "_Noreturn")) print "\t__builtin_unreachable();";
 
 	print "}\n";

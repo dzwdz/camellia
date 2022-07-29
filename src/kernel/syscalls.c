@@ -1,3 +1,4 @@
+#include <camellia/errno.h>
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
@@ -229,9 +230,11 @@ long _syscall_read(handle_t handle_num, void __user *buf, size_t len, long offse
 	return -1; // dummy
 }
 
-long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, long offset) {
+long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, long offset, int flags) {
 	struct handle *h = process_handle_get(process_current, handle_num);
 	if (!h) SYSCALL_RETURN(-1);
+	if (flags != 0)
+		SYSCALL_RETURN(-ENOSYS);
 	switch (h->type) {
 		case HANDLE_FILE:
 			vfsreq_create((struct vfs_request) {
@@ -244,6 +247,7 @@ long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, lon
 					.offset = offset,
 					.caller = process_current,
 					.backend = h->backend,
+					.flags = flags
 				});
 			break;
 		case HANDLE_PIPE:
@@ -387,7 +391,7 @@ void _syscall_debug_klog(const void __user *buf, size_t len) {
 	// kprintf("[klog] %x\t%s\n", process_current->id, kbuf);
 }
 
-long _syscall(long num, long a, long b, long c, long d) {
+long _syscall(long num, long a, long b, long c, long d, long e) {
 	/* note: this isn't the only place where syscalls get called from!
 	 *       see execbuf */
 	switch (num) {
@@ -413,7 +417,7 @@ long _syscall(long num, long a, long b, long c, long d) {
 			_syscall_read(a, (userptr_t)b, c, d);
 			break;
 		case _SYSCALL_WRITE:
-			_syscall_write(a, (userptr_t)b, c, d);
+			_syscall_write(a, (userptr_t)b, c, d, e);
 			break;
 		case _SYSCALL_CLOSE:
 			_syscall_close(a);

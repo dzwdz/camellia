@@ -151,7 +151,7 @@ void fs_dir_inject(const char *path) {
 
 			case VFSOP_WRITE:
 				if (data->delegate >= 0)
-					ret = _syscall_write(data->delegate, buf, res.len, res.offset);
+					ret = _syscall_write(data->delegate, buf, res.len, res.offset, res.flags);
 				else
 					ret = -1;
 				_syscall_fs_respond(NULL, ret, 0);

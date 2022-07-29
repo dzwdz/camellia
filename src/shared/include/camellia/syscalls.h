@@ -33,7 +33,7 @@ enum {
 	_SYSCALL_DEBUG_KLOG,
 };
 
-long _syscall(long, long, long, long, long);
+long _syscall(long, long, long, long, long, long);
 
 /** Kills the current process.
  */
@@ -59,7 +59,7 @@ long _syscall_mount(handle_t h, const char __user *path, long len);
 handle_t _syscall_dup(handle_t from, handle_t to, int flags);
 
 long _syscall_read(handle_t h, void __user *buf, size_t len, long offset);
-long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset);
+long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset, int flags);
 long _syscall_close(handle_t h);
 
 struct fs_wait_response {

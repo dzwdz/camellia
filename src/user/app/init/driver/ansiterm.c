@@ -20,7 +20,7 @@ static void flush(void) {
 	/* we have to do multiple write() calls if we're behind a shitty passthrough fs
 	 * i don't like this either */
 	while (off < sizeof(vga))
-		off += _syscall_write(vga_fd, (void*)vga + off, sizeof(vga) - off, off);
+		off += _syscall_write(vga_fd, (void*)vga + off, sizeof(vga) - off, off, 0);
 	dirty = false;
 	pendingFlush = false;
 }

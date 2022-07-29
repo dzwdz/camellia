@@ -8,29 +8,29 @@
 #include <user/lib/esemaphore.h>
 
 static void odd(handle_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
-	_syscall_write(out, "1", 1, -1);
+	_syscall_write(out, "1", 1, -1, 0);
 	esem_signal(sem1);
 
 	esem_wait(sem2);
-	_syscall_write(out, "3", 1, -1);
+	_syscall_write(out, "3", 1, -1, 0);
 	esem_signal(sem1);
 
 	esem_wait(sem2);
-	_syscall_write(out, "5", 1, -1);
+	_syscall_write(out, "5", 1, -1, 0);
 	esem_signal(sem1);
 }
 
 static void even(handle_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
 	esem_wait(sem1);
-	_syscall_write(out, "2", 1, -1);
+	_syscall_write(out, "2", 1, -1, 0);
 	esem_signal(sem2);
 
 	esem_wait(sem1);
-	_syscall_write(out, "4", 1, -1);
+	_syscall_write(out, "4", 1, -1, 0);
 	esem_signal(sem2);
 
 	esem_wait(sem1);
-	_syscall_write(out, "6", 1, -1);
+	_syscall_write(out, "6", 1, -1, 0);
 	esem_signal(sem2);
 }
 
@@ -53,7 +53,7 @@ void test_semaphore(void) {
 		esem_free(sem1);
 		esem_free(sem2);
 
-		_syscall_write(pipe[1], "|", 1, -1);
+		_syscall_write(pipe[1], "|", 1, -1, 0);
 
 		sem1 = esem_new(0);
 		sem2 = esem_new(0);

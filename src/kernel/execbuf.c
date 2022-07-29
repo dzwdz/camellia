@@ -19,7 +19,7 @@ static void try_fetch(struct process *proc, uint64_t *buf, size_t amt) {
 }
 
 _Noreturn void execbuf_run(struct process *proc) {
-	uint64_t buf[5];
+	uint64_t buf[6];
 
 	assert(proc == process_current); // idiotic, but needed because of _syscall.
 	assert(proc->state == PS_RUNNING);
@@ -28,8 +28,8 @@ _Noreturn void execbuf_run(struct process *proc) {
 	try_fetch(proc, buf, 1);
 	switch (buf[0]) {
 		case EXECBUF_SYSCALL:
-			try_fetch(proc, buf, 5);
-			_syscall(buf[0], buf[1], buf[2], buf[3], buf[4]);
+			try_fetch(proc, buf, 6);
+			_syscall(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
 			process_switch_any();
 
 		case EXECBUF_JMP:

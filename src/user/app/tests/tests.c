@@ -133,13 +133,13 @@ static void test_dup(void) {
 		assert(h2 >= 0);
 		assert(h2 != pipe[1] && h2 != h1);
 
-		_syscall_write(pipe[1], "og", 2, 0);
-		_syscall_write(h1, "h1", 2, 0);
-		_syscall_write(h2, "h2", 2, 0);
+		_syscall_write(pipe[1], "og", 2, 0, 0);
+		_syscall_write(h1, "h1", 2, 0, 0);
+		_syscall_write(h2, "h2", 2, 0, 0);
 
 		close(pipe[1]);
-		_syscall_write(h1, "h1", 2, 0);
-		_syscall_write(h2, "h2", 2, 0);
+		_syscall_write(h1, "h1", 2, 0, 0);
+		_syscall_write(h2, "h2", 2, 0, 0);
 
 		assert(_syscall_dup(h1, pipe[1], 0) == pipe[1]);
 		assert(_syscall_dup(h2, pipe[1], 0) == pipe[1]);
@@ -149,11 +149,11 @@ static void test_dup(void) {
 		close(h2);
 
 		assert(_syscall_dup(pipe[1], h2, 0) == h2);
-		_syscall_write(h2, "h2", 2, 0);
+		_syscall_write(h2, "h2", 2, 0, 0);
 		close(h2);
 
 		assert(_syscall_dup(pipe[1], h1, 0) == h1);
-		_syscall_write(h1, "h1", 2, 0);
+		_syscall_write(h1, "h1", 2, 0, 0);
 		close(h1);
 
 		exit(0);
@@ -200,27 +200,27 @@ static void test_efault(void) {
 	memcpy(str2, str, 16);
 
 	assert((h = _syscall_open(tmpfilepath, strlen(tmpfilepath), OPEN_CREATE)));
-	assert(_syscall_write(h, str, 16, 0) == 16);
-	assert(_syscall_write(h, str2, 16, 0) == 16);
+	assert(_syscall_write(h, str, 16, 0, 0) == 16);
+	assert(_syscall_write(h, str2, 16, 0, 0) == 16);
 
-	assert(_syscall_write(h, invalid, 16, 0) == -EFAULT);
+	assert(_syscall_write(h, invalid, 16, 0, 0) == -EFAULT);
 
 	/* x64 canonical pointers */
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x8000000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x1000000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0100000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0010000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0001000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0000800000000000), 16, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x8000000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x1000000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0100000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0010000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0001000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str ^ 0x0000800000000000), 16, 0, 0) == -EFAULT);
 
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x8000000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x1000000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0100000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0010000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0001000000000000), 16, 0) == -EFAULT);
-	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0000800000000000), 16, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x8000000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x1000000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0100000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0010000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0001000000000000), 16, 0, 0) == -EFAULT);
+	assert(_syscall_write(h, (void*)((uintptr_t)str2 ^ 0x0000800000000000), 16, 0, 0) == -EFAULT);
 
-	assert(_syscall_write(h, str, 16, 0) == 16);
+	assert(_syscall_write(h, str, 16, 0, 0) == 16);
 	close(h);
 }
 
@@ -229,16 +229,16 @@ static void test_execbuf(void) {
 	const char str1[] = "test_execbuf: string 1\n";
 	const char str2[] = "test_execbuf: and 2\n";
 	uint64_t buf[] = {
-		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str1, sizeof(str1) - 1, -1,
-		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str2, sizeof(str2) - 1, -1,
-		EXECBUF_SYSCALL, _SYSCALL_EXIT, 0, 0, 0, 0,
+		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str1, sizeof(str1) - 1, -1, 0,
+		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str2, sizeof(str2) - 1, -1, 0,
+		EXECBUF_SYSCALL, _SYSCALL_EXIT, 0, 0, 0, 0, 0,
 	};
 	_syscall_execbuf(buf, sizeof buf);
 	test_fail();
 }
 
 static void test_misc(void) {
-	assert(_syscall(~0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
+	assert(_syscall(~0, 0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
 
 

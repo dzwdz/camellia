@@ -6,7 +6,7 @@
 static void w_output(handle_t output, const char *buf, size_t len) {
 	size_t pos = 0;
 	while (pos < len) {
-		int ret = _syscall_write(output, buf + pos, len - pos, pos);
+		int ret = _syscall_write(output, buf + pos, len - pos, pos, 0);
 		if (ret < 0) break;
 		pos += ret;
 	}
@@ -33,7 +33,7 @@ static void line_editor(handle_t input, handle_t output) {
 						w_output(output, linebuf, linepos);
 						linepos = 0;
 					} else {
-						_syscall_write(output, NULL, 0, 0); // eof
+						_syscall_write(output, NULL, 0, 0, 0); // eof
 					}
 					break;
 				case '\n':

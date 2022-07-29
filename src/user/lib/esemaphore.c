@@ -5,7 +5,7 @@
 #include <user/lib/esemaphore.h>
 
 void esem_signal(struct evil_sem *sem) {
-	_syscall_write(sem->signal, NULL, 0, 0);
+	_syscall_write(sem->signal, NULL, 0, 0, 0);
 }
 
 void esem_wait(struct evil_sem *sem) {
@@ -25,7 +25,7 @@ struct evil_sem *esem_new(int value) {
 		close(ends_signal[1]);
 		while (_syscall_read(ends_signal[0], NULL, 0, 0) >= 0) {
 			if (!_syscall_fork(FORK_NOREAP, NULL)) {
-				_syscall_write(ends_wait[1], NULL, 0, 0);
+				_syscall_write(ends_wait[1], NULL, 0, 0, 0);
 				exit(0);
 			}
 		}

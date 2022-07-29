@@ -87,8 +87,8 @@ void _freejmp(void *entry, void *low, size_t len, char **argv, char **envp) {
 
 	uintptr_t high = (uintptr_t)low + len;
 	uint64_t buf[] = {
-		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0,
-		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0,
+		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0, 0,
+		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
 	execbuf_chstack(stack_w, buf, sizeof buf);

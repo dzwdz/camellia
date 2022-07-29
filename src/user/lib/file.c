@@ -127,7 +127,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 		return 0;
 
 	while (pos < total) {
-		long res = _syscall_write(f->fd, buf + pos, total - pos, f->pos);
+		long res = _syscall_write(f->fd, buf + pos, total - pos, f->pos, 0);
 		if (res < 0) {
 			f->error = true;
 			errno = -res;
