@@ -28,10 +28,10 @@ int main(void) {
 	freopen("/kdev/com1", "a+", stdout);
 	printf("in init (stage 2), main at 0x%x\n", &main);
 
-	MOUNT("/tmp/", tmpfs_drv());
-	MOUNT("/keyboard", ps2_drv());
-	MOUNT("/vga_tty", ansiterm_drv());
-	MOUNT("/bin/", fs_passthru("/init/bin"));
+	MOUNT_AT("/tmp/") { tmpfs_drv(); }
+	MOUNT_AT("/keyboard") { ps2_drv(); }
+	MOUNT_AT("/vga_tty") { ansiterm_drv(); }
+	MOUNT_AT("/bin/") { fs_passthru("/init/bin"); }
 
 	if (fork()) {
 		/* used to trigger a kernel bug
