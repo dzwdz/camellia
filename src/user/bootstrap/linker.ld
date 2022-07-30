@@ -23,7 +23,6 @@ SECTIONS
 		*(.data)
 	}
 
-	. = ALIGN(32); /* seems to be necessary? */
 	_initrd = .; /* is just appended onto the end of the binary */
 	. += 2M;
 
@@ -34,4 +33,8 @@ SECTIONS
 		*(.bss)
 	}
 	_bss_end = .;
+
+	/DISCARD/ : {
+		*(*.rel.*)
+	}
 }
