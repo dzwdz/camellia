@@ -6,20 +6,21 @@
 #include <unistd.h>
 #include <user/lib/fs/misc.h>
 
+#define die(fmt, ...) do { fprintf(stderr, "init: " fmt, __VA_ARGS__); exit(1); } while (0)
+
 void redirect(const char *exe, const char *out, const char *in) {
 	if (!fork()) {
-		if (!freopen(out, "a+", stdout)) {
-			printf("init: couldn't open %s\n", out); // TODO borked
+		if (!freopen(out, "a+", stderr)) {
+			fprintf(stdout, "couldn't open %s\n", out);
 			exit(1);
 		}
-		if (!freopen(in, "r", stdin)) {
-			printf("init: couldn't open %s\n", in);
-			exit(1);
-		}
+		if (!freopen(out, "a+", stdout))
+			die("couldn't open %s\n", out);
+		if (!freopen(in, "r", stdin))
+			die(" couldn't open %s\n", in);
 		termcook();
 		execv(exe, NULL);
-		printf("couldn't start %s\n", exe);
-		exit(1);
+		die("couldn't start %s\n", exe);
 	}
 }
 

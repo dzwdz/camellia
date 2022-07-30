@@ -8,7 +8,10 @@
 
 static FILE _stdin_null  = { .fd = 0 };
 static FILE _stdout_null = { .fd = 1 };
-FILE *const stdin = &_stdin_null, *const stdout = &_stdout_null;
+static FILE _stderr_null = { .fd = 2 };
+FILE *const stdin = &_stdin_null;
+FILE *const stdout = &_stdout_null;
+FILE *const stderr = &_stderr_null;
 
 
 FILE *fopen(const char *path, const char *mode) {
@@ -190,7 +193,7 @@ int fseek(FILE *f, long offset, int whence) {
 int fclose(FILE *f) {
 	fflush(f);
 	if (f->fd > 0) close(f->fd);
-	if (f != &_stdin_null && f != &_stdout_null)
+	if (f != &_stdin_null && f != &_stdout_null && f != &_stderr_null)
 		free(f);
 	return 0;
 }

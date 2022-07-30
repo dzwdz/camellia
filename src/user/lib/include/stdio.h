@@ -20,7 +20,7 @@ int vsnprintf(char *restrict str, size_t len, const char *restrict fmt, va_list 
 int _klogf(const char *fmt, ...); // for kernel debugging only
 
 
-extern FILE *const stdin, *const stdout;
+extern FILE *const stdin, *const stdout, *const stderr;
 
 FILE *fopen(const char *path, const char *mode);
 FILE *freopen(const char *path, const char *mode, FILE *);

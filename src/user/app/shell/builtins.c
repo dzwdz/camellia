@@ -1,4 +1,5 @@
 #include "builtins.h"
+#include "shell.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -27,7 +28,7 @@ void cmd_cat_ls(const char *args, bool ls) {
 	}
 
 	if (!file) {
-		printf("couldn't open.\n");
+		eprintf("couldn't open");
 		return;
 	}
 
@@ -50,7 +51,7 @@ void cmd_hexdump(const char *args) {
 
 	fd = _syscall_open(args, strlen(args), 0);
 	if (fd < 0) {
-		printf("couldn't open.\n");
+		eprintf("couldn't open %s", args);
 		return;
 	}
 
@@ -79,7 +80,7 @@ void cmd_hexdump(const char *args) {
 void cmd_touch(const char *args) {
 	int fd = _syscall_open(args, strlen(args), OPEN_CREATE);
 	if (fd < 0) {
-		printf("couldn't create file.\n");
+		eprintf("couldn't touch %s\n", args);
 		return;
 	}
 	close(fd);

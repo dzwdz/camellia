@@ -20,7 +20,7 @@ static void execp(char **argv) {
 	size_t cmdlen = strlen(argv[0]);
 	char *s = malloc(cmdlen);
 	if (!s) {
-		printf("sh: out of memory.\n");
+		eprintf("out of memory.");
 		exit(1);
 	}
 	memcpy(s, "/bin/", 5);
@@ -38,7 +38,7 @@ static void run(char *cmd) {
 
 	int ret = parse(cmd, argv, ARGV_MAX, &redir);
 	if (ret < 0) {
-		printf("sh: error parsing command\n");
+		eprintf("error parsing command");
 		return;
 	}
 
@@ -59,7 +59,7 @@ static void run(char *cmd) {
 	}
 
 	if (redir.stdout && !freopen(redir.stdout, redir.append ? "a" : "w", stdout)) {
-		// TODO stderr
+		eprintf("couldn't open %s for redirection", redir.stdout);
 		exit(0);
 	}
 
@@ -92,9 +92,9 @@ static void run(char *cmd) {
 	} else {
 		execp(argv);
 		if (errno == EINVAL) {
-			printf("%s isn't a valid executable\n", argv[0]);
+			eprintf("%s isn't a valid executable\n", argv[0]);
 		} else {
-			printf("unknown command: %s\n", argv[0]);
+			eprintf("unknown command: %s\n", argv[0]);
 		}
 	}
 	exit(0); /* kills the subprocess */
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		f = fopen(argv[1], "r");
 		if (!f) {
-			printf("sh: couldn't open %s\n", argv[1]);
+			eprintf("couldn't open %s\n", argv[1]);
 			return 1;
 		}
 	}
