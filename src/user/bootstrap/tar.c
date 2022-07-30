@@ -5,6 +5,7 @@
 #include <shared/mem.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <user/lib/fs/dir.h>
 
 #define BUF_SIZE 64
 
@@ -61,7 +62,6 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 	int size;
 
 	static char buf[BUF_SIZE]; // TODO reuse a single buffer
-	size_t buf_pos = 0;
 
 	if (meta == root_fakemeta) type = '5'; /* see comment in tar_open() */
 
@@ -74,43 +74,27 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 			break;
 
 		case '5': /* directory */
-			if (res->offset < 0) {
-				_syscall_fs_respond(NULL, -1, 0);
-				break;
-			}
-			size_t to_skip = res->offset;
-			meta_len = strlen(meta);
+			struct dirbuild db;
+			dir_start(&db, res->offset, buf, sizeof buf);
 
-			/* find files in dir */
+			meta_len = strlen(meta);
 			for (size_t off = 0; off < base_len;) {
 				if (0 != memcmp(base + off + 257, "ustar", 5))
 					break; // not a metadata sector
-				// TODO more meaningful variable names and clean code up
 
 				/* check if prefix matches */
-				if (0 == memcmp(base + off, meta, meta_len) &&
-						*(char*)(base + off + meta_len) != '\0') {
+				if (0 == memcmp(base + off, meta, meta_len)
+					&& *(char*)(base + off + meta_len) != '\0') {
 					char *suffix = base + off + meta_len;
-					size_t suffix_len = strlen(suffix);
 
 					/* check if the path contains any non-trailing slashes */
 					char *next = suffix;
+					// TODO strchr
 					while (*next && *next != '/') next++;
 					if (*next == '/') next++;
-					if (*next == '\0') {
-						if (to_skip > suffix_len) {
-							to_skip -= suffix_len;
-						} else {
-							suffix += to_skip;
-							suffix_len -= to_skip;
-							to_skip = 0;
 
-							/* it doesn't - so let's add it to the result */
-							memcpy(buf + buf_pos, suffix, suffix_len);
-							buf[buf_pos + suffix_len] = '\0';
-							buf_pos += suffix_len + 1;
-							// TODO no buffer overrun check
-						}
+					if (*next == '\0') {
+						if (dir_append(&db, suffix)) break;
 					}
 				}
 
@@ -119,7 +103,7 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 				off += (size + 511) & ~511; // skip the data sectors
 			}
 
-			_syscall_fs_respond(buf, buf_pos, 0);
+			_syscall_fs_respond(buf, dir_finish(&db), 0);
 			break;
 
 		default:

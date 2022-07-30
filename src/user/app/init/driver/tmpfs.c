@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <user/lib/fs/dir.h>
 
 struct node {
 	const char *name;
@@ -40,8 +41,9 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 		node = malloc(sizeof *node);
 		memset(node, 0, sizeof *node);
 
-		char *namebuf = malloc(res->len);
+		char *namebuf = malloc(res->len + 1);
 		memcpy(namebuf, path, res->len);
+		namebuf[res->len] = '\0';
 		node->name = namebuf;
 		node->namelen = res->len;
 		node->next = root;
@@ -65,27 +67,11 @@ void tmpfs_drv(void) {
 			case VFSOP_READ:
 				ptr = (void*)res.id;
 				if (ptr == &special_root) {
-					// TODO directory offset handling
-					size_t buf_pos = 0;
-					size_t to_skip = res.offset;
-
-					for (struct node *iter = root; iter; iter = iter->next) {
-						if (iter->namelen <= to_skip) {
-							to_skip -= iter->namelen;
-							continue;
-						}
-
-						if (iter->namelen + buf_pos - to_skip >= sizeof(buf)) {
-							memcpy(buf + buf_pos, iter->name + to_skip, sizeof(buf) - buf_pos - to_skip);
-							buf_pos = sizeof(buf);
-							break;
-						}
-						memcpy(buf + buf_pos, iter->name + to_skip, iter->namelen - to_skip);
-						buf_pos += iter->namelen - to_skip;
-						buf[buf_pos++] = '\0';
-						to_skip = 0;
-					}
-					_syscall_fs_respond(buf, buf_pos, 0);
+					struct dirbuild db;
+					dir_start(&db, res.offset, buf, sizeof buf);
+					for (struct node *iter = root; iter; iter = iter->next)
+						dir_append(&db, iter->name);
+					_syscall_fs_respond(buf, dir_finish(&db), 0);
 				} else {
 					fs_normslice(&res.offset, &res.len, ptr->size, false);
 					_syscall_fs_respond(ptr->buf + res.offset, res.len, 0);
