@@ -36,8 +36,8 @@ static void run(char *cmd) {
 	char *argv[ARGV_MAX];
 	struct redir redir;
 
-	int ret = parse(cmd, argv, ARGV_MAX, &redir);
-	if (ret < 0) {
+	int argc = parse(cmd, argv, ARGV_MAX, &redir);
+	if (argc < 0) {
 		eprintf("error parsing command");
 		return;
 	}
@@ -63,39 +63,18 @@ static void run(char *cmd) {
 		exit(0);
 	}
 
-	if (!strcmp(argv[0], "echo")) {
-		printf("%s", argv[1]);
-		for (int i = 2; argv[i]; i++)
-			printf(" %s", argv[i]);
-		printf("\n");
-	} else if (!strcmp(argv[0], "fork")) {
-		main();
-	} else if (!strcmp(argv[0], "cat")) {
-		// TODO better argv handling
-		cmd_cat_ls(argv[1], false);
-	} else if (!strcmp(argv[0], "ls")) {
-		cmd_cat_ls(argv[1], true);
-	} else if (!strcmp(argv[0], "hexdump")) {
-		cmd_hexdump(argv[1]);
-	} else if (!strcmp(argv[0], "catall")) {
-		const char *files[] = {
-			"/init/fake.txt",
-			"/init/1.txt", "/init/2.txt",
-			"/init/dir/3.txt", NULL};
-		for (int i = 0; files[i]; i++) {
-			printf("%s:\n", files[i]);
-			cmd_cat_ls(files[i], false);
-			printf("\n");
+	for (struct builtin *iter = builtins; iter->name; iter++) {
+		if (!strcmp(argv[0], iter->name)) {
+			iter->fn(argc, argv);
+			exit(0);
 		}
-	} else if (!strcmp(argv[0], "touch")) {
-		cmd_touch(argv[1]);
+	}
+
+	execp(argv);
+	if (errno == EINVAL) {
+		eprintf("%s isn't a valid executable\n", argv[0]);
 	} else {
-		execp(argv);
-		if (errno == EINVAL) {
-			eprintf("%s isn't a valid executable\n", argv[0]);
-		} else {
-			eprintf("unknown command: %s\n", argv[0]);
-		}
+		eprintf("unknown command: %s\n", argv[0]);
 	}
 	exit(0); /* kills the subprocess */
 }
