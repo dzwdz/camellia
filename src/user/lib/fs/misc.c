@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/fs/dir.h>
 #include <user/lib/fs/misc.h>
 
 bool fork2_n_mount(const char *path) {
@@ -94,7 +95,8 @@ void fs_dir_inject(const char *path) {
 	struct fs_dir_handle *data;
 	const size_t buf_len = 1024;
 	char *buf = malloc(buf_len);
-	int ret, inject_len;
+	int inject_len;
+	struct dirbuild db;
 
 	if (!buf) exit(1);
 
@@ -113,10 +115,13 @@ void fs_dir_inject(const char *path) {
 
 					/* inject up to the next slash */
 					inject_len = 0;
-					while (data->inject[inject_len] && data->inject[inject_len] != '/')
+					while (data->inject[inject_len]) {
+						if (data->inject[inject_len] == '/') {
+							inject_len++; // include the slash
+							break;
+						}
 						inject_len++;
-					if (data->inject[inject_len] == '/')
-						inject_len++;
+					}
 					data->inject_len = inject_len;
 
 					_syscall_fs_respond(data, 0, 0);
@@ -128,33 +133,17 @@ void fs_dir_inject(const char *path) {
 			case VFSOP_CLOSE:
 				if (data->delegate >= 0)
 					close(data->delegate);
+				free(data);
 				_syscall_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
-				if (res.offset != 0) _syscall_fs_respond(NULL, -1, 0); // TODO working offsets
-
-				int out_len = data->inject_len;
-				memcpy(buf, data->inject, out_len);
-				buf[out_len++] = '\0';
-
-				if (data->delegate >= 0) {
-					int to_read = res.capacity < buf_len ? res.capacity : buf_len;
-					to_read -= out_len;
-					ret = _syscall_read(data->delegate, buf + out_len, to_read, 0);
-					if (ret > 0) out_len += ret;
-					// TODO deduplicate entries
-				}
-
-				_syscall_fs_respond(buf, out_len, 0);
-				break;
-
-			case VFSOP_WRITE:
+				// TODO optimization - min(buf_len, res.capacity)
+				dir_start(&db, res.offset, buf, buf_len);
+				dir_appendl(&db, data->inject, data->inject_len);
 				if (data->delegate >= 0)
-					ret = _syscall_write(data->delegate, buf, res.len, res.offset, res.flags);
-				else
-					ret = -1;
-				_syscall_fs_respond(NULL, ret, 0);
+					dir_append_from(&db, data->delegate);
+				_syscall_fs_respond(buf, dir_finish(&db), 0);
 				break;
 
 			default:
