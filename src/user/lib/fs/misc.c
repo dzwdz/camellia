@@ -57,22 +57,71 @@ void fs_whitelist(const char **list) {
 	struct fs_wait_response res;
 	const size_t buf_len = 1024;
 	char *buf = malloc(buf_len);
-	bool allow;
+	char *ipath;
+	bool passthru, inject;
 	if (!buf) exit(1);
 
 	while (!_syscall_fs_wait(buf, buf_len, &res)) {
+		ipath = res.id;
 		switch (res.op) {
 			case VFSOP_OPEN:
-				allow = false;
-				// TODO reverse dir_inject
+				passthru = false;
+				inject = false;
+
 				for (const char **iter = list; *iter; iter++) {
-					size_t len = strlen(*iter); // inefficient, whatever
+					size_t len = strlen(*iter);
 					if (len <= res.len && !memcmp(buf, *iter, len)) {
-						allow = true;
+						passthru = true;
 						break;
 					}
+					if (res.len < len &&
+						buf[res.len - 1] == '/' &&
+						!memcmp(buf, *iter, res.len))
+					{
+						inject = true;
+					}
 				}
-				_syscall_fs_respond(NULL, allow ? _syscall_open(buf, res.len, res.flags) : -1, FSR_DELEGATE);
+				if (passthru) {
+					_syscall_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+				} else if (inject) {
+					// TODO all the inject points could be precomputed
+					ipath = malloc(res.len + 1);
+					memcpy(ipath, buf, res.len);
+					ipath[res.len] = '\0';
+					_syscall_fs_respond(ipath, 0, 0);
+				} else {
+					_syscall_fs_respond(NULL, -1, 0);
+				}
+				break;
+
+			case VFSOP_READ:
+				struct dirbuild db;
+				dir_start(&db, res.offset, buf, buf_len);
+				size_t blen = strlen(ipath);
+				for (const char **iter = list; *iter; iter++) {
+					// TODO could be precomputed too
+					size_t len = strlen(*iter); // inefficient, whatever
+					if (blen < len && !memcmp(ipath, *iter, blen))
+					{
+						/* inject up to the next slash */
+						// TODO separate out into its own function
+						int ilen = 0;
+						while ((*iter)[blen + ilen]) {
+							if ((*iter)[blen + ilen] == '/') {
+								ilen++;
+								break;
+							}
+							ilen++;
+						}
+						dir_appendl(&db, (*iter) + blen, ilen);
+					}
+				}
+				_syscall_fs_respond(buf, dir_finish(&db), 0);
+				break;
+
+			case VFSOP_CLOSE:
+				free(ipath);
+				_syscall_fs_respond(NULL, 0, 0);
 				break;
 
 			default:

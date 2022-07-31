@@ -20,9 +20,6 @@ void _start(void) {
 		const char *l[] = {"/kdev/", NULL};
 		fs_whitelist(l);
 	}
-	MOUNT_AT("/") {
-		fs_dir_inject("/kdev/"); // TODO should be part of fs_whitelist
-	}
 
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
