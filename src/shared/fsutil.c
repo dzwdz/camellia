@@ -35,7 +35,7 @@ void fs_normslice(long *restrict offset, size_t *restrict length, size_t max, bo
 		 * so their sum must not overflow it. */
 		if ((size_t)*offset <= max) {
 			size_t maxlen = max - (size_t)*offset;
-			if (true || *length > maxlen)
+			if (*length > maxlen)
 				*length = maxlen;
 		} else {
 			/* regular EOF */
