@@ -50,12 +50,12 @@ static void scroll(void) {
 	cursor.y--;
 }
 
-static void font_blit(int glyph, int x, int y) {
-	if (glyph < 0 || glyph >= font.glyph_amt) glyph = 0;
+static void font_blit(size_t glyph, int x, int y) {
+	if (glyph >= font.glyph_amt) glyph = 0;
 
 	char *bitmap = font_data + font.glyph_size * glyph;
-	for (int i = 0; i < font.w; i++) {
-		for (int j = 0; j < font.h; j++) {
+	for (size_t i = 0; i < font.w; i++) {
+		for (size_t j = 0; j < font.h; j++) {
 			size_t idx = j * font.w + i;
 			char byte = bitmap[idx / 8];
 			byte >>= (7-(idx&7));

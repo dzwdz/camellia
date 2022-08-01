@@ -151,7 +151,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 
 char *fgets(char *buf, int size, FILE *f) {
 	char c = '\0';
-	size_t pos = 0;
+	long pos = 0;
 	while (pos < (size-1) && c != '\n' && fread(&c, 1, 1, f))
 		buf[pos++] = c;
 	buf[pos++] = '\0';

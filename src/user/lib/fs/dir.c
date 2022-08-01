@@ -1,5 +1,6 @@
 #include <camellia/syscalls.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <user/lib/fs/dir.h>
 
@@ -20,10 +21,14 @@ bool dir_append(struct dirbuild *db, const char *name) {
 
 bool dir_appendl(struct dirbuild *db, const char *name, size_t len) {
 	if (db->error) return true;
+	if (len > (size_t)LONG_MAX) {
+		db->error = -1;
+		return true;
+	}
 
 	len++; // account for the null byte
 
-	if (db->offset < len) {
+	if (db->offset < (long)len) {
 		name += db->offset;
 		len  -= db->offset;
 		db->offset = 0;
