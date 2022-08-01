@@ -4,15 +4,11 @@
 #include <shared/printf.h>
 
 void tty_init(void) {
-	vga_clear();
 	serial_preinit();
-
-	vga_write("\x03 ", 2); // cp437 heart
 	serial_write("<3 ", 3);
 }
 
-static void backend(void __attribute__((unused))  *arg, const char *buf, size_t len) {
-	vga_write(buf, len);
+static void backend(void __attribute__((unused)) *arg, const char *buf, size_t len) {
 	serial_write(buf, len);
 }
 

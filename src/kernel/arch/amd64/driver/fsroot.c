@@ -11,7 +11,6 @@
 
 enum {
 	HANDLE_ROOT,
-	HANDLE_VGA,
 	HANDLE_ATA_ROOT,
 	HANDLE_ATA,
 	_SKIP = HANDLE_ATA + 4,
@@ -40,8 +39,6 @@ static int handle(struct vfs_request *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (exacteq(req, "/"))		return HANDLE_ROOT;
-			if (exacteq(req, "/vga"))	return HANDLE_VGA;
-
 			if (exacteq(req, "/ata/"))	return HANDLE_ATA_ROOT;
 			if (exacteq(req, "/ata/0"))
 				return ata_available(0) ? HANDLE_ATA+0 : -1;
@@ -60,15 +57,12 @@ static int handle(struct vfs_request *req) {
 					// TODO document directory read format
 					// TODO don't hardcode
 					const char src[] =
-						"vga\0"
 						"com1\0"
 						"ps2\0"
 						"ata/\0"
 						"video/";
 					return req_readcopy(req, src, sizeof src);
 				}
-				case HANDLE_VGA:
-					return req_readcopy(req, (void*)0xB8000, 80*25*2);
 				case HANDLE_ATA_ROOT: {
 					char list[8] = {};
 					size_t len = 0;
@@ -90,23 +84,6 @@ static int handle(struct vfs_request *req) {
 					virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
 					return len;
 				default: panic_invalid_state();
-			}
-
-		case VFSOP_WRITE:
-			switch (id) {
-				case HANDLE_VGA: {
-					void *vga = (void*)0xB8000;
-					if (req->flags)
-						return -1;
-					fs_normslice(&req->offset, &req->input.len, 80*25*2, false);
-					if (!virt_cpy_from(req->caller->pages, vga + req->offset,
-							req->input.buf, req->input.len))
-					{
-						return -EFAULT;
-					}
-					return req->input.len;
-				}
-				default: return -1;
 			}
 
 		case VFSOP_CLOSE:
