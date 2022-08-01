@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/fs/misc.h>
 
 int main();
 
@@ -48,6 +49,11 @@ static void run(char *cmd) {
 	if (!strcmp(argv[0], "shadow")) {
 		// TODO process groups
 		_syscall_mount(-1, argv[1], strlen(argv[1]));
+		return;
+	} else if (!strcmp(argv[0], "whitelist")) {
+		MOUNT_AT("/") {
+			fs_whitelist(&argv[1]);
+		}
 		return;
 	} else if (!strcmp(argv[0], "exit")) {
 		exit(0);
