@@ -1,37 +1,68 @@
 #include "driver.h"
 #include <camellia/syscalls.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-struct vga_cell {
-	unsigned char c;
-	unsigned char style;
-} __attribute__((__packed__));
-static struct vga_cell vga[80 * 25];
+#define eprintf(fmt, ...) fprintf(stderr, "ansiterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
-static handle_t vga_fd;
+struct psf {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t glyph_offset;
+    uint32_t flags;
+    uint32_t glyph_amt;
+    uint32_t glyph_size;
+    uint32_t h;
+    uint32_t w;
+} __attribute__((packed));
+
+static handle_t fb_fd;
 
 static struct {int x, y;} cursor = {0};
 static bool dirty = false;
-static bool pendingFlush = false;
+
+// TODO don't hardcode size
+static const size_t fb_len = 640 * 480 * 4;
+static const size_t fb_width = 640;
+static const size_t fb_height = 480;
+static const size_t fb_pitch = 640 * 4;
+static char *fb;
+
+static struct psf font;
+static void *font_data;
+
 
 static void flush(void) {
 	size_t off = 0;
-	/* we have to do multiple write() calls if we're behind a shitty passthrough fs
-	 * i don't like this either */
-	while (off < sizeof(vga))
-		off += _syscall_write(vga_fd, (void*)vga + off, sizeof(vga) - off, off, 0);
+	while (off < fb_len)
+		off += _syscall_write(fb_fd, fb + off, fb_len - off, off, 0);
 	dirty = false;
-	pendingFlush = false;
 }
 
 static void scroll(void) {
-	for (size_t i = 0; i < 80 * 24; i++)
-		vga[i] = vga[i + 80];
-	for (size_t i = 80 * 24; i < 80 * 25; i++)
-		vga[i].c = ' ';
+	// TODO memmove. this is UD
+	size_t row_len = fb_pitch * font.h;
+	memcpy(fb, fb + row_len, fb_len - row_len);
+	memset(fb + fb_len - row_len, 0, row_len);
 	cursor.y--;
-	pendingFlush = true;
+}
+
+static void font_blit(int glyph, int x, int y) {
+	if (glyph < 0 || glyph >= font.glyph_amt) glyph = 0;
+
+	char *bitmap = font_data + font.glyph_size * glyph;
+	for (int i = 0; i < font.w; i++) {
+		for (int j = 0; j < font.h; j++) {
+			size_t idx = j * font.w + i;
+			char byte = bitmap[idx / 8];
+			byte >>= (7-(idx&7));
+			byte &= 1;
+			*((uint32_t*)&fb[fb_pitch * (y * font.h + j) + 4 * (x * font.w + i)]) = byte * 0xB0B0B0;
+		}
+	}
 }
 
 static void in_char(char c) {
@@ -39,39 +70,59 @@ static void in_char(char c) {
 		case '\n':
 			cursor.x = 0;
 			cursor.y++;
-			pendingFlush = true;
 			break;
 		case '\b':
 			if (--cursor.x < 0) cursor.x = 0;
 			break;
 		default:
-			vga[cursor.y * 80 + cursor.x++].c = c;
+			font_blit(c, cursor.x, cursor.y);
+			cursor.x++;
 	}
 
-	if (cursor.x >= 80) {
+	if (cursor.x * font.w >= fb_width) {
 		cursor.x = 0;
 		cursor.y++;
 	}
-	while (cursor.y >= 25) scroll();
+	while (cursor.y * font.h >= fb_height) scroll();
 	dirty = true;
 }
 
-void ansiterm_drv(void) {
-	vga_fd = _syscall_open("/kdev/vga", 9, 0);
-	_syscall_read(vga_fd, vga, sizeof vga, 0);
-
-	// find first empty line
-	for (cursor.y = 0; cursor.y < 25; cursor.y++) {
-		for (cursor.x = 0; cursor.x < 80; cursor.x++) {
-			char c = vga[cursor.y * 80 + cursor.x].c;
-			if (c != ' ' && c != '\0') break;
-		}
-		if (cursor.x == 80) break;
+static void font_load(void) {
+	FILE *f = fopen("/init/font.psf", "r");
+	if (!f) {
+		eprintf("couldn't open font file");
+		exit(1);
 	}
-	cursor.x = 0;
 
-	for (int i = 0; i < 80 * 25; i++)
-		vga[i].style = 0x70;
+	const size_t cap = 8 * 1024; // TODO get file size
+	void *buf = malloc(cap);
+	if (!buf) {
+		eprintf("out of memory");
+		exit(1);
+	}
+	fread(buf, 1, cap, f);
+	if (ferror(f)) {
+		eprintf("error reading file");
+		exit(1);
+	}
+	fclose(f);
+
+	if (memcmp(buf, "\x72\xb5\x4a\x86", 4)) {
+		eprintf("invalid psf header");
+		exit(1);
+	}
+	memcpy(&font, buf, sizeof font);
+	font_data = buf + font.glyph_offset;
+}
+
+void ansiterm_drv(void) {
+	fb = malloc(fb_len);
+	fb_fd = _syscall_open("/kdev/video/b", 13, 0);
+
+	font_load();
+
+	cursor.x = 0;
+	cursor.y = 0;
 	flush();
 
 	static char buf[512];
@@ -89,7 +140,7 @@ void ansiterm_drv(void) {
 				} else {
 					for (size_t i = 0; i < res.len; i++)
 						in_char(buf[i]);
-					/* if (pendingFlush) */ flush();
+					flush();
 					_syscall_fs_respond(NULL, res.len, 0);
 				}
 				break;

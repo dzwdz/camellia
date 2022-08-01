@@ -26,11 +26,12 @@ void redirect(const char *exe, const char *out, const char *in) {
 
 int main(void) {
 	freopen("/kdev/com1", "a+", stdout);
+	freopen("/kdev/com1", "a+", stderr);
 	printf("in init (stage 2), main at 0x%x\n", &main);
 
 	MOUNT_AT("/tmp/") { tmpfs_drv(); }
 	MOUNT_AT("/keyboard") { ps2_drv(); }
-	MOUNT_AT("/vga_tty") { ansiterm_drv(); }
+	MOUNT_AT("/vtty") { ansiterm_drv(); }
 	MOUNT_AT("/bin/") { fs_passthru("/init/bin"); }
 
 	if (fork()) {
@@ -41,7 +42,7 @@ int main(void) {
 	}
 
 	redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
-	redirect("/bin/shell", "/vga_tty", "/keyboard");
+	redirect("/bin/shell", "/vtty", "/keyboard");
 
 	_syscall_await();
 	printf("init: quitting\n");

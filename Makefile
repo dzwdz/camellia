@@ -101,8 +101,12 @@ out/initrd/%: initrd/%
 	@mkdir -p $(@D)
 	@cp $< $@
 
+out/initrd/font.psf: /usr/share/kbd/consolefonts/default8x16.psfu.gz
+	@gunzip $< -c > $@
+
 out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
-                $(patsubst %,out/initrd/bin/%,$(USERBINS))
+                $(patsubst %,out/initrd/bin/%,$(USERBINS)) \
+                out/initrd/font.psf
 	@cd out/initrd; tar chf ../initrd.tar *
 
 
