@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <user/lib/fs/misc.h>
+#include <x86intrin.h>
 
 int main();
 
@@ -32,17 +33,7 @@ static void execp(char **argv) {
 	free(s);
 }
 
-static void run(char *cmd) {
-	#define ARGV_MAX 16
-	char *argv[ARGV_MAX];
-	struct redir redir;
-
-	int argc = parse(cmd, argv, ARGV_MAX, &redir);
-	if (argc < 0) {
-		eprintf("error parsing command");
-		return;
-	}
-
+static void run_args(int argc, char **argv, struct redir *redir) {
 	if (!*argv) return;
 
 	/* "special" commands that can't be handled in a subprocess */
@@ -52,8 +43,15 @@ static void run(char *cmd) {
 		return;
 	} else if (!strcmp(argv[0], "whitelist")) {
 		MOUNT_AT("/") {
-			fs_whitelist(&argv[1]);
+			fs_whitelist((void*)&argv[1]);
 		}
+		return;
+	} else if (!strcmp(argv[0], "time")) {
+		uint64_t time = __rdtsc();
+		uint64_t div = 3000;
+		run_args(argc - 1, argv + 1, redir);
+		time = __rdtsc() - time;
+		printf("0x%x ns (assuming 3GHz)\n", time / div);
 		return;
 	} else if (!strcmp(argv[0], "exit")) {
 		exit(0);
@@ -64,8 +62,8 @@ static void run(char *cmd) {
 		return;
 	}
 
-	if (redir.stdout && !freopen(redir.stdout, redir.append ? "a" : "w", stdout)) {
-		eprintf("couldn't open %s for redirection", redir.stdout);
+	if (redir->stdout && !freopen(redir->stdout, redir->append ? "a" : "w", stdout)) {
+		eprintf("couldn't open %s for redirection", redir->stdout);
 		exit(0);
 	}
 
@@ -83,6 +81,20 @@ static void run(char *cmd) {
 		eprintf("unknown command: %s\n", argv[0]);
 	}
 	exit(0); /* kills the subprocess */
+}
+
+static void run(char *cmd) {
+	#define ARGV_MAX 16
+	char *argv[ARGV_MAX];
+	struct redir redir;
+
+	int argc = parse(cmd, argv, ARGV_MAX, &redir);
+	if (argc < 0) {
+		eprintf("error parsing command");
+		return;
+	}
+
+	run_args(argc, argv, &redir);
 }
 
 
