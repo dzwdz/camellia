@@ -58,11 +58,13 @@ static int handle(struct vfs_request *req) {
 			switch (id) {
 				case HANDLE_ROOT: {
 					// TODO document directory read format
+					// TODO don't hardcode
 					const char src[] =
 						"vga\0"
 						"com1\0"
 						"ps2\0"
-						"ata/";
+						"ata/\0"
+						"video/";
 					return req_readcopy(req, src, sizeof src);
 				}
 				case HANDLE_VGA:

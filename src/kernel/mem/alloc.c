@@ -74,6 +74,7 @@ static void bitmap_set(size_t i, bool v) {
 }
 
 void *page_alloc(size_t pages) {
+	// TODO can allocate in the framebuffer
 	/* i do realize how painfully slow this is */
 	size_t streak = 0;
 	for (size_t i = 0; i < page_bitmap_len * 8; i++) {

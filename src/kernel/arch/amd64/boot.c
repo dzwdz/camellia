@@ -3,6 +3,7 @@
 #include <kernel/arch/amd64/driver/fsroot.h>
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/driver/serial.h>
+#include <kernel/arch/amd64/driver/video.h>
 #include <kernel/arch/amd64/interrupts/idt.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/multiboot.h>
@@ -25,6 +26,7 @@ static void find_init(struct multiboot_info *multiboot, struct kmain_info *info)
 
 void kmain_early(struct multiboot_info *multiboot) {
 	struct kmain_info info;
+	struct fb_info vid;
 
 	tty_init();
 	kprintf("idt...");
@@ -44,6 +46,17 @@ void kmain_early(struct multiboot_info *multiboot) {
 
 	kprintf("ata...");
 	ata_init();
+
+	vid.b      = (void*)multiboot->framebuffer_addr;
+	vid.pitch  = multiboot->framebuffer_pitch;
+	vid.width  = multiboot->framebuffer_width;
+	vid.height = multiboot->framebuffer_height;
+	vid.bpp    = multiboot->framebuffer_bpp;
+
+	// TODO printf decimal
+	kprintf("framebuffer at 0x%x, %xx%x bpp 0x%x\n", vid.b, vid.width, vid.height, vid.bpp);
+	video_init(vid);
+
 
 	kmain(info);
 }

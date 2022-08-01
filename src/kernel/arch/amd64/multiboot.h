@@ -25,5 +25,13 @@ struct multiboot_info {
 	uint32_t mods_count;
 	uint32_t mods;
 
-	// [...]
+	uint8_t _padding[60];
+
+	uint64_t framebuffer_addr;
+	uint32_t framebuffer_pitch;
+	uint32_t framebuffer_width;
+	uint32_t framebuffer_height;
+	uint8_t framebuffer_bpp;
+	uint8_t framebuffer_type;
+	uint8_t color_info[6];
 } __attribute__((packed));
