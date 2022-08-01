@@ -202,3 +202,19 @@ void fs_dir_inject(const char *path) {
 	}
 	exit(0);
 }
+
+bool mount_at_pred(const char *path) {
+	// TODO preprocess path - simplify & ensure trailing slash
+	if (!fork2_n_mount(path)) {
+		/* child -> go into the for body */
+		_klogf("%s: impl", path);
+		return true;
+	}
+
+	if (strcmp("/", path) && !fork2_n_mount("/")) {
+		_klogf("%s: dir", path);
+		fs_dir_inject(path);
+		exit(1);
+	}
+	return false; /* continue after the for loop */
+}
