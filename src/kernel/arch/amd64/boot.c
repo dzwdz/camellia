@@ -53,8 +53,7 @@ void kmain_early(struct multiboot_info *multiboot) {
 	vid.height = multiboot->framebuffer_height;
 	vid.bpp    = multiboot->framebuffer_bpp;
 
-	// TODO printf decimal
-	kprintf("framebuffer at 0x%x, %xx%x bpp 0x%x\n", vid.b, vid.width, vid.height, vid.bpp);
+	kprintf("framebuffer at 0x%x, %ux%u bpp %u\n", vid.b, vid.width, vid.height, vid.bpp);
 	video_init(vid);
 
 

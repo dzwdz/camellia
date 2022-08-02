@@ -18,7 +18,7 @@ int main(void) {
 	}
 
 	for (int i = 0; i < NUM_RUNS; i++) {
-		printf("run %x: %x\n", i, results[i] / 3000);
+		printf("run %u: %u\n", i, results[i] / 3000);
 	}
 
 	return 0;

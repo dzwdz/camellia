@@ -237,15 +237,6 @@ static void test_execbuf(void) {
 	test_fail();
 }
 
-static void test_snprintf(void) {
-	char buf[16];
-	memset(buf, '?', 16);
-	assert(13 == snprintf(buf, 15, "That's 0x%x", 0x1337));
-	assert(!memcmp(buf, "That's 0x1337\0??", 16));
-	assert(17 == snprintf(buf, 15, "%05x %05x %05x", 0, 0, 0));
-	assert(!memcmp(buf, "00000 00000 00\0?", 16));
-}
-
 static void test_misc(void) {
 	assert(_syscall(~0, 0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
@@ -263,7 +254,7 @@ int main(void) {
 	run_forked(test_semaphore);
 	run_forked(test_efault);
 	run_forked(test_execbuf);
-	run_forked(test_snprintf);
+	run_forked(test_printf);
 	run_forked(test_misc);
 	return 1;
 }
