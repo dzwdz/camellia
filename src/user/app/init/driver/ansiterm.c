@@ -22,7 +22,8 @@ struct psf {
 static handle_t fb_fd;
 
 static struct {int x, y;} cursor = {0};
-static bool dirty = false;
+
+static size_t dirty_low = ~0, dirty_high = 0;
 
 // TODO don't hardcode size
 static const size_t fb_len = 640 * 480 * 4;
@@ -36,10 +37,17 @@ static void *font_data;
 
 
 static void flush(void) {
-	size_t off = 0;
-	while (off < fb_len)
-		off += _syscall_write(fb_fd, fb + off, fb_len - off, off, 0);
-	dirty = false;
+	if (dirty_high == 0) return;
+
+	if (dirty_high > fb_len) // shouldn't happen
+		dirty_high = fb_len;
+
+	// still not optimal, copies 80 characters instead of 1
+	while (dirty_low < dirty_high)
+		dirty_low += _syscall_write(fb_fd, fb + dirty_low, dirty_high - dirty_low, dirty_low, 0);
+
+	dirty_low = ~0;
+	dirty_high = 0;
 }
 
 static void scroll(void) {
@@ -48,10 +56,18 @@ static void scroll(void) {
 	memcpy(fb, fb + row_len, fb_len - row_len);
 	memset(fb + fb_len - row_len, 0, row_len);
 	cursor.y--;
+	dirty_low = 0; dirty_high = ~0;
 }
 
 static void font_blit(size_t glyph, int x, int y) {
 	if (glyph >= font.glyph_amt) glyph = 0;
+
+	size_t low  = fb_pitch * ( y    * font.h) + 4 * ( x    * font.w);
+	size_t high = fb_pitch * ((y+1) * font.h) + 4 * ((x+1) * font.w) + 3;
+	if (dirty_low > low)
+		dirty_low = low;
+	if (dirty_high < high)
+		dirty_high = high;
 
 	char *bitmap = font_data + font.glyph_size * glyph;
 	for (size_t i = 0; i < font.w; i++) {
@@ -84,7 +100,6 @@ static void in_char(char c) {
 		cursor.y++;
 	}
 	while (cursor.y * font.h >= fb_height) scroll();
-	dirty = true;
 }
 
 static void font_load(void) {
