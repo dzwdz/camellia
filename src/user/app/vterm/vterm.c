@@ -1,4 +1,3 @@
-#include "driver.h"
 #include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -6,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define eprintf(fmt, ...) fprintf(stderr, "ansiterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
+#define eprintf(fmt, ...) fprintf(stderr, "vterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 struct psf {
     uint32_t magic;
@@ -130,7 +129,7 @@ static void font_load(void) {
 	font_data = buf + font.glyph_offset;
 }
 
-void ansiterm_drv(void) {
+int main(void) {
 	fb = malloc(fb_len);
 	fb_fd = _syscall_open("/kdev/video/b", 13, 0);
 
@@ -166,5 +165,5 @@ void ansiterm_drv(void) {
 		}
 	}
 
-	exit(1);
+	return 1;
 }

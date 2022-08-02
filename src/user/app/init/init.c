@@ -31,8 +31,11 @@ int main(void) {
 
 	MOUNT_AT("/tmp/") { tmpfs_drv(); }
 	MOUNT_AT("/keyboard") { ps2_drv(); }
-	MOUNT_AT("/vtty") { ansiterm_drv(); }
 	MOUNT_AT("/bin/") { fs_passthru("/init/bin"); }
+	MOUNT_AT("/vtty") {
+		const char *argv[] = {"/bin/vterm", NULL};
+		execv(argv[0], (void*)argv);
+	}
 
 	if (fork()) {
 		/* used to trigger a kernel bug
