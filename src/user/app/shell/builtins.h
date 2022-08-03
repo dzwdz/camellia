@@ -4,7 +4,7 @@
 
 struct builtin {
 	const char *name;
-	void (*fn)(int argc, const char **argv);
+	void (*fn)(int argc, char **argv);
 };
 
 extern struct builtin builtins[];

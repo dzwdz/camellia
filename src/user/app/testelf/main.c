@@ -2,7 +2,7 @@
 
 const char *str = "Hello!", *str2 = "World.";
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char **argv) {
 	printf("elftest's &main == 0x%x\n", &main);
 	printf("%s %s\n", str, str2);
 	printf("argc == %u\n", argc);
