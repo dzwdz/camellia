@@ -6,12 +6,29 @@ struct out_state {
 	void (*back)(void *, const char *, size_t);
 	void *backarg;
 	int written;
+
+	char *cache;
+	size_t cpos, clen;
 };
 
-static int output(struct out_state *os, const char *buf, size_t len) {
-	if (len) os->back(os->backarg, buf, len);
-	os->written += len;
+static int flush(struct out_state *os) {
+	if (os->cpos) {
+		os->back(os->backarg, os->cache, os->cpos);
+		os->written += os->cpos;
+		os->cpos = 0;
+	}
 	return os->written;
+}
+
+static void output(struct out_state *os, const char *buf, size_t len) {
+	if (os->cpos + len < os->clen) {
+		memcpy(os->cache + os->cpos, buf, len);
+		os->cpos += len;
+		return;
+	}
+	flush(os);
+	os->back(os->backarg, buf, len);
+	os->written += len;
 }
 
 static void output_c(struct out_state *os, char c) {
@@ -50,15 +67,20 @@ int __printf_internal(const char *fmt, va_list argp,
 		void (*back)(void*, const char*, size_t), void *backarg)
 {
 	const char *seg = fmt; /* beginning of the current non-modifier streak */
+	char cache[64];
 	struct out_state os = {
 		.back = back,
 		.backarg = backarg,
+		.cache = cache,
+		.cpos = 0,
+		.clen = sizeof(cache),
 	};
 
 	for (;;) {
 		char c = *fmt++;
 		if (c == '\0') {
-			return output(&os, seg, fmt - seg - 1);
+			output(&os, seg, fmt - seg - 1);
+			return flush(&os);
 		}
 		if (c != '%') continue;
 		output(&os, seg, fmt - seg - 1);
