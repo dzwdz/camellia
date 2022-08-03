@@ -6,21 +6,20 @@ static const int PIC1 = 0x20;
 static const int PIC2 = 0xA0;
 
 void irq_init(void) {
-	port_out8(PIC1, 0x11);   /* start init sequence */
+	port_out8(PIC1, 0x11); /* start init sequence */
 	port_out8(PIC2, 0x11);
 
-	port_out8(PIC1+1, 0x20); /* interrupt offsets */
-	port_out8(PIC2+1, 0x30);
+	port_out8(PIC1+1, IRQ_IBASE); /* interrupt offsets */
+	port_out8(PIC2+1, IRQ_IBASE + 8);
 
-	port_out8(PIC1+1, 0x4);  /* just look at the osdev wiki lol */
+	port_out8(PIC1+1, 0x4);
 	port_out8(PIC2+1, 0x2);
-
-	port_out8(PIC1+1, 0x1);  /* 8086 mode */
+	port_out8(PIC1+1, 0x1);
 	port_out8(PIC2+1, 0x1);
 
 	uint8_t mask = 0xff;
-	mask &= ~(1 << 1); // keyboard
-	mask &= ~(1 << 4); // COM1
+	mask &= ~(1 << IRQ_PS2);
+	mask &= ~(1 << IRQ_COM1);
 
 	port_out8(PIC1+1, mask);
 	port_out8(PIC2+1, 0xff);

@@ -25,18 +25,17 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 	if (interrupt == 0xe || interrupt == 0xd) stackframe++;
 	switch (interrupt) {
 		case 0x34:
-			asm("nop" ::: "memory");
 			isr_test_interrupt_called = true;
 			return;
 
-		case 0x21: // keyboard irq
-			ps2_recv(port_in8(0x60));
-			irq_eoi(1);
+		case IRQ_IBASE + IRQ_PS2:
+			ps2_irq();
+			irq_eoi(IRQ_PS2);
 			return;
 
-		case 0x24: // COM1 irq
+		case IRQ_IBASE + IRQ_COM1:
 			serial_irq();
-			irq_eoi(1);
+			irq_eoi(IRQ_COM1);
 			return;
 
 		default:

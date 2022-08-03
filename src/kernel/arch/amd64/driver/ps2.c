@@ -1,5 +1,6 @@
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/vfs/request.h>
@@ -18,8 +19,8 @@ static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
 void ps2_init(void) { vfs_mount_root_register("/ps2", &backend); }
 
 
-void ps2_recv(uint8_t s) {
-	ring_put1b((void*)&backlog, s);
+void ps2_irq(void) {
+	ring_put1b((void*)&backlog, port_in8(0x60));
 	if (blocked_on) {
 		accept(blocked_on);
 		blocked_on = NULL;
