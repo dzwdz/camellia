@@ -114,8 +114,13 @@ void process_kill(struct process *p, int ret) {
 			p->controlled = NULL;
 		}
 
-		if (p->state == PS_WAITS4FS)
-			p->waits4fs.req->caller = NULL;
+		if (p->state == PS_WAITS4FS) {
+			assert(p->reqslot);
+			p->reqslot->caller = NULL; /* transfer ownership */
+			p->reqslot = NULL;
+		} else if (p->reqslot) {
+			kfree(p->reqslot);
+		}
 
 		if (p->state == PS_WAITS4PIPE) {
 			struct process **iter = &p->waits4pipe.pipe->pipe.queued;

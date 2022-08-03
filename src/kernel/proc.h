@@ -36,9 +36,6 @@ struct process {
 	union {
 		int death_msg; // PS_DEAD
 		struct {
-			struct vfs_request *req;
-		} waits4fs; // PS_WAITS4FS
-		struct {
 			char __user *buf;
 			size_t max_len;
 			struct fs_wait_response __user *res;
@@ -51,6 +48,9 @@ struct process {
 		} waits4pipe;
 	};
 	struct vfs_request *handled_req;
+
+	/* allocated once, the requests from WAITS4FS get stored here */
+	struct vfs_request *reqslot;
 
 	/* vfs_backend controlled (not exclusively) by this process */
 	struct vfs_backend *controlled;

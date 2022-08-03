@@ -51,6 +51,8 @@ struct vfs_request {
 	long offset;
 	int flags;
 
+	/* if caller != NULL, owned by it - don't free, the allocation will be reused
+	 * if caller == NULL, free on finish */
 	struct process *caller;
 	struct vfs_backend *backend;
 

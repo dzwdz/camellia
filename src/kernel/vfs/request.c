@@ -8,29 +8,30 @@
 #include <shared/mem.h>
 
 void vfsreq_create(struct vfs_request req_) {
-	struct vfs_request *req = kmalloc(sizeof *req); // freed in vfsreq_finish
+	struct vfs_request *req;
+	if (req_.caller) {
+		process_transition(req_.caller, PS_WAITS4FS);
+		if (!req_.caller->reqslot)
+			req_.caller->reqslot = kmalloc(sizeof *req);
+		req = req_.caller->reqslot;
+		/* (re)using a single allocation for all request a process makes */
+	} else {
+		req = kmalloc(sizeof *req);
+	}
 	memcpy(req, &req_, sizeof *req);
 
 	if (req->backend)
 		req->backend->refcount++;
 
-	if (req->caller) {
-		// TODO after running `run_tests` from vga, this is entered with state == PS_WAITS4FS
-		process_transition(req->caller, PS_WAITS4FS);
-		req->caller->waits4fs.req = req;
-	}
-
-	if (!req->backend || !req->backend->potential_handlers) {
+	if (req->backend && req->backend->potential_handlers) {
+		struct vfs_request **iter = &req->backend->queue;
+		while (*iter != NULL) // find free spot in queue
+			iter = &(*iter)->queue_next;
+		*iter = req;
+		vfs_backend_tryaccept(req->backend);
+	} else {
 		vfsreq_finish_short(req, -1);
-		return;
 	}
-
-	struct vfs_request **iter = &req->backend->queue;
-	while (*iter != NULL) // find free spot in queue
-		iter = &(*iter)->queue_next;
-	*iter = req;
-
-	vfs_backend_tryaccept(req->backend);
 }
 
 void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
@@ -70,17 +71,16 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 	if (req->input.kern)
 		kfree(req->input.buf_kern);
 
+	if (req->backend)
+		vfs_backend_refdown(req->backend);
+
 	if (req->caller) {
 		assert(req->caller->state == PS_WAITS4FS);
 		regs_savereturn(&req->caller->regs, ret);
 		process_transition(req->caller, PS_RUNNING);
+	} else {
+		kfree(req);
 	}
-
-	if (req->backend)
-		vfs_backend_refdown(req->backend);
-
-	kfree(req);
-	return;
 }
 
 void vfs_backend_tryaccept(struct vfs_backend *backend) {
