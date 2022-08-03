@@ -2,10 +2,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-static bool isspace(char c) {
-	return c == ' ' || c == '\t' || c == '\n';
-}
-
 static char skipspace(char **sp) {
 	char *s = *sp;
 	while (*s && isspace(*s)) s++;

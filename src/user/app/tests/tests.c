@@ -237,6 +237,26 @@ static void test_execbuf(void) {
 	test_fail();
 }
 
+static void test_strtol(void) {
+	char *end;
+	assert(1234 == strtol("1234", NULL, 10));
+	assert(1234 == strtol("+1234", NULL, 10));
+	assert(-1234 == strtol("-1234", NULL, 10));
+
+	assert(1234 == strtol("1234", &end, 10));
+	assert(!strcmp("", end));
+	assert(1234 == strtol("   1234hello", &end, 10));
+	assert(!strcmp("hello", end));
+
+	assert(1234 == strtol("   1234hello", &end, 0));
+	assert(!strcmp("hello", end));
+	assert(0xCAF3 == strtol("   0xCaF3hello", &end, 0));
+	assert(!strcmp("hello", end));
+	assert(01234 == strtol("   01234hello", &end, 0));
+	assert(!strcmp("hello", end));
+
+}
+
 static void test_misc(void) {
 	assert(_syscall(~0, 0, 0, 0, 0, 0) < 0); /* try making an invalid syscall */
 }
@@ -255,6 +275,7 @@ int main(void) {
 	run_forked(test_efault);
 	run_forked(test_execbuf);
 	run_forked(test_printf);
+	run_forked(test_strtol);
 	run_forked(test_misc);
 	return 1;
 }

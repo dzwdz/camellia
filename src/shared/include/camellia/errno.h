@@ -4,3 +4,4 @@
 #define EBADF 3 /* Invalid file descriptor. */
 #define EINVAL 4
 #define ENOSYS 5 /* Unsupported. */
+#define ERANGE 6
