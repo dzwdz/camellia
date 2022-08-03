@@ -13,7 +13,7 @@ static void cmd_cat(int argc, const char **argv) {
 	if (argv[1])
 		file = fopen(argv[1], "r");
 	else
-		file = file_clone(stdin);
+		file = file_clone(stdin, "r");
 
 	if (!file) {
 		eprintf("couldn't open");

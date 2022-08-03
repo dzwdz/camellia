@@ -18,21 +18,31 @@ FILE *fopen(const char *path, const char *mode) {
 	FILE *f;
 	handle_t h;
 	int flags = 0;
-	if (mode[0] == 'w' || mode[0] == 'a')
-		flags |= OPEN_CREATE;
-
-	h = _syscall_open(path, strlen(path), flags);
-	if (h < 0) {
-		errno = -h;
+	if (path && path[0] == '!') {
+		/* special handling for "!files" */
+		path++;
+		if (!strcmp(path, "stdin"))  return file_clone(stdin, mode);
+		if (!strcmp(path, "stdout")) return file_clone(stdout, mode);
+		if (!strcmp(path, "stderr")) return file_clone(stderr, mode);
+		errno = -1;
 		return NULL;
+	} else {
+		if (mode[0] == 'w' || mode[0] == 'a')
+			flags |= OPEN_CREATE;
+
+		h = _syscall_open(path, strlen(path), flags);
+		if (h < 0) {
+			errno = -h;
+			return NULL;
+		}
+
+		if (mode[0] == 'w')
+			_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
+
+		f = fdopen(h, mode);
+		if (!f) close(h);
+		return f;
 	}
-
-	if (mode[0] == 'w')
-		_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
-
-	f = fdopen(h, mode);
-	if (!f) close(h);
-	return f;
 }
 
  FILE *freopen(const char *path, const char *mode, FILE *f) {
@@ -70,12 +80,12 @@ FILE *fdopen(int fd, const char *mode) {
 	return f;
 }
 
-FILE *file_clone(const FILE *f) {
+FILE *file_clone(const FILE *f, const char *mode) {
 	handle_t h = _syscall_dup(f->fd, -1, 0);
 	FILE *f2;
 	if (h < 0) return NULL;
 
-	f2 = fdopen(h, "r+");
+	f2 = fdopen(h, mode);
 	if (!f2) {
 		close(h);
 		return NULL;
@@ -105,6 +115,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 		return 0;
 
 	while (pos < total) {
+		// TODO shouldn't repeat reads
 		long res = _syscall_read(f->fd, buf + pos, total - pos, f->pos);
 		if (res < 0) {
 			f->error = true;

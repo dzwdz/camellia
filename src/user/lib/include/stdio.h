@@ -25,7 +25,7 @@ extern FILE *const stdin, *const stdout, *const stderr;
 FILE *fopen(const char *path, const char *mode);
 FILE *freopen(const char *path, const char *mode, FILE *);
 FILE *fdopen(int fd, const char *mode);
-FILE *file_clone(const FILE *);
+FILE *file_clone(const FILE *, const char *mode);
 int fclose(FILE *);
 int fflush(FILE *f);
 
