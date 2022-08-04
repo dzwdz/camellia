@@ -115,7 +115,6 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 		return 0;
 
 	while (pos < total) {
-		// TODO shouldn't repeat reads
 		long res = _syscall_read(f->fd, buf + pos, total - pos, f->pos);
 		if (res < 0) {
 			f->error = true;
@@ -184,7 +183,6 @@ int fseek(FILE *f, long offset, int whence) {
 			break;
 		case SEEK_END:
 			f->pos = -1;
-			// TODO doesn't -1 put the cursor before the last byte? i need to fix up the drivers
 			break;
 		default:
 			errno = EINVAL;
@@ -194,7 +192,8 @@ int fseek(FILE *f, long offset, int whence) {
 	bool pos_neg = f->pos < 0;
 	f->pos += offset;
 	if (pos_neg && f->pos >= 0) {
-		errno = ENOSYS; // TODO
+		// TODO getting the file size
+		errno = ENOSYS;
 		return -1;
 	}
 	f->eof = false;

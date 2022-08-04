@@ -3,12 +3,24 @@
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 
-// TODO not the place where this should be done
 static struct vfs_mount *mount_root = NULL;
 
 struct vfs_mount *vfs_mount_seed(void) {
 	return mount_root;
 }
+
+void vfs_mount_root_register(const char *path, struct vfs_backend *backend) {
+	struct vfs_mount *mount = kmalloc(sizeof *mount);
+	*mount = (struct vfs_mount){
+		.prev = mount_root,
+		.prefix = path,
+		.prefix_len = strlen(path),
+		.backend = backend,
+		.refs = 1,
+	};
+	mount_root = mount;
+}
+
 
 struct vfs_mount *vfs_mount_resolve(
 		struct vfs_mount *top, const char *path, size_t path_len)
@@ -20,9 +32,8 @@ struct vfs_mount *vfs_mount_resolve(
 			continue;
 
 		/* ensure that there's no garbage after the match
-		 * recognize that e.g. /thisasdf doesn't get recognized as mounted under
-		 * /this */
-		
+		 * e.g. don't recognize /thisasdf as mounted under /this */
+
 		if (top->prefix_len == path_len) // can't happen if prefix == path
 			break;
 		if (path[top->prefix_len] == '/')
@@ -44,16 +55,4 @@ void vfs_mount_remref(struct vfs_mount *mnt) {
 	kfree(mnt);
 
 	if (prev) vfs_mount_remref(prev);
-}
-
-void vfs_mount_root_register(const char *path, struct vfs_backend *backend) {
-	struct vfs_mount *mount = kmalloc(sizeof *mount);
-	*mount = (struct vfs_mount){
-		.prev = mount_root,
-		.prefix = path,
-		.prefix_len = strlen(path),
-		.backend = backend,
-		.refs = 1,
-	};
-	mount_root = mount;
 }

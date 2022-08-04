@@ -2,6 +2,7 @@
 #include <camellia/fsutil.h>
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/driver/fsroot.h>
+#include <kernel/arch/amd64/driver/util.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -21,17 +22,6 @@ static bool exacteq(struct vfs_request *req, const char *str) {
 	assert(req->input.kern);
 	return req->input.len == len && !memcmp(req->input.buf_kern, str, len);
 }
-
-static int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
-	assert(req->type == VFSOP_READ);
-	fs_normslice(&req->offset, &req->output.len, len, false);
-	virt_cpy_to(
-			req->caller->pages, req->output.buf,
-			buf + req->offset, req->output.len);
-	/* read errors are ignored. TODO write docs */
-	return req->output.len;
-}
-
 
 static int handle(struct vfs_request *req) {
 	assert(req->caller);

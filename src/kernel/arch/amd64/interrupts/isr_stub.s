@@ -75,7 +75,7 @@ _isr_stage2:
 	iretq
 
 .align 8
-// TODO overflow check
+// TODO stack overflow check
 .skip 256 // seems to be enough
 .global _isr_mini_stack
 _isr_mini_stack:

@@ -39,8 +39,6 @@ void handle_close(struct handle *h) {
 
 	// TODO sanity check to check if refcount is true. handle_sanity?
 
-	// TODO tests which would catch premature frees
-	// by that i mean duplicating a handle and killing the original process
 	h->type = HANDLE_INVALID;
 	kfree(h);
 }

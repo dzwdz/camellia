@@ -65,7 +65,6 @@ struct process *process_fork(struct process *parent, int flags) {
 	parent->handled_req = NULL;
 
 	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
-		// TODO would it be better to change the default to not sharing the controlled fs?
 		child->controlled = parent->controlled;
 		child->controlled->potential_handlers++;
 		child->controlled->refcount++;
@@ -149,7 +148,6 @@ void process_kill(struct process *p, int ret) {
 			p->execbuf.buf = NULL;
 		}
 
-		if (p->parent)
 			pagedir_free(p->pages); // TODO put init's pages in the allocator
 
 		// TODO VULN unbounded recursion

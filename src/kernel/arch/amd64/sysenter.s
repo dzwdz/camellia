@@ -36,7 +36,7 @@ stored_rsp:
 	.skip 8
 
 .global pagedir_current
-// a hack to maintain compat with the old arch api, TODO
+// TODO make into an argument of sysexit
 pagedir_current:
 	.skip 8
 

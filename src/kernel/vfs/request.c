@@ -114,7 +114,8 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 	assert(req && req->backend && req->backend->user.handler);
 	handler = req->backend->user.handler;
 	assert(handler->state == PS_WAITS4REQUEST);
-	assert(handler->handled_req == NULL);
+	if (handler->handled_req)
+		panic_unimplemented();
 
 	// the virt_cpy calls aren't present in all kernel backends
 	// it's a way to tell apart kernel and user backends apart

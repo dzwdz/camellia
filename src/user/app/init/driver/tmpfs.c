@@ -53,11 +53,11 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 }
 
 void tmpfs_drv(void) {
-	// TODO replace all the static allocations in drivers with mallocs
-	static char buf[512];
+	const size_t buflen = 4096;
+	char *buf = malloc(buflen);
 	struct fs_wait_response res;
 	struct node *ptr;
-	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
+	while (!_syscall_fs_wait(buf, buflen, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				ptr = tmpfs_open(buf, &res);
@@ -68,7 +68,7 @@ void tmpfs_drv(void) {
 				ptr = (void*)res.id;
 				if (ptr == &special_root) {
 					struct dirbuild db;
-					dir_start(&db, res.offset, buf, sizeof buf);
+					dir_start(&db, res.offset, buf, buflen);
 					for (struct node *iter = root; iter; iter = iter->next)
 						dir_append(&db, iter->name);
 					_syscall_fs_respond(buf, dir_finish(&db), 0);
@@ -97,7 +97,7 @@ void tmpfs_drv(void) {
 
 				fs_normslice(&res.offset, &res.len, ptr->size, true);
 				if (res.offset + res.len >= ptr->capacity) {
-					// TODO
+					// TODO expanding files
 					_syscall_fs_respond(NULL, -1, 0);
 					break;
 				}

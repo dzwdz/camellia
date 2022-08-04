@@ -1,5 +1,6 @@
-#include <camellia/fsutil.h>
 #include <camellia/errno.h>
+#include <camellia/fsutil.h>
+#include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/driver/video.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
@@ -11,18 +12,6 @@ enum {
 	H_ROOT,
 	H_FB,
 };
-
-/* stolen from fsroot.c, TODO shared copy? i guess? */
-static int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
-	if (!req->caller) return -1;
-	assert(req->type == VFSOP_READ);
-	fs_normslice(&req->offset, &req->output.len, len, false);
-	virt_cpy_to(
-			req->caller->pages, req->output.buf,
-			buf + req->offset, req->output.len);
-	/* read errors are ignored. TODO write docs */
-	return req->output.len;
-}
 
 static int handle(struct vfs_request *req) {
 	switch (req->type) {

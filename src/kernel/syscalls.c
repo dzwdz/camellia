@@ -1,4 +1,5 @@
 #include <camellia/errno.h>
+#include <camellia/execbuf.h>
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
@@ -32,7 +33,7 @@ long _syscall_await(void) {
 	{
 		if (iter->noreap) continue;
 		has_children = true;
-		if (iter->state == PS_DEAD) // TODO this path used to crash, still untested
+		if (iter->state == PS_DEAD)
 			SYSCALL_RETURN(process_try2collect(iter));
 	}
 
@@ -276,10 +277,9 @@ long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __
 	if (!backend) SYSCALL_RETURN(-1);
 
 	process_transition(process_current, PS_WAITS4REQUEST);
-	assert(!backend->user.handler); // TODO allow multiple processes to wait on the same backend
+	if (backend->user.handler)
+		panic_unimplemented();
 	backend->user.handler = process_current;
-	/* checking the validity of those pointers here would make
-	 * vfs_backend_accept simpler. TODO? */
 	process_current->awaited_req.buf     = buf;
 	process_current->awaited_req.max_len = max_len;
 	process_current->awaited_req.res     = res;
@@ -370,11 +370,11 @@ void _syscall_sleep(long ms) {
 
 long _syscall_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
-	if (len > sizeof(uint64_t) * 6 * 4) // TODO specify max size somewhere
+	if (len > EXECBUF_MAX_LEN)
 		SYSCALL_RETURN(-1);
 	if (process_current->execbuf.buf)
-		SYSCALL_RETURN(-1); /* no nesting */
-	// actually TODO, nesting makes sense for infinite loops. maybe
+		SYSCALL_RETURN(-1);
+	// TODO consider supporting nesting execbufs
 
 	char *kbuf = kmalloc(len);
 	if (!virt_cpy_from(process_current->pages, kbuf, ubuf, len)) {

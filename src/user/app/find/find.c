@@ -1,3 +1,4 @@
+#include <camellia/path.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,8 +49,8 @@ void recurse(char *path) {
 }
 
 void find(const char *path) {
-	// TODO export PATH_MAX
-	char *buf = malloc(4096);
+	// TODO bound checking
+	char *buf = malloc(PATH_MAX);
 	memcpy(buf, path, strlen(path)+1);
 	recurse(buf);
 	free(buf);

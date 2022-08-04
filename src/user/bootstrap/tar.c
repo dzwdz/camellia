@@ -61,7 +61,8 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 	size_t meta_len;
 	int size;
 
-	static char buf[BUF_SIZE]; // TODO reuse a single buffer
+	static char buf[BUF_SIZE];
+	// TODO reuse a single buffer for both tar_driver and tar_read
 
 	if (meta == root_fakemeta) type = '5'; /* see comment in tar_open() */
 

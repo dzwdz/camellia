@@ -11,8 +11,8 @@ void dir_start(struct dirbuild *db, long offset, char *buf, size_t buflen) {
 	db->blen = buflen;
 	db->error = 0;
 
-	if (offset < 0)
-		db->error = -ENOSYS; // TODO
+	// TODO decide how negative directory offsets should be handled
+	if (offset < 0) db->error = -ENOSYS;
 }
 
 bool dir_append(struct dirbuild *db, const char *name) {
@@ -56,11 +56,12 @@ bool dir_append_from(struct dirbuild *db, handle_t h) {
 	}
 	if (ret == 0) {
 		// TODO no idea how much we've overread
+		// this messes up reading bind mounts of multiple directories
 		db->error = -ENOSYS;
 		return true;
 	}
 
-	// TODO deduplicate
+	// TODO deduplicate entries
 
 	db->offset = 0;
 	db->bpos += ret;

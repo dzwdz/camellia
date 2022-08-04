@@ -1,7 +1,6 @@
 #pragma once
+#include <camellia/path.h>
 #include <stddef.h>
-
-#define PATH_MAX 512
 
 /** Reduce a path to its simplest form.
  *
