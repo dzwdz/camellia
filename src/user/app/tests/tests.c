@@ -254,7 +254,37 @@ static void test_strtol(void) {
 	assert(!strcmp("hello", end));
 	assert(01234 == strtol("   01234hello", &end, 0));
 	assert(!strcmp("hello", end));
+}
 
+static void test_sleep(void) {
+	// TODO yet another of those fake tests that you have to verify by hand
+	if (!fork()) {
+		if (!fork()) {
+			_syscall_sleep(100);
+			printf("1\n");
+			_syscall_sleep(200);
+			printf("3\n");
+			_syscall_sleep(200);
+			printf("5\n");
+			_syscall_exit(0);
+		}
+		if (!fork()) {
+			printf("0\n");
+			_syscall_sleep(200);
+			printf("2\n");
+			_syscall_sleep(200);
+			printf("4\n");
+			/* get killed while asleep
+			* a peaceful death, i suppose. */
+			for (;;) _syscall_sleep(1000000000);
+		}
+		_syscall_await();
+		_syscall_exit(0);
+	}
+
+	/* this part checks if, after killing an asleep process, other processes can still wake up */
+	_syscall_sleep(600);
+	printf("6\n");
 }
 
 static void test_misc(void) {
@@ -276,6 +306,7 @@ int main(void) {
 	run_forked(test_execbuf);
 	run_forked(test_printf);
 	run_forked(test_strtol);
+	run_forked(test_sleep);
 	run_forked(test_misc);
 	return 1;
 }

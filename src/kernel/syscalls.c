@@ -363,6 +363,11 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	SYSCALL_RETURN(0);
 }
 
+void _syscall_sleep(long ms) {
+	// TODO no overflow check - can leak current uptime
+	timer_schedule(process_current, uptime_ms() + ms);
+}
+
 long _syscall_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > sizeof(uint64_t) * 6 * 4) // TODO specify max size somewhere
@@ -433,6 +438,9 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 			break;
 		case _SYSCALL_PIPE:
 			_syscall_pipe((userptr_t)a, b);
+			break;
+		case _SYSCALL_SLEEP:
+			_syscall_sleep(a);
 			break;
 		case _SYSCALL_EXECBUF:
 			_syscall_execbuf((userptr_t)a, b);

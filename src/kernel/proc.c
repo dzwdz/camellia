@@ -132,6 +132,9 @@ void process_kill(struct process *p, int ret) {
 			*iter = p->waits4pipe.next;
 		}
 
+		if (p->state == PS_WAITS4TIMER)
+			timer_deschedule(p);
+
 		for (handle_t h = 0; h < HANDLE_MAX; h++)
 			handle_close(p->handles[h]);
 
@@ -217,14 +220,15 @@ static _Noreturn void process_switch(struct process *proc) {
 }
 
 _Noreturn void process_switch_any(void) {
-	if (process_current && process_current->state == PS_RUNNING)
-		process_switch(process_current);
+	for (;;) {
+		if (process_current && process_current->state == PS_RUNNING)
+			process_switch(process_current);
 
-	struct process *found = process_find(PS_RUNNING);
-	if (found) process_switch(found);
+		struct process *found = process_find(PS_RUNNING);
+		if (found) process_switch(found);
 
-	cpu_pause();
-	process_switch_any();
+		cpu_pause();
+	}
 }
 
 struct process *process_next(struct process *p) {
@@ -284,6 +288,7 @@ void process_transition(struct process *p, enum process_state state) {
 		case PS_WAITS4FS:
 		case PS_WAITS4REQUEST:
 		case PS_WAITS4PIPE:
+		case PS_WAITS4TIMER:
 			assert(last == PS_RUNNING);
 			break;
 

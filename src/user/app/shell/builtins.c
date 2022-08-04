@@ -117,6 +117,14 @@ static void cmd_ls(int argc, char **argv) {
 	}
 }
 
+static void cmd_sleep(int argc, char **argv) {
+	if (argc < 2) {
+		eprintf("no arguments");
+		return;
+	}
+	_syscall_sleep(strtol(argv[1], NULL, 0) * 1000);
+}
+
 static void cmd_touch(int argc, char **argv) {
 	if (argc <= 1) {
 		eprintf("no arguments");
@@ -135,6 +143,7 @@ struct builtin builtins[] = {
 	{"echo", cmd_echo},
 	{"hexdump", cmd_hexdump},
 	{"ls", cmd_ls},
+	{"sleep", cmd_sleep},
 	{"touch", cmd_touch},
 	{NULL, NULL},
 };

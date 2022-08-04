@@ -15,6 +15,7 @@ enum process_state {
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
 	PS_WAITS4PIPE,
+	PS_WAITS4TIMER,
 
 	PS_LAST,
 };
@@ -46,6 +47,11 @@ struct process {
 			size_t len;
 			struct process *next;
 		} waits4pipe;
+		struct {
+			/* managed by timer_schedule */
+			uint64_t goal;
+			struct process *next;
+		} waits4timer;
 	};
 	struct vfs_request *handled_req;
 

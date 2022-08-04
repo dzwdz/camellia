@@ -2,6 +2,7 @@
 .global _start
 .type _start, @function
 _start:
+	cli
 	mov $_stack_top, %esp
 	push %ebx // save the address of the multiboot struct
 

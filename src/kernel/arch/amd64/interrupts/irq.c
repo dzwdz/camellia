@@ -5,6 +5,12 @@
 static const int PIC1 = 0x20;
 static const int PIC2 = 0xA0;
 
+static void pit_init(void) {
+	uint16_t divisor = 1193;
+	port_out8(0x40, divisor & 0xFF);
+	port_out8(0x40, divisor >> 8);
+}
+
 void irq_init(void) {
 	port_out8(PIC1, 0x11); /* start init sequence */
 	port_out8(PIC2, 0x11);
@@ -18,11 +24,14 @@ void irq_init(void) {
 	port_out8(PIC2+1, 0x1);
 
 	uint8_t mask = 0xff;
+	mask &= ~(1 << IRQ_PIT);
 	mask &= ~(1 << IRQ_PS2);
 	mask &= ~(1 << IRQ_COM1);
 
 	port_out8(PIC1+1, mask);
 	port_out8(PIC2+1, 0xff);
+
+	pit_init();
 }
 
 void irq_eoi(uint8_t line) {

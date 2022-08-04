@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+struct process;
+
 // i have no idea where else to put it
 // some code assumes that it's a power of 2
 #define PAGE_SIZE 4096
@@ -21,6 +23,10 @@ void cpu_shutdown(void);
 
 /** on x86: waits for an IRQ */
 void cpu_pause(void);
+
+uint64_t uptime_ms(void);
+void timer_schedule(struct process *p, uint64_t time);
+void timer_deschedule(struct process *p);
 
 // src/arch/i386/sysenter.s
 _Noreturn void sysexit(struct registers);

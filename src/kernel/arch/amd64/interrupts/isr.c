@@ -3,6 +3,7 @@
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/interrupts/isr.h>
 #include <kernel/arch/amd64/port_io.h>
+#include <kernel/arch/amd64/time.h>
 #include <kernel/arch/generic.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -26,6 +27,11 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 	switch (interrupt) {
 		case 0x34:
 			isr_test_interrupt_called = true;
+			return;
+
+		case IRQ_IBASE + IRQ_PIT:
+			pit_irq();
+			irq_eoi(IRQ_PIT);
 			return;
 
 		case IRQ_IBASE + IRQ_PS2:
