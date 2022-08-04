@@ -12,7 +12,8 @@ void r_k_misc(void);
 void r_k_miscsyscall(void);
 void r_libc_esemaphore(void);
 void r_libc_string(void);
-void r_printf(void);
+void r_s_printf(void);
+void r_s_ringbuf(void);
 
 #define argify(str) str, sizeof(str) - 1
 #define test_fail() do { \

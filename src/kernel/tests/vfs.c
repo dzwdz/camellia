@@ -39,8 +39,8 @@ TEST(path_simplify) {
 	TEST_WRAPPER("/asdf//.",  "/asdf/");
 
 	TEST_WRAPPER("/foo/bar/..", "/foo/");
-	TEST_WRAPPER("/foo/bar/../bar",  "/foo/bar");
-	TEST_WRAPPER("/foo/bar/../bar/", "/foo/bar/");
+	TEST_WRAPPER("/foo/bar/../baz",  "/foo/baz");
+	TEST_WRAPPER("/foo/bar/../baz/", "/foo/baz/");
 	TEST_WRAPPER("/foo/bar/xyz/..",  "/foo/bar/");
 	TEST_WRAPPER("/foo/bar/xyz/../", "/foo/bar/");
 

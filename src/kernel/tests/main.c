@@ -7,7 +7,6 @@ bool _did_tests_fail;
 void tests_all(void) {
 	_did_tests_fail = false;
 
-	tests_utils();
 	tests_vfs();
 
 	if (_did_tests_fail)

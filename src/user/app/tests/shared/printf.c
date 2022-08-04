@@ -1,4 +1,4 @@
-#include "tests.h"
+#include "../tests.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -30,6 +30,6 @@ static void test_printf(void) {
 	test(!strcmp(buf, "0 0"));
 }
 
-void r_printf(void) {
+void r_s_printf(void) {
 	run_test(test_printf);
 }
