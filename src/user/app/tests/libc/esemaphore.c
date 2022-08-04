@@ -1,5 +1,4 @@
-#define TEST_MACROS
-#include "tests.h"
+#include "../tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdio.h>
@@ -34,21 +33,21 @@ static void even(handle_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
 	esem_signal(sem2);
 }
 
-void test_semaphore(void) {
+static void test_semaphore(void) {
 	struct evil_sem *sem1, *sem2;
 	handle_t pipe[2];
-	assert(_syscall_pipe(pipe, 0) >= 0);
+	test(_syscall_pipe(pipe, 0) >= 0);
 
 	if (!fork()) {
 		sem1 = esem_new(0);
 		sem2 = esem_new(0);
-		assert(sem1 && sem2);
+		test(sem1 && sem2);
 		if (!fork()) {
 			odd(pipe[1], sem1, sem2);
 			exit(69);
 		} else {
 			even(pipe[1], sem1, sem2);
-			assert(_syscall_await() == 69);
+			test(_syscall_await() == 69);
 		}
 		esem_free(sem1);
 		esem_free(sem2);
@@ -57,13 +56,13 @@ void test_semaphore(void) {
 
 		sem1 = esem_new(0);
 		sem2 = esem_new(0);
-		assert(sem1 && sem2);
+		test(sem1 && sem2);
 		if (!fork()) {
 			even(pipe[1], sem1, sem2);
 			exit(69);
 		} else {
 			odd(pipe[1], sem1, sem2);
-			assert(_syscall_await() == 69);
+			test(_syscall_await() == 69);
 			_syscall_await();
 		}
 		esem_free(sem1);
@@ -88,4 +87,8 @@ void test_semaphore(void) {
 
 		_syscall_await();
 	}
+}
+
+void r_libc_esemaphore(void) {
+	run_test(test_semaphore);
 }

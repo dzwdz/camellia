@@ -47,8 +47,7 @@ static void pad(struct out_state *os, struct mods *m, size_t len) {
 }
 
 static void output_uint(struct out_state *os, struct mods *m, unsigned long long n) {
-	// TODO static assert sizeof(unsigned long long) <= 8
-	char buf[20];
+	char buf[sizeof(unsigned long long) * 3];
 	size_t pos = sizeof(buf);
 
 	if (!n) {

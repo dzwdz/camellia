@@ -1,4 +1,3 @@
-#define TEST_MACROS
 #include "tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
