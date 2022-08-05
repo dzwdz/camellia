@@ -13,13 +13,24 @@ void font_load(const char *path) {
 		exit(1);
 	}
 
-	const size_t cap = 8 * 1024; // TODO get file size
-	void *buf = malloc(cap);
+	void *buf;
+	long buflen;
+
+	fseek(f, 0, SEEK_END);
+	buflen = ftell(f);
+	if (buflen < 0) {
+		eprintf("can't get the size of \"%s\"", path);
+		exit(1);
+	}
+
+	buf = malloc(buflen);
 	if (!buf) {
 		eprintf("out of memory");
 		exit(1);
 	}
-	fread(buf, 1, cap, f);
+
+	fseek(f, 0, SEEK_SET);
+	fread(buf, 1, buflen, f);
 	if (ferror(f)) {
 		eprintf("error reading file");
 		exit(1);

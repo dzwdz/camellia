@@ -9,11 +9,17 @@
 #include <user/lib/elfload.h>
 
 void elf_execf(FILE *f, char **argv, char **envp) {
-	const size_t cap = 0x60000;
-	size_t pos = 0;
-	void *buf = malloc(cap); // TODO a way to get file size
+	void *buf;
+	long buflen;
 
-	if (buf && fread(buf, 1, cap - pos, f))
+	fseek(f, 0, SEEK_END);
+	buflen = ftell(f);
+	if (buflen < 0) return; /* errno set by fseek */
+	buf = malloc(buflen);
+
+	// TODO don't read the entire file into memory
+	fseek(f, 0, SEEK_SET);
+	if (buf && fread(buf, 1, buflen, f))
 		elf_exec(buf, argv, envp);
 	free(buf);
 }

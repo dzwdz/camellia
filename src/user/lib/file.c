@@ -175,29 +175,42 @@ int fseek(FILE *f, long offset, int whence) {
 	if (fflush(f))
 		return -1;
 
+	long base;
 	switch (whence) {
 		case SEEK_SET:
-			f->pos = 0;
+			base = 0;
 			break;
 		case SEEK_CUR:
+			base = f->pos;
 			break;
 		case SEEK_END:
-			f->pos = -1;
+			base = _syscall_getsize(f->fd);
+			if (base < 0)
+				base = -1;
 			break;
 		default:
 			errno = EINVAL;
 			return -1;
 	}
 
-	bool pos_neg = f->pos < 0;
-	f->pos += offset;
-	if (pos_neg && f->pos >= 0) {
-		// TODO getting the file size
-		errno = ENOSYS;
+	if (base >= 0 && base + offset < 0) {
+		/* underflow */
+		errno = EINVAL;
+		return -1;
+	} else if (base < 0 && base + offset >= 0) {
+		/* overflow - went from a negative offset (relative to EOF)
+		 *            to a positive offset (from start of file).
+		 *            can only happen when getsize() is unsupported */
+		errno = EINVAL;
 		return -1;
 	}
+	f->pos = base + offset;
 	f->eof = false;
 	return 0;
+}
+
+long ftell(FILE *f) {
+	return f->pos;
 }
 
 int fclose(FILE *f) {
