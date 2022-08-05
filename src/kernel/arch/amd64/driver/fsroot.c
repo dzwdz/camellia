@@ -76,8 +76,8 @@ static int handle(struct vfs_request *req) {
 				default: panic_invalid_state();
 			}
 
-		case VFSOP_CLOSE:
-			return 0;
+		case VFSOP_CLOSE: return 0;
+		case VFSOP_GETSIZE: return -ENOSYS;
 
 		default: panic_invalid_state();
 	}

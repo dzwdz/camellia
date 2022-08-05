@@ -20,6 +20,7 @@ enum {
 
 	_SYSCALL_READ,
 	_SYSCALL_WRITE,
+	_SYSCALL_GETSIZE,
 	_SYSCALL_CLOSE,
 
 	_SYSCALL_FS_FORK2,
@@ -63,6 +64,7 @@ handle_t _syscall_dup(handle_t from, handle_t to, int flags);
 
 long _syscall_read(handle_t h, void __user *buf, size_t len, long offset);
 long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset, int flags);
+long _syscall_getsize(handle_t h);
 long _syscall_close(handle_t h);
 
 struct fs_wait_response {

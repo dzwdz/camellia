@@ -38,6 +38,10 @@ long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset,
 	return _syscall(_SYSCALL_WRITE, (long)h, (long)buf, (long)len, offset, (long)flags);
 }
 
+long _syscall_getsize(handle_t h) {
+	return _syscall(_SYSCALL_GETSIZE, (long)h, 0, 0, 0, 0);
+}
+
 long _syscall_close(handle_t h) {
 	return _syscall(_SYSCALL_CLOSE, (long)h, 0, 0, 0, 0);
 }

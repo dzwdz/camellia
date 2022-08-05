@@ -15,7 +15,9 @@ struct node {
 };
 
 struct node *root = NULL;
-static struct node special_root;
+static struct node special_root = {
+	.size = 0,
+};
 
 static struct node *lookup(const char *path, size_t len) {
 	for (struct node *iter = root; iter; iter = iter->next) {
@@ -107,6 +109,11 @@ void tmpfs_drv(void) {
 					ptr->size = res.offset + res.len;
 				}
 				_syscall_fs_respond(NULL, res.len, 0);
+				break;
+
+			case VFSOP_GETSIZE:
+				ptr = (void*)res.id;
+				_syscall_fs_respond(NULL, ptr->size, 0);
 				break;
 
 			default:

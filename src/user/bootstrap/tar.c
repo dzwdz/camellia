@@ -33,6 +33,11 @@ void tar_driver(void *base) {
 				tar_read(&res, base, ~0);
 				break;
 
+			case VFSOP_GETSIZE:
+				// TODO works weirdly on directories / the root dir
+				_syscall_fs_respond(NULL, tar_size(res.id), 0);
+				break;
+
 			default:
 				_syscall_fs_respond(NULL, -1, 0); // unsupported
 				break;

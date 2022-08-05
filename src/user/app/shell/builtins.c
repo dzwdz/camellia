@@ -48,6 +48,23 @@ static void cmd_echo(int argc, char **argv) {
 		printf("\n");
 }
 
+void cmd_getsize(int argc, char **argv) {
+	if (argc < 2) {
+		eprintf("missing arguments");
+		return;
+	}
+
+	for (int i = 1; i < argc; i++) {
+		handle_t h = _syscall_open(argv[i], strlen(argv[i]), 0);
+		if (h < 0) {
+			eprintf("error opening %s", argv[i]);
+			continue;
+		}
+		printf("%s: %d\n", argv[i], (int)_syscall_getsize(h));
+		_syscall_close(h);
+	}
+}
+
 void cmd_hexdump(int argc, char **argv) {
 	const size_t buflen = 512;
 	uint8_t *buf = malloc(buflen);
@@ -141,6 +158,7 @@ static void cmd_touch(int argc, char **argv) {
 struct builtin builtins[] = {
 	{"cat", cmd_cat},
 	{"echo", cmd_echo},
+	{"getsize", cmd_getsize},
 	{"hexdump", cmd_hexdump},
 	{"ls", cmd_ls},
 	{"sleep", cmd_sleep},
