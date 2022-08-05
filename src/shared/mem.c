@@ -1,6 +1,9 @@
 #include <shared/mem.h>
 #include <stdint.h>
 
+union dualptr_const { const uintptr_t *w; const char *c; uintptr_t u; };
+union dualptr       {       uintptr_t *w;       char *c; uintptr_t u; };
+
 void *memchr(const void *s, int c, size_t n) {
 	const unsigned char *s2 = s;
 	for (size_t i = 0; i < n; i++) {
@@ -22,25 +25,32 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 }
 
 void *memcpy(void *dest, const void *src, size_t n) {
-	const uint32_t *s32 = src;
-	uint32_t *d32 = dest;
-	while (n >= 4) {
-		*d32++ = *s32++;
-		n -= 4;
+	// TODO erms, rep movsb
+	union dualptr_const s = {.c = src};
+	union dualptr d = {.c = dest};
+
+	for (; (d.u & 7) && n != 0; n--)
+		*(d.c)++ = *(s.c)++;
+
+	while (n >= sizeof(uintptr_t)) {
+		*(d.w)++ = *(s.w)++;
+		n -= sizeof(uintptr_t);
 	}
-
-	const char *s8 = (void*)s32;
-	char *d8 = (void*)d32;
 	while (n-- != 0)
-		*d8++ = *s8++;
-
+		*(d.c)++ = *(s.c)++;
 	return dest;
 }
 
 void *memset(void *s, int c, size_t n) {
-	uint8_t *s2 = s;
-	for (size_t i = 0; i < n; i++)
-		s2[i] = c;
+	union dualptr d = {.c = s};
+
+	uintptr_t fill = (c & 0xff) * 0x0101010101010101;
+	while (n >= sizeof(uintptr_t)) {
+		*(d.w)++ = fill;
+		n -= sizeof(uintptr_t);
+	}
+	while (n-- != 0)
+		*(d.c)++ = c;
 	return s;
 }
 
