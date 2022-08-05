@@ -46,7 +46,7 @@ static void pad(struct out_state *os, struct mods *m, size_t len) {
 		output(os, &m->fill_char, 1);
 }
 
-static void output_uint(struct out_state *os, struct mods *m, unsigned long long n) {
+static void output_uint(struct out_state *os, struct mods *m, unsigned long long n, char sign) {
 	char buf[sizeof(unsigned long long) * 3];
 	size_t pos = sizeof(buf);
 
@@ -57,6 +57,7 @@ static void output_uint(struct out_state *os, struct mods *m, unsigned long long
 		buf[--pos] = r + '0';
 		n = q;
 	}
+	if (sign) buf[--pos] = sign;
 	pad(os, m, sizeof(buf) - pos);
 	output(os, buf + pos, sizeof(buf) - pos);
 }
@@ -111,6 +112,8 @@ int __printf_internal(const char *fmt, va_list argp,
 
 		switch (c) {
 			unsigned long n, len;
+			long ns;
+			char sign;
 
 			case 'c':
 				output_c(&os, va_arg(argp, int));
@@ -142,7 +145,17 @@ int __printf_internal(const char *fmt, va_list argp,
 
 			case 'u':
 				n = va_arg(argp, unsigned long);
-				output_uint(&os, &m, n);
+				output_uint(&os, &m, n, 0);
+				break;
+
+			case 'd':
+				ns = va_arg(argp, int);
+				sign = 0;
+				if (ns < 0) {
+					ns = -ns;
+					sign = '-';
+				}
+				output_uint(&os, &m, (long)ns, sign);
 				break;
 
 			case '%':

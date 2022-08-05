@@ -26,8 +26,13 @@ static void test_printf(void) {
 	snprintf(buf, sizeof buf, "%05u %05u", 1234, 56789);
 	test(!strcmp(buf, "01234 56789"));
 
-	snprintf(buf, sizeof buf, "%u %x", 0, 0);
-	test(!strcmp(buf, "0 0"));
+	snprintf(buf, sizeof buf, "%5d %5d", 123, 4567);
+	test(!strcmp(buf, "  123  4567"));
+	snprintf(buf, sizeof buf, "%5d %5d", -123, -4567);
+	test(!strcmp(buf, " -123 -4567"));
+
+	snprintf(buf, sizeof buf, "%u %d %x", 0, 0, 0);
+	test(!strcmp(buf, "0 0 0"));
 }
 
 void r_s_printf(void) {
