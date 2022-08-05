@@ -26,7 +26,7 @@ void in_char(char c) {
 		cursor.x = 0;
 		cursor.y++;
 	}
-	while (cursor.y * font.h >= fb.height) scroll();
+	while ((cursor.y + 1) * font.h >= fb.height) scroll();
 }
 
 int main();

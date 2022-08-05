@@ -47,6 +47,11 @@ void font_load(const char *path) {
 
 void font_blit(uint32_t glyph, int x, int y) {
 	if (glyph >= font.glyph_amt) glyph = 0;
+	if (x < 0 || (x+1) * font.w >= fb.width ||
+		y < 0 || (y+1) * font.h >= fb.height)
+	{
+		return;
+	}
 
 	dirty_mark(x, y);
 
@@ -60,4 +65,5 @@ void font_blit(uint32_t glyph, int x, int y) {
 			*((uint32_t*)&fb.b[fb.pitch * (y * font.h + j) + 4 * (x * font.w + i)]) = byte * 0xB0B0B0;
 		}
 	}
+	return;
 }
