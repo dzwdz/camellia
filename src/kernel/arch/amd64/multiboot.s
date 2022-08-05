@@ -15,6 +15,6 @@ multiboot_header:
 	.skip 5 * 4
 
 	.long 0
-	.long 640
-	.long 480
 	.long 0
+	.long 0
+	.long 32

@@ -24,6 +24,7 @@ void font_blit(uint32_t glyph, int x, int y);
 
 struct framebuf {
 	size_t len, width, height, pitch;
+	uint8_t bpp;
 	char *b;
 };
 extern struct framebuf fb;

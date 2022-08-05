@@ -11,11 +11,9 @@
 
 int printf(const char *restrict fmt, ...);
 int fprintf(FILE *restrict f, const char *restrict fmt, ...);
-int snprintf(char *restrict str, size_t len, const char *restrict fmt, ...);
 
 int vprintf(const char *restrict fmt, va_list ap);
 int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap);
-int vsnprintf(char *restrict str, size_t len, const char *restrict fmt, va_list ap);
 
 int _klogf(const char *fmt, ...); // for kernel debugging only
 
