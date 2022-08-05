@@ -1,3 +1,4 @@
+#include <camellia/path.h>
 #include <camellia/errno.h>
 #include <camellia/execbuf.h>
 #include <camellia/flags.h>
@@ -8,7 +9,6 @@
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/proc.h>
-#include <kernel/vfs/path.h>
 #include <shared/mem.h>
 #include <stdint.h>
 

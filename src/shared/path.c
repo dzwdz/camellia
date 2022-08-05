@@ -1,6 +1,9 @@
-#include <kernel/panic.h>
-#include <kernel/vfs/path.h>
+#include <camellia/path.h>
 #include <shared/mem.h>
+#include <stdbool.h>
+
+// TODO shared assert
+#define assert(...)
 
 int path_simplify(const char *in, char *out, size_t len) {
 	if (len == 0)     return -1; // empty paths are invalid
