@@ -1,6 +1,7 @@
 #include "../tests.h"
 #include <camellia/path.h>
 #include <string.h>
+#include <user/lib/fs/misc.h>
 
 static void test_path_simplify(void) {
 	const char *testcases[][2] = {
@@ -61,6 +62,46 @@ static void test_path_simplify(void) {
 	}
 }
 
+static void mount_resolve_drv(const char *path) {
+	if (fork2_n_mount(path)) return;
+
+	struct fs_wait_response res;
+	while (!_syscall_fs_wait(NULL, 0, &res)) {
+		// TODO does the first argument of _syscall_fs_respond need to be non-const?
+		_syscall_fs_respond((void*)path, strlen(path), 0);
+	}
+	exit(1);
+}
+
+static void test_mount_resolve(void) {
+	const char *testcases[][2] = {
+		{"/",              "/"},
+		{"/test",          "/"},
+		{"/dir",           "/dir"},
+		{"/dir/..",        "/"},
+		{"/dir/../dir",    "/dir"},
+		{"/dirry",         "/"},
+		{"/dir/",          "/dir"},
+		{"/dir/shadowed",  "/dir"},
+		{"/dir/shadowed/", "/dir"},
+	};
+	mount_resolve_drv("/");
+	mount_resolve_drv("/dir/shadowed");
+	mount_resolve_drv("/dir");
+
+	char buf[16];
+	for (size_t i = 0; i < sizeof(testcases) / sizeof(testcases[0]); i++) {
+		const char *input    = testcases[i][0];
+		const char *expected = testcases[i][1];
+		handle_t h = _syscall_open(input, strlen(input), 0);
+		test(h >= 0);
+		int len = _syscall_read(h, buf, sizeof buf, 0);
+		test(len == (int)strlen(expected) && !memcmp(expected, buf, len));
+		_syscall_close(h);
+	}
+}
+
 void r_k_path(void) {
 	run_test(test_path_simplify);
+	run_test(test_mount_resolve);
 }
