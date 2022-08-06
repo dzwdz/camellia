@@ -1,8 +1,6 @@
+#include <assert.h>
 #include <camellia/fsutil.h>
 #include <limits.h>
-
-// TODO shared assert
-#define assert(...) {}
 
 void fs_normslice(long *restrict offset, size_t *restrict length, size_t max, bool expand)
 {
