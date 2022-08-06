@@ -49,3 +49,11 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 	if (end) *end = (void*)s;
 	return res * sign;
 }
+
+char *strchr(const char *s, int c) {
+	while (*s) {
+		if (*s == c) return s;
+		s++;
+	}
+	return NULL;
+}

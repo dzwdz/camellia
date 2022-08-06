@@ -4,6 +4,7 @@
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <user/lib/fs/dir.h>
 
@@ -94,12 +95,8 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 					char *suffix = base + off + meta_len;
 
 					/* check if the path contains any non-trailing slashes */
-					char *next = suffix;
-					// TODO strchr
-					while (*next && *next != '/') next++;
-					if (*next == '/') next++;
-
-					if (*next == '\0') {
+					char *slash = strchr(suffix, '/');
+					if (!slash || slash[1] == '\0') {
 						if (dir_append(&db, suffix)) break;
 					}
 				}

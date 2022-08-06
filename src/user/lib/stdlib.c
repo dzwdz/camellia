@@ -36,11 +36,9 @@ int execv(const char *path, char *const argv[]) {
 		fseek(file, 2, SEEK_SET);
 		if (fgets(buf, sizeof buf, file)) {
 			const char *argv [] = {buf, path, NULL};
-			// TODO strchr
-			char *s = buf;
-			while (*s && *s != '\n') s++;
-			*s = '\0';
-			execv(argv[0], (void*)argv);
+			char *endl = strchr(buf, '\n');
+			if (endl) *endl = '\0';
+			execv(buf, (void*)argv);
 		}
 	}
 
