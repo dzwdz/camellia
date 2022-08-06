@@ -36,15 +36,17 @@ void kmain_early(struct multiboot_info *multiboot) {
 
 	info.memtop = (void*)(long)(multiboot->mem_upper * 1024);
 	find_init(multiboot, &info);
+	info.fb.at   = (void*)multiboot->framebuffer_addr;
+	info.fb.size = multiboot->framebuffer_pitch * multiboot->framebuffer_height;
 	kprintf("mem...\n");
 	mem_init(&info);
 
-	kprintf("rootfs...");
+	kprintf("rootfs...\n");
 	vfs_root_init();
 	ps2_init();
 	serial_init();
 
-	kprintf("ata...");
+	kprintf("ata...\n");
 	ata_init();
 
 	vid.b      = (void*)multiboot->framebuffer_addr;
@@ -53,6 +55,11 @@ void kmain_early(struct multiboot_info *multiboot) {
 	vid.height = multiboot->framebuffer_height;
 	vid.bpp    = multiboot->framebuffer_bpp;
 	vid.size   = vid.pitch * vid.height;
+
+	kprintf("kernel %8x -> %8x\n", 0, &_bss_end);
+	kprintf("init   %8x -> %8x\n", info.init.at, info.init.at + info.init.size);
+	kprintf("video  %8x -> %8x\n", vid.b, vid.b + vid.size);
+	kprintf("limit  %8x\n", info.memtop);
 
 	kprintf("framebuffer at 0x%x, %ux%u bpp %u\n", vid.b, vid.width, vid.height, vid.bpp);
 	video_init(vid);

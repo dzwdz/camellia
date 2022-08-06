@@ -37,4 +37,6 @@ SECTIONS
 		_stack_top = .;
 	}
 	_bss_end = (. + 0xFFF) & ~0xFFF; /* aligned to 4K */
+	pbitmap = _bss_end;
+	pbitmap_start = _bss_end;
 }

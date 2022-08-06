@@ -148,7 +148,7 @@ void process_kill(struct process *p, int ret) {
 			p->execbuf.buf = NULL;
 		}
 
-			pagedir_free(p->pages); // TODO put init's pages in the allocator
+		pagedir_free(p->pages);
 
 		// TODO VULN unbounded recursion
 		struct process *c2;

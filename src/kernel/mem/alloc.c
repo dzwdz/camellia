@@ -17,32 +17,43 @@ struct malloc_hdr {
 
 struct malloc_hdr *malloc_last = NULL;
 
-
-static void *memtop;
-
-static uint8_t *page_bitmap;
-static void *page_bitmap_start;
-static size_t page_bitmap_len;
+extern uint8_t pbitmap[], pbitmap_start[]; /* linker.ld */
+static size_t pbitmap_len;
 
 
-static void *closest_page(void *p) {
-	return (void*)(((uintptr_t)p + PAGE_MASK) & ~PAGE_MASK);
+static bool bitmap_get(size_t i) {
+	size_t b = i / 8;
+	assert(b < pbitmap_len);
+	return 0 < (pbitmap[b] & (1 << (i&7)));
+}
+
+static void bitmap_set(size_t i, bool v) {
+	size_t b = i / 8;
+	uint8_t m = 1 << (i&7);
+	assert(b < pbitmap_len);
+	if (v) pbitmap[b] |=  m;
+	else   pbitmap[b] &= ~m;
+}
+
+static void bitmap_mark(void *start, size_t len) {
+	/* align to the previous page */
+	size_t off = (uintptr_t)start & PAGE_MASK;
+	start -= off;
+	len += off;
+	size_t first = ((uintptr_t)start - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+	for (size_t i = 0; i * PAGE_SIZE < len; i++) {
+		if (first + i >= pbitmap_len) break;
+		bitmap_set(first + i, true);
+	}
 }
 
 void mem_init(struct kmain_info *info) {
-	memtop = info->memtop;
-
-	/* place the page_bitmap right at the first free spot in memory */
-	page_bitmap = max((void*)&_bss_end, closest_page(info->init.at + info->init.size));
-	page_bitmap_len = ((uintptr_t)memtop - (uintptr_t)page_bitmap) / PAGE_SIZE / 8;
-	/* the page_bitmap_len calculation doesn't account for the space lost to itself,
-	 * so just take away a few pages to account for it. this could be solved with
-	 * actual math, but eh. */
-	page_bitmap_len -= 8;
-	memset(page_bitmap, 0, page_bitmap_len);
-
-	/* start allocation on the page immediately following the page bitmap */
-	page_bitmap_start = closest_page(page_bitmap + page_bitmap_len);
+	size_t pageamt = ((uintptr_t)info->memtop - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+	pbitmap_len = pageamt / 8;
+	memset(pbitmap, 0, pbitmap_len);
+	bitmap_mark(pbitmap, pbitmap_len);
+	bitmap_mark(info->init.at, info->init.size);
+	bitmap_mark(info->fb.at,   info->fb.size);
 }
 
 void mem_debugprint(void) {
@@ -59,25 +70,10 @@ void mem_debugprint(void) {
 	kprintf("  total 0x%x\n", total);
 }
 
-static bool bitmap_get(size_t i) {
-	size_t b = i / 8;
-	assert(b < page_bitmap_len);
-	return 0 < (page_bitmap[b] & (1 << (i&7)));
-}
-
-static void bitmap_set(size_t i, bool v) {
-	size_t b = i / 8;
-	uint8_t m = 1 << (i&7);
-	assert(b < page_bitmap_len);
-	if (v) page_bitmap[b] |=  m;
-	else   page_bitmap[b] &= ~m;
-}
-
 void *page_alloc(size_t pages) {
-	// TODO can allocate in the framebuffer
 	/* i do realize how painfully slow this is */
 	size_t streak = 0;
-	for (size_t i = 0; i < page_bitmap_len * 8; i++) {
+	for (size_t i = 0; i < pbitmap_len * 8; i++) {
 		if (bitmap_get(i)) {
 			streak = 0;
 			continue;
@@ -87,7 +83,7 @@ void *page_alloc(size_t pages) {
 			i = i + 1 - streak;
 			for (size_t j = 0; j < streak; j++)
 				bitmap_set(i + j, true);
-			return page_bitmap_start + i * PAGE_SIZE;
+			return pbitmap_start + i * PAGE_SIZE;
 		}
 	}
 	kprintf("we ran out of memory :(\ngoodbye.\n");
@@ -102,10 +98,8 @@ void *page_zalloc(size_t pages) {
 
 // frees `pages` consecutive pages starting from *first
 void page_free(void *first_addr, size_t pages) {
-	// TODO put init's pages into the allocator
-	if (first_addr < page_bitmap_start)
-		return;
-	size_t first = (uintptr_t)(first_addr - page_bitmap_start) / PAGE_SIZE;
+	assert(first_addr >= (void*)pbitmap_start);
+	size_t first = ((uintptr_t)first_addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
 	for (size_t i = 0; i < pages; i++) {
 		assert(bitmap_get(first + i));
 		bitmap_set(first + i, false);

@@ -3,9 +3,13 @@
 
 struct kmain_info {
 	struct {
-		void *at;    // page aligned
+		void *at; /* page aligned */
 		size_t size;
-	} init; // a boot module loaded by GRUB, containing the initrd driver
+	} init; /* a boot module loaded by GRUB, containing the initrd driver */
+	struct {
+		void *at;
+		size_t size;
+	} fb; /* the framebuffer */
 	void *memtop;
 };
 
