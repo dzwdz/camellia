@@ -19,6 +19,7 @@ struct malloc_hdr *malloc_last = NULL;
 
 extern uint8_t pbitmap[], pbitmap_start[]; /* linker.ld */
 static size_t pbitmap_len;
+static size_t pbitmap_searchstart = 0;
 
 
 static bool bitmap_get(size_t i) {
@@ -73,7 +74,7 @@ void mem_debugprint(void) {
 void *page_alloc(size_t pages) {
 	/* i do realize how painfully slow this is */
 	size_t streak = 0;
-	for (size_t i = 0; i < pbitmap_len * 8; i++) {
+	for (size_t i = pbitmap_searchstart; i < pbitmap_len * 8; i++) {
 		if (bitmap_get(i)) {
 			streak = 0;
 			continue;
@@ -83,6 +84,7 @@ void *page_alloc(size_t pages) {
 			i = i + 1 - streak;
 			for (size_t j = 0; j < streak; j++)
 				bitmap_set(i + j, true);
+			pbitmap_searchstart = i + streak - 1;
 			return pbitmap_start + i * PAGE_SIZE;
 		}
 	}
@@ -100,6 +102,8 @@ void *page_zalloc(size_t pages) {
 void page_free(void *first_addr, size_t pages) {
 	assert(first_addr >= (void*)pbitmap_start);
 	size_t first = ((uintptr_t)first_addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+	if (pbitmap_searchstart > first)
+		pbitmap_searchstart = first;
 	for (size_t i = 0; i < pages; i++) {
 		assert(bitmap_get(first + i));
 		bitmap_set(first + i, false);
