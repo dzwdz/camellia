@@ -129,6 +129,13 @@ out/obj/user/%.c.o: src/user/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(USER_CFLAGS) -fPIC -c $^ -o $@
 
+out/obj/user/lib/vendor/%.c.o: src/user/lib/vendor/%.c
+	@mkdir -p $(@D)
+	@$(CC) $(USER_CFLAGS) -fPIC -c $^ -o $@ \
+		-DLACKS_TIME_H -DLACKS_FCNTL_H -DLACKS_SYS_PARAM_H \
+		-DMAP_ANONYMOUS -DHAVE_MORECORE=0 -DNO_MALLOC_H \
+		-Wno-expansion-to-defined -Wno-old-style-definition
+
 out/obj/user/bootstrap/%.c.o: src/user/bootstrap/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(USER_CFLAGS) -c $^ -o $@

@@ -1,7 +1,8 @@
 #pragma once
 #include <stddef.h>
 
-void *malloc(size_t size);
-void free(void *ptr);
+#ifndef NO_MALLOC_H
+#include <user/lib/vendor/dlmalloc/malloc.h>
+#endif
 
 _Noreturn void abort(void);
