@@ -62,9 +62,44 @@ static void run_args(int argc, char **argv, struct redir *redir) {
 		return;
 	}
 
-	if (redir->stdout && !freopen(redir->stdout, redir->append ? "a" : "w", stdout)) {
-		eprintf("couldn't open %s for redirection", redir->stdout);
-		exit(0);
+	if (redir->stdout) {
+		FILE *f = fopen(redir->stdout, redir->append ? "a" : "w");
+		if (!f) {
+			eprintf("couldn't open %s for redirection", redir->stdout);
+			exit(1);
+		}
+
+		/* a workaround for file offsets not being preserved across exec()s.
+		 * TODO document that weird behaviour of exec() */
+
+		handle_t p[2];
+		if (_syscall_pipe(p, 0) < 0) {
+			eprintf("couldn't create redirection pipe", redir->stdout);
+			exit(1);
+		}
+		if (!_syscall_fork(FORK_NOREAP, NULL)) {
+			/* the child forwards data from the pipe to the file */
+			const size_t buflen = 512;
+			char *buf = malloc(buflen);
+			if (!buf) {
+				eprintf("when redirecting: malloc failure");
+				exit(1);
+			}
+			close(p[1]);
+			for (;;) {
+				long len = _syscall_read(p[0], buf, buflen, 0);
+				if (len < 0) exit(0);
+				fwrite(buf, 1, len, f);
+				if (ferror(f)) exit(0);
+			}
+		}
+
+		fclose(f);
+		close(p[0]);
+		if (_syscall_dup(p[1], 1, 0) < 0) {
+			eprintf("dup failure");
+			exit(1);
+		}
 	}
 
 	for (struct builtin *iter = builtins; iter->name; iter++) {
