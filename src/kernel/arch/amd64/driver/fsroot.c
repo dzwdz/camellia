@@ -48,7 +48,7 @@ static int handle(struct vfs_request *req) {
 					// TODO don't hardcode
 					const char src[] =
 						"com1\0"
-						"ps2\0"
+						"ps2/\0"
 						"ata/\0"
 						"video/";
 					return req_readcopy(req, src, sizeof src);

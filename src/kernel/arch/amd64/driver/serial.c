@@ -47,7 +47,7 @@ void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
 	if (blocked_on) {
 		accept(blocked_on);
-		blocked_on = NULL;
+		blocked_on = blocked_on->postqueue_next;
 		vfs_backend_tryaccept(&backend);
 	}
 }
