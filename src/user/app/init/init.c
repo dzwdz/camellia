@@ -29,9 +29,12 @@ int main(void) {
 	freopen("/kdev/com1", "a+", stderr);
 	printf("in init (stage 2), main at 0x%x\n", &main);
 
-	MOUNT_AT("/tmp/") { tmpfs_drv(); }
 	MOUNT_AT("/keyboard") { ps2_drv(); }
 	MOUNT_AT("/bin/") { fs_passthru("/init/bin"); }
+	MOUNT_AT("/tmp/") {
+		const char *argv[] = {"/bin/tmpfs", NULL};
+		execv(argv[0], (void*)argv);
+	}
 	MOUNT_AT("/vtty") {
 		const char *argv[] = {"/bin/vterm", NULL};
 		execv(argv[0], (void*)argv);

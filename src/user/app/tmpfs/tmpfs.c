@@ -54,7 +54,7 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 	return node;
 }
 
-void tmpfs_drv(void) {
+int main(void) {
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
 	struct fs_wait_response res;
@@ -127,6 +127,5 @@ void tmpfs_drv(void) {
 				break;
 		}
 	}
-
-	exit(1);
+	return 1;
 }

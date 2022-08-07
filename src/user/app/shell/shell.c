@@ -37,9 +37,15 @@ void run_args(int argc, char **argv, struct redir *redir) {
 	if (!*argv) return;
 
 	/* "special" commands that can't be handled in a subprocess */
-	if (!strcmp(argv[0], "shadow")) {
-		// TODO process groups
-		_syscall_mount(-1, argv[1], strlen(argv[1]));
+	if (!strcmp(argv[0], "mount")) {
+		if (argc < 3) {
+			eprintf("not enough arguments");
+			return;
+		}
+		MOUNT_AT(argv[1]) {
+			run_args(argc - 2, argv + 2, redir);
+			exit(1);
+		}
 		return;
 	} else if (!strcmp(argv[0], "time")) {
 		uint64_t time = __rdtsc();
