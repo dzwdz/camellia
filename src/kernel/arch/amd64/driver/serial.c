@@ -80,8 +80,8 @@ static void accept(struct vfs_request *req) {
 				while (*slot) slot = &(*slot)->postqueue_next;
 				*slot = req;
 			} else if (req->caller) {
-				if (ret < 0) ret = 0;
 				ret = ring_to_virt((void*)&backlog, req->caller->pages, req->output.buf, req->output.len);
+				// TODO output.len can overflow here
 				vfsreq_finish_short(req, ret);
 			} else {
 				vfsreq_finish_short(req, -1);

@@ -23,13 +23,15 @@ void irq_init(void) {
 	port_out8(PIC1+1, 0x1);
 	port_out8(PIC2+1, 0x1);
 
-	uint8_t mask = 0xff;
+	uint16_t mask = 0xffff;
 	mask &= ~(1 << IRQ_PIT);
-	mask &= ~(1 << IRQ_PS2);
+	mask &= ~(1 << 2); // cascade
+	mask &= ~(1 << IRQ_PS2KB);
 	mask &= ~(1 << IRQ_COM1);
+	mask &= ~(1 << IRQ_PS2MOUSE);
 
-	port_out8(PIC1+1, mask);
-	port_out8(PIC2+1, 0xff);
+	port_out8(PIC1+1, mask & 0xff);
+	port_out8(PIC2+1, (mask >> 8) & 0xff);
 
 	pit_init();
 }

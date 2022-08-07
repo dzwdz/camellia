@@ -34,9 +34,10 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 			irq_eoi(IRQ_PIT);
 			return;
 
-		case IRQ_IBASE + IRQ_PS2:
+		case IRQ_IBASE + IRQ_PS2KB:
+		case IRQ_IBASE + IRQ_PS2MOUSE:
 			ps2_irq();
-			irq_eoi(IRQ_PS2);
+			irq_eoi(interrupt - IRQ_IBASE);
 			return;
 
 		case IRQ_IBASE + IRQ_COM1:
