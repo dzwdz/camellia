@@ -45,3 +45,7 @@ int execv(const char *path, char *const argv[]) {
 	errno = EINVAL;
 	return -1;
 }
+
+_Noreturn void abort(void) {
+	_syscall_exit(1);
+}
