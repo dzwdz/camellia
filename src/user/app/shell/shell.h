@@ -10,3 +10,4 @@ struct redir {
 };
 
 int parse(char *s, char **argv, size_t argvlen, struct redir *redir);
+void run_args(int argc, char **argv, struct redir *redir);

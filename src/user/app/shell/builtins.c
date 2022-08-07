@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/fs/misc.h>
 
 #define DEFAULT_ARGV(...) \
 	char *_argv_default[] = {argv[0], __VA_ARGS__}; \
@@ -155,6 +156,21 @@ static void cmd_touch(int argc, char **argv) {
 	}
 }
 
+static void cmd_whitelist(int argc, char **argv) {
+	int split = 1;
+	for (;;) {
+		if (split >= argc) {
+			eprintf("no command");
+			return;
+		}
+		if (!strcmp("--", argv[split])) break;
+		split++;
+	}
+	argv[split] = NULL;
+	MOUNT_AT("/") { fs_whitelist((void*)&argv[1]); }
+	run_args(argc - split - 1, &argv[split + 1], NULL);
+}
+
 struct builtin builtins[] = {
 	{"cat", cmd_cat},
 	{"echo", cmd_echo},
@@ -163,5 +179,6 @@ struct builtin builtins[] = {
 	{"ls", cmd_ls},
 	{"sleep", cmd_sleep},
 	{"touch", cmd_touch},
+	{"whitelist", cmd_whitelist},
 	{NULL, NULL},
 };

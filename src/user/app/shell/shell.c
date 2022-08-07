@@ -33,18 +33,13 @@ static void execp(char **argv) {
 	free(s);
 }
 
-static void run_args(int argc, char **argv, struct redir *redir) {
+void run_args(int argc, char **argv, struct redir *redir) {
 	if (!*argv) return;
 
 	/* "special" commands that can't be handled in a subprocess */
 	if (!strcmp(argv[0], "shadow")) {
 		// TODO process groups
 		_syscall_mount(-1, argv[1], strlen(argv[1]));
-		return;
-	} else if (!strcmp(argv[0], "whitelist")) {
-		MOUNT_AT("/") {
-			fs_whitelist((void*)&argv[1]);
-		}
 		return;
 	} else if (!strcmp(argv[0], "time")) {
 		uint64_t time = __rdtsc();
@@ -62,7 +57,7 @@ static void run_args(int argc, char **argv, struct redir *redir) {
 		return;
 	}
 
-	if (redir->stdout) {
+	if (redir && redir->stdout) {
 		FILE *f = fopen(redir->stdout, redir->append ? "a" : "w");
 		if (!f) {
 			eprintf("couldn't open %s for redirection", redir->stdout);
