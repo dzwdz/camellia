@@ -2,14 +2,12 @@
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
+#include <kernel/ring.h>
 #include <kernel/panic.h>
-#include <shared/container/ring.h>
-#include <shared/mem.h>
 #include <stdint.h>
 
-#define BACKLOG_CAPACITY 64
-static volatile uint8_t backlog_buf[BACKLOG_CAPACITY];
-static volatile ring_t backlog = {(void*)backlog_buf, BACKLOG_CAPACITY, 0, 0};
+static volatile uint8_t backlog_buf[64];
+static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
 static const int COM1 = 0x3f8;
 
@@ -67,7 +65,6 @@ void serial_write(const char *buf, size_t len) {
 
 
 static void accept(struct vfs_request *req) {
-	static char buf[32];
 	int ret;
 	bool valid;
 	switch (req->type) {
@@ -80,13 +77,11 @@ static void accept(struct vfs_request *req) {
 				/* nothing to read, join queue */
 				assert(!req->postqueue_next);
 				struct vfs_request **slot = &blocked_on;
-				while (*slot)
-					slot = &(*slot)->postqueue_next;
+				while (*slot) slot = &(*slot)->postqueue_next;
 				*slot = req;
 			} else if (req->caller) {
-				ret = clamp(0, req->output.len, sizeof buf);
-				ret = ring_get((void*)&backlog, buf, ret);
-				virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
+				if (ret < 0) ret = 0;
+				ret = ring_to_virt((void*)&backlog, req->caller->pages, req->output.buf, req->output.len);
 				vfsreq_finish_short(req, ret);
 			} else {
 				vfsreq_finish_short(req, -1);

@@ -1,15 +1,12 @@
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/ring.h>
 #include <kernel/vfs/request.h>
-#include <shared/container/ring.h>
-#include <shared/mem.h>
 
-#define BACKLOG_CAPACITY 64
-static volatile uint8_t backlog_buf[BACKLOG_CAPACITY];
-static volatile ring_t backlog = {(void*)backlog_buf, BACKLOG_CAPACITY, 0, 0};
+static volatile uint8_t backlog_buf[64];
+static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
 static void accept(struct vfs_request *req);
 static bool is_ready(struct vfs_backend *self);
@@ -30,7 +27,6 @@ void ps2_irq(void) {
 
 static void accept(struct vfs_request *req) {
 	// when you fix something here go also fix it in the COM1 driver
-	static uint8_t buf[32]; // pretty damn stupid
 	int ret;
 	bool valid;
 	switch (req->type) {
@@ -43,9 +39,8 @@ static void accept(struct vfs_request *req) {
 				// nothing to read
 				blocked_on = req;
 			} else if (req->caller) {
-				ret = clamp(0, req->output.len, sizeof buf);
-				ret = ring_get((void*)&backlog, buf, ret);
-				virt_cpy_to(req->caller->pages, req->output.buf, buf, ret);
+				if (ret < 0) ret = 0;
+				ret = ring_to_virt((void*)&backlog, req->caller->pages, req->output.buf, req->output.len);
 				vfsreq_finish_short(req, ret);
 			} else {
 				vfsreq_finish_short(req, -1);
