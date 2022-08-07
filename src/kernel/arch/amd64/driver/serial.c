@@ -12,10 +12,9 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 static const int COM1 = 0x3f8;
 
 static void accept(struct vfs_request *req);
-static bool is_ready(struct vfs_backend *self);
 
 static struct vfs_request *blocked_on = NULL;
-static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+static struct vfs_backend backend = BACKEND_KERN(accept);
 void serial_init(void) { vfs_mount_root_register("/com1", &backend); }
 
 
@@ -102,8 +101,4 @@ static void accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, -1);
 			break;
 	}
-}
-
-static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
-	return true;
 }

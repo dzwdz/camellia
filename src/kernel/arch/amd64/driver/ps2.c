@@ -16,11 +16,10 @@ static volatile uint8_t mouse_buf[64];
 static volatile ring_t mouse_backlog = {(void*)mouse_buf, sizeof mouse_buf, 0, 0};
 
 static void accept(struct vfs_request *req);
-static bool is_ready(struct vfs_backend *self);
 
 static struct vfs_request *kb_queue = NULL;
 static struct vfs_request *mouse_queue = NULL;
-static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+static struct vfs_backend backend = BACKEND_KERN(accept);
 
 static void wait_out(void) {
 	uint8_t status;
@@ -138,8 +137,4 @@ static void accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, -1);
 			break;
 	}
-}
-
-static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
-	return true;
 }

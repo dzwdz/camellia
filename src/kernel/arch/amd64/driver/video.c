@@ -64,12 +64,7 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static bool is_ready(struct vfs_backend *self) {
-	(void)self;
-	return true;
-}
-
-static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+static struct vfs_backend backend = BACKEND_KERN(accept);
 void video_init(struct fb_info fb_) {
 	fb = fb_;
 	snprintf(namebuf, sizeof namebuf, "%ux%ux%u", fb.width, fb.height, fb.bpp);

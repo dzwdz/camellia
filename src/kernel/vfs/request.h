@@ -25,7 +25,6 @@ struct vfs_backend {
 			struct process *handler;
 		} user;
 		struct {
-			bool (*ready)(struct vfs_backend *);
 			void (*accept)(struct vfs_request *);
 		} kern;
 	};
@@ -77,9 +76,9 @@ void vfs_backend_user_accept(struct vfs_request *req);
 void vfs_backend_refdown(struct vfs_backend *);
 
 
-#define BACKEND_KERN(ready, accept) ((struct vfs_backend){\
+#define BACKEND_KERN(accept) ((struct vfs_backend){\
 	.is_user = false, \
 	.heap = false, \
 	.potential_handlers = 1, \
 	.refcount = 1, \
-	.kern = {ready, accept}})
+	.kern.accept = accept})

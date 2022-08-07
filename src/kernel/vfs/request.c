@@ -86,17 +86,9 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 void vfs_backend_tryaccept(struct vfs_backend *backend) {
 	struct vfs_request *req = backend->queue;
 	if (!req) return;
-
-	/* ensure backend is ready to accept request */
-	if (backend->is_user) {
-		if (!backend->user.handler) return;
-	} else {
-		assert(backend->kern.ready);
-		if (!backend->kern.ready(backend)) return;
-	}
+	if (backend->is_user && !backend->user.handler) return;
 
 	backend->queue = req->queue_next;
-
 	if (backend->is_user) {
 		vfs_backend_user_accept(req);
 	} else {

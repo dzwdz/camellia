@@ -91,9 +91,5 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static bool is_ready(struct vfs_backend __attribute__((unused)) *self) {
-	return true;
-}
-
-static struct vfs_backend backend = BACKEND_KERN(is_ready, accept);
+static struct vfs_backend backend = BACKEND_KERN(accept);
 void vfs_root_init(void) { vfs_mount_root_register("", &backend); }
