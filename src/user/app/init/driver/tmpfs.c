@@ -98,10 +98,16 @@ void tmpfs_drv(void) {
 				}
 
 				fs_normslice(&res.offset, &res.len, ptr->size, true);
-				if (res.offset + res.len >= ptr->capacity) {
-					// TODO expanding files
-					_syscall_fs_respond(NULL, -1, 0);
-					break;
+				if (ptr->capacity <= res.offset + res.len) {
+					size_t newcap = 1;
+					while (newcap && newcap <= res.offset + res.len)
+						newcap *= 2;
+					if (!newcap) { /* overflow */
+						_syscall_fs_respond(NULL, -1, 0);
+						break;
+					}
+					ptr->capacity = newcap;
+					ptr->buf = realloc(ptr->buf, ptr->capacity);
 				}
 
 				memcpy(ptr->buf + res.offset, buf, res.len);
