@@ -29,50 +29,11 @@ void in_char(char c) {
 	while ((cursor.y + 1) * font.h >= fb.height) scroll();
 }
 
-int main();
-
-void fb_setup(void) {
-	#define BASEPATH "/kdev/video/"
-	char path[64], *spec;
-	size_t pos;
-	FILE *f;
-
-	f = fopen(BASEPATH, "r");
-	if (!f) {
-		eprintf("couldn't open %s", BASEPATH);
-		exit(1);
-	}
-
-	pos = strlen(BASEPATH);
-	memcpy(path, BASEPATH, pos);
-	spec = path + pos;
-	fread(spec, 1, sizeof(path) - pos, f);
-	/* assumes the read went correctly */
-	fclose(f);
-
-	fb_fd = _syscall_open(path, strlen(path), 0);
-	if (fb_fd < 0) {
-		eprintf("failed to open %s", path);
-		exit(1);
-	}
-
-	fb.width  = strtol(spec, &spec, 0);
-	if (*spec++ != 'x') { eprintf("bad filename format"); exit(1); }
-	fb.height = strtol(spec, &spec, 0);
-	if (*spec++ != 'x') { eprintf("bad filename format"); exit(1); }
-	fb.bpp = strtol(spec, &spec, 0);
-	fb.len = _syscall_getsize(fb_fd);
-	fb.pitch = fb.len / fb.height;
-	fb.b = malloc(fb.len);
-
-	if (fb.bpp != 32) {
-		eprintf("unsupported format %ux%ux%u", fb.width, fb.height, fb.bpp);
-		exit(1);
-	}
-}
-
 int main(void) {
-	fb_setup();
+	if (fb_setup(&fb, "/kdev/video/") < 0) {
+		eprintf("fb_setup error");
+		return 1;
+	}
 	font_load("/init/font.psf");
 
 	static char buf[512];
@@ -90,7 +51,7 @@ int main(void) {
 				} else {
 					for (size_t i = 0; i < res.len; i++)
 						in_char(buf[i]);
-					flush();
+					dirty_flush(&dirty, &fb);
 					_syscall_fs_respond(NULL, res.len, 0);
 				}
 				break;

@@ -53,7 +53,8 @@ void font_blit(uint32_t glyph, int x, int y) {
 		return;
 	}
 
-	dirty_mark(x, y);
+	dirty_mark(&dirty, x * font.w, y * font.h);
+	dirty_mark(&dirty, (x+1) * font.w - 1, (y+1) * font.h - 1);
 
 	char *bitmap = font_data + font.glyph_size * glyph;
 	for (size_t i = 0; i < font.w; i++) {
