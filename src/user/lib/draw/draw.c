@@ -40,11 +40,43 @@ int fb_setup(struct framebuf *fb, const char *base) {
 	fb->height = strtol(spec, &spec, 0);
 	if (*spec++ != 'x') return -EINVAL;
 	fb->bpp = strtol(spec, &spec, 0);
+	if (fb->bpp != 32) return -EINVAL;
+
 	fb->len = _syscall_getsize(fb->fd);
 	fb->pitch = fb->len / fb->height;
 	fb->b = malloc(fb->len);
 
-	if (fb->bpp != 32) return -EINVAL;
+	_syscall_read(fb->fd, fb->b, fb->len, 0);
 
 	return 0;
+}
+
+int fb_anon(struct framebuf *fb, size_t w, size_t h) {
+	fb->width  = w;
+	fb->height = h;
+	fb->bpp = 32;
+	fb->pitch = fb->width * fb->bpp / 8;
+	fb->len = fb->pitch * fb->height;
+	fb->b = malloc(fb->len);
+	fb->fd = -1;
+	return 0;
+}
+
+uint32_t *fb_pixel(struct framebuf *fb, uint32_t x, uint32_t y) {
+	if (x < fb->width && y < fb->height)
+		return (void*)fb->b + fb->pitch * y + 4 * x;
+	return NULL;
+}
+
+void fb_cpy(
+	struct framebuf *dest, const struct framebuf *src,
+	size_t xd, size_t yd, size_t xs, size_t ys, size_t w, size_t h)
+{
+	for (size_t y = 0; y < h; y++) {
+		memcpy(
+			fb_pixel(      dest, xd, yd + y),
+			fb_pixel((void*)src, xs, ys + y),
+			w * 4
+		);
+	}
 }
