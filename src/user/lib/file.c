@@ -18,7 +18,11 @@ FILE *fopen(const char *path, const char *mode) {
 	FILE *f;
 	handle_t h;
 	int flags = 0;
-	if (path && path[0] == '!') {
+	char *tmppath = NULL;
+	if (!path) {
+		errno = -1;
+		return NULL;
+	} else if (path[0] == '!') {
 		/* special handling for "!files" */
 		path++;
 		if (!strcmp(path, "stdin"))  return file_clone(stdin, mode);
@@ -26,23 +30,32 @@ FILE *fopen(const char *path, const char *mode) {
 		if (!strcmp(path, "stderr")) return file_clone(stderr, mode);
 		errno = -1;
 		return NULL;
-	} else {
-		if (mode[0] == 'w' || mode[0] == 'a')
-			flags |= OPEN_CREATE;
-
-		h = _syscall_open(path, strlen(path), flags);
-		if (h < 0) {
-			errno = -h;
-			return NULL;
-		}
-
-		if (mode[0] == 'w')
-			_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
-
-		f = fdopen(h, mode);
-		if (!f) close(h);
-		return f;
 	}
+
+	if (path && path[0] != '/') {
+		size_t len = absolutepath(NULL, path, 0);
+		tmppath = malloc(len);
+		if (!tmppath) return NULL;
+		absolutepath(tmppath, path, len);
+		path = tmppath;
+	}
+
+	if (mode[0] == 'w' || mode[0] == 'a')
+		flags |= OPEN_CREATE;
+
+	h = _syscall_open(path, strlen(path), flags);
+	if (tmppath) free(tmppath);
+	if (h < 0) {
+		errno = -h;
+		return NULL;
+	}
+
+	if (mode[0] == 'w')
+		_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
+
+	f = fdopen(h, mode);
+	if (!f) close(h);
+	return f;
 }
 
  FILE *freopen(const char *path, const char *mode, FILE *f) {

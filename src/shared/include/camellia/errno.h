@@ -6,3 +6,4 @@
 #define ENOSYS 5 /* Unsupported. */
 #define ERANGE 6
 #define ENOMEM 7
+#define ENOENT 8

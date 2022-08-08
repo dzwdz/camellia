@@ -1,6 +1,8 @@
+#include <camellia/path.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <user/lib/elfload.h>
@@ -48,4 +50,86 @@ int execv(const char *path, char *const argv[]) {
 
 _Noreturn void abort(void) {
 	_syscall_exit(1);
+}
+
+
+static char *cwd = NULL, *cwd2 = NULL;
+static size_t cwdcapacity = 0;
+
+int chdir(const char *path) {
+	handle_t h;
+	char *tmp;
+	size_t len = absolutepath(NULL, path, 0) + 1; /* +1 for the trailing slash */
+	if (cwdcapacity < len) {
+		cwdcapacity = len;
+		if (cwd) {
+			cwd = realloc(cwd, len);
+			cwd2 = realloc(cwd2, len);
+		} else {
+			cwd = malloc(len);
+			cwd[0] = '/';
+			cwd[1] = '\0';
+			cwd2 = malloc(len);
+			cwd2[0] = '/';
+			cwd2[1] = '\0';
+		}
+	}
+	absolutepath(cwd2, path, cwdcapacity);
+	len = strlen(cwd2);
+	if (cwd2[len - 1] != '/') {
+		cwd2[len] = '/';
+		cwd2[len + 1] = '\0';
+	}
+
+	h = _syscall_open(cwd2, strlen(cwd2), 0);
+	if (h < 0) {
+		errno = ENOENT;
+		return -1;
+	}
+	_syscall_close(h);
+
+	tmp  = cwd;
+	cwd  = cwd2;
+	cwd2 = tmp;
+	return 0;
+}
+
+char *getcwd(char *buf, size_t size) {
+	const char *realcwd = cwd ? cwd : "/";
+	// TODO bounds checking
+	memcpy(buf, realcwd, strlen(realcwd) + 1);
+	return buf;
+}
+
+size_t absolutepath(char *out, const char *in, size_t size) {
+	const char *realcwd = cwd ? cwd : "/";
+	size_t len, pos = 0;
+	if (!in) return strlen(realcwd);
+
+	if (!(in[0] == '/')) {
+		len = strlen(realcwd);
+		if (pos + len <= size && out != realcwd)
+			memcpy(out + pos, realcwd, len);
+		pos += len;
+
+		if (realcwd[len - 1] != '/') {
+			if (pos + 1 <= size) out[pos] = '/';
+			pos++;
+		}
+	}
+
+	len = strlen(in);
+	if (pos + len <= size)
+		memcpy(out + pos, in, len);
+	pos += len;
+
+	if (pos <= size) {
+		pos = path_simplify(out, out, pos);
+		if (pos > 0) out[pos] = '\0';
+	}
+
+	if (pos + 1 <= size) out[pos] = '\0';
+	pos++;
+
+	return pos;
 }

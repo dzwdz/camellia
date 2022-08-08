@@ -107,7 +107,7 @@ static void cmd_ls(int argc, char **argv) {
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
 
-	DEFAULT_ARGV("/");
+	DEFAULT_ARGV(".");
 	for (int i = 1; i < argc; i++) {
 		char *path = (void*)argv[i];
 		int pathlen = strlen(path);

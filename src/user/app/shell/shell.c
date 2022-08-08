@@ -47,6 +47,11 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			exit(1);
 		}
 		return;
+	} else if (!strcmp(argv[0], "cd")) {
+		if (chdir(argc > 1 ? argv[1] : "/") < 0)
+			eprintf("error");
+		// TODO strerror
+		return;
 	} else if (!strcmp(argv[0], "time")) {
 		uint64_t time = __rdtsc();
 		uint64_t div = 3000;
@@ -148,7 +153,7 @@ int main(int argc, char **argv) {
 
 	for (;;) {
 		if (f == stdin)
-			printf("$ ");
+			printf("%s $ ", getcwd(buf, sizeof buf));
 		if (!fgets(buf, 256, f))
 			return 0;
 		run(buf);
