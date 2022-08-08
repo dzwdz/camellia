@@ -135,6 +135,71 @@ void fs_whitelist(const char **list) {
 	exit(0);
 }
 
+void fs_union(const char **list) {
+	struct fs_wait_response res;
+
+	/* the buffer is split into two halves:
+	 *  the second one is filled out with the path by fs_wait
+	 *  the first one is used for the prepended paths */
+	const size_t buflen = 1024;
+	const size_t prelen = 512;
+	const size_t postlen = buflen - prelen;
+	char *pre = malloc(buflen);
+	char *post = pre + prelen;
+	long ret;
+	struct dirbuild db;
+	if (!pre) exit(1);
+
+	while (!_syscall_fs_wait(post, postlen, &res)) {
+		switch (res.op) {
+			case VFSOP_OPEN:
+				if (res.len == 1) { /* root directory */
+					_syscall_fs_respond(NULL, 0, 0);
+					break;
+				}
+
+				ret = -1;
+				for (size_t i = 0; ret < 0 && list[i]; i++) {
+					const char *prefix = list[i];
+					size_t prefixlen = strlen(prefix); // TODO cache
+					if (prefixlen > prelen) continue;
+					char *path = post - prefixlen;
+					memcpy(path, prefix, prefixlen);
+
+					ret = _syscall_open(path, prefixlen + res.len, res.flags);
+
+					post[res.len] = '\0';
+				}
+				if (ret < 0) ret = -1;
+				_syscall_fs_respond(NULL, ret, FSR_DELEGATE);
+				break;
+
+		case VFSOP_READ:
+			if (res.capacity > buflen)
+				res.capacity = buflen;
+			bool end = false;
+			dir_start(&db, res.offset, pre, res.capacity);
+			for (size_t i = 0; !end && list[i]; i++) {
+				const char *prefix = list[i];
+				size_t prefixlen = strlen(prefix);
+				// TODO only open the directories once
+				// TODO ensure trailing slash
+				handle_t h = _syscall_open(prefix, prefixlen, 0);
+				if (h < 0) continue;
+				end = end || dir_append_from(&db, h);
+				_syscall_close(h);
+			}
+			_syscall_fs_respond(pre, dir_finish(&db), 0);
+			break;
+
+			default:
+				_syscall_fs_respond(NULL, -1, 0);
+				break;
+		}
+	}
+	exit(0);
+}
+
 
 void fs_dir_inject(const char *path) {
 	struct fs_dir_handle {

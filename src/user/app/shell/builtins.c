@@ -125,7 +125,7 @@ static void cmd_ls(int argc, char **argv) {
 			return;
 		}
 		for (;;) {
-			int len = fread(buf, 1, sizeof buf, file);
+			int len = fread(buf, 1, buflen, file);
 			if (len <= 0) break;
 			for (int i = 0; i < len; i++)
 				if (buf[i] == '\0') buf[i] = '\n';

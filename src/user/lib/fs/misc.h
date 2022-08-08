@@ -8,6 +8,7 @@ bool fork2_n_mount(const char *path);
 
 void fs_passthru(const char *prefix);
 void fs_whitelist(const char **list);
+void fs_union(const char **list);
 
 void fs_dir_inject(const char *path);
 

@@ -39,6 +39,10 @@ int main(void) {
 		const char *argv[] = {"/bin/vterm", NULL};
 		execv(argv[0], (void*)argv);
 	}
+	MOUNT_AT("/union/") {
+		const char *list[] = {"/tmp/", "/init/", NULL};
+		fs_union(list);
+	}
 
 	if (fork()) {
 		/* used to trigger a kernel bug
