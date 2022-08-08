@@ -1,6 +1,6 @@
-#include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/boot.h>
 #include <kernel/arch/amd64/driver/fsroot.h>
+#include <kernel/arch/amd64/driver/pata.h>
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/driver/serial.h>
 #include <kernel/arch/amd64/driver/video.h>
@@ -47,7 +47,7 @@ void kmain_early(struct multiboot_info *multiboot) {
 	serial_init();
 
 	kprintf("ata...\n");
-	ata_init();
+	pata_init();
 
 	vid.b      = (void*)multiboot->framebuffer_addr;
 	vid.pitch  = multiboot->framebuffer_pitch;

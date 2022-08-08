@@ -125,7 +125,8 @@ bool ata_available(int drive) {
 }
 
 int ata_read(int drive, uint32_t lba, void *buf) {
-	assert(ata_drives[drive].type == DEV_PATA);
+	if (ata_drives[drive].type != DEV_PATA)
+		panic_unimplemented();
 	int iobase = ata_iobase(drive);
 
 	ata_driveselect(drive, lba);
