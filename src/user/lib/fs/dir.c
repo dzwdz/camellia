@@ -33,9 +33,11 @@ bool dir_appendl(struct dirbuild *db, const char *name, size_t len) {
 		len  -= db->offset;
 		db->offset = 0;
 
-		// TODO no buffer overrun check
-		memcpy(db->buf + db->bpos, name, len - 1);
-		db->buf[db->bpos + len - 1] = '\0';
+		if (db->buf) {
+			// TODO no buffer overrun check
+			memcpy(db->buf + db->bpos, name, len - 1);
+			db->buf[db->bpos + len - 1] = '\0';
+		}
 		db->bpos += len;
 	} else {
 		db->offset -= len;
@@ -45,26 +47,35 @@ bool dir_appendl(struct dirbuild *db, const char *name, size_t len) {
 
 bool dir_append_from(struct dirbuild *db, handle_t h) {
 	if (db->error) return true;
+	if (db->buf && db->bpos == db->blen) return false;
 
-	if (db->bpos == db->blen)
-		return false;
+	int ret;
+	if (db->buf) {
+		ret = _syscall_read(h, db->buf + db->bpos, db->blen - db->bpos, db->offset);
+		if (ret < 0) {
+			db->error = ret;
+			return true;
+		} else if (ret > 0) {
+			/* not eof */
+			db->offset = 0;
+			db->bpos += ret;
+			return false;
+		} /* else ret == 0, EOF, need getsize */
+	}
 
-	int ret = _syscall_read(h, db->buf + db->bpos, db->blen - db->bpos, db->offset);
+	ret = _syscall_getsize(h);
 	if (ret < 0) {
 		db->error = ret;
 		return true;
 	}
-	if (ret == 0) {
-		// TODO no idea how much we've overread
-		// this messes up reading bind mounts of multiple directories
-		db->error = -ENOSYS;
-		return true;
+	if (db->offset < ret) {
+		/* should only occur when !buf, otherwise leaks previous data from buf.
+		 * TODO consider impact */
+		db->bpos += ret - db->offset;
+		db->offset = 0;
+	} else {
+		db->offset -= ret;
 	}
-
-	// TODO deduplicate entries
-
-	db->offset = 0;
-	db->bpos += ret;
 	return false;
 }
 

@@ -77,7 +77,6 @@ int main(void) {
 				} else {
 					fs_normslice(&res.offset, &res.len, ptr->size, false);
 					_syscall_fs_respond(ptr->buf + res.offset, res.len, 0);
-					break;
 				}
 				break;
 
@@ -119,7 +118,15 @@ int main(void) {
 
 			case VFSOP_GETSIZE:
 				ptr = (void*)res.id;
-				_syscall_fs_respond(NULL, ptr->size, 0);
+				if (ptr == &special_root) {
+					struct dirbuild db;
+					dir_start(&db, res.offset, NULL, buflen);
+					for (struct node *iter = root; iter; iter = iter->next)
+						dir_append(&db, iter->name);
+					_syscall_fs_respond(NULL, dir_finish(&db), 0);
+				} else {
+					_syscall_fs_respond(NULL, ptr->size, 0);
+				}
 				break;
 
 			default:

@@ -74,9 +74,11 @@ void fs_whitelist(const char **list) {
 	char *buf = malloc(buf_len);
 	char *ipath;
 	bool passthru, inject;
+	struct dirbuild db;
 	if (!buf) exit(1);
 
 	while (!_syscall_fs_wait(buf, buf_len, &res)) {
+		size_t blen;
 		ipath = res.id;
 		switch (res.op) {
 			case VFSOP_OPEN:
@@ -110,16 +112,17 @@ void fs_whitelist(const char **list) {
 				break;
 
 			case VFSOP_READ:
-				struct dirbuild db;
-				dir_start(&db, res.offset, buf, buf_len);
-				size_t blen = strlen(ipath);
+			case VFSOP_GETSIZE:
+				blen = strlen(ipath);
+				char *target = res.op == VFSOP_READ ? buf : NULL;
+				dir_start(&db, res.offset, target, buf_len);
 				for (const char **iter = list; *iter; iter++) {
 					// TODO could be precomputed too
 					size_t len = strlen(*iter); // inefficient, whatever
 					if (blen < len && !memcmp(ipath, *iter, blen))
 						dir_appendl(&db, *iter + blen, dir_seglen(*iter + blen));
 				}
-				_syscall_fs_respond(buf, dir_finish(&db), 0);
+				_syscall_fs_respond(target, dir_finish(&db), 0);
 				break;
 
 			case VFSOP_CLOSE:
@@ -175,10 +178,12 @@ void fs_union(const char **list) {
 				break;
 
 		case VFSOP_READ:
+		case VFSOP_GETSIZE:
 			if (res.capacity > buflen)
 				res.capacity = buflen;
 			bool end = false;
-			dir_start(&db, res.offset, pre, res.capacity);
+			char *target = res.op == VFSOP_READ ? pre : NULL;
+			dir_start(&db, res.offset, target, res.capacity);
 			for (size_t i = 0; !end && list[i]; i++) {
 				const char *prefix = list[i];
 				size_t prefixlen = strlen(prefix);
@@ -189,7 +194,7 @@ void fs_union(const char **list) {
 				end = end || dir_append_from(&db, h);
 				_syscall_close(h);
 			}
-			_syscall_fs_respond(pre, dir_finish(&db), 0);
+			_syscall_fs_respond(target, dir_finish(&db), 0);
 			break;
 
 			default:
@@ -242,13 +247,15 @@ void fs_dir_inject(const char *path) {
 				break;
 
 			case VFSOP_READ:
+			case VFSOP_GETSIZE:
 				if (res.capacity > buf_len)
 					res.capacity = buf_len;
-				dir_start(&db, res.offset, buf, res.capacity);
+				char *target = res.op == VFSOP_READ ? buf : NULL;
+				dir_start(&db, res.offset, target, res.capacity);
 				dir_appendl(&db, data->inject, data->inject_len);
 				if (data->delegate >= 0)
 					dir_append_from(&db, data->delegate);
-				_syscall_fs_respond(buf, dir_finish(&db), 0);
+				_syscall_fs_respond(target, dir_finish(&db), 0);
 				break;
 
 			default:

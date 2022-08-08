@@ -77,6 +77,7 @@ static int handle(struct vfs_request *req) {
 			}
 
 		case VFSOP_CLOSE: return 0;
+		// TODO getsize for kernel provided directories
 		case VFSOP_GETSIZE: return -ENOSYS;
 
 		default: panic_invalid_state();

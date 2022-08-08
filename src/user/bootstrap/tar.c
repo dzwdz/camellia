@@ -11,6 +11,8 @@
 #define BUF_SIZE 64
 
 static void *tar_open(const char *path, int len, void *base, size_t base_len);
+static char tar_type(void *meta);
+static void tar_dirbuild(struct dirbuild *db, const char *meta, void *base, size_t base_len);
 static void tar_read(struct fs_wait_response *res, void *base, size_t base_len);
 static int tar_size(void *sector);
 static int oct_parse(char *str, size_t len);
@@ -35,8 +37,14 @@ void tar_driver(void *base) {
 				break;
 
 			case VFSOP_GETSIZE:
-				// TODO works weirdly on directories / the root dir
-				_syscall_fs_respond(NULL, tar_size(res.id), 0);
+				if (tar_type(res.id) != '5') {
+					_syscall_fs_respond(NULL, tar_size(res.id), 0);
+				} else {
+					struct dirbuild db;
+					dir_start(&db, res.offset, NULL, 0);
+					tar_dirbuild(&db, res.id, base, ~0);
+					_syscall_fs_respond(NULL, dir_finish(&db), 0);
+				}
 				break;
 
 			default:
@@ -45,6 +53,11 @@ void tar_driver(void *base) {
 		}
 	}
 	exit(0);
+}
+
+static char tar_type(void *meta) {
+	if (meta == root_fakemeta) return '5';
+	return *(char*)(meta + 156);
 }
 
 static void *tar_open(const char *path, int len, void *base, size_t base_len) {
@@ -61,51 +74,46 @@ static void *tar_open(const char *path, int len, void *base, size_t base_len) {
 	return tar_find(path, len, base, base_len);
 }
 
+static void tar_dirbuild(struct dirbuild *db, const char *meta, void *base, size_t base_len) {
+	size_t meta_len = strlen(meta);
+	for (size_t off = 0; off < base_len;) {
+		if (0 != memcmp(base + off + 257, "ustar", 5))
+			break; // not a metadata sector
+
+		/* check if prefix matches */
+		if (0 == memcmp(base + off, meta, meta_len)
+			&& *(char*)(base + off + meta_len) != '\0') {
+			char *suffix = base + off + meta_len;
+
+			/* check if the path contains any non-trailing slashes */
+			char *slash = strchr(suffix, '/');
+			if (!slash || slash[1] == '\0') {
+				if (dir_append(db, suffix)) break;
+			}
+		}
+
+		int size = tar_size(base + off);
+		off += 512;                 // skip this metadata sector
+		off += (size + 511) & ~511; // skip the data sectors
+	}
+}
+
 static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
 	void *meta =  (void*)res->id;
-	char  type = *(char*)(meta + 156);
-	size_t meta_len;
-	int size;
-
 	static char buf[BUF_SIZE];
 	// TODO reuse a single buffer for both tar_driver and tar_read
 
-	if (meta == root_fakemeta) type = '5'; /* see comment in tar_open() */
-
-	switch (type) {
+	switch (tar_type(meta)) {
 		case '\0':
 		case '0': /* normal files */
-			size = tar_size(meta);
-			fs_normslice(&res->offset, &res->len, size, false);
+			fs_normslice(&res->offset, &res->len, tar_size(meta), false);
 			_syscall_fs_respond(meta + 512 + res->offset, res->len, 0);
 			break;
 
 		case '5': /* directory */
 			struct dirbuild db;
 			dir_start(&db, res->offset, buf, sizeof buf);
-
-			meta_len = strlen(meta);
-			for (size_t off = 0; off < base_len;) {
-				if (0 != memcmp(base + off + 257, "ustar", 5))
-					break; // not a metadata sector
-
-				/* check if prefix matches */
-				if (0 == memcmp(base + off, meta, meta_len)
-					&& *(char*)(base + off + meta_len) != '\0') {
-					char *suffix = base + off + meta_len;
-
-					/* check if the path contains any non-trailing slashes */
-					char *slash = strchr(suffix, '/');
-					if (!slash || slash[1] == '\0') {
-						if (dir_append(&db, suffix)) break;
-					}
-				}
-
-				size = tar_size(base + off);
-				off += 512;                 // skip this metadata sector
-				off += (size + 511) & ~511; // skip the data sectors
-			}
-
+			tar_dirbuild(&db, meta, base, base_len);
 			_syscall_fs_respond(buf, dir_finish(&db), 0);
 			break;
 
