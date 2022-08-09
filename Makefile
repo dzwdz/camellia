@@ -75,7 +75,7 @@ out/bootstrap: src/user/bootstrap/linker.ld \
                $(call from_sources, src/user/lib/) \
                $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -T $^ -o $@
+	@$(CC) $(LFLAGS) -Wl,-Map=% -T $^ -o $@
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
