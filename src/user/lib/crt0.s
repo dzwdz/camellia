@@ -8,7 +8,10 @@ _start:
 	call elf_selfreloc
 
 	mov %rbp, %rsp
-	/* pushed by _freejmp */
+
+	pop %rdi
+	call __setinitialcwd
+
 	pop %rdi
 	pop %rsi
 	pop %rdx

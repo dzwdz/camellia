@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <user/lib/elf.h>
 #include <user/lib/elfload.h>
 
@@ -68,36 +69,47 @@ static size_t elf_spread(const void *elf) {
  * also sets up main's stack */
 void _freejmp_chstack(void *entry, void *low, size_t len, char **argv, char **envp, void *stack); // elfload.s
 _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
-void _freejmp(void *entry, void *low, size_t len, char **argv, char **envp) {
-	void *stack = (void*)~0;
-	size_t *stack_w;
+void _freejmp(void *entry, void *low, size_t imglen, char **argv, char **envp) {
+	size_t len;
+	union {void *b; void **ptr; uintptr_t *n;} stack;
+	stack.b = (void*)~0; /* default stack location */
+	void *cwd;
+
+	/* push cwd */
+	len = absolutepath(NULL, NULL, 0);
+	stack.b -= len;
+	cwd = stack.b;
+	getcwd(cwd, len);
+
+	/* push argv */
 	int argc = 0;
 	if (argv) {
-		size_t len;
 		for (int i = 0; argv[i]; i++) {
-			len = strlen(argv[i]) + 1; // including the null byte
-			stack -= len;
-			memcpy(stack, argv[i], len);
-			argv[i] = stack;
+			len = strlen(argv[i]) + 1;
+			stack.b -= len;
+			memcpy(stack.b, argv[i], len);
+			argv[i] = stack.b;
 			argc++;
 		}
 		len = sizeof(char*) * argc;
-		stack -= len;
-		memcpy(stack, argv, len);
-		argv = stack;
+		stack.b -= len;
+		memcpy(stack.b, argv, len);
+		argv = stack.b;
 	}
-	stack_w = stack;
-	*--stack_w = (uintptr_t)envp;
-	*--stack_w = (uintptr_t)argv;
-	*--stack_w = argc;
 
-	uintptr_t high = (uintptr_t)low + len;
+	*--(stack.ptr) = envp;
+	*--(stack.ptr) = argv;
+	*--(stack.n)   = argc;
+
+	*--(stack.ptr) = cwd;
+
+	uintptr_t high = (uintptr_t)low + imglen;
 	uint64_t buf[] = {
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0, 0,
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
-	execbuf_chstack(stack_w, buf, sizeof buf);
+	execbuf_chstack(stack.b, buf, sizeof buf);
 }
 
 static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {

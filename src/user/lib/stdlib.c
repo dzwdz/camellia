@@ -53,8 +53,18 @@ _Noreturn void abort(void) {
 }
 
 
+static const char *__initialcwd;
 static char *cwd = NULL, *cwd2 = NULL;
 static size_t cwdcapacity = 0;
+
+static const char *getrealcwd(void) {
+	/* __initialcwd can't just be initialized with "/" because ld has seemingly
+	 * started to revolt against humanity and not process half the relocations
+	 * it sees. */
+	if (cwd) return cwd;
+	if (__initialcwd) return __initialcwd;
+	return "/";
+}
 
 int chdir(const char *path) {
 	handle_t h;
@@ -66,12 +76,12 @@ int chdir(const char *path) {
 			cwd = realloc(cwd, len);
 			cwd2 = realloc(cwd2, len);
 		} else {
-			cwd = malloc(len);
-			cwd[0] = '/';
-			cwd[1] = '\0';
-			cwd2 = malloc(len);
-			cwd2[0] = '/';
-			cwd2[1] = '\0';
+			size_t initlen = strlen(__initialcwd) + 1;
+			if (len < initlen)
+				len = initlen;
+			cwd = malloc(initlen);
+			cwd2 = malloc(initlen);
+			memcpy(cwd, __initialcwd, initlen);
 		}
 	}
 	absolutepath(cwd2, path, cwdcapacity);
@@ -95,16 +105,17 @@ int chdir(const char *path) {
 }
 
 char *getcwd(char *buf, size_t size) {
-	const char *realcwd = cwd ? cwd : "/";
+	const char *realcwd = getrealcwd();
 	// TODO bounds checking
 	memcpy(buf, realcwd, strlen(realcwd) + 1);
 	return buf;
 }
 
 size_t absolutepath(char *out, const char *in, size_t size) {
-	const char *realcwd = cwd ? cwd : "/";
+	const char *realcwd = getrealcwd();
 	size_t len, pos = 0;
-	if (!in) return strlen(realcwd);
+	_klogf("realcwd == %x\n", (long)__initialcwd);
+	if (!in) return strlen(realcwd) + 1;
 
 	if (!(in[0] == '/')) {
 		len = strlen(realcwd);
@@ -132,4 +143,8 @@ size_t absolutepath(char *out, const char *in, size_t size) {
 	pos++;
 
 	return pos;
+}
+
+void __setinitialcwd(const char *s) {
+	__initialcwd = s;
 }
