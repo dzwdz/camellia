@@ -25,7 +25,7 @@ static int handle(struct vfs_request *req) {
 
 		// TODO getsize for the other kernel provided directories
 		case VFSOP_GETSIZE: return sizeof dir;
-		default: return 0;
+		default: return -ENOSYS;
 	}
 }
 

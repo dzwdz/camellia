@@ -42,6 +42,10 @@ long _syscall_getsize(handle_t h) {
 	return _syscall(_SYSCALL_GETSIZE, (long)h, 0, 0, 0, 0);
 }
 
+long _syscall_remove(handle_t h) {
+	return _syscall(_SYSCALL_REMOVE, (long)h, 0, 0, 0, 0);
+}
+
 long _syscall_close(handle_t h) {
 	return _syscall(_SYSCALL_CLOSE, (long)h, 0, 0, 0, 0);
 }

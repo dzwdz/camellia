@@ -1,5 +1,6 @@
 #include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,12 +12,16 @@ struct node {
 	const char *name;
 	bool directory;
 	size_t namelen;
-	struct node *sibling, *child;
 	char *buf;
 	size_t size, capacity;
+	size_t open; /* amount of open handles */
+
+	struct node *sibling, *child;
+	/* each node except special_root has exacly one sibling or child reference to it
+	 * on remove(), it gets replaced with *sibling. */
+	struct node **ref;
 };
 
-struct node *root = NULL;
 static struct node special_root = {
 	.directory = true,
 	.size = 0,
@@ -57,15 +62,39 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 				node->name = namebuf;
 				node->directory = slash;
 				node->namelen = seglen;
-				node->sibling = parent->child;
-				parent->child = node;
+
+				if (parent->child) {
+					parent->child->ref = &node->sibling;
+					*parent->child->ref = parent->child;
+				}
+				node->ref = &parent->child;
+				*node->ref = node;
 			} else {
 				return NULL;
 			}
 		}
 		segpos += seglen;
 	}
+	node->open++;
 	return node;
+}
+
+static void handle_down(struct node *node) {
+	node->open--;
+	if (!node->ref && node != &special_root && node->open == 0) {
+		free(node->buf);
+		free(node);
+	}
+}
+
+static long remove_node(struct node *node) {
+	if (node == &special_root) return -1;
+	if (!node->ref) return -1;
+	if (node->child) return -ENOTEMPTY;
+	*node->ref = node->sibling;
+	node->ref = NULL;
+	handle_down(node);
+	return 0;
 }
 
 int main(void) {
@@ -142,6 +171,17 @@ int main(void) {
 				} else {
 					_syscall_fs_respond(NULL, ptr->size, 0);
 				}
+				break;
+
+			case VFSOP_REMOVE:
+				ptr = (void*)res.id;
+				_syscall_fs_respond(NULL, remove_node(ptr), 0);
+				break;
+
+			case VFSOP_CLOSE:
+				ptr = (void*)res.id;
+				handle_down(ptr);
+				_syscall_fs_respond(NULL, -1, 0);
 				break;
 
 			default:

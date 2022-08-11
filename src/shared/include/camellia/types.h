@@ -17,5 +17,6 @@ enum vfs_operation {
 	VFSOP_READ,
 	VFSOP_WRITE,
 	VFSOP_GETSIZE,
+	VFSOP_REMOVE,
 	VFSOP_CLOSE,
 };

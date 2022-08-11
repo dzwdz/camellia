@@ -7,3 +7,4 @@
 #define ERANGE 6
 #define ENOMEM 7
 #define ENOENT 8
+#define ENOTEMPTY 9

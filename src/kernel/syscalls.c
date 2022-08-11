@@ -266,7 +266,7 @@ long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, lon
 long _syscall_getsize(handle_t hid) {
 	struct handle *h = process_handle_get(process_current, hid);
 	if (!h) SYSCALL_RETURN(-1);
-	if (h->type != HANDLE_FILE) SYSCALL_RETURN(-2);
+	if (h->type != HANDLE_FILE) SYSCALL_RETURN(-ENOSYS);
 	vfsreq_create((struct vfs_request) {
 			.type = VFSOP_GETSIZE,
 			.id = h->file_id,
@@ -274,6 +274,28 @@ long _syscall_getsize(handle_t hid) {
 			.backend = h->backend,
 		});
 	return -1; // dummy
+}
+
+long _syscall_remove(handle_t hid) {
+	if (hid < 0 || hid >= HANDLE_MAX) return -1;
+	struct handle **hslot = &process_current->handles[hid];
+	struct handle *h = *hslot;
+	if (!h) SYSCALL_RETURN(-1);
+	if (h->type == HANDLE_FILE) {
+		vfsreq_create((struct vfs_request) {
+				.type = VFSOP_REMOVE,
+				.id = h->file_id,
+				.caller = process_current,
+				.backend = h->backend,
+			});
+		handle_close(*hslot);
+		*hslot = NULL;
+		return -1; // dummy
+	} else {
+		handle_close(*hslot);
+		*hslot = NULL;
+		SYSCALL_RETURN(-ENOSYS);
+	}
 }
 
 long _syscall_close(handle_t hid) {
@@ -440,6 +462,9 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 			break;
 		case _SYSCALL_GETSIZE:
 			_syscall_getsize(a);
+			break;
+		case _SYSCALL_REMOVE:
+			_syscall_remove(a);
 			break;
 		case _SYSCALL_CLOSE:
 			_syscall_close(a);
