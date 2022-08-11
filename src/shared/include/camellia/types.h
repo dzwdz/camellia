@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __CHECKER__
@@ -19,4 +20,13 @@ enum vfs_operation {
 	VFSOP_GETSIZE,
 	VFSOP_REMOVE,
 	VFSOP_CLOSE,
+};
+
+struct fs_wait_response {
+	enum vfs_operation op;
+	size_t len; // how much was put in *buf
+	size_t capacity; // how much output can be accepted by the caller
+	void __user *id;  // file id (returned by the open handler, passed to other calls)
+	long offset;
+	int flags;
 };

@@ -2,12 +2,6 @@
 #include <camellia/types.h>
 #include <stddef.h>
 
-#define FORK_NOREAP 1
-#define FORK_NEWFS 2
-#define WRITE_TRUNCATE 1
-#define OPEN_CREATE 1
-#define FSR_DELEGATE 1
-
 enum {
 	// idc about stable syscall numbers just yet
 	_SYSCALL_EXIT,
@@ -24,7 +18,6 @@ enum {
 	_SYSCALL_REMOVE,
 	_SYSCALL_CLOSE,
 
-	_SYSCALL_FS_FORK2,
 	_SYSCALL_FS_WAIT,
 	_SYSCALL_FS_RESPOND,
 
@@ -69,14 +62,6 @@ long _syscall_getsize(handle_t h);
 long _syscall_remove(handle_t h);
 long _syscall_close(handle_t h);
 
-struct fs_wait_response {
-	enum vfs_operation op;
-	size_t len; // how much was put in *buf
-	size_t capacity; // how much output can be accepted by the caller
-	void __user *id;  // file id (returned by the open handler, passed to other calls)
-	long offset;
-	int flags;
-};
 /** Blocks until an fs request is made.
  * @return 0 if everything was successful */
 long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res);

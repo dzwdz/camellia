@@ -1,5 +1,6 @@
 #include "builtins.h"
 #include "shell.h"
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdbool.h>

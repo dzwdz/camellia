@@ -1,5 +1,6 @@
 #include "../tests.h"
 #include <camellia/errno.h>
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <string.h>
 

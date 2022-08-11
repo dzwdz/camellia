@@ -1,4 +1,5 @@
 #include "../tests.h"
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 
 static void test_unfinished_req(void) {

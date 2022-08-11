@@ -1,3 +1,4 @@
+#include <camellia/flags.h>
 #include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
