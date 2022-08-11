@@ -87,6 +87,10 @@ void fs_whitelist(const char **list) {
 
 				for (const char **iter = list; *iter; iter++) {
 					size_t len = strlen(*iter);
+					if (len >= 3 && !memcmp(*iter + len - 3, ":ro", 3)) {
+						res.flags = res.flags | OPEN_RO;
+						len -= 3;
+					}
 					if (len <= res.len && !memcmp(buf, *iter, len)) {
 						passthru = true;
 						break;

@@ -88,6 +88,8 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
+	if (flags & ~(OPEN_CREATE | OPEN_RO)) SYSCALL_RETURN(-ENOSYS);
+
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
 	if (process_find_free_handle(process_current, 0) < 0)
@@ -210,6 +212,8 @@ static long simple_vfsop(
 	struct handle *h = process_handle_get(process_current, hid);
 	if (!h) SYSCALL_RETURN(-1);
 	if (h->type == HANDLE_FILE) {
+		if (h->ro && !(vfsop == VFSOP_READ || vfsop == VFSOP_GETSIZE))
+			SYSCALL_RETURN(-EACCES);
 		struct vfs_request req = (struct vfs_request){
 			.type = vfsop,
 			.backend = h->backend,
@@ -257,6 +261,7 @@ long _syscall_remove(handle_t hid) {
 	struct handle **hslot = &process_current->handles[hid];
 	struct handle *h = *hslot;
 	if (!h) SYSCALL_RETURN(-1);
+	if (h->ro) SYSCALL_RETURN(-EACCES);
 	if (h->type == HANDLE_FILE) {
 		vfsreq_create((struct vfs_request) {
 				.type = VFSOP_REMOVE,

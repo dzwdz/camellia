@@ -8,3 +8,4 @@
 #define ENOMEM 7
 #define ENOENT 8
 #define ENOTEMPTY 9
+#define EACCES 10

@@ -17,6 +17,7 @@ struct handle {
 	enum handle_type type;
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	void __user *file_id; // only applicable to HANDLE_FILE
+	bool ro; /* currently only for HANDLE_FILE */
 	struct {
 		struct process *queued;
 		bool write_end;

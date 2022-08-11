@@ -1,5 +1,5 @@
 #include <camellia/errno.h>
-#include <kernel/arch/amd64/driver/fsroot.h>
+#include <camellia/flags.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
@@ -19,9 +19,10 @@ void vfsreq_create(struct vfs_request req_) {
 		req = kmalloc(sizeof *req);
 	}
 	memcpy(req, &req_, sizeof *req);
+	if (req->backend) req->backend->refcount++;
 
-	if (req->backend)
-		req->backend->refcount++;
+	if (req->type == VFSOP_OPEN && (req->flags & OPEN_RO))
+		req->flags &= ~OPEN_CREATE;
 
 	if (req->backend && req->backend->potential_handlers) {
 		struct vfs_request **iter = &req->backend->queue;
@@ -51,6 +52,7 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 			backing->backend = req->backend;
 			req->backend->refcount++;
 			backing->file_id = stored;
+			backing->ro = req->flags & OPEN_RO;
 			req->caller->handles[handle] = backing;
 		} else {
 			/* delegating - moving a handle to the caller */

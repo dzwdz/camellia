@@ -9,5 +9,6 @@
 #define WRITE_TRUNCATE 1
 
 #define OPEN_CREATE 1
+#define OPEN_RO 2
 
 #define FSR_DELEGATE 1
