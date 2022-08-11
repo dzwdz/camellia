@@ -436,65 +436,29 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 	/* note: this isn't the only place where syscalls get called from!
 	 *       see execbuf */
 	switch (num) {
-		case _SYSCALL_EXIT:
-			_syscall_exit(a);
-			// _syscall_exit doesn't return
-		case _SYSCALL_AWAIT:
-			_syscall_await();
-			break;
-		case _SYSCALL_FORK:
-			_syscall_fork(a, (userptr_t)b);
-			break;
-		case _SYSCALL_OPEN:
-			_syscall_open((userptr_t)a, b, c);
-			break;
-		case _SYSCALL_MOUNT:
-			_syscall_mount(a, (userptr_t)b, c);
-			break;
-		case _SYSCALL_DUP:
-			_syscall_dup(a, b, c);
-			break;
-		case _SYSCALL_READ:
-			_syscall_read(a, (userptr_t)b, c, d);
-			break;
-		case _SYSCALL_WRITE:
-			_syscall_write(a, (userptr_t)b, c, d, e);
-			break;
-		case _SYSCALL_GETSIZE:
-			_syscall_getsize(a);
-			break;
-		case _SYSCALL_REMOVE:
-			_syscall_remove(a);
-			break;
-		case _SYSCALL_CLOSE:
-			_syscall_close(a);
-			break;
-		case _SYSCALL_FS_WAIT:
-			_syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
-			break;
-		case _SYSCALL_FS_RESPOND:
-			_syscall_fs_respond((userptr_t)a, b, c);
-			break;
-		case _SYSCALL_MEMFLAG:
-			_syscall_memflag((userptr_t)a, b, c);
-			break;
-		case _SYSCALL_PIPE:
-			_syscall_pipe((userptr_t)a, b);
-			break;
-		case _SYSCALL_SLEEP:
-			_syscall_sleep(a);
-			break;
-		case _SYSCALL_EXECBUF:
-			_syscall_execbuf((userptr_t)a, b);
-			break;
-		case _SYSCALL_DEBUG_KLOG:
-			_syscall_debug_klog((userptr_t)a, b);
-			break;
+		break; case _SYSCALL_EXIT:	_syscall_exit(a);
+		break; case _SYSCALL_AWAIT:	_syscall_await();
+		break; case _SYSCALL_FORK:	_syscall_fork(a, (userptr_t)b);
+		break; case _SYSCALL_OPEN:	_syscall_open((userptr_t)a, b, c);
+		break; case _SYSCALL_MOUNT:	_syscall_mount(a, (userptr_t)b, c);
+		break; case _SYSCALL_DUP:	_syscall_dup(a, b, c);
+		break; case _SYSCALL_READ:	_syscall_read(a, (userptr_t)b, c, d);
+		break; case _SYSCALL_WRITE:	_syscall_write(a, (userptr_t)b, c, d, e);
+		break; case _SYSCALL_GETSIZE:	_syscall_getsize(a);
+		break; case _SYSCALL_REMOVE:	_syscall_remove(a);
+		break; case _SYSCALL_CLOSE:	_syscall_close(a);
+		break; case _SYSCALL_FS_WAIT:	_syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
+		break; case _SYSCALL_FS_RESPOND:	_syscall_fs_respond((userptr_t)a, b, c);
+		break; case _SYSCALL_MEMFLAG:	_syscall_memflag((userptr_t)a, b, c);
+		break; case _SYSCALL_PIPE:	_syscall_pipe((userptr_t)a, b);
+		break; case _SYSCALL_SLEEP:	_syscall_sleep(a);
+		break; case _SYSCALL_EXECBUF:	_syscall_execbuf((userptr_t)a, b);
+		break; case _SYSCALL_DEBUG_KLOG:	_syscall_debug_klog((userptr_t)a, b);
+		break;
 		default:
 			regs_savereturn(&process_current->regs, -1);
 			break;
 	}
-
 	/* return value is unused. execution continues in sysenter_stage2 */
 	return -1;
 }
