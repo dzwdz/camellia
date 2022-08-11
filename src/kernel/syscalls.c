@@ -202,78 +202,54 @@ handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
 	SYSCALL_RETURN(to);
 }
 
-long _syscall_read(handle_t handle_num, void __user *buf, size_t len, long offset) {
-	struct handle *h = process_handle_get(process_current, handle_num);
+static long simple_vfsop(
+		enum vfs_operation vfsop, handle_t hid, void __user *buf,
+		size_t len, long offset, int flags)
+{
+	assert(vfsop != VFSOP_OPEN && vfsop != VFSOP_CLOSE);
+	struct handle *h = process_handle_get(process_current, hid);
 	if (!h) SYSCALL_RETURN(-1);
-	switch (h->type) {
-		case HANDLE_FILE:
-			vfsreq_create((struct vfs_request) {
-					.type = VFSOP_READ,
-					.output = {
-						.buf = (userptr_t) buf,
-						.len = len,
-					},
-					.id = h->file_id,
-					.offset = offset,
-					.caller = process_current,
-					.backend = h->backend,
-				});
-			break;
-		case HANDLE_PIPE:
-			if (pipe_joinqueue(h, true, process_current, buf, len))
-				pipe_trytransfer(h);
-			else
-				SYSCALL_RETURN(-1);
-			break;
-		default:
-			SYSCALL_RETURN(-1);
-	}
-	return -1; // dummy
+	if (h->type == HANDLE_FILE) {
+		struct vfs_request req = (struct vfs_request){
+			.type = vfsop,
+			.backend = h->backend,
+			.id = h->file_id,
+			.caller = process_current,
+			.offset = offset,
+			.flags = flags,
+		};
+		if (vfsop == VFSOP_READ) {
+			req.output.buf = buf;
+			req.output.len = len;
+		}
+		if (vfsop == VFSOP_WRITE) {
+			req.input.buf = buf;
+			req.input.len = len;
+		}
+		vfsreq_create(req);
+	} else if (h->type == HANDLE_PIPE) {
+		if (vfsop == VFSOP_READ || vfsop == VFSOP_WRITE) {
+			pipe_joinqueue(h, vfsop == VFSOP_READ, process_current, buf, len);
+		} else SYSCALL_RETURN(-ENOSYS);
+	} else SYSCALL_RETURN(-ENOSYS);
+	return 0;
 }
 
-long _syscall_write(handle_t handle_num, const void __user *buf, size_t len, long offset, int flags) {
-	struct handle *h = process_handle_get(process_current, handle_num);
-	if (!h) SYSCALL_RETURN(-1);
+long _syscall_read(handle_t hid, void __user *buf, size_t len, long offset) {
+	simple_vfsop(VFSOP_READ, hid, buf, len, offset, 0);
+	return 0;
+}
+
+long _syscall_write(handle_t hid, const void __user *buf, size_t len, long offset, int flags) {
 	if (flags & ~(WRITE_TRUNCATE))
 		SYSCALL_RETURN(-ENOSYS);
-	switch (h->type) {
-		case HANDLE_FILE:
-			vfsreq_create((struct vfs_request) {
-					.type = VFSOP_WRITE,
-					.input = {
-						.buf = (userptr_t) buf,
-						.len = len,
-					},
-					.id = h->file_id,
-					.offset = offset,
-					.caller = process_current,
-					.backend = h->backend,
-					.flags = flags
-				});
-			break;
-		case HANDLE_PIPE:
-			if (pipe_joinqueue(h, false, process_current, (void __user *)buf, len))
-				pipe_trytransfer(h);
-			else
-				SYSCALL_RETURN(-1);
-			break;
-		default:
-			SYSCALL_RETURN(-1);
-	}
-	return -1; // dummy
+	simple_vfsop(VFSOP_WRITE, hid, (userptr_t)buf, len, offset, flags);
+	return 0;
 }
 
 long _syscall_getsize(handle_t hid) {
-	struct handle *h = process_handle_get(process_current, hid);
-	if (!h) SYSCALL_RETURN(-1);
-	if (h->type != HANDLE_FILE) SYSCALL_RETURN(-ENOSYS);
-	vfsreq_create((struct vfs_request) {
-			.type = VFSOP_GETSIZE,
-			.id = h->file_id,
-			.caller = process_current,
-			.backend = h->backend,
-		});
-	return -1; // dummy
+	simple_vfsop(VFSOP_GETSIZE, hid, NULL, 0, 0, 0);
+	return 0;
 }
 
 long _syscall_remove(handle_t hid) {

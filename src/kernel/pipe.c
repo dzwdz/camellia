@@ -3,12 +3,20 @@
 #include <kernel/pipe.h>
 #include <kernel/util.h>
 
-bool pipe_joinqueue(struct handle *h, bool wants_write,
+static void pipe_trytransfer(struct handle *h);
+
+void pipe_joinqueue(struct handle *h, bool wants_write,
 		struct process *proc, void __user *pbuf, size_t pbuflen)
 {
 	assert(h && h->type == HANDLE_PIPE);
-	if (wants_write == h->pipe.write_end) return false;
-	if (!h->pipe.sister) return false;
+	if (wants_write == h->pipe.write_end) {
+		regs_savereturn(&proc->regs, -1);
+		return;
+	}
+	if (!h->pipe.sister) {
+		regs_savereturn(&proc->regs, -1);
+		return;
+	}
 
 	struct process **slot = &h->pipe.queued;
 	while (*slot) {
@@ -22,10 +30,10 @@ bool pipe_joinqueue(struct handle *h, bool wants_write,
 	proc->waits4pipe.buf = pbuf;
 	proc->waits4pipe.len = pbuflen;
 	proc->waits4pipe.next = NULL;
-	return true;
+	pipe_trytransfer(h);
 }
 
-void pipe_trytransfer(struct handle *h) {
+static void pipe_trytransfer(struct handle *h) {
 	struct process *rdr, *wtr;
 	struct virt_cpy_error cpyerr;
 	int len;
