@@ -7,7 +7,7 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-const int root_id = 100;
+static const int root_id = 100;
 
 static void accept(struct vfs_request *req);
 static struct vfs_backend backend = BACKEND_KERN(accept);

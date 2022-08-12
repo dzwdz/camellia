@@ -37,7 +37,7 @@ static int handle(struct vfs_request *req) {
 			}
 
 		case VFSOP_WRITE:
-			if ((long)req->id != H_FB) {
+			if ((long __force)req->id != H_FB) {
 				return -1;
 			}
 			fs_normslice(&req->offset, &req->input.len, fb.size, false);

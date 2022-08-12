@@ -52,7 +52,7 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 
 char *strchr(const char *s, int c) {
 	while (*s) {
-		if (*s == c) return s;
+		if (*s == c) return (char*)s;
 		s++;
 	}
 	return NULL;

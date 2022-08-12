@@ -30,8 +30,8 @@ int main(void) {
 	uint32_t col = 0x800000;
 
 	for (;;) {
-		if (x + dx < 0 || x + dx + w >= fb.width ) dx *= -1;
-		if (y + dy < 0 || y + dy + h >= fb.height) dy *= -1;
+		if (x + dx < 0 || (size_t)(x + dx + w) >= fb.width)  dx *= -1;
+		if (y + dy < 0 || (size_t)(y + dy + h) >= fb.height) dy *= -1;
 		x += dx;
 		y += dy;
 		draw_rect(x, y, w, h, col++);
