@@ -1,21 +1,25 @@
-#include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>
-#include <kernel/main.h>
 #include <kernel/mem/alloc.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
-struct process *process_first;
+static struct process *process_first = NULL;
 struct process *process_current;
 
 static uint32_t next_pid = 0;
 
-struct process *process_seed(struct kmain_info *info) {
+
+/** Removes a process from the process tree. */
+static void process_forget(struct process *p);
+static _Noreturn void process_switch(struct process *proc);
+
+
+struct process *process_seed(void *data, size_t datalen) {
+	assert(!process_first);
 	process_first = kmalloc(sizeof *process_first);
 	memset(process_first, 0, sizeof *process_first);
 	process_first->state = PS_RUNNING;
@@ -24,6 +28,7 @@ struct process *process_seed(struct kmain_info *info) {
 	process_first->id    = next_pid++;
 
 	// map the stack to the last page in memory
+	// TODO move to user bootstrap
 	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_zalloc(1), true, true);
 	process_first->regs.rsp = (userptr_t) ~0xF;
 
@@ -34,9 +39,8 @@ struct process *process_seed(struct kmain_info *info) {
 
 	// map the init module as rw
 	void __user *init_base = (userptr_t)0x200000;
-	for (uintptr_t off = 0; off < info->init.size; off += PAGE_SIZE)
-		pagedir_map(process_first->pages, init_base + off, info->init.at + off,
-		            true, true);
+	for (uintptr_t off = 0; off < datalen; off += PAGE_SIZE)
+		pagedir_map(process_first->pages, init_base + off, data + off, true, true);
 	process_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
 
 	return process_first;
@@ -164,34 +168,26 @@ void process_kill(struct process *p, int ret) {
 	if (p == process_first) shutdown();
 }
 
-int process_try2collect(struct process *dead) {
-	struct process *parent = dead->parent;
-	int ret = -1;
-
+void process_try2collect(struct process *dead) {
 	assert(dead && dead->state == PS_DEAD);
+	assert(!dead->child);
 
-	if (!dead->noreap && parent && parent->state != PS_DEAD) { // might be reaped
-		if (parent->state != PS_WAITS4CHILDDEATH) return -1;
-
-		ret = dead->death_msg;
-		regs_savereturn(&parent->regs, ret);
+	struct process *parent = dead->parent;
+	if (!dead->noreap && parent && parent->state != PS_DEAD) { /* reapable? */
+		if (parent->state != PS_WAITS4CHILDDEATH)
+			return; /* don't reap yet */
+		regs_savereturn(&parent->regs, dead->death_msg);
 		process_transition(parent, PS_RUNNING);
 	}
 
-	process_free(dead);
-	return ret;
+	if (dead != process_first) {
+		process_forget(dead);
+		kfree(dead);
+	}
 }
 
-void process_free(struct process *p) {
-	assert(p->state == PS_DEAD);
-	assert(!p->child);
-
-	if (!p->parent) return;
-	process_forget(p);
-	kfree(p);
-}
-
-void process_forget(struct process *p) {
+/** Removes a process from the process tree. */
+static void process_forget(struct process *p) {
 	assert(p->parent);
 
 	if (p->parent->child == p) {
@@ -222,24 +218,26 @@ _Noreturn void process_switch_any(void) {
 		if (process_current && process_current->state == PS_RUNNING)
 			process_switch(process_current);
 
-		struct process *found = process_find(PS_RUNNING);
-		if (found) process_switch(found);
+		for (struct process *p = process_first; p; p = process_next(p)) {
+			if (p->state == PS_RUNNING)
+				process_switch(p);
+		}
 
 		cpu_pause();
 	}
 }
 
 struct process *process_next(struct process *p) {
-	/* is a weird depth-first search, the search order is:
+	/* depth-first search, the order is:
 	 *         1
 	 *        / \
 	 *       2   5
 	 *      /|   |\
 	 *     3 4   6 7
 	 */
-	if (!p)	return NULL;
-	if (p->child)	return p->child;
-	if (p->sibling)	return p->sibling;
+	if (!p) return NULL;
+	if (p->child) return p->child;
+	if (p->sibling) return p->sibling;
 
 	/* looking at the diagram above - we're at 4, want to find 5 */
 	while (!p->sibling) {
@@ -249,22 +247,12 @@ struct process *process_next(struct process *p) {
 	return p->sibling;
 }
 
-struct process *process_find(enum process_state target) {
-	for (struct process *p = process_first; p; p = process_next(p)) {
-		if (p->state == target) return p;
-	}
-	return NULL;
-}
-
 handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
-	// TODO start_at is a bit of a hack
-	handle_t handle;
-	for (handle = start_at; handle < HANDLE_MAX; handle++) {
-		if (proc->handles[handle] == NULL)
-			break;
+	for (handle_t hid = start_at; hid < HANDLE_MAX; hid++) {
+		if (proc->handles[hid] == NULL)
+			return hid;
 	}
-	if (handle >= HANDLE_MAX) handle = -1;
-	return handle;
+	return -1;
 }
 
 struct handle *process_handle_get(struct process *p, handle_t id) {
@@ -273,24 +261,8 @@ struct handle *process_handle_get(struct process *p, handle_t id) {
 }
 
 void process_transition(struct process *p, enum process_state state) {
-	enum process_state last = p->state;
+	assert(p->state != PS_DEAD);
+	if (state != PS_RUNNING && state != PS_DEAD)
+		assert(p->state == PS_RUNNING);
 	p->state = state;
-	switch (state) {
-		case PS_RUNNING:
-			assert(last != PS_DEAD);
-			break;
-		case PS_DEAD:
-			// see process_kill
-			break;
-		case PS_WAITS4CHILDDEATH:
-		case PS_WAITS4FS:
-		case PS_WAITS4REQUEST:
-		case PS_WAITS4PIPE:
-		case PS_WAITS4TIMER:
-			assert(last == PS_RUNNING);
-			break;
-
-		case PS_LAST:
-			panic_invalid_state();
-	}
 }

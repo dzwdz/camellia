@@ -1,4 +1,5 @@
 #include <camellia/execbuf.h>
+#include <camellia/syscalls.h>
 #include <kernel/execbuf.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>

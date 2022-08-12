@@ -13,9 +13,8 @@
 #include <stdint.h>
 
 #define SYSCALL_RETURN(val) do { \
-	long ret = (long)val; \
 	assert(process_current->state == PS_RUNNING); \
-	regs_savereturn(&process_current->regs, ret); \
+	regs_savereturn(&process_current->regs, (long)(val)); \
 	return 0; \
 } while (0)
 
@@ -33,16 +32,17 @@ long _syscall_await(void) {
 	{
 		if (iter->noreap) continue;
 		has_children = true;
-		if (iter->state == PS_DEAD)
-			SYSCALL_RETURN(process_try2collect(iter));
+		if (iter->state == PS_DEAD) {
+			process_try2collect(iter);
+			return 0; // dummy
+		}
 	}
 
 	if (!has_children) {
 		process_transition(process_current, PS_RUNNING);
 		SYSCALL_RETURN(~0); // TODO errno
 	}
-
-	return -1; // dummy
+	return 0; // dummy
 }
 
 long _syscall_fork(int flags, handle_t __user *fs_front) {

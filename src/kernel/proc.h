@@ -1,10 +1,8 @@
 #pragma once
-#include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
 #include <kernel/handle.h>
-#include <kernel/main.h>
-#include <kernel/vfs/mount.h>
 #include <stdbool.h>
+struct vfs_mount;
 
 #define HANDLE_MAX 16
 
@@ -23,18 +21,10 @@ enum process_state {
 struct process {
 	struct pagedir *pages;
 	struct registers regs;
+	struct process *sibling, *child, *parent;
+
 	enum process_state state;
-
-	bool noreap;
-
-	struct process *sibling;
-	struct process *child;
-	struct process *parent;
-
-	uint32_t id; // only for debugging, don't expose to userland
-
-	// saved value, meaning depends on .state
-	union {
+	union { /* saved value, meaning depends on .state */
 		int death_msg; // PS_DEAD
 		struct {
 			char __user *buf;
@@ -53,46 +43,41 @@ struct process {
 			struct process *next;
 		} waits4timer;
 	};
-	struct vfs_request *handled_req;
+
+	struct vfs_mount *mount;
+	struct handle *handles[HANDLE_MAX];
+	uint32_t id; /* only for debugging, don't expose to userland */
+	bool noreap;
 
 	/* allocated once, the requests from WAITS4FS get stored here */
 	struct vfs_request *reqslot;
 
 	/* vfs_backend controlled (not exclusively) by this process */
 	struct vfs_backend *controlled;
-
-	struct vfs_mount *mount;
+	struct vfs_request *handled_req;
 
 	struct {
 		void *buf;
 		size_t len;
 		size_t pos;
 	} execbuf;
-
-	struct handle *handles[HANDLE_MAX];
 };
 
-extern struct process *process_first;
 extern struct process *process_current;
 
 /** Creates the root process. */
-struct process *process_seed(struct kmain_info *info);
+struct process *process_seed(void *data, size_t datalen);
 struct process *process_fork(struct process *parent, int flags);
 
 void process_kill(struct process *proc, int ret);
 /** Tries to free a process / collect its return value. */
-int process_try2collect(struct process *dead);
-void process_free(struct process *);
-/** Removes a process from the process tree. */
-void process_forget(struct process *);
+void process_try2collect(struct process *dead);
 
 /** Switches execution to any running process. */
 _Noreturn void process_switch_any(void);
 
 /** Used for iterating over all processes */
 struct process *process_next(struct process *);
-
-struct process *process_find(enum process_state);
 
 handle_t process_find_free_handle(struct process *proc, handle_t start_at);
 struct handle *process_handle_get(struct process *, handle_t);

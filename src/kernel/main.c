@@ -7,7 +7,7 @@
 
 void kmain(struct kmain_info info) {
 	kprintf("loading init...\n");
-	process_seed(&info);
+	process_seed(info.init.at, info.init.size);
 
 	kprintf("switching...\n");
 	process_switch_any();

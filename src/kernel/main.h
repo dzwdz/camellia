@@ -14,5 +14,4 @@ struct kmain_info {
 };
 
 void kmain(struct kmain_info);
-
 void shutdown(void);
