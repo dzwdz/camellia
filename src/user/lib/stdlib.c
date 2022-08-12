@@ -104,10 +104,14 @@ int chdir(const char *path) {
 	return 0;
 }
 
-char *getcwd(char *buf, size_t size) {
+char *getcwd(char *buf, size_t capacity) {
 	const char *realcwd = getrealcwd();
-	// TODO bounds checking
-	memcpy(buf, realcwd, strlen(realcwd) + 1);
+	size_t len = strlen(realcwd) + 1;
+	if (capacity < len) {
+		errno = capacity == 0 ? EINVAL : ERANGE;
+		return NULL;
+	}
+	memcpy(buf, realcwd, len);
 	return buf;
 }
 
