@@ -23,9 +23,10 @@ void _start(void) {
 
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
-	void *init = tar_find("bin/init", 8, &_initrd, ~0) + 512;
+	const char *initpath = "bin/amd64/init";
+	void *init = tar_find(initpath, strlen(initpath), &_initrd, ~0) + 512;
 	if (init) {
-		_klogf("execing init.elf");
+		_klogf("execing init");
 		elf_exec(init, NULL, NULL);
 		_klogf("elf_exec failed");
 	} else {

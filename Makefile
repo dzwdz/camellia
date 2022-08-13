@@ -90,10 +90,10 @@ out/hdd:
 
 
 define userbin_template =
-out/initrd/bin/$(1): src/user/linker.ld \
-                     $(call from_sources, src/user/app/$(1)/) \
-                     $(call from_sources, src/user/lib/) \
-                     $(call from_sources, src/shared/)
+out/initrd/bin/amd64/$(1): src/user/linker.ld \
+                           $(call from_sources, src/user/app/$(1)/) \
+                           $(call from_sources, src/user/lib/) \
+                           $(call from_sources, src/shared/)
 	@mkdir -p $$(@D)
 	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $$^ -o $$@
 endef
@@ -108,7 +108,7 @@ out/initrd/font.psf: /usr/share/kbd/consolefonts/default8x16.psfu.gz
 	@gunzip $< -c > $@
 
 out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
-                $(patsubst %,out/initrd/bin/%,$(USERBINS)) \
+                $(patsubst %,out/initrd/bin/amd64/%,$(USERBINS)) \
                 out/initrd/font.psf
 	@cd out/initrd; tar chf ../initrd.tar *
 

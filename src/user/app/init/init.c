@@ -30,7 +30,13 @@ int main(void) {
 	printf("in init (stage 2), main at 0x%x\n", &main);
 
 	MOUNT_AT("/keyboard") { ps2_drv(); }
-	MOUNT_AT("/bin/") { fs_passthru("/init/bin"); }
+	MOUNT_AT("/bin/") {
+		fs_union((const char*[]){
+			"/init/bin/amd64/",
+			"/init/bin/sh/",
+			NULL
+		});
+	}
 	MOUNT_AT("/tmp/") {
 		const char *argv[] = {"/bin/tmpfs", NULL};
 		execv(argv[0], (void*)argv);
