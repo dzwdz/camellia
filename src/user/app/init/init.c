@@ -19,8 +19,16 @@ void redirect(const char *exe, const char *out, const char *in) {
 		if (!freopen(in, "r", stdin))
 			die(" couldn't open %s\n", in);
 		termcook();
-		execv(exe, NULL);
-		die("couldn't start %s\n", exe);
+
+		for (;;) {
+			if (!fork()) {
+				execv(exe, NULL);
+				fprintf(stderr, "init: couldn't start %s\n", exe);
+				_syscall_sleep(5000);
+				exit(1);
+			}
+			_syscall_await();
+		}
 	}
 }
 
@@ -74,8 +82,8 @@ int main(void) {
 		close(killswitch_pipe[0]);
 		redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
 		redirect("/bin/shell", "/vtty", "/keyboard");
-		_syscall_await();
-		printf("init: restarting children not yet implemented\n");
+		// TODO busy loop without no children
+		for (;;) _syscall_await();
 		exit(1);
 	}
 
