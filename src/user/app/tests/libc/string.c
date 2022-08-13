@@ -1,4 +1,6 @@
 #include "../tests.h"
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void test_memcmp(void) {
@@ -17,6 +19,23 @@ static void test_memcmp(void) {
 	test(0 < memcmp("moo", "foo", 4));
 	test(0 > memcmp("555", "654", 3));
 	test(0 < memcmp("654", "555", 3));
+}
+
+static bool memall(const unsigned char *s, unsigned char c, size_t n) {
+	for (size_t i = 0; i < n; i++)
+		if (s[i] != c) return false;
+	return true;
+}
+
+static void test_memset(void) {
+	const size_t buflen = 4096;
+	void *buf = malloc(buflen);
+	test(buf);
+	for (int i = 0; i < 257; i++) {
+		memset(buf, i, buflen);
+		test(memall(buf, i & 0xff, buflen));
+	}
+	free(buf);
 }
 
 static void test_strcmp(void) {
@@ -48,6 +67,7 @@ static void test_strtol(void) {
 
 void r_libc_string(void) {
 	run_test(test_memcmp);
+	run_test(test_memset);
 	run_test(test_strcmp);
 	run_test(test_strtol);
 }
