@@ -42,7 +42,7 @@ test: all
 	@# the empty echo takes care of that, so the next echos will work just fine
 	@echo > out/qemu.in
 	echo tests > out/qemu.in
-	echo exit > out/qemu.in
+	echo halt > out/qemu.in
 	@echo
 	@cat out/qemu.out
 

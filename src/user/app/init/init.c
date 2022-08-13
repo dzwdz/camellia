@@ -25,6 +25,8 @@ void redirect(const char *exe, const char *out, const char *in) {
 }
 
 int main(void) {
+	handle_t killswitch_pipe[2];
+
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
 	printf("in init (stage 2), main at 0x%x\n", &main);
@@ -50,6 +52,16 @@ int main(void) {
 		fs_union(list);
 	}
 
+	if (_syscall_pipe(killswitch_pipe, 0) < 0) {
+		printf("couldn't create the killswitch pipe, quitting...\n");
+		return 1;
+	}
+	MOUNT_AT("/initctl") {
+		close(killswitch_pipe[0]);
+		initctl_drv(killswitch_pipe[1]);
+	}
+	close(killswitch_pipe[1]);
+
 	if (fork()) {
 		/* used to trigger a kernel bug
 		 * 7c96f9c03502e0c60f23f4c550d12a629f3b3daf */
@@ -57,10 +69,16 @@ int main(void) {
 		exit(1);
 	}
 
-	redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
-	redirect("/bin/shell", "/vtty", "/keyboard");
+	if (!fork()) {
+		// TODO close on exec
+		close(killswitch_pipe[0]);
+		redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
+		redirect("/bin/shell", "/vtty", "/keyboard");
+		_syscall_await();
+		printf("init: restarting children not yet implemented\n");
+		exit(1);
+	}
 
-	_syscall_await();
-	printf("init: quitting\n");
+	_syscall_read(killswitch_pipe[0], NULL, 0, 0);
 	return 0;
 }
