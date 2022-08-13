@@ -47,6 +47,18 @@ int main(void) {
 			NULL
 		});
 	}
+	MOUNT_AT("/Users/") {
+		MOUNT_AT("/tmp/") {
+			const char *argv[] = {"/bin/tmpfs", NULL};
+			execv(argv[0], (void*)argv);
+		}
+		// TODO a simple union isn't enough here
+		fs_union((const char*[]){
+			"/tmp/",
+			"/init/Users/",
+			NULL
+		});
+	}
 	MOUNT_AT("/tmp/") {
 		const char *argv[] = {"/bin/tmpfs", NULL};
 		execv(argv[0], (void*)argv);
@@ -54,10 +66,6 @@ int main(void) {
 	MOUNT_AT("/vtty") {
 		const char *argv[] = {"/bin/vterm", NULL};
 		execv(argv[0], (void*)argv);
-	}
-	MOUNT_AT("/union/") {
-		const char *list[] = {"/tmp/", "/init/", NULL};
-		fs_union(list);
 	}
 
 	if (_syscall_pipe(killswitch_pipe, 0) < 0) {

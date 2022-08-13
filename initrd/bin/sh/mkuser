@@ -1,0 +1,7 @@
+#!/bin/shell
+touch /Users/user/
+cd /Users/user/
+touch private/
+echo secrets! > private/secret.txt
+touch public/
+echo no secrets here > public/hi.txt
