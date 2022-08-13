@@ -8,9 +8,20 @@ SECTIONS
 	_DYNAMIC = 0;
 	_image_base = 0;
 
+	. = 0x10000;
+	_bss_start = .;
+	.bss BLOCK(4K) : ALIGN(4K)
+	{
+		*(COMMON)
+		*(.bss)
+	}
+	_bss_end = .;
+
 	. = 2M;
 	.text BLOCK(4K) : ALIGN(4K)
 	{
+		/* the assert needs to be inside of a section or it'll be a syntax error */
+		ASSERT(_bss_end <= 2M, "bss too big, needs to be moved down");
 		*(.text.startup)
 		*(.text)
 	}
@@ -22,17 +33,7 @@ SECTIONS
 	{
 		*(.data)
 	}
-
 	_initrd = .; /* is just appended onto the end of the binary */
-	. += 2M;
-
-	_bss_start = .;
-	.bss BLOCK(4K) : ALIGN(4K)
-	{
-		*(COMMON)
-		*(.bss)
-	}
-	_bss_end = .;
 
 	/DISCARD/ : {
 		*(*.rel.*)
