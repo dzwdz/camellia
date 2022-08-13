@@ -1,5 +1,6 @@
 PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
 
+AR      = x86_64-elf-ar
 AS      = x86_64-elf-as
 CC      = x86_64-elf-gcc
 CHECK   = sparse
@@ -70,10 +71,12 @@ out/fs/boot/kernel: src/kernel/linker.ld \
 	@grub-file --is-x86-multiboot $@ || echo "$@ has an invalid multiboot header"
 	@grub-file --is-x86-multiboot $@ || rm $@; test -e $@
 
-out/bootstrap: src/user/bootstrap/linker.ld \
-               $(call from_sources, src/user/bootstrap/) \
-               $(call from_sources, src/user/lib/) \
-               $(call from_sources, src/shared/)
+out/libc.a: $(call from_sources, src/user/lib/) \
+            $(call from_sources, src/shared/)
+	@mkdir -p $(@D)
+	@$(AR) rcs $@ $^
+
+out/bootstrap: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -Wl,-Map=% -T $^ -o $@
 
@@ -90,10 +93,7 @@ out/hdd:
 
 
 define userbin_template =
-out/initrd/bin/amd64/$(1): src/user/linker.ld \
-                           $(call from_sources, src/user/app/$(1)/) \
-                           $(call from_sources, src/user/lib/) \
-                           $(call from_sources, src/shared/)
+out/initrd/bin/amd64/$(1): src/user/linker.ld $(call from_sources, src/user/app/$(1)) out/libc.a
 	@mkdir -p $$(@D)
 	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $$^ -o $$@
 endef
