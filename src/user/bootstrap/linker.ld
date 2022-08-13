@@ -1,13 +1,8 @@
-ENTRY(main)
+ENTRY(_start)
 OUTPUT_FORMAT("binary")
 
 SECTIONS
 {
-	/* Not an ELF, but we need this to link with elfreloc.c.
-	 * Not that we need to link with it, it's just easier that way */
-	_DYNAMIC = 0;
-	_image_base = 0;
-
 	. = 0x10000;
 	_bss_start = .;
 	.bss BLOCK(4K) : ALIGN(4K)

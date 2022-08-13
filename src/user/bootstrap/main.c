@@ -34,5 +34,3 @@ void _start(void) {
 	}
 	_syscall_exit(1);
 }
-
-int main(void) {return 0;} // dummy, needed to link
