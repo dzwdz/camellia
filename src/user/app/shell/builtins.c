@@ -1,6 +1,7 @@
 #include "builtins.h"
 #include "shell.h"
 #include <camellia/path.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,38 +69,82 @@ void cmd_getsize(int argc, char **argv) {
 }
 
 void cmd_hexdump(int argc, char **argv) {
-	const size_t buflen = 512;
+	DEFAULT_ARGV("!stdin");
+	const size_t buflen = 4096;
 	uint8_t *buf = malloc(buflen);
 	FILE *file;
-	int len;
+	bool canonical = !strcmp(argv[0], "hd");
+	size_t readlen = ~0;
+	size_t pos = 0;
 
-	DEFAULT_ARGV("!stdin");
-	for (int i = 1; i < argc; i++) {
-		file = fopen(argv[i], "r");
+	int c;
+	optind = 0;
+	while ((c = getopt(argc, argv, "Cn:s:")) != -1) {
+		switch (c) {
+			case 'C':
+				canonical = true;
+				break;
+			case 'n':
+				readlen = strtol(optarg, NULL, 0);
+				break;
+			case 's':
+				pos = strtol(optarg, NULL, 0);
+				break;
+			default:
+				return;
+		}
+	}
+	if (readlen != (size_t)~0)
+		readlen += pos;
+
+	for (; optind < argc; optind++) {
+		file = fopen(argv[optind], "r");
 		if (!file) {
-			eprintf("couldn't open %s", argv[i]);
+			eprintf("couldn't open %s", argv[optind]);
 			return;
 		}
-		len = fread(buf, 1, buflen, file);
-		fclose(file);
+		fseek(file, pos, SEEK_SET);
+		bool skipped = false;
+		while (pos < readlen) {
+			size_t len = buflen;
+			if (len > readlen - pos)
+				len = readlen - pos;
+			len = fread(buf, 1, len, file);
+			if (len == 0) break;
 
-		for (int i = 0; i < len; i += 16) {
-			printf("%08x  ", i);
+			for (size_t i = 0; i < len; i += 16) {
+				if (i >= 16 && !memcmp(buf + i, buf + i - 16, 16)) {
+					if (!skipped) {
+						printf("*\n");
+						skipped = true;
+					}
+					continue;
+				} else skipped = false;
+				printf("%08x  ", pos + i);
 
-			for (int j = i; j < i + 8 && j < len; j++)
-				printf("%02x ", buf[j]);
-			printf(" ");
-			for (int j = i + 8; j < i + 16 && j < len; j++)
-				printf("%02x ", buf[j]);
-			printf(" |");
+				for (size_t j = i; j < i + 8 && j < len; j++)
+					printf("%02x ", buf[j]);
+				printf(" ");
+				for (size_t j = i + 8; j < i + 16 && j < len; j++)
+					printf("%02x ", buf[j]);
 
-			for (int j = i; j < i + 16 && j < len; j++) {
-				char c = '.';
-				if (0x20 <= buf[j] && buf[j] < 0x7f) c = buf[j];
-				printf("%c", c);
+				if (canonical) {
+					printf(" |");
+
+					for (size_t j = i; j < i + 16 && j < len; j++) {
+						char c = '.';
+						if (0x20 <= buf[j] && buf[j] < 0x7f) c = buf[j];
+						printf("%c", c);
+					}
+					printf("|\n");
+				} else {
+					printf("\n");
+				}
 			}
-			printf("|\n");
+			pos += len;
 		}
+		printf("%08x\n", pos);
+		fclose(file);
 	}
 }
 
@@ -210,6 +255,7 @@ struct builtin builtins[] = {
 	{"cat", cmd_cat},
 	{"echo", cmd_echo},
 	{"getsize", cmd_getsize},
+	{"hd", cmd_hexdump},
 	{"hexdump", cmd_hexdump},
 	{"ls", cmd_ls},
 	{"rm", cmd_rm},
