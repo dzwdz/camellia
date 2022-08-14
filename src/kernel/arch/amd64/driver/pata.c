@@ -1,4 +1,5 @@
 #include <camellia/errno.h>
+#include <camellia/fsutil.h>
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/driver/pata.h>
 #include <kernel/arch/amd64/driver/util.h>
@@ -53,21 +54,25 @@ static void accept(struct vfs_request *req) {
 				vfsreq_finish_short(req, req_readcopy(req, list, len));
 				break;
 			}
-			// TODO ata size get
-			if (req->offset < 0) {
-				vfsreq_finish_short(req, -ENOSYS);
-				break;
-			}
+			fs_normslice(&req->offset, &req->output.len, ata_size(id), false);
+
 			char buf[512]; /* stupid */
-			uint32_t sector = req->offset / 512;
-			size_t len = min(req->output.len, 512 - ((size_t)req->offset & 511));
+			uint32_t sector = req->offset / ATA_SECTOR;
+			size_t skip = (size_t)req->offset & (ATA_SECTOR - 1);
+			size_t len = min(req->output.len, ATA_SECTOR - skip);
 			ata_read(id, sector, buf);
-			virt_cpy_to(req->caller->pages, req->output.buf, buf, len);
+			virt_cpy_to(req->caller->pages, req->output.buf, buf + skip, len);
 			vfsreq_finish_short(req, len);
 			break;
 
 		case VFSOP_WRITE:
 			panic_unimplemented();
+
+		case VFSOP_GETSIZE:
+			if (id == root_id)
+				panic_unimplemented();
+			vfsreq_finish_short(req, ata_size(id));
+			break;
 
 		default:
 			vfsreq_finish_short(req, -ENOSYS);

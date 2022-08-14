@@ -23,8 +23,6 @@ enum {
 	CMD    = 7,
 	STATUS = 7,
 
-	/* note: the OSDev wiki uses a different base port for the control port
-	 *       however i can just use this offset and stuff will just work tm */
 	CTRL   = 0x206,
 }; // offsets
 
@@ -40,11 +38,11 @@ static void ata_400ns(void) {
 		port_in8(base + STATUS);
 }
 
-static void ata_driveselect(int drive, int block) {
+static void ata_driveselect(int drive, int lba) {
 	uint8_t v = 0xE0;
 	if (drive&1) // slave?
 		v |= 0x10; // set drive number bit
-	// TODO account for block
+	v |= (lba >> 24) & 0xf;
 	port_out8(ata_iobase(drive) + DRV, v);
 }
 
@@ -122,6 +120,10 @@ void ata_init(void) {
 
 bool ata_available(int drive) {
 	return ata_drives[drive].type != DEV_UNKNOWN;
+}
+
+size_t ata_size(int drive) {
+	return ata_drives[drive].sectors * ATA_SECTOR;
 }
 
 int ata_read(int drive, uint32_t lba, void *buf) {

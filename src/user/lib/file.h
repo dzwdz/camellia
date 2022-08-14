@@ -3,7 +3,7 @@
 
 struct _LIBC_FILE {
 	int fd;
-	int pos;
+	long pos;
 	bool eof;
 	bool error;
 };
