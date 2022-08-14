@@ -1,9 +1,6 @@
+#include <ctype.h>
 #include <errno.h>
 #include <string.h>
-
-int isspace(char c) {
-	return c == ' ' || c == '\t' || c == '\n';
-}
 
 long strtol(const char *restrict s, char **restrict end, int base) {
 	long res = 0;

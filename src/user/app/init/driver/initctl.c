@@ -1,5 +1,6 @@
 #include "driver.h"
 #include <camellia/syscalls.h>
+#include <ctype.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>

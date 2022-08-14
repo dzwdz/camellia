@@ -1,5 +1,6 @@
 #pragma once
 #include <camellia/types.h> // TODO only needed because of handle_t
+#include <user/lib/vendor/getopt/getopt.h>
 
 int fork(void);
 int close(handle_t h);
