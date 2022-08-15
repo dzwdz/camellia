@@ -1,11 +1,11 @@
 #pragma once
 #include <kernel/arch/generic.h>
-#include <kernel/main.h>
 #include <stddef.h>
 
 extern struct malloc_hdr *malloc_last;
 
-void mem_init(struct kmain_info *);
+void mem_init(void *memtop);
+void mem_reserve(void *addr, size_t len);
 void mem_debugprint(void);
 
 // allocates `pages` consecutive pages

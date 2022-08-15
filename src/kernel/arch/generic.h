@@ -20,6 +20,8 @@ __attribute__((noreturn))
 void cpu_halt(void);
 __attribute__((noreturn))
 void cpu_shutdown(void);
+__attribute__((noreturn))
+void shutdown(void);
 
 /** on x86: waits for an IRQ */
 void cpu_pause(void);

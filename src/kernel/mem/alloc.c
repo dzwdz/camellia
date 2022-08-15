@@ -36,27 +36,28 @@ static void bitmap_set(size_t i, bool v) {
 	else   pbitmap[b] &= ~m;
 }
 
-static void bitmap_mark(void *start, size_t len) {
-	/* align to the previous page */
-	size_t off = (uintptr_t)start & PAGE_MASK;
-	start -= off;
-	len += off;
-	size_t first = ((uintptr_t)start - (uintptr_t)pbitmap_start) / PAGE_SIZE;
-	for (size_t i = 0; i * PAGE_SIZE < len; i++) {
-		if (first + i >= pbitmap_len) break;
-		bitmap_set(first + i, true);
-	}
-}
-
-void mem_init(struct kmain_info *info) {
-	size_t pageamt = ((uintptr_t)info->memtop - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+void mem_init(void *memtop) {
+	kprintf("memory   %8x -> %8x\n", &_bss_end, memtop);
+	size_t pageamt = ((uintptr_t)memtop - (uintptr_t)pbitmap_start) / PAGE_SIZE;
 	pbitmap_len = pageamt / 8;
 	memset(pbitmap, 0, pbitmap_len);
-	bitmap_mark(pbitmap, pbitmap_len);
+	mem_reserve(pbitmap, pbitmap_len);
+}
 
-	// TODO make boot.c handle this instead
-	bitmap_mark(info->init.at, info->init.size);
-	bitmap_mark(info->fb.at,   info->fb.size);
+void mem_reserve(void *addr, size_t len) {
+	kprintf("reserved %8x -> %8x\n", addr, addr + len);
+
+	/* align to the previous page */
+	size_t off = (uintptr_t)addr & PAGE_MASK;
+	addr -= off;
+	len += off;
+	size_t first = ((uintptr_t)addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+	for (size_t i = 0; i * PAGE_SIZE < len; i++) {
+		if (first + i >= pbitmap_len) break;
+		if (bitmap_get(first + i))
+			panic_invalid_state();
+		bitmap_set(first + i, true);
+	}
 }
 
 void mem_debugprint(void) {
