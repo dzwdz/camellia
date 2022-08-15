@@ -53,6 +53,8 @@ void mem_init(struct kmain_info *info) {
 	pbitmap_len = pageamt / 8;
 	memset(pbitmap, 0, pbitmap_len);
 	bitmap_mark(pbitmap, pbitmap_len);
+
+	// TODO make boot.c handle this instead
 	bitmap_mark(info->init.at, info->init.size);
 	bitmap_mark(info->fb.at,   info->fb.size);
 }

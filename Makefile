@@ -25,7 +25,7 @@ endif
 
 
 define from_sources
-  $(patsubst src/%,out/obj/%.o,$(shell find $(1) -type f,l -name '*.[cs]'))
+  $(patsubst src/%,out/obj/%.o,$(shell find $(1) -type f,l -name '*.[csS]'))
 endef
 
 
@@ -68,8 +68,8 @@ out/fs/boot/kernel: src/kernel/linker.ld \
                     $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
 	@$(CC) $(LFLAGS) -T $^ -o $@
-	@grub-file --is-x86-multiboot $@ || echo "$@ has an invalid multiboot header"
-	@grub-file --is-x86-multiboot $@ || rm $@; test -e $@
+	@grub-file --is-x86-multiboot2 $@ || echo "$@ has an invalid multiboot2 header"
+	@grub-file --is-x86-multiboot2 $@ || rm $@; test -e $@
 
 out/libc.a: $(call from_sources, src/user/lib/) \
             $(call from_sources, src/shared/)
@@ -116,6 +116,10 @@ out/initrd.tar: $(patsubst %,out/%,$(shell find initrd/ -type f)) \
 out/obj/%.s.o: src/%.s
 	@mkdir -p $(@D)
 	@$(AS) $^ -o $@
+
+out/obj/%.S.o: src/%.S
+	@mkdir -p $(@D)
+	@$(CC) -c $^ -o $@
 
 out/obj/shared/%.c.o: src/shared/%.c
 	@mkdir -p $(@D)
