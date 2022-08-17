@@ -6,6 +6,8 @@
 #include <kernel/vfs/request.h>
 #include <stdbool.h>
 
+#define WAIT -1000
+
 static void accept(struct vfs_request *req);
 static struct vfs_backend backend = BACKEND_KERN(accept);
 static struct vfs_request *blocked_on = NULL;
@@ -13,13 +15,16 @@ static struct vfs_request *blocked_on = NULL;
 
 enum {
 	MAC = 0,
+	TXSTATUS0 = 0x10,
+	TXSTART0 = 0x20,
 	RBSTART = 0x30,
 	CMD = 0x37,
 	CAPR = 0x38,
 	CBR = 0x3A,
 	INTRMASK = 0x3C,
 	INTRSTATUS = 0x3E,
-	RCR = 0x44, /* receive configure */
+	TCR = 0x40,
+	RCR = 0x44,
 	CONFIG1 = 0x52,
 };
 
@@ -29,6 +34,9 @@ static uint16_t iobase;
 #define rxbuf_baselen ((8 * 1024) << buflen_shift)
 static char rxbuf[rxbuf_baselen + 16 + 1500];
 static size_t rxpos;
+
+#define txbuf_len 2048
+static char txbuf[4][txbuf_len];
 
 static void rx_irq_enable(bool v) {
 	uint16_t mask = 1 | 4; /* rx/tx ok */
@@ -53,6 +61,8 @@ void rtl8139_init(uint32_t bdf) {
 	assert((long)(void*)rxbuf <= 0xFFFFFFFF);
 	port_out32(iobase + RBSTART, (long)(void*)rxbuf);
 
+	port_out32(iobase + TCR, 0);
+
 	uint32_t rcr = 0;
 	// rcr |= 1 << 0; /* accept all packets */
 	rcr |= 1 << 1; /* accept packets with our mac */
@@ -75,6 +85,10 @@ void rtl8139_init(uint32_t bdf) {
 
 void rtl8139_irq(void) {
 	uint16_t status = port_in16(iobase + INTRSTATUS);
+	if (status != 1) {
+		kprintf("bad rtl8139 status 0x%x\n", status);
+		panic_unimplemented();
+	}
 	// TODO don't assume this is an rx irq
 
 	do {
@@ -94,7 +108,7 @@ void rtl8139_irq(void) {
 static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	uint16_t flags, size;
 	/* bit 0 - Rx Buffer Empty */
-	if (port_in8(iobase + CMD) & 1) return -1;
+	if (port_in8(iobase + CMD) & 1) return WAIT;
 
 	/* https://github.com/qemu/qemu/blob/04ddcda6a/hw/net/rtl8139.c#L1169 */
 	/* https://www.cs.usfca.edu/~cruse/cs326f04/RTL8139D_DataSheet.pdf page 12
@@ -109,7 +123,8 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	if (size == 0) panic_invalid_state();
 
 	// kprintf("packet size 0x%x, flags 0x%x, rxpos %x\n", size, flags, rxpos - 4);
-	virt_cpy_to(pages, dest, rxbuf + rxpos, size);
+	if (dlen > size) dlen = size;
+	virt_cpy_to(pages, dest, rxbuf + rxpos, dlen);
 
 	rxpos += size;
 	rxpos = (rxpos + 3) & ~3;
@@ -119,19 +134,41 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	return size;
 }
 
+static int try_tx(struct pagedir *pages, const void __user *src, size_t slen) {
+	static uint8_t desc = 0;
+
+	if (slen > 0xFFF) return -1;
+	if (slen > txbuf_len) return -1;
+
+	uint32_t status = port_in32(iobase + TXSTATUS0 + desc*4);
+	if (!(status & (1<<13))) {
+		/* can't (?) be caused (and thus, tested) on a vm */
+		kprintf("try_tx called with all descriptors full.");
+		panic_unimplemented();
+	}
+
+	virt_cpy_from(pages, txbuf[desc], src, slen);
+	assert((long)(void*)txbuf <= 0xFFFFFFFF);
+	port_out32(iobase + TXSTART0  + desc*4, (long)(void*)txbuf[desc]);
+	port_out32(iobase + TXSTATUS0 + desc*4, slen);
+
+	desc = (desc + 1) & 3;
+	return slen;
+}
+
 static void accept(struct vfs_request *req) {
+	if (!req->caller) {
+		vfsreq_finish_short(req, -1);
+		return;
+	}
 	switch (req->type) {
 		long ret;
 		case VFSOP_OPEN:
 			vfsreq_finish_short(req, req->input.len == 0 ? 0 : -1);
 			break;
 		case VFSOP_READ:
-			if (!req->caller) {
-				vfsreq_finish_short(req, -1);
-				break;
-			}
 			ret = try_rx(req->caller->pages, req->output.buf, req->output.len);
-			if (ret < 0) {
+			if (ret == WAIT) {
 				// TODO this is a pretty common pattern in drivers, try to make it unneeded
 				assert(!req->postqueue_next);
 				struct vfs_request **slot = &blocked_on;
@@ -141,6 +178,10 @@ static void accept(struct vfs_request *req) {
 			} else {
 				vfsreq_finish_short(req, ret);
 			}
+			break;
+		case VFSOP_WRITE:
+			assert(!req->input.kern);
+			vfsreq_finish_short(req, try_tx(req->caller->pages, req->input.buf, req->input.len));
 			break;
 		default:
 			vfsreq_finish_short(req, -1);
