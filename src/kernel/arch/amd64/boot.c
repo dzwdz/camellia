@@ -7,6 +7,7 @@
 #include <kernel/arch/amd64/driver/video.h>
 #include <kernel/arch/amd64/interrupts/idt.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/tty/tty.h>
 #include <kernel/arch/generic.h>
 #include <kernel/mem/alloc.h>
@@ -71,9 +72,10 @@ void kmain_early(void *mbi) {
 	ps2_init();
 	serial_init();
 	video_init(vid);
-
-	kprintf("ata...\n");
 	pata_init();
+
+	kprintf("pci...\n");
+	pci_init();
 
 	kprintf("running init...\n");
 	process_seed(init.addr, init.len);

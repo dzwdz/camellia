@@ -1,4 +1,5 @@
 #include <kernel/arch/amd64/driver/ps2.h>
+#include <kernel/arch/amd64/driver/rtl8139.h>
 #include <kernel/arch/amd64/driver/serial.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/interrupts/isr.h>
@@ -43,6 +44,11 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 		case IRQ_IBASE + IRQ_COM1:
 			serial_irq();
 			irq_eoi(IRQ_COM1);
+			return;
+
+		case IRQ_IBASE + IRQ_RTL8139:
+			rtl8139_irq();
+			irq_eoi(interrupt - IRQ_IBASE);
 			return;
 
 		default:

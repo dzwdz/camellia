@@ -14,6 +14,7 @@ static int handle(struct vfs_request *req) {
 		"com1\0"
 		"ps2/\0"
 		"ata/\0"
+		"eth/\0"
 		"video/";
 	if (!req->caller) return -1;
 	switch (req->type) {

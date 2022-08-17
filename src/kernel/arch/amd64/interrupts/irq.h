@@ -8,5 +8,7 @@
 #define IRQ_COM1 4
 #define IRQ_PS2MOUSE 12
 
+#define IRQ_RTL8139 11
+
 void irq_init(void);
 void irq_eoi(uint8_t line);
