@@ -91,7 +91,9 @@ void rtl8139_irq(void) {
 	}
 	status &= 1;
 
-	do {
+	/* bit 0 of cmd - Rx Buffer Empty
+	 * not a do while() because sometimes the bit is empty on IRQ. no clue why. */
+	while (!(port_in8(iobase + CMD) & 1)) {
 		if (blocked_on) {
 			accept(blocked_on);
 			blocked_on = blocked_on->postqueue_next;
@@ -99,7 +101,7 @@ void rtl8139_irq(void) {
 			rx_irq_enable(false);
 			break;
 		}
-	} while (!(port_in8(iobase + CMD) & 1)); /* bit 0 - Rx Buffer Empty */
+	}
 
 	//kprintf("rxpos %x cbr %x\n", rxpos, port_in16(iobase + CBR));
 	port_out16(iobase + INTRSTATUS, status);
@@ -170,7 +172,7 @@ static void accept(struct vfs_request *req) {
 			ret = try_rx(req->caller->pages, req->output.buf, req->output.len);
 			if (ret == WAIT) {
 				// TODO this is a pretty common pattern in drivers, try to make it unneeded
-				// TODO invalid assert, fails on nmap
+				// TODO those asserts should actually be regular panic checks
 				assert(!req->postqueue_next);
 				struct vfs_request **slot = &blocked_on;
 				while (*slot) slot = &(*slot)->postqueue_next;
