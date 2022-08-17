@@ -60,9 +60,7 @@ static void scan_bus(uint32_t bus) {
 			}
 
 			if (id == 0x813910ec) {
-				kprintf("rtl irq %u\n", pcicfg_r8(bdf, 0x3C));
 				pcicfg_w32(bdf, 0x3C, IRQ_RTL8139);
-				kprintf("rtl irq %u\n", pcicfg_r8(bdf, 0x3C));
 				rtl8139_init(bdf);
 			}
 		}

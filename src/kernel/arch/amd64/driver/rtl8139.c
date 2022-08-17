@@ -39,7 +39,7 @@ static size_t rxpos;
 static char txbuf[4][txbuf_len];
 
 static void rx_irq_enable(bool v) {
-	uint16_t mask = 1 | 4; /* rx/tx ok */
+	uint16_t mask = 1; /* rx ok */
 	port_out16(iobase + INTRMASK, v ? mask : 0);
 }
 
@@ -85,11 +85,11 @@ void rtl8139_init(uint32_t bdf) {
 
 void rtl8139_irq(void) {
 	uint16_t status = port_in16(iobase + INTRSTATUS);
-	if (status != 1) {
+	if (!(status & 1)) {
 		kprintf("bad rtl8139 status 0x%x\n", status);
 		panic_unimplemented();
 	}
-	// TODO don't assume this is an rx irq
+	status &= 1;
 
 	do {
 		if (blocked_on) {
