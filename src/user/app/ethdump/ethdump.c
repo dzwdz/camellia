@@ -77,9 +77,27 @@ static void parse_ipv4(const uint8_t *buf, size_t len) {
 	}
 }
 
+/* https://www.w3.org/TR/PNG/#D-CRCAppendix */
+uint32_t crc_table[256];
+static uint32_t crc32(const uint8_t *buf, size_t len) {
+	if (!crc_table[1]) {
+		eprintf("building crc cache");
+		for (int i = 0; i < 256; i++) {
+			uint32_t c = i;
+			for (int j = 0; j < 8; j++)
+				c = ((c&1) ? 0xedb88320 : 0) ^ (c >> 1);
+			crc_table[i] = c;
+		}
+	}
+
+	uint32_t c = 0xFFFFFFFF;
+	for (size_t i = 0; i < len; i++)
+		c = crc_table[(c ^ buf[i]) & 0xff] ^ (c >> 8);
+	return ~c;
+}
+
 static void parse_ethernet(const uint8_t *buf, size_t len) {
 	uint8_t dmac[6], smac[6];
-	uint16_t ethertype;
 
 	if (len < 60) return;
 	for (int i = 0; i < 6; i++) dmac[i] = buf[i];
@@ -89,7 +107,14 @@ static void parse_ethernet(const uint8_t *buf, size_t len) {
 	printf("to   %02x:%02x:%02x:%02x:%02x:%02x\n",
 		dmac[0], dmac[1], dmac[2], dmac[3], dmac[4], dmac[5]);
 
-	ethertype = (buf[12] << 8) | buf[13];
+	/* byte order switched on purpose */
+	uint32_t crc = (buf[len - 1] << 24)
+	             | (buf[len - 2] << 16)
+	             | (buf[len - 3] <<  8)
+	             | (buf[len - 4] <<  0);
+	printf("fcf %x, crc %x\n", crc, crc32(buf, len - 4));
+
+	uint16_t ethertype = (buf[12] << 8) | buf[13];
 	if (ethertype == 0x800) {
 		printf("ethertype %u - IPv4\n", ethertype);
 		parse_ipv4(buf + 14, len - 14);

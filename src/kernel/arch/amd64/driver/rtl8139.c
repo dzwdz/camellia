@@ -92,7 +92,7 @@ void rtl8139_irq(void) {
 }
 
 static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
-	uint16_t flags, size, pktsize;
+	uint16_t flags, size;
 	/* bit 0 - Rx Buffer Empty */
 	if (port_in8(iobase + CMD) & 1) return -1;
 
@@ -107,17 +107,16 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	size = *(uint16_t*)(rxbuf + rxpos);
 	rxpos += 2;
 	if (size == 0) panic_invalid_state();
-	pktsize = size - 4;
 
 	// kprintf("packet size 0x%x, flags 0x%x, rxpos %x\n", size, flags, rxpos - 4);
-	virt_cpy_to(pages, dest, rxbuf + rxpos, pktsize);
+	virt_cpy_to(pages, dest, rxbuf + rxpos, size);
 
 	rxpos += size;
 	rxpos = (rxpos + 3) & ~3;
 	while (rxpos >= rxbuf_baselen) rxpos -= rxbuf_baselen;
 	/* the device adds the 0x10 back, it's supposed to avoid overflow */
 	port_out16(iobase + CAPR, rxpos - 0x10);
-	return pktsize;
+	return size;
 }
 
 static void accept(struct vfs_request *req) {
