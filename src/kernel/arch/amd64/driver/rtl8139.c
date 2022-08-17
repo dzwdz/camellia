@@ -170,6 +170,7 @@ static void accept(struct vfs_request *req) {
 			ret = try_rx(req->caller->pages, req->output.buf, req->output.len);
 			if (ret == WAIT) {
 				// TODO this is a pretty common pattern in drivers, try to make it unneeded
+				// TODO invalid assert, fails on nmap
 				assert(!req->postqueue_next);
 				struct vfs_request **slot = &blocked_on;
 				while (*slot) slot = &(*slot)->postqueue_next;

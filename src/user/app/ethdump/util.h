@@ -4,9 +4,12 @@
 
 #define eprintf(fmt, ...) fprintf(stderr, "ethdump: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
+// #define printf(...)
+
 void hexdump(const void *vbuf, size_t len);
 
 uint32_t crc32(const uint8_t *buf, size_t len);
+uint16_t ip_checksum(const uint8_t *buf, size_t len);
 
 
 static inline void nput16(void *vbuf, uint16_t n) {

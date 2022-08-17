@@ -31,3 +31,15 @@ uint32_t crc32(const uint8_t *buf, size_t len) {
 		c = crc_table[(c ^ buf[i]) & 0xff] ^ (c >> 8);
 	return ~c;
 }
+
+uint16_t ip_checksum(const uint8_t *buf, size_t len) {
+	uint32_t c = 0;
+	while (len >= 2) {
+		c += nget16(buf);
+		buf += 2; len -= 2;
+	}
+	if (len) c += (*buf) << 8;
+	while (c >= 0xFFFF)
+		c = (c & 0xFFFF) + (c >> 16);
+	return ~c;
+}

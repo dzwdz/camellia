@@ -24,9 +24,16 @@ void ether_parse(const uint8_t *buf, size_t len) {
 
 	uint16_t ethertype = nget16(buf + EtherType);
 	printf("ethertype %u\n", ethertype);
+
+	struct ethernet ether = (struct ethernet){
+		.src = &smac,
+		.dst = &dmac,
+		.type = ethertype,
+	};
+
 	switch (ethertype) {
 		case ET_IPv4:
-			ipv4_parse(buf + Payload, len - Payload);
+			ipv4_parse(buf + Payload, len - Payload, ether);
 			break;
 		case ET_ARP:
 			arp_parse(buf + Payload, len - Payload);
