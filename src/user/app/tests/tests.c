@@ -17,6 +17,7 @@ int main(void) {
 	r_k_misc();
 	r_k_miscsyscall();
 	r_k_path();
+	r_k_threads();
 	r_libc_esemaphore();
 	r_libc_string();
 	r_s_printf();

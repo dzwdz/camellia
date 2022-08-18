@@ -50,7 +50,17 @@ struct process *process_fork(struct process *parent, int flags) {
 	struct process *child = kmalloc(sizeof *child);
 	memset(child, 0, sizeof *child);
 
-	child->pages = pagedir_copy(parent->pages);
+	if (flags & FORK_SHAREMEM) {
+		if (!parent->pages_refcount) {
+			parent->pages_refcount = kmalloc(sizeof *parent->pages_refcount);
+			*parent->pages_refcount = 1;
+		}
+		*parent->pages_refcount += 1;
+		child->pages_refcount = parent->pages_refcount;
+		child->pages = parent->pages;
+	} else {
+		child->pages = pagedir_copy(parent->pages);
+	}
 	child->regs  = parent->regs;
 	child->state = parent->state;
 	assert(child->state == PS_RUNNING); // not copying the state union
@@ -152,7 +162,16 @@ void process_kill(struct process *p, int ret) {
 			p->execbuf.buf = NULL;
 		}
 
-		pagedir_free(p->pages);
+		if (p->pages_refcount) {
+			assert(*p->pages_refcount != 0);
+			*p->pages_refcount -= 1;
+			if (*p->pages_refcount == 0) {
+				kfree(p->pages_refcount);
+				pagedir_free(p->pages);
+			}
+		} else {
+			pagedir_free(p->pages);
+		}
 
 		// TODO VULN unbounded recursion
 		struct process *c2;

@@ -20,6 +20,9 @@ enum process_state {
 
 struct process {
 	struct pagedir *pages;
+	/* if NULL, refcount == 1. kmalloc'd */
+	uint64_t *pages_refcount;
+
 	struct registers regs;
 	struct process *sibling, *child, *parent;
 
