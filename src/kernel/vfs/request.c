@@ -39,35 +39,26 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		int flags, struct process *handler)
 {
 	if (req->type == VFSOP_OPEN && ret >= 0) {
-		// TODO write tests for caller getting killed while opening a file
-		if (!req->caller) panic_unimplemented();
-
-		handle_t handle = process_find_free_handle(req->caller, 0);
-		if (handle < 0)
-			panic_invalid_state(); // we check for free handles before the open() call
-
+		struct handle *h;
 		if (!(flags & FSR_DELEGATE)) {
 			/* default behavior - create a new handle for the file, wrap the id */
-			struct handle *backing = handle_init(HANDLE_FILE);
-			backing->backend = req->backend;
-			req->backend->refcount++;
-			backing->file_id = stored;
-			backing->ro = req->flags & OPEN_RO;
-			req->caller->handles[handle] = backing;
+			h = handle_init(HANDLE_FILE);
+			h->backend = req->backend; req->backend->refcount++;
+			h->file_id = stored;
+			h->ro = req->flags & OPEN_RO;
 		} else {
 			/* delegating - moving a handle to the caller */
 			assert(handler);
-
-			struct handle *h = handler->handles[ret];
-			if (!h) {
-				kprintf("tried delegating an invalid handle\n");
-				handle = -1; // return error
-			} else {
-				req->caller->handles[handle] = h;
-				handler->handles[ret] = NULL;
-			}
+			h = process_handle_take(handler, ret);
 		}
-		ret = handle;
+
+		if (h) {
+			// TODO write tests for caller getting killed while opening a file
+			if (!req->caller) panic_unimplemented();
+			ret = process_handle_put(req->caller, h);
+		} else {
+			ret = -1;
+		}
 	}
 
 	if (req->input.kern)

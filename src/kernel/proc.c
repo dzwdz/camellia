@@ -1,3 +1,4 @@
+#include <camellia/errno.h>
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>
 #include <kernel/mem/alloc.h>
@@ -89,9 +90,9 @@ struct process *process_fork(struct process *parent, int flags) {
 	child->mount->refs++;
 
 	for (handle_t h = 0; h < HANDLE_MAX; h++) {
-		child->handles[h] = parent->handles[h];
-		if (child->handles[h])
-			child->handles[h]->refcount++;
+		child->_handles[h] = parent->_handles[h];
+		if (child->_handles[h])
+			child->_handles[h]->refcount++;
 	}
 
 	return child;
@@ -148,8 +149,8 @@ void process_kill(struct process *p, int ret) {
 		if (p->state == PS_WAITS4TIMER)
 			timer_deschedule(p);
 
-		for (handle_t h = 0; h < HANDLE_MAX; h++)
-			handle_close(p->handles[h]);
+		for (handle_t hid = 0; hid < HANDLE_MAX; hid++)
+			process_handle_close(p, hid);
 
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
@@ -268,7 +269,7 @@ struct process *process_next(struct process *p) {
 
 handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
 	for (handle_t hid = start_at; hid < HANDLE_MAX; hid++) {
-		if (proc->handles[hid] == NULL)
+		if (proc->_handles[hid] == NULL)
 			return hid;
 	}
 	return -1;
@@ -276,7 +277,54 @@ handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
 
 struct handle *process_handle_get(struct process *p, handle_t id) {
 	if (id < 0 || id >= HANDLE_MAX) return NULL;
-	return p->handles[id];
+	return p->_handles[id];
+}
+
+handle_t process_handle_init(struct process *p, enum handle_type type, struct handle **hs) {
+	handle_t hid = process_find_free_handle(p, 1);
+	if (hid < 0) return -1;
+	p->_handles[hid] = handle_init(type);
+	if (hs) *hs = p->_handles[hid];
+	return hid;
+}
+
+handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
+	struct handle *fromh, **toh;
+
+	if (to < 0) {
+		to = process_find_free_handle(p, 0);
+		if (to < 0) return -EMFILE;
+	} else if (to >= HANDLE_MAX) {
+		return -EBADF;
+	}
+
+	if (to == from) return to;
+	toh = &p->_handles[to];
+	fromh = (from >= 0 && from < HANDLE_MAX) ? p->_handles[from] : NULL;
+
+	if (*toh) handle_close(*toh);
+	*toh = fromh;
+	if (fromh) fromh->refcount++;
+
+	return to;
+}
+
+struct handle *process_handle_take(struct process *p, handle_t hid) {
+	if (hid < 0 || hid >= HANDLE_MAX) return NULL;
+	struct handle *h = p->_handles[hid];
+	p->_handles[hid] = NULL;
+	return h;
+}
+
+handle_t process_handle_put(struct process *p, struct handle *h) {
+	assert(h);
+	handle_t hid = process_find_free_handle(p, 1);
+	if (hid < 0) {
+		handle_close(h);
+		return hid;
+	}
+	p->_handles[hid] = h;
+	return hid;
 }
 
 void process_transition(struct process *p, enum process_state state) {

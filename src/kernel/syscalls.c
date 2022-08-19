@@ -47,38 +47,34 @@ long _syscall_await(void) {
 
 long _syscall_fork(int flags, handle_t __user *fs_front) {
 	struct process *child;
-	handle_t front;
-
-	if ((flags & FORK_NEWFS) && fs_front) {
-		/* we'll need to return a handle, check if that's possible */
-		front = process_find_free_handle(process_current, 1);
-		if (front < 0) SYSCALL_RETURN(-1);
-	}
 
 	child = process_fork(process_current, flags);
 	regs_savereturn(&child->regs, 0);
 
 	if ((flags & FORK_NEWFS) && fs_front) {
-		struct vfs_backend *backend = kmalloc(sizeof *backend);
+		struct handle *h;
+		handle_t hid = process_handle_init(process_current, HANDLE_FS_FRONT, &h);
+		if (hid < 0) {
+			// TODO test
+			child->noreap = true;
+			process_kill(child, -EMFILE);
+			SYSCALL_RETURN(-EMFILE);
+		}
 
-		process_current->handles[front] = handle_init(HANDLE_FS_FRONT);
-
-		backend->heap = true;
-		backend->is_user = true;
-		backend->potential_handlers = 1;
-		backend->refcount = 2; // child + handle
-		backend->user.handler = NULL;
-		backend->queue = NULL;
-
-		child->controlled = backend;
-
-		process_current->handles[front]->backend = backend;
+		h->backend = kmalloc(sizeof *h->backend);
+		h->backend->heap = true;
+		h->backend->is_user = true;
+		h->backend->potential_handlers = 1;
+		h->backend->refcount = 2; // child + handle
+		h->backend->user.handler = NULL;
+		h->backend->queue = NULL;
+		child->controlled = h->backend;
 
 		if (fs_front) {
 			/* failure ignored. if you pass an invalid pointer to this function,
 			 * you just don't receive the handle. you'll probably segfault
 			 * trying to access it anyways */
-			virt_cpy_to(process_current->pages, fs_front, &front, sizeof front);
+			virt_cpy_to(process_current->pages, fs_front, &hid, sizeof hid);
 		}
 	}
 	SYSCALL_RETURN(1);
@@ -181,27 +177,8 @@ fail:
 }
 
 handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
-	struct handle *fromh, **toh;
-	if (flags) SYSCALL_RETURN(-1);
-
-	if (to < 0) {
-		to = process_find_free_handle(process_current, 0);
-		if (to < 0) SYSCALL_RETURN(-1);
-	} else if (to >= HANDLE_MAX) {
-		SYSCALL_RETURN(-1);
-	}
-
-	if (to == from)
-		SYSCALL_RETURN(to);
-	toh = &process_current->handles[to];
-	fromh = (from >= 0 && from < HANDLE_MAX) ?
-		process_current->handles[from] : NULL;
-
-	if (*toh) handle_close(*toh);
-	*toh = fromh;
-	if (fromh) fromh->refcount++;
-
-	SYSCALL_RETURN(to);
+	if (flags != 0) SYSCALL_RETURN(-ENOSYS);
+	SYSCALL_RETURN(process_handle_dup(process_current, from, to));
 }
 
 static long simple_vfsop(
@@ -257,34 +234,28 @@ long _syscall_getsize(handle_t hid) {
 }
 
 long _syscall_remove(handle_t hid) {
-	if (hid < 0 || hid >= HANDLE_MAX) return -1;
-	struct handle **hslot = &process_current->handles[hid];
-	struct handle *h = *hslot;
-	if (!h) SYSCALL_RETURN(-1);
-	if (h->ro) SYSCALL_RETURN(-EACCES);
-	if (h->type == HANDLE_FILE) {
+	struct handle *h = process_handle_get(process_current, hid);
+	if (!h) SYSCALL_RETURN(-EBADF);
+	if (!h->ro && h->type == HANDLE_FILE) {
 		vfsreq_create((struct vfs_request) {
 				.type = VFSOP_REMOVE,
 				.id = h->file_id,
 				.caller = process_current,
 				.backend = h->backend,
 			});
-		handle_close(*hslot);
-		*hslot = NULL;
+		process_handle_close(process_current, hid);
 		return -1; // dummy
 	} else {
-		handle_close(*hslot);
-		*hslot = NULL;
-		SYSCALL_RETURN(-ENOSYS);
+		process_handle_close(process_current, hid);
+		SYSCALL_RETURN(h->ro ? -EACCES : -ENOSYS);
 	}
 }
 
 long _syscall_close(handle_t hid) {
-	if (hid < 0 || hid >= HANDLE_MAX) return -1;
-	struct handle **h = &process_current->handles[hid];
-	if (!*h) SYSCALL_RETURN(-1);
-	handle_close(*h);
-	*h = NULL;
+	if (!process_handle_get(process_current, hid)) {
+		SYSCALL_RETURN(-EBADF);
+	}
+	process_handle_close(process_current, hid);
 	SYSCALL_RETURN(0);
 }
 
@@ -361,17 +332,17 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 }
 
 long _syscall_pipe(handle_t __user user_ends[2], int flags) {
-	if (flags) SYSCALL_RETURN(-1);
+	if (flags) SYSCALL_RETURN(-ENOSYS);
+
 	handle_t ends[2];
 	struct handle *rend, *wend;
-
-	ends[0] = process_find_free_handle(process_current, 0);
-	if (ends[0] < 0) SYSCALL_RETURN(-1);
-	ends[1] = process_find_free_handle(process_current, ends[0]+1);
-	if (ends[1] < 0) SYSCALL_RETURN(-1);
-
-	rend = process_current->handles[ends[0]] = handle_init(HANDLE_PIPE);
-	wend = process_current->handles[ends[1]] = handle_init(HANDLE_PIPE);
+	ends[0] = process_handle_init(process_current, HANDLE_PIPE, &rend);
+	ends[1] = process_handle_init(process_current, HANDLE_PIPE, &wend);
+	if (ends[0] < 0 || ends[1] < 0) {
+		process_handle_close(process_current, ends[0]);
+		process_handle_close(process_current, ends[1]);
+		SYSCALL_RETURN(-EMFILE);
+	}
 	wend->pipe.write_end = true;
 	wend->pipe.sister = rend;
 	rend->pipe.sister = wend;

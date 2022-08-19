@@ -48,7 +48,7 @@ struct process {
 	};
 
 	struct vfs_mount *mount;
-	struct handle *handles[HANDLE_MAX];
+	struct handle *_handles[HANDLE_MAX];
 	uint32_t id; /* only for debugging, don't expose to userland */
 	bool noreap;
 
@@ -84,5 +84,18 @@ struct process *process_next(struct process *);
 
 handle_t process_find_free_handle(struct process *proc, handle_t start_at);
 struct handle *process_handle_get(struct process *, handle_t);
+handle_t process_handle_init(struct process *, enum handle_type, struct handle **);
+handle_t process_handle_dup(struct process *p, handle_t from, handle_t to);
+static inline void process_handle_close(struct process *p, handle_t hid) {
+	// TODO test
+	process_handle_dup(p, -1, hid);
+}
+
+/* Gets a handle and removes the process' reference to it, without decreasing the refcount.
+ * Meant to be used together with process_handle_put. */
+struct handle *process_handle_take(struct process *, handle_t);
+/* Put a handle in a process, taking the ownership away from the caller.
+ * Doesn't increase the refcount on success, decreases it on failure. */
+handle_t process_handle_put(struct process *, struct handle *);
 
 void process_transition(struct process *, enum process_state);

@@ -9,3 +9,4 @@
 #define ENOENT 8
 #define ENOTEMPTY 9
 #define EACCES 10
+#define EMFILE 11 /* All file descriptors taken. */
