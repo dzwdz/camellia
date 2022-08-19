@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 
 struct point cursor = {0};
 
@@ -38,26 +39,26 @@ int main(void) {
 
 	static char buf[512];
 	struct fs_wait_response res;
-	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
+	while (!c0_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				// TODO check path
-				_syscall_fs_respond(NULL, 0, 0);
+				c0_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_WRITE:
 				if (res.flags) {
-					_syscall_fs_respond(NULL, -1, 0);
+					c0_fs_respond(NULL, -1, 0);
 				} else {
 					for (size_t i = 0; i < res.len; i++)
 						in_char(buf[i]);
 					dirty_flush(&dirty, &fb);
-					_syscall_fs_respond(NULL, res.len, 0);
+					c0_fs_respond(NULL, res.len, 0);
 				}
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

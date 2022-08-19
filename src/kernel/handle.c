@@ -31,6 +31,8 @@ void handle_close(struct handle *h) {
 			pipe_invalidate_end(h->pipe.sister);
 			h->pipe.sister->pipe.sister = NULL;
 		}
+	} else if (h->type == HANDLE_FS_REQ) {
+		if (h->req) vfsreq_finish_short(h->req, -1);
 	}
 
 	if (h->backend)

@@ -99,8 +99,6 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 	assert(req && req->backend && req->backend->user.handler);
 	handler = req->backend->user.handler;
 	assert(handler->state == PS_WAITS4REQUEST);
-	if (handler->handled_req)
-		panic_unimplemented();
 
 	// the virt_cpy calls aren't present in all kernel backends
 	// it's a way to tell apart kernel and user backends apart
@@ -134,10 +132,13 @@ void vfs_backend_user_accept(struct vfs_request *req) {
 		panic_unimplemented();
 	}
 
+	struct handle *h;
+	handle_t hid = process_handle_init(handler, HANDLE_FS_REQ, &h);
+	if (hid < 0) panic_unimplemented();
+	h->req = req;
 	process_transition(handler, PS_RUNNING);
-	handler->handled_req = req;
+	regs_savereturn(&handler->regs, hid);
 	req->backend->user.handler = NULL;
-	regs_savereturn(&handler->regs, 0);
 	return;
 }
 

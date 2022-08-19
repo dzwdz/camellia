@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 #include <user/lib/fs/dir.h>
 
 struct node {
@@ -103,11 +104,11 @@ int main(void) {
 	char *buf = malloc(buflen);
 	struct fs_wait_response res;
 	struct node *ptr;
-	while (!_syscall_fs_wait(buf, buflen, &res)) {
+	while (!c0_fs_wait(buf, buflen, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				ptr = tmpfs_open(buf, &res);
-				_syscall_fs_respond(ptr, ptr ? 0 : -1, 0);
+				c0_fs_respond(ptr, ptr ? 0 : -1, 0);
 				break;
 
 			case VFSOP_READ:
@@ -117,23 +118,23 @@ int main(void) {
 					dir_start(&db, res.offset, buf, buflen);
 					for (struct node *iter = ptr->child; iter; iter = iter->sibling)
 						dir_append(&db, iter->name);
-					_syscall_fs_respond(buf, dir_finish(&db), 0);
+					c0_fs_respond(buf, dir_finish(&db), 0);
 				} else {
 					fs_normslice(&res.offset, &res.len, ptr->size, false);
-					_syscall_fs_respond(ptr->buf + res.offset, res.len, 0);
+					c0_fs_respond(ptr->buf + res.offset, res.len, 0);
 				}
 				break;
 
 			case VFSOP_WRITE:
 				ptr = (void*)res.id;
 				if (ptr == &special_root) {
-					_syscall_fs_respond(NULL, -1, 0);
+					c0_fs_respond(NULL, -1, 0);
 					break;
 				}
 				if (res.len > 0 && !ptr->buf) {
 					ptr->buf = malloc(256);
 					if (!ptr->buf) {
-						_syscall_fs_respond(NULL, -1, 0);
+						c0_fs_respond(NULL, -1, 0);
 						break;
 					}
 					memset(ptr->buf, 0, 256);
@@ -146,7 +147,7 @@ int main(void) {
 					while (newcap && newcap <= res.offset + res.len)
 						newcap *= 2;
 					if (!newcap) { /* overflow */
-						_syscall_fs_respond(NULL, -1, 0);
+						c0_fs_respond(NULL, -1, 0);
 						break;
 					}
 					ptr->capacity = newcap;
@@ -157,7 +158,7 @@ int main(void) {
 				if ((res.flags & WRITE_TRUNCATE) || ptr->size < res.offset + res.len) {
 					ptr->size = res.offset + res.len;
 				}
-				_syscall_fs_respond(NULL, res.len, 0);
+				c0_fs_respond(NULL, res.len, 0);
 				break;
 
 			case VFSOP_GETSIZE:
@@ -168,25 +169,25 @@ int main(void) {
 					dir_start(&db, res.offset, NULL, buflen);
 					for (struct node *iter = ptr->child; iter; iter = iter->sibling)
 						dir_append(&db, iter->name);
-					_syscall_fs_respond(NULL, dir_finish(&db), 0);
+					c0_fs_respond(NULL, dir_finish(&db), 0);
 				} else {
-					_syscall_fs_respond(NULL, ptr->size, 0);
+					c0_fs_respond(NULL, ptr->size, 0);
 				}
 				break;
 
 			case VFSOP_REMOVE:
 				ptr = (void*)res.id;
-				_syscall_fs_respond(NULL, remove_node(ptr), 0);
+				c0_fs_respond(NULL, remove_node(ptr), 0);
 				break;
 
 			case VFSOP_CLOSE:
 				ptr = (void*)res.id;
 				handle_down(ptr);
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

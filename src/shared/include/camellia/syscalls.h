@@ -62,10 +62,8 @@ long _syscall_getsize(handle_t h);
 long _syscall_remove(handle_t h);
 long _syscall_close(handle_t h);
 
-/** Blocks until an fs request is made.
- * @return 0 if everything was successful */
-long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res);
-long _syscall_fs_respond(void __user *buf, long ret, int flags);
+handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res);
+long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags);
 
 /** Modifies the virtual address space.
  *

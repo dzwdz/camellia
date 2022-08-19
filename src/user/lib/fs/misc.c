@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 #include <user/lib/fs/dir.h>
 #include <user/lib/fs/misc.h>
 
@@ -41,12 +42,12 @@ void fs_passthru(const char *prefix) {
 	int prefix_len = prefix ? strlen(prefix) : 0;
 	if (!buf) exit(1);
 
-	while (!_syscall_fs_wait(buf, buf_len, &res)) {
+	while (!c0_fs_wait(buf, buf_len, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (prefix) {
 					if (prefix_len + res.len > buf_len) {
-						_syscall_fs_respond(NULL, -1, 0);
+						c0_fs_respond(NULL, -1, 0);
 						break;
 					}
 
@@ -57,11 +58,11 @@ void fs_passthru(const char *prefix) {
 					memcpy(buf, prefix, prefix_len);
 					res.len += prefix_len;
 				}
-				_syscall_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+				c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}
@@ -77,7 +78,7 @@ void fs_whitelist(const char **list) {
 	struct dirbuild db;
 	if (!buf) exit(1);
 
-	while (!_syscall_fs_wait(buf, buf_len, &res)) {
+	while (!c0_fs_wait(buf, buf_len, &res)) {
 		size_t blen;
 		ipath = res.id;
 		switch (res.op) {
@@ -103,15 +104,15 @@ void fs_whitelist(const char **list) {
 					}
 				}
 				if (passthru) {
-					_syscall_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+					c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
 				} else if (inject) {
 					// TODO all the inject points could be precomputed
 					ipath = malloc(res.len + 1);
 					memcpy(ipath, buf, res.len);
 					ipath[res.len] = '\0';
-					_syscall_fs_respond(ipath, 0, 0);
+					c0_fs_respond(ipath, 0, 0);
 				} else {
-					_syscall_fs_respond(NULL, -1, 0);
+					c0_fs_respond(NULL, -1, 0);
 				}
 				break;
 
@@ -126,16 +127,16 @@ void fs_whitelist(const char **list) {
 					if (blen < len && !memcmp(ipath, *iter, blen))
 						dir_appendl(&db, *iter + blen, dir_seglen(*iter + blen));
 				}
-				_syscall_fs_respond(target, dir_finish(&db), 0);
+				c0_fs_respond(target, dir_finish(&db), 0);
 				break;
 
 			case VFSOP_CLOSE:
 				free(ipath);
-				_syscall_fs_respond(NULL, 0, 0);
+				c0_fs_respond(NULL, 0, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}
@@ -157,11 +158,11 @@ void fs_union(const char **list) {
 	struct dirbuild db;
 	if (!pre) exit(1);
 
-	while (!_syscall_fs_wait(post, postlen, &res)) {
+	while (!c0_fs_wait(post, postlen, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (res.len == 1) { /* root directory */
-					_syscall_fs_respond(NULL, 0, 0);
+					c0_fs_respond(NULL, 0, 0);
 					break;
 				}
 
@@ -178,7 +179,7 @@ void fs_union(const char **list) {
 					post[res.len] = '\0';
 				}
 				if (ret < 0) ret = -1;
-				_syscall_fs_respond(NULL, ret, FSR_DELEGATE);
+				c0_fs_respond(NULL, ret, FSR_DELEGATE);
 				break;
 
 		case VFSOP_READ:
@@ -198,11 +199,11 @@ void fs_union(const char **list) {
 				end = end || dir_append_from(&db, h);
 				_syscall_close(h);
 			}
-			_syscall_fs_respond(target, dir_finish(&db), 0);
+			c0_fs_respond(target, dir_finish(&db), 0);
 			break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}
@@ -225,7 +226,7 @@ void fs_dir_inject(const char *path) {
 
 	if (!buf) exit(1);
 
-	while (!_syscall_fs_wait(buf, buf_len, &res)) {
+	while (!c0_fs_wait(buf, buf_len, &res)) {
 		data = res.id;
 		switch (res.op) {
 			case VFSOP_OPEN:
@@ -237,9 +238,9 @@ void fs_dir_inject(const char *path) {
 					data->delegate = _syscall_open(buf, res.len, res.flags);
 					data->inject = path + res.len;
 					data->inject_len = dir_seglen(data->inject);
-					_syscall_fs_respond(data, 0, 0);
+					c0_fs_respond(data, 0, 0);
 				} else {
-					_syscall_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+					c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
 				}
 				break;
 
@@ -247,7 +248,7 @@ void fs_dir_inject(const char *path) {
 				if (data->delegate >= 0)
 					close(data->delegate);
 				free(data);
-				_syscall_fs_respond(NULL, 0, 0);
+				c0_fs_respond(NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
@@ -259,11 +260,11 @@ void fs_dir_inject(const char *path) {
 				dir_appendl(&db, data->inject, data->inject_len);
 				if (data->delegate >= 0)
 					dir_append_from(&db, data->delegate);
-				_syscall_fs_respond(target, dir_finish(&db), 0);
+				c0_fs_respond(target, dir_finish(&db), 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

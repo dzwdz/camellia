@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 #include <user/lib/fs/dir.h>
 
 #define BUF_SIZE 64
@@ -25,11 +26,11 @@ void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
 	struct fs_wait_response res;
 	void *ptr;
-	while (!_syscall_fs_wait(buf, BUF_SIZE, &res)) {
+	while (!c0_fs_wait(buf, BUF_SIZE, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
 				ptr = tar_open(buf, res.len, base, ~0);
-				_syscall_fs_respond(ptr, ptr ? 0 : -1, 0);
+				c0_fs_respond(ptr, ptr ? 0 : -1, 0);
 				break;
 
 			case VFSOP_READ:
@@ -38,17 +39,17 @@ void tar_driver(void *base) {
 
 			case VFSOP_GETSIZE:
 				if (tar_type(res.id) != '5') {
-					_syscall_fs_respond(NULL, tar_size(res.id), 0);
+					c0_fs_respond(NULL, tar_size(res.id), 0);
 				} else {
 					struct dirbuild db;
 					dir_start(&db, res.offset, NULL, 0);
 					tar_dirbuild(&db, res.id, base, ~0);
-					_syscall_fs_respond(NULL, dir_finish(&db), 0);
+					c0_fs_respond(NULL, dir_finish(&db), 0);
 				}
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0); // unsupported
+				c0_fs_respond(NULL, -1, 0); // unsupported
 				break;
 		}
 	}
@@ -107,18 +108,18 @@ static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) 
 		case '\0':
 		case '0': /* normal files */
 			fs_normslice(&res->offset, &res->len, tar_size(meta), false);
-			_syscall_fs_respond(meta + 512 + res->offset, res->len, 0);
+			c0_fs_respond(meta + 512 + res->offset, res->len, 0);
 			break;
 
 		case '5': /* directory */
 			struct dirbuild db;
 			dir_start(&db, res->offset, buf, sizeof buf);
 			tar_dirbuild(&db, meta, base, base_len);
-			_syscall_fs_respond(buf, dir_finish(&db), 0);
+			c0_fs_respond(buf, dir_finish(&db), 0);
 			break;
 
 		default:
-			_syscall_fs_respond(NULL, -1, 0);
+			c0_fs_respond(NULL, -1, 0);
 			break;
 	}
 }

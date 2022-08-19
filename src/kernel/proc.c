@@ -74,10 +74,6 @@ struct process *process_fork(struct process *parent, int flags) {
 
 	child->id = next_pid++;
 
-	// TODO control this with a flag
-	child->handled_req  = parent->handled_req;
-	parent->handled_req = NULL;
-
 	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
 		child->controlled = parent->controlled;
 		child->controlled->potential_handlers++;
@@ -122,11 +118,6 @@ static bool unref(uint64_t *refcount) {
 
 void process_kill(struct process *p, int ret) {
 	if (p->state != PS_DEAD) {
-		if (p->handled_req) {
-			vfsreq_finish_short(p->handled_req, -1);
-			p->handled_req = NULL;
-		}
-
 		if (p->controlled) {
 			// TODO vfs_backend_user_handlerdown
 			assert(p->controlled->potential_handlers > 0);

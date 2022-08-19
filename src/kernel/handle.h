@@ -4,6 +4,7 @@ enum handle_type; // forward declaration for proc.h
 
 #include <camellia/types.h>
 #include <kernel/vfs/mount.h>
+#include <kernel/vfs/request.h>
 #include <stddef.h>
 
 enum handle_type {
@@ -11,6 +12,7 @@ enum handle_type {
 	HANDLE_FILE,
 	HANDLE_PIPE,
 	HANDLE_FS_FRONT,
+	HANDLE_FS_REQ,
 };
 
 struct handle {
@@ -18,6 +20,7 @@ struct handle {
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	void __user *file_id; // only applicable to HANDLE_FILE
 	bool ro; /* currently only for HANDLE_FILE */
+	struct vfs_request *req; /* HANDLE_FS_REQ */
 	struct {
 		struct process *queued;
 		bool write_end;

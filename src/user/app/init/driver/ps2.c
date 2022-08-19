@@ -3,6 +3,7 @@
 #include <shared/container/ring.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 
 
 static const char keymap_lower[] = {
@@ -53,10 +54,10 @@ static void main_loop(void) {
 	static char buf[512];
 	struct fs_wait_response res;
 	int ret;
-	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
+	while (!c0_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:
-				_syscall_fs_respond(NULL, 1, 0);
+				c0_fs_respond(NULL, 1, 0);
 				break;
 
 			case VFSOP_READ:
@@ -68,11 +69,11 @@ static void main_loop(void) {
 						parse_scancode(buf[i]);
 				}
 				ret = ring_get((void*)&backlog, buf, res.capacity);
-				_syscall_fs_respond(buf, ret, 0);
+				c0_fs_respond(buf, ret, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/compat.h>
 #include <user/lib/fs/misc.h>
 
 static const char *shell = "/bin/shell";
@@ -39,12 +40,12 @@ static void drv(const char *prefix) {
 	struct fs_wait_response res;
 	size_t prefixlen = strlen(prefix);
 	char buf[128];
-	while (!_syscall_fs_wait(buf, sizeof buf, &res)) {
+	while (!c0_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			handle_t h;
 			case VFSOP_OPEN:
 				if (res.len == sizeof buf) {
-					_syscall_fs_respond(NULL, -1, 0);
+					c0_fs_respond(NULL, -1, 0);
 					break;
 				}
 				buf[res.len] = '\0';
@@ -56,11 +57,11 @@ static void drv(const char *prefix) {
 				} else {
 					h = -EACCES;
 				}
-				_syscall_fs_respond(NULL, h, FSR_DELEGATE);
+				c0_fs_respond(NULL, h, FSR_DELEGATE);
 				break;
 
 			default:
-				_syscall_fs_respond(NULL, -1, 0);
+				c0_fs_respond(NULL, -1, 0);
 				break;
 		}
 	}

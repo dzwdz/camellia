@@ -1,6 +1,7 @@
 #include "../tests.h"
 #include <camellia/path.h>
 #include <string.h>
+#include <user/lib/compat.h>
 #include <user/lib/fs/misc.h>
 
 static void test_path_simplify(void) {
@@ -66,9 +67,9 @@ static void mount_resolve_drv(const char *path) {
 	if (fork2_n_mount(path)) return;
 
 	struct fs_wait_response res;
-	while (!_syscall_fs_wait(NULL, 0, &res)) {
-		// TODO does the first argument of _syscall_fs_respond need to be non-const?
-		_syscall_fs_respond((void*)path, strlen(path), 0);
+	while (!c0_fs_wait(NULL, 0, &res)) {
+		// TODO does the first argument of c0_fs_respond need to be non-const?
+		c0_fs_respond((void*)path, strlen(path), 0);
 	}
 	exit(1);
 }

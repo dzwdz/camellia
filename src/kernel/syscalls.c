@@ -259,7 +259,7 @@ long _syscall_close(handle_t hid) {
 	SYSCALL_RETURN(0);
 }
 
-long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
+handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
 	struct vfs_backend *backend = process_current->controlled;
 	// TODO can be used to tell if you're init
 	if (!backend) SYSCALL_RETURN(-1);
@@ -276,25 +276,28 @@ long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __
 	return -1; // dummy
 }
 
-long _syscall_fs_respond(void __user *buf, long ret, int flags) {
-	struct vfs_request *req = process_current->handled_req;
-	if (!req) SYSCALL_RETURN(-1);
+long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags) {
+	struct handle *h = process_handle_get(process_current, hid);
+	if (!h || h->type != HANDLE_FS_REQ) SYSCALL_RETURN(-EBADF);
+	struct vfs_request *req = h->req;
+	if (req) {
+		if (req->output.len > 0 && ret > 0) {
+			// if this vfsop outputs data and ret is positive, it's the length of the buffer
+			// TODO document
+			// TODO move to vfsreq_finish
+			ret = min(ret, capped_cast32(req->output.len));
+			struct virt_cpy_error err;
+			virt_cpy(req->caller->pages, req->output.buf,
+					process_current->pages, buf, ret, &err);
 
-	if (req->output.len > 0 && ret > 0) {
-		// if this vfsop outputs data and ret is positive, it's the length of the buffer
-		// TODO document
-		ret = min(ret, capped_cast32(req->output.len));
-		struct virt_cpy_error err;
-		virt_cpy(req->caller->pages, req->output.buf,
-				process_current->pages, buf, ret, &err);
-
-		if (err.read_fail)
-			panic_unimplemented();
-		/* write failures are ignored */
+			if (err.read_fail)
+				panic_unimplemented();
+			/* write failures are ignored */
+		}
+		vfsreq_finish(req, buf, ret, flags, process_current);
 	}
-
-	process_current->handled_req = NULL;
-	vfsreq_finish(req, buf, ret, flags, process_current);
+	h->req = NULL;
+	process_handle_close(process_current, hid);
 	SYSCALL_RETURN(0);
 }
 
@@ -400,7 +403,7 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYSCALL_REMOVE:	_syscall_remove(a);
 		break; case _SYSCALL_CLOSE:	_syscall_close(a);
 		break; case _SYSCALL_FS_WAIT:	_syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
-		break; case _SYSCALL_FS_RESPOND:	_syscall_fs_respond((userptr_t)a, b, c);
+		break; case _SYSCALL_FS_RESPOND:	_syscall_fs_respond(a, (userptr_t)b, c, d);
 		break; case _SYSCALL_MEMFLAG:	_syscall_memflag((userptr_t)a, b, c);
 		break; case _SYSCALL_PIPE:	_syscall_pipe((userptr_t)a, b);
 		break; case _SYSCALL_SLEEP:	_syscall_sleep(a);

@@ -50,12 +50,12 @@ long _syscall_close(handle_t h) {
 	return _syscall(_SYSCALL_CLOSE, (long)h, 0, 0, 0, 0);
 }
 
-long _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
-	return _syscall(_SYSCALL_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
+handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
+	return (handle_t)_syscall(_SYSCALL_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
 }
 
-long _syscall_fs_respond(void __user *buf, long ret, int flags) {
-	return _syscall(_SYSCALL_FS_RESPOND, (long)buf, ret, (long)flags, 0, 0);
+long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags) {
+	return _syscall(_SYSCALL_FS_RESPOND, (long)hid, (long)buf, ret, (long)flags, 0);
 }
 
 void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {

@@ -59,7 +59,6 @@ struct process {
 
 	/* vfs_backend controlled (not exclusively) by this process */
 	struct vfs_backend *controlled;
-	struct vfs_request *handled_req;
 
 	struct {
 		void *buf;
