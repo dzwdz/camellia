@@ -31,9 +31,7 @@ static __user void *addr_canonize(const __user void *addr) {
 
 
 struct pagedir *pagedir_new(void) {
-	struct pagedir *dir = page_alloc(1);
-	memset(dir, 0, sizeof *dir);
-	return dir;
+	return page_zalloc(1);
 }
 
 void pagedir_free(struct pagedir *dir) {

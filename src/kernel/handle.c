@@ -7,8 +7,7 @@
 #include <shared/mem.h>
 
 struct handle *handle_init(enum handle_type type) {
-	struct handle *h = kmalloc(sizeof *h);
-	memset(h, 0, sizeof *h);
+	struct handle *h = kzalloc(sizeof *h);
 	h->type = type;
 	h->refcount = 1;
 	return h;

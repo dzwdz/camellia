@@ -1,11 +1,9 @@
 #pragma once
-
 #include <camellia/types.h>
 #include <kernel/arch/amd64/registers.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
-
 struct process;
 
 // i have no idea where else to put it

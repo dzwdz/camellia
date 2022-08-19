@@ -21,8 +21,7 @@ static _Noreturn void process_switch(struct process *proc);
 
 struct process *process_seed(void *data, size_t datalen) {
 	assert(!process_first);
-	process_first = kmalloc(sizeof *process_first);
-	memset(process_first, 0, sizeof *process_first);
+	process_first = kzalloc(sizeof *process_first);
 	process_first->state = PS_RUNNING;
 	process_first->pages = pagedir_new();
 	process_first->mount = vfs_mount_seed();
@@ -48,8 +47,7 @@ struct process *process_seed(void *data, size_t datalen) {
 }
 
 struct process *process_fork(struct process *parent, int flags) {
-	struct process *child = kmalloc(sizeof *child);
-	memset(child, 0, sizeof *child);
+	struct process *child = kzalloc(sizeof *child);
 
 	if (flags & FORK_SHAREMEM) {
 		if (!parent->pages_refcount) {

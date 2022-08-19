@@ -1,5 +1,6 @@
 #pragma once
 #include <kernel/arch/generic.h>
+#include <shared/mem.h>
 #include <stddef.h>
 
 extern struct malloc_hdr *malloc_last;
@@ -20,3 +21,9 @@ void page_free(void *first, size_t pages);
 void kmalloc_sanity(const void *addr);
 void *kmalloc(size_t len);
 void kfree(void *ptr);
+
+static inline void *kzalloc(size_t len) {
+	void *b = kmalloc(len);
+	memset(b, 0, len);
+	return b;
+}

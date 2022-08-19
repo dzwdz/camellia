@@ -323,8 +323,8 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 
 		phys = pagedir_virt2phys(pages, iter, false, false);
 		if (!phys) {
-			phys = page_alloc(1);
-			memset(phys, 0, PAGE_SIZE); // TODO somehow test this
+			// TODO test zeroing of user pages
+			phys = page_zalloc(1);
 			pagedir_map(pages, iter, phys, true, true);
 		}
 	}
