@@ -1,3 +1,6 @@
+#define ASM_FILE 1
+#include <camellia/syscalls.h>
+
 .section .text
 .global _freejmp_chstack
 .type _freejmp_chstack, @function
@@ -12,6 +15,6 @@ _freejmp_chstack:
 // _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
 execbuf_chstack:
 	mov %rdi, %rsp
-	mov $100, %rdi
+	mov $_SYSCALL_EXECBUF, %rdi
 	syscall
-	jmp 0 // if execbuf failed we might as well crash
+	hlt // if execbuf failed we might as well crash

@@ -1,35 +1,34 @@
 #pragma once
+
+#define _SYSCALL_EXIT 0
+#define _SYSCALL_AWAIT 1
+#define _SYSCALL_FORK 2
+
+#define _SYSCALL_OPEN 3
+#define _SYSCALL_MOUNT 4
+#define _SYSCALL_DUP 5
+
+#define _SYSCALL_READ 6
+#define _SYSCALL_WRITE 7
+#define _SYSCALL_GETSIZE 8
+#define _SYSCALL_REMOVE 9
+#define _SYSCALL_CLOSE 10
+
+#define _SYSCALL_FS_WAIT 11
+#define _SYSCALL_FS_RESPOND 12
+
+#define _SYSCALL_MEMFLAG 13
+#define _SYSCALL_PIPE 14
+
+#define _SYSCALL_SLEEP 15
+
+#define _SYSCALL_EXECBUF 100
+
+#define _SYSCALL_DEBUG_KLOG 101
+
+#ifndef ASM_FILE
 #include <camellia/types.h>
 #include <stddef.h>
-
-enum {
-	// idc about stable syscall numbers just yet
-	_SYSCALL_EXIT,
-	_SYSCALL_AWAIT,
-	_SYSCALL_FORK,
-
-	_SYSCALL_OPEN,
-	_SYSCALL_MOUNT,
-	_SYSCALL_DUP,
-
-	_SYSCALL_READ,
-	_SYSCALL_WRITE,
-	_SYSCALL_GETSIZE,
-	_SYSCALL_REMOVE,
-	_SYSCALL_CLOSE,
-
-	_SYSCALL_FS_WAIT,
-	_SYSCALL_FS_RESPOND,
-
-	_SYSCALL_MEMFLAG,
-	_SYSCALL_PIPE,
-
-	_SYSCALL_SLEEP,
-
-	_SYSCALL_EXECBUF = 100,
-
-	_SYSCALL_DEBUG_KLOG,
-};
 
 long _syscall(long, long, long, long, long, long);
 
@@ -83,3 +82,5 @@ void _syscall_sleep(long ms);
 long _syscall_execbuf(void __user *buf, size_t len);
 
 void _syscall_debug_klog(const void __user *buf, size_t len);
+
+#endif

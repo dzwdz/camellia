@@ -119,7 +119,7 @@ out/obj/%.s.o: src/%.s
 
 out/obj/%.S.o: src/%.S
 	@mkdir -p $(@D)
-	@$(CC) -c $^ -o $@
+	@$(CC) $(CFLAGS) -c $^ -o $@
 
 out/obj/shared/%.c.o: src/shared/%.c
 	@mkdir -p $(@D)
