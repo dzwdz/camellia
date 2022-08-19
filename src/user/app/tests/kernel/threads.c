@@ -18,7 +18,6 @@ static void test_basic_thread(void) {
 	test(global_n == 10);
 }
 
-
 handle_t global_h;
 static void shared_handle(void *sem) {
 	handle_t ends[2];
@@ -39,7 +38,18 @@ static void test_shared_handle(void) {
 	test(!strcmp("Hello!", buf));
 }
 
+static void many_thread(void *arg) {
+	*(uint64_t*)arg += 10;
+}
+static void test_many_threads(void) {
+	uint64_t n = 0;
+	for (int i = 0; i < 10; i++) thread_create(0, many_thread, &n);
+	for (int i = 0; i < 10; i++) _syscall_await();
+	test(n == 100);
+}
+
 void r_k_threads(void) {
 	run_test(test_basic_thread);
 	run_test(test_shared_handle);
+	run_test(test_many_threads);
 }
