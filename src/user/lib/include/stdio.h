@@ -9,6 +9,10 @@
 #define SEEK_CUR 2
 #define SEEK_END 3
 
+/* stop fread() from trying to fill the entire buffer before returning
+ * i.e. it will call _syscall_read() exactly once */
+#define FEXT_NOFILL 1
+
 int printf(const char *restrict fmt, ...);
 int fprintf(FILE *restrict f, const char *restrict fmt, ...);
 
@@ -24,6 +28,7 @@ FILE *fopen(const char *path, const char *mode);
 FILE *freopen(const char *path, const char *mode, FILE *);
 FILE *fdopen(int fd, const char *mode);
 FILE *file_clone(const FILE *, const char *mode);
+int fextflags(FILE *, int extflags);
 int fclose(FILE *);
 int fflush(FILE *f);
 

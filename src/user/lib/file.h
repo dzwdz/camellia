@@ -6,4 +6,5 @@ struct _LIBC_FILE {
 	long pos;
 	bool eof;
 	bool error;
+	int extflags;
 };

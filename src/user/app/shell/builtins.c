@@ -26,6 +26,7 @@ static void cmd_cat(int argc, char **argv) {
 			eprintf("couldn't open %s", argv[i]);
 			return;
 		}
+		if (!strcmp(argv[i], "!stdin")) fextflags(file, FEXT_NOFILL);
 		for (;;) {
 			int len = fread(buf, 1, sizeof buf, file);
 			if (len <= 0) break;
@@ -76,10 +77,11 @@ void cmd_hexdump(int argc, char **argv) {
 	bool canonical = !strcmp(argv[0], "hd");
 	size_t readlen = ~0;
 	size_t pos = 0;
+	bool raw = false;
 
 	int c;
 	optind = 0;
-	while ((c = getopt(argc, argv, "Cn:s:")) != -1) {
+	while ((c = getopt(argc, argv, "Cn:s:r")) != -1) {
 		switch (c) {
 			case 'C':
 				canonical = true;
@@ -89,6 +91,9 @@ void cmd_hexdump(int argc, char **argv) {
 				break;
 			case 's':
 				pos = strtol(optarg, NULL, 0);
+				break;
+			case 'r': /* "raw" mode, print data as soon as it's read without buffering */
+				raw = true;
 				break;
 			default:
 				return;
@@ -103,6 +108,7 @@ void cmd_hexdump(int argc, char **argv) {
 			eprintf("couldn't open %s", argv[optind]);
 			return;
 		}
+		if (raw) fextflags(file, FEXT_NOFILL);
 		fseek(file, pos, SEEK_SET);
 		bool skipped = false;
 		while (pos < readlen) {

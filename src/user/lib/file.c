@@ -87,10 +87,11 @@ FILE *fdopen(int fd, const char *mode) {
 	FILE *f;
 	f = malloc(sizeof *f);
 	if (!f) return NULL;
+	f->fd = fd;
 	f->pos = mode[0] == 'a' ? -1 : 0;
 	f->eof = false;
-	f->fd = fd;
 	f->error = false;
+	f->extflags = 0;
 	return f;
 }
 
@@ -108,6 +109,12 @@ FILE *file_clone(const FILE *f, const char *mode) {
 	f2->eof = f->eof;
 	f2->fd = h;
 	return f2;
+}
+
+int fextflags(FILE *f, int extflags) {
+	int old = f->extflags;
+	f->extflags = extflags;
+	return old;
 }
 
 static void fadvance(long amt, FILE *f) {
@@ -133,16 +140,16 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 		if (res < 0) {
 			f->error = true;
 			errno = -res;
-			return pos/size;
+			break;
 		} else if (res == 0) {
 			f->eof = true;
-			return pos/size;
-		} else {
-			pos += res;
-			fadvance(res, f);
+			break;
 		}
+		pos += res;
+		fadvance(res, f);
+		if (f->extflags & FEXT_NOFILL) break;
 	}
-	return nitems;
+	return pos == total ? nitems : (pos/size);
 }
 
 size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
