@@ -26,6 +26,7 @@ struct process *process_seed(void *data, size_t datalen) {
 	process_first->pages = pagedir_new();
 	process_first->mount = vfs_mount_seed();
 	process_first->id    = next_pid++;
+	process_first->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
 
 	// map the stack to the last page in memory
 	// TODO move to user bootstrap
@@ -87,13 +88,36 @@ struct process *process_fork(struct process *parent, int flags) {
 	assert(child->mount);
 	child->mount->refs++;
 
-	for (handle_t h = 0; h < HANDLE_MAX; h++) {
-		child->_handles[h] = parent->_handles[h];
-		if (child->_handles[h])
-			child->_handles[h]->refcount++;
+	if (flags & FORK_SHAREHANDLE) {
+		if (!parent->handles_refcount) {
+			parent->handles_refcount = kmalloc(sizeof *parent->handles_refcount);
+			*parent->handles_refcount = 1;
+		}
+		*parent->handles_refcount += 1;
+		child->handles_refcount = parent->handles_refcount;
+		child->_handles = parent->_handles;
+	} else {
+		child->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
+		for (handle_t h = 0; h < HANDLE_MAX; h++) {
+			child->_handles[h] = parent->_handles[h];
+			if (child->_handles[h])
+				child->_handles[h]->refcount++;
+		}
 	}
 
 	return child;
+}
+
+/* meant to be used with p->*_refcount */
+static bool unref(uint64_t *refcount) {
+	if (!refcount) return true;
+	assert(*refcount != 0);
+	*refcount -= 1;
+	if (*refcount == 0) {
+		kfree(refcount);
+		return true;
+	}
+	return false;
 }
 
 void process_kill(struct process *p, int ret) {
@@ -147,8 +171,11 @@ void process_kill(struct process *p, int ret) {
 		if (p->state == PS_WAITS4TIMER)
 			timer_deschedule(p);
 
-		for (handle_t hid = 0; hid < HANDLE_MAX; hid++)
-			process_handle_close(p, hid);
+		if (unref(p->handles_refcount)) {
+			for (handle_t hid = 0; hid < HANDLE_MAX; hid++)
+				process_handle_close(p, hid);
+			kfree(p->_handles);
+		}
 
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
@@ -161,14 +188,7 @@ void process_kill(struct process *p, int ret) {
 			p->execbuf.buf = NULL;
 		}
 
-		if (p->pages_refcount) {
-			assert(*p->pages_refcount != 0);
-			*p->pages_refcount -= 1;
-			if (*p->pages_refcount == 0) {
-				kfree(p->pages_refcount);
-				pagedir_free(p->pages);
-			}
-		} else {
+		if (unref(p->pages_refcount)) {
 			pagedir_free(p->pages);
 		}
 

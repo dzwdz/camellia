@@ -48,7 +48,9 @@ struct process {
 	};
 
 	struct vfs_mount *mount;
-	struct handle *_handles[HANDLE_MAX];
+	struct handle **_handles; /* points to struct handle *[HANDLE_MAX] */
+	uint64_t *handles_refcount; /* works just like pages_refcount */
+
 	uint32_t id; /* only for debugging, don't expose to userland */
 	bool noreap;
 

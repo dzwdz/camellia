@@ -6,6 +6,7 @@
 #define FORK_NOREAP 1
 #define FORK_NEWFS 2
 #define FORK_SHAREMEM 4
+#define FORK_SHAREHANDLE 8
 
 #define WRITE_TRUNCATE 1
 
