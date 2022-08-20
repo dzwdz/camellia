@@ -12,8 +12,8 @@ enum {
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 	if (len < Payload) return;
 	uint8_t type = buf[Type];
-	printf("ICMP type %u\n", type);
 	if (type == 8 && ip.dst == state.ip) {
+		/* echo reply */
 		uint8_t *pkt = icmp_start(len - Payload, (struct icmp){
 			.type = 0,
 			.ip.dst = ip.src,

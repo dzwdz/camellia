@@ -10,36 +10,31 @@ enum {
 	EtherType = 12,
 	Payload   = 14,
 };
+struct queue_entry *ether_queue;
 
 void ether_parse(const uint8_t *buf, size_t len) {
-	uint8_t dmac[6], smac[6];
-
-	if (len < 60) return;
-	for (int i = 0; i < 6; i++) dmac[i] = buf[i + DstMAC];
-	for (int i = 0; i < 6; i++) smac[i] = buf[i + SrcMAC];
-	printf("from %02x:%02x:%02x:%02x:%02x:%02x\n",
-		smac[0], smac[1], smac[2], smac[3], smac[4], smac[5]);
-	printf("to   %02x:%02x:%02x:%02x:%02x:%02x\n",
-		dmac[0], dmac[1], dmac[2], dmac[3], dmac[4], dmac[5]);
-
-	uint16_t ethertype = nget16(buf + EtherType);
-	printf("ethertype %u\n", ethertype);
-
 	struct ethernet ether = (struct ethernet){
-		.src = &smac,
-		.dst = &dmac,
-		.type = ethertype,
+		.src = buf + SrcMAC,
+		.dst = buf + DstMAC,
+		.type = nget16(buf + EtherType),
 	};
 
-	switch (ethertype) {
+	struct queue_entry **iter = &ether_queue;
+	while (iter && *iter) {
+		struct queue_entry *qe = *iter;
+		_syscall_fs_respond(qe->h, buf, len, 0);
+		/* remove entry */
+		/* yes, doing it this way here doesn't make sense. i'm preparing for filtering */
+		*iter = qe->next;
+		free(qe);
+	}
+
+	switch (ether.type) {
 		case ET_IPv4:
 			ipv4_parse(buf + Payload, len - Payload, ether);
 			break;
 		case ET_ARP:
 			arp_parse(buf + Payload, len - Payload);
-			break;
-		default:
-			printf("(unknown)\n");
 			break;
 	}
 }
@@ -62,8 +57,6 @@ uint8_t *ether_start(size_t len, struct ethernet ether) {
 void ether_finish(uint8_t *pkt) {
 	uint8_t *buf = pkt - Payload - fhoff;
 	size_t len = *(size_t*)buf;
-	printf("sending:\n");
-	hexdump(buf + fhoff, len);
 	_syscall_write(state.raw_h, buf + fhoff, len, 0, 0);
 	free(buf);
 }

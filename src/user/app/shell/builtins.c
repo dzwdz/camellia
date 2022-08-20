@@ -28,7 +28,7 @@ static void cmd_cat(int argc, char **argv) {
 		}
 		if (!strcmp(argv[i], "!stdin")) fextflags(file, FEXT_NOFILL);
 		for (;;) {
-			int len = fread(buf, 1, sizeof buf, file);
+			int len = fread(buf, 1, buflen, file);
 			if (len <= 0) break;
 			fwrite(buf, 1, len, stdout);
 		}

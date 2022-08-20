@@ -1,6 +1,5 @@
 #include "proto.h"
 #include "util.h"
-#include <stdlib.h>
 #include <string.h>
 
 enum {
@@ -20,12 +19,6 @@ void arp_parse(const uint8_t *buf, size_t len) {
 	uint16_t ptype = nget16(buf + ProtoType);
 	uint16_t op = nget16(buf + Operation);
 
-	const char *ops = "bad operation";
-	if (op == 1) ops = "request";
-	if (op == 2) ops = "reply";
-
-	printf("ARP htype 0x%x, ptype 0x%x, %s\n", htype, ptype, ops);
-
 	if (!(htype == HdrTypeEther && ptype == ET_IPv4)) return;
 	enum { /* only valid for this combination of header + proto */
 		SrcMAC =  8,
@@ -36,7 +29,6 @@ void arp_parse(const uint8_t *buf, size_t len) {
 
 	if (op == OpReq) {
 		uint32_t daddr = nget32(buf + DstIP);
-		printf("IPv4 request for %08x\n", daddr);
 		if (daddr == state.ip) {
 			uint8_t *pkt = ether_start(30, (struct ethernet){
 				.dst = buf + SrcMAC,

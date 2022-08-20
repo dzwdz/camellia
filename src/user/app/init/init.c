@@ -67,6 +67,10 @@ int main(void) {
 		const char *argv[] = {"/bin/vterm", NULL};
 		execv(argv[0], (void*)argv);
 	}
+	MOUNT_AT("/net/") {
+		const char *argv[] = {"/bin/ethdump", NULL};
+		execv(argv[0], (void*)argv);
+	}
 
 	if (_syscall_pipe(killswitch_pipe, 0) < 0) {
 		printf("couldn't create the killswitch pipe, quitting...\n");

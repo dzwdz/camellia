@@ -15,47 +15,29 @@ enum {
 };
 
 void ipv4_parse(const uint8_t *buf, size_t len, struct ethernet ether) {
-	uint8_t version, headerlen, proto;
+	uint8_t version, headerlen;
 	uint16_t packetlen, id;
-	uint32_t dst, src;
 
 	version   = buf[Version] >> 4;
-	if (version != 4) {
-		printf("bad IPv4 version %u\n", version);
-		return;
-	}
+	if (version != 4) return;
 	headerlen = (buf[HdrLen] & 0xf) * 4;
 	packetlen = nget16(buf + PktLen);
+	if (packetlen < headerlen) return;
 	id        = nget16(buf + Id);
-	proto     = buf[Proto];
-	src  = nget32(buf + SrcIP);
-	dst = nget32(buf + DstIP);
 
 	// TODO checksum
 	// TODO fragmentation
 
-	printf("headerlen %u, packetlen %u (real %u), id %u\n", headerlen, packetlen, len, id);
-	printf("from %x to %x\n", src, dst);
-	printf("id %u\n", id);
-	if (packetlen < headerlen) {
-		printf("headerlen too big\n");
-		return;
-	}
-
 	struct ipv4 ip = (struct ipv4){
 		.e = ether,
-		.src = src,
-		.dst = dst,
-		.proto = proto,
+		.src = nget32(buf + SrcIP),
+		.dst = nget32(buf + DstIP),
+		.proto = buf[Proto],
 	};
 
-	switch (proto) {
+	switch (ip.proto) {
 		case 1:
-			printf("proto %u - icmp\n", proto);
 			icmp_parse(buf + headerlen, packetlen - headerlen, ip);
-			break;
-		default:
-			printf("proto %u - unknown\n", proto);
 			break;
 	}
 }

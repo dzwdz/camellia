@@ -5,12 +5,26 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <user/lib/thread.h>
 
 struct net_state state = {
 	// TODO dynamically get mac
 	.mac = {0x52, 0x54, 0x00, 0xCA, 0x77, 0x1A},
 	.ip = (192 << 24) + (168 << 16) + 11,
 };
+
+void network_thread(void *arg) { (void)arg;
+	const size_t buflen = 4096;
+	char *buf = malloc(buflen);
+	for (;;) {
+		long ret = _syscall_read(state.raw_h, buf, buflen, -1);
+		if (ret < 0) break;
+		ether_parse((void*)buf, ret);
+	}
+	free(buf);
+}
+
+void fs_thread(void *arg);
 
 int main(void) {
 	const char *path = "/kdev/eth";
@@ -20,15 +34,8 @@ int main(void) {
 		return 1;
 	}
 
-	const size_t buflen = 4096;
-	char *buf = malloc(buflen);
-	for (;;) {
-		long ret = _syscall_read(state.raw_h, buf, buflen, -1);
-		if (ret < 0) break;
-		printf("\npacket of length %u\n", ret);
-		hexdump(buf, ret);
-		ether_parse((void*)buf, ret);
-	}
-	free(buf);
+	thread_create(0, network_thread, NULL);
+	thread_create(0, fs_thread, NULL);
+	_syscall_await();
 	return 0;
 }

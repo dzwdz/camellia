@@ -34,6 +34,15 @@ struct icmp {
 };
 
 
+/* NOT THREADSAFE, YET USED FROM THREADS
+ * will break if i implement a scheduler*/
+struct queue_entry {
+	handle_t h;
+	struct queue_entry *next;
+};
+extern struct queue_entry *ether_queue;
+
+
 void arp_parse(const uint8_t *buf, size_t len);
 
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
