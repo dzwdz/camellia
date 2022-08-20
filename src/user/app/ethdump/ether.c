@@ -1,6 +1,4 @@
 #include <camellia/syscalls.h>
-#include <stdlib.h>
-#include <string.h>
 #include "proto.h"
 #include "util.h"
 
@@ -10,7 +8,7 @@ enum {
 	EtherType = 12,
 	Payload   = 14,
 };
-struct queue_entry *ether_queue;
+struct ethq *ether_queue;
 
 void ether_parse(const uint8_t *buf, size_t len) {
 	struct ethernet ether = (struct ethernet){
@@ -19,9 +17,8 @@ void ether_parse(const uint8_t *buf, size_t len) {
 		.type = nget16(buf + EtherType),
 	};
 
-	struct queue_entry **iter = &ether_queue;
-	while (iter && *iter) {
-		struct queue_entry *qe = *iter;
+	for (struct ethq **iter = &ether_queue; iter && *iter; ) {
+		struct ethq *qe = *iter;
 		_syscall_fs_respond(qe->h, buf, len, 0);
 		/* remove entry */
 		/* yes, doing it this way here doesn't make sense. i'm preparing for filtering */

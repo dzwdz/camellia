@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define eprintf(fmt, ...) fprintf(stderr, "ethdump: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 

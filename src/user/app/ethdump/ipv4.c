@@ -33,11 +33,16 @@ void ipv4_parse(const uint8_t *buf, size_t len, struct ethernet ether) {
 		.src = nget32(buf + SrcIP),
 		.dst = nget32(buf + DstIP),
 		.proto = buf[Proto],
+		.header = buf,
+		.hlen = headerlen,
 	};
 
 	switch (ip.proto) {
-		case 1:
+		case 0x01:
 			icmp_parse(buf + headerlen, packetlen - headerlen, ip);
+			break;
+		case 0x11:
+			udp_parse(buf + headerlen, packetlen - headerlen, ip);
 			break;
 	}
 }
