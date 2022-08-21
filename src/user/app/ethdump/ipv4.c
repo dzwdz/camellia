@@ -183,25 +183,33 @@ void ipv4_parse(const uint8_t *buf, size_t len, struct ethernet ether) {
 	}
 }
 
+static uint16_t next_id = 0;
 void ipv4_send(const void *payload, size_t len, struct ipv4 ip) {
-	size_t hdrlen = 20;
+	const size_t mtu = 1500;
+	const size_t hdrlen = 20;
 
 	ip.e.type = ET_IPv4;
 	if (!ip.src) ip.src = state.ip;
 	if (!ip.e.dst && ip.dst == 0xFFFFFFFF)
 		ip.e.dst = &MAC_BROADCAST;
 
-	// TODO output fragmentation
-
-	uint8_t *pkt = ether_start(hdrlen + len, ip.e);
-	pkt[Version] = 0x40;
-	pkt[HdrLen] |= hdrlen / 4;
-	nput16(pkt + TotalLen, len + hdrlen);
-	pkt[TTL] = 0xFF;
-	pkt[Proto] = ip.proto;
-	nput32(pkt + SrcIP, ip.src);
-	nput32(pkt + DstIP, ip.dst);
-	nput16(pkt + Checksum, ip_checksum(pkt, hdrlen));
-	memcpy(pkt + hdrlen, payload, len);
-	ether_finish(pkt);
+	uint16_t id = next_id++;
+	for (size_t off = 0, fraglen = mtu - hdrlen; off < len; off += fraglen) {
+		if (fraglen > len - off)
+			fraglen = len - off;
+		bool last = off + fraglen >= len;
+		uint8_t *pkt = ether_start(hdrlen + fraglen, ip.e);
+		pkt[Version] = 0x40;
+		pkt[HdrLen] |= hdrlen / 4;
+		nput16(pkt + TotalLen, hdrlen + fraglen);
+		nput16(pkt + Id, id);
+		nput16(pkt + FragInfo, (off >> 3) | (last ? 0 : MoreFrags));
+		pkt[TTL] = 0xFF;
+		pkt[Proto] = ip.proto;
+		nput32(pkt + SrcIP, ip.src);
+		nput32(pkt + DstIP, ip.dst);
+		nput16(pkt + Checksum, ip_checksum(pkt, hdrlen));
+		memcpy(pkt + hdrlen, payload + off, fraglen);
+		ether_finish(pkt);
+	}
 }
