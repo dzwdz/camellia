@@ -32,7 +32,8 @@ static uint16_t iobase;
 
 #define buflen_shift 3
 #define rxbuf_baselen ((8 * 1024) << buflen_shift)
-static char rxbuf[rxbuf_baselen + 16 + 1500];
+/* the +16 is apparently required for... something */
+static char rxbuf[rxbuf_baselen + 16];
 static size_t rxpos;
 
 #define txbuf_len 2048
@@ -68,7 +69,6 @@ void rtl8139_init(uint32_t bdf) {
 	rcr |= 1 << 1; /* accept packets with our mac */
 	rcr |= 1 << 2; /* accept multicast */
 	rcr |= 1 << 3; /* accept broadcast */
-	rcr |= 1 << 7; /* WARP */
 	rcr |= buflen_shift << 11;
 	rcr |= 7 << 13; /* no rx threshold, copy whole packets */
 	port_out32(iobase + RCR, rcr);
@@ -126,7 +126,13 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 
 	// kprintf("packet size 0x%x, flags 0x%x, rxpos %x\n", size, flags, rxpos - 4);
 	if (dlen > size) dlen = size;
-	virt_cpy_to(pages, dest, rxbuf + rxpos, dlen);
+	if (rxpos + dlen <= rxbuf_baselen) {
+		virt_cpy_to(pages, dest, rxbuf + rxpos, dlen);
+	} else {
+		size_t chunk = rxbuf_baselen - rxpos;
+		virt_cpy_to(pages, dest, rxbuf + rxpos, chunk);
+		virt_cpy_to(pages, dest + chunk, rxbuf, dlen - chunk);
+	}
 
 	rxpos += size;
 	rxpos = (rxpos + 3) & ~3;
