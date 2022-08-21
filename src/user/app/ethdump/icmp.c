@@ -27,6 +27,7 @@ void icmp_send(const void *payload, size_t len, struct icmp i) {
 	pkt[Type] = i.type;
 	pkt[Code] = i.code;
 	memcpy(pkt + Payload, payload, len);
+	nput16(pkt + Checksum, 0);
 	nput16(pkt + Checksum, ip_checksum(pkt, Payload + len));
 	ipv4_send(pkt, Payload + len, i.ip);
 	free(pkt);
