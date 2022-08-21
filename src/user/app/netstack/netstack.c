@@ -26,14 +26,16 @@ void network_thread(void *arg) { (void)arg;
 
 void fs_thread(void *arg);
 
-int main(void) {
-	const char *path = "/kdev/eth";
-	state.raw_h = _syscall_open(path, strlen(path), 0);
-	if (state.raw_h < 0) {
-		eprintf("couldn't open %s", path);
+int main(int argc, char **argv) {
+	if (argc < 2) {
+		eprintf("no argument");
 		return 1;
 	}
-
+	state.raw_h = _syscall_open(argv[1], strlen(argv[1]), 0);
+	if (state.raw_h < 0) {
+		eprintf("couldn't open %s", argv[1]);
+		return 1;
+	}
 	thread_create(0, network_thread, NULL);
 	thread_create(0, fs_thread, NULL);
 	_syscall_await();

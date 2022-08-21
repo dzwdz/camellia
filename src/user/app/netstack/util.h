@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define eprintf(fmt, ...) fprintf(stderr, "ethdump: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
+#define eprintf(fmt, ...) fprintf(stderr, "netstack: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 uint32_t crc32(const uint8_t *buf, size_t len);
 uint16_t ip_checksum(const uint8_t *buf, size_t len);
