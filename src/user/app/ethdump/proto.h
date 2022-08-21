@@ -26,8 +26,9 @@ struct ethernet {
 struct ipv4 {
 	struct ethernet e;
 	uint32_t src, dst;
+	uint16_t id, fraginfo;
 	uint8_t proto;
-	uint8_t *header; size_t hlen;
+	const uint8_t *header; size_t hlen;
 };
 
 struct icmp {
