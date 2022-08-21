@@ -183,15 +183,17 @@ void ipv4_parse(const uint8_t *buf, size_t len, struct ethernet ether) {
 	}
 }
 
-// TODO just have a single *_send function, this is getting ridiculous
-uint8_t *ipv4_start(size_t len, struct ipv4 ip) {
+void ipv4_send(const void *payload, size_t len, struct ipv4 ip) {
+	size_t hdrlen = 20;
+
 	ip.e.type = ET_IPv4;
 	if (!ip.src) ip.src = state.ip;
 	if (!ip.e.dst && ip.dst == 0xFFFFFFFF)
 		ip.e.dst = &MAC_BROADCAST;
 
-	size_t hdrlen = 20;
-	uint8_t *pkt = ether_start(len + hdrlen, ip.e);
+	// TODO output fragmentation
+
+	uint8_t *pkt = ether_start(hdrlen + len, ip.e);
 	pkt[Version] = 0x40;
 	pkt[HdrLen] |= hdrlen / 4;
 	nput16(pkt + TotalLen, len + hdrlen);
@@ -199,12 +201,7 @@ uint8_t *ipv4_start(size_t len, struct ipv4 ip) {
 	pkt[Proto] = ip.proto;
 	nput32(pkt + SrcIP, ip.src);
 	nput32(pkt + DstIP, ip.dst);
-
 	nput16(pkt + Checksum, ip_checksum(pkt, hdrlen));
-
-	return pkt + hdrlen;
-}
-void ipv4_finish(uint8_t *pkt) {
-	// TODO output fragmentation
-	ether_finish(pkt - 20);
+	memcpy(pkt + hdrlen, payload, len);
+	ether_finish(pkt);
 }

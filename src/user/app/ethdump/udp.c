@@ -44,18 +44,19 @@ void udpc_close(struct udp_conn *c) {
 	free(c);
 }
 void udpc_send(struct udp_conn *c, const void *buf, size_t len) {
-	uint8_t *pkt = ipv4_start(Payload + len, (struct ipv4){
-		.proto = 0x11,
-		.src = c->lip,
-		.dst = c->rip,
-		.e.dst = c->rmac,
-	});
+	uint8_t *pkt = malloc(Payload + len);
 	nput16(pkt + SrcPort, c->lport);
 	nput16(pkt + DstPort, c->rport);
 	nput16(pkt + Length, Payload + len);
 	nput16(pkt + Checksum, 0);
 	memcpy(pkt + Payload, buf, len);
-	ipv4_finish(pkt);
+	ipv4_send(pkt, Payload + len, (struct ipv4){
+		.proto = 0x11,
+		.src = c->lip,
+		.dst = c->rip,
+		.e.dst = c->rmac,
+	});
+	free(pkt);
 }
 
 
@@ -83,13 +84,15 @@ void udp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 	}
 
 	if (!active) {
-		uint8_t *pkt = icmp_start(4 + ip.hlen + 8, (struct icmp){
+		uint8_t *pkt = malloc(4 + ip.hlen + 8);
+		nput32(pkt, 0);
+		memcpy(pkt + 4, ip.header, ip.hlen + 8);
+		icmp_send(pkt, 4 + ip.hlen + 8, (struct icmp){
 			.type = 3, /* destination unreachable */
 			.code = 3, /* port unreachable */
 			.ip.dst = ip.src,
 			.ip.e.dst = ip.e.src,
 		});
-		memcpy(pkt + 4, ip.header, ip.hlen + 8);
-		icmp_finish(pkt, 4 + ip.hlen + 8);
+		free(pkt);
 	}
 }
