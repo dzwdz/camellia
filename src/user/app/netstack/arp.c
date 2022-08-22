@@ -31,7 +31,7 @@ void arp_parse(const uint8_t *buf, size_t len) {
 		uint32_t daddr = nget32(buf + DstIP);
 		if (daddr == state.ip) {
 			uint8_t *pkt = ether_start(30, (struct ethernet){
-				.dst = buf + SrcMAC,
+				.dst = (void*)(buf + SrcMAC),
 				.type = ET_ARP,
 			});
 			nput16(pkt + HdrType, 1);

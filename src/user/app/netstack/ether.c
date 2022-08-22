@@ -12,8 +12,8 @@ struct ethq *ether_queue;
 
 void ether_parse(const uint8_t *buf, size_t len) {
 	struct ethernet ether = (struct ethernet){
-		.src = buf + SrcMAC,
-		.dst = buf + DstMAC,
+		.src = (void*)(buf + SrcMAC),
+		.dst = (void*)(buf + DstMAC),
 		.type = nget16(buf + EtherType),
 	};
 

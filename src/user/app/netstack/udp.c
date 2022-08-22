@@ -54,7 +54,7 @@ void udpc_send(struct udp_conn *c, const void *buf, size_t len) {
 		.proto = 0x11,
 		.src = c->lip,
 		.dst = c->rip,
-		.e.dst = c->rmac,
+		.e.dst = &c->rmac,
 	});
 	free(pkt);
 }
