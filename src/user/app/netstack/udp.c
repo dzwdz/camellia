@@ -20,7 +20,14 @@ struct udp_conn {
 	struct udp_conn *next, **prev;
 };
 struct udp_conn *conns;
-void udp_listen(uint16_t port,
+static void conns_append(struct udp_conn *c) {
+	c->next = conns;
+	if (c->next) *(c->next->prev) = c;
+	c->prev = &conns;
+	*c->prev = c;
+}
+void udp_listen(
+	uint16_t port,
 	void (*on_conn)(struct udp_conn *, void *carg),
 	void (*on_recv)(const void *, size_t, void *carg),
 	void *carg)
@@ -32,16 +39,29 @@ void udp_listen(uint16_t port,
 	c->on_conn = on_conn;
 	c->on_recv = on_recv;
 	c->carg = carg;
-
-	c->next = conns;
-	if (c->next) *(c->next->prev) = c;
-	c->prev = &conns;
-	*c->prev = c;
+	conns_append(c);
 }
-void udpc_close(struct udp_conn *c) {
-	if (c->next) c->next->prev = c->prev;
-	*(c->prev) = c->next;
-	free(c);
+struct udp_conn *udpc_new(
+	struct udp u,
+	void (*on_recv)(const void *, size_t, void *carg),
+	void *carg)
+{
+	struct udp_conn *c = malloc(sizeof *c);
+	memset(c, 0, sizeof *c);
+	c->lip = u.ip.src;
+	c->rip = u.ip.dst;
+	c->lport = u.src ? u.src : 50000; // TODO randomize source ports
+	c->rport = u.dst;
+	if (arpcache_get(c->rip, &c->rmac) < 0) {
+		// TODO make arp request, wait for reply
+		eprintf("not in ARP cache, unimplemented");
+		free(c);
+		return NULL;
+	}
+	c->on_recv = on_recv;
+	c->carg = carg;
+	conns_append(c);
+	return c;
 }
 void udpc_send(struct udp_conn *c, const void *buf, size_t len) {
 	uint8_t *pkt = malloc(Payload + len);
@@ -57,6 +77,11 @@ void udpc_send(struct udp_conn *c, const void *buf, size_t len) {
 		.e.dst = &c->rmac,
 	});
 	free(pkt);
+}
+void udpc_close(struct udp_conn *c) {
+	if (c->next) c->next->prev = c->prev;
+	*(c->prev) = c->next;
+	free(c);
 }
 
 

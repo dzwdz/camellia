@@ -73,6 +73,16 @@ static void arpcache_put(uint32_t ip, mac_t mac) {
 	arpcache = e;
 }
 
+int arpcache_get(uint32_t ip, mac_t *mac) {
+	for (struct arpc *iter = arpcache; iter; iter = iter->next) {
+		if (iter->ip == ip) {
+			if (mac) memcpy(mac, iter->mac, 6);
+			return 0;
+		}
+	}
+	return -1;
+}
+
 void arp_fsread(handle_t h, long offset) {
 	const char *fmt = "%08x\t%02x:%02x:%02x:%02x:%02x:%02x\n";
 	long linelen = snprintf(NULL, 0, fmt, 0, 1, 2, 3, 4, 5, 6) + 1;

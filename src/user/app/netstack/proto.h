@@ -31,6 +31,11 @@ struct ipv4 {
 	const uint8_t *header; size_t hlen;
 };
 
+struct udp {
+	struct ipv4 ip;
+	uint16_t src, dst;
+};
+
 struct icmp {
 	struct ipv4 ip;
 	uint8_t type, code;
@@ -46,6 +51,8 @@ struct ethq {
 extern struct ethq *ether_queue;
 
 void arp_parse(const uint8_t *buf, size_t len);
+/* 0 on success, -1 on failure */
+int arpcache_get(uint32_t ip, mac_t *mac);
 void arp_fsread(handle_t h, long offset);
 
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
@@ -61,8 +68,13 @@ void ether_finish(uint8_t *pkt);
 struct udp_conn;
 void udp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
 /* calls callback once, after a client connects. */
-void udp_listen(uint16_t port,
+void udp_listen(
+	uint16_t port,
 	void (*on_conn)(struct udp_conn *, void *carg),
+	void (*on_recv)(const void *, size_t, void *carg),
+	void *carg);
+struct udp_conn *udpc_new(
+	struct udp u,
 	void (*on_recv)(const void *, size_t, void *carg),
 	void *carg);
 // TODO udp_onclosed

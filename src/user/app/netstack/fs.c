@@ -42,8 +42,6 @@ struct handle {
 static void udp_listen_callback(struct udp_conn *c, void *arg) {
 	struct handle *h = arg;
 	h->udp.c = c;
-	h->udp.rx = NULL;
-	h->udp.rxlast = NULL;
 	_syscall_fs_respond(h->reqh, h, 0, 0);
 	h->reqh = -1;
 }
@@ -55,7 +53,6 @@ static void udp_recv_callback(const void *buf, size_t len, void *arg) {
 		h->reqh = -1;
 		return;
 	}
-	// TODO don't malloc on the network thread, dumbass
 	struct strqueue *sq = malloc(sizeof(*sq) + len);
 	sq->next = NULL;
 	sq->len = len;
@@ -99,10 +96,10 @@ static void fs_open(handle_t reqh, char *path) {
 	}
 
 	char *save;
-	const char *srcip, *verb, *proto, *port_s;
+	const char *srcip_s, *dstip_s, *verb, *proto, *port_s;
 
-	srcip = strtok_r(path, "/", &save);
-	if (strcmp(srcip, "0.0.0.0") != 0)
+	srcip_s = strtok_r(path, "/", &save);
+	if (strcmp(srcip_s, "0.0.0.0") != 0)
 		respond(NULL, -1);
 
 	verb = strtok_r(NULL, "/", &save);
@@ -113,11 +110,37 @@ static void fs_open(handle_t reqh, char *path) {
 			if (port_s) {
 				uint16_t port = strtol(port_s, NULL, 0);
 				h = malloc(sizeof *h);
+				memset(h, 0, sizeof *h);
 				h->type = H_UDP;
 				h->udp.c = NULL;
 				h->reqh = reqh;
 				udp_listen(port, udp_listen_callback, udp_recv_callback, h);
 				return;
+			}
+		}
+	} else if (strcmp(verb, "connect") == 0) {
+		dstip_s = strtok_r(NULL, "/", &save);
+		// TODO proper ip parsing
+		// 0xc0a80001 == 192.168.0.1
+		uint32_t dstip = strtol(dstip_s, NULL, 0);
+		proto = strtok_r(NULL, "/", &save);
+		if (strcmp(proto, "udp") == 0) {
+			port_s = strtok_r(NULL, "/", &save);
+			if (port_s) {
+				uint16_t port = strtol(port_s, NULL, 0);
+				h = malloc(sizeof *h);
+				memset(h, 0, sizeof *h);
+				h->type = H_UDP;
+				h->udp.c = udpc_new((struct udp){
+					.dst = port,
+					.ip.dst = dstip,
+				}, udp_recv_callback, h);
+				if (h->udp.c) {
+					respond(h, 0);
+				} else {
+					free(h);
+					respond(NULL, -1);
+				}
 			}
 		}
 	}
