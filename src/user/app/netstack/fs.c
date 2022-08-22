@@ -96,15 +96,21 @@ static void fs_open(handle_t reqh, char *path) {
 	}
 
 	char *save;
-	const char *srcip_s, *dstip_s, *verb, *proto, *port_s;
+	const char *verb, *proto, *port_s;
 
-	srcip_s = strtok_r(path, "/", &save);
-	if (strcmp(srcip_s, "0.0.0.0") != 0)
+	uint32_t srcip, dstip;
+	if (ip_parse(strtok_r(path, "/", &save), &srcip) < 0)
 		respond(NULL, -1);
+	if (srcip != 0) {
+		eprintf("unimplemented");
+		respond(NULL, -1);
+	}
 
 	verb = strtok_r(NULL, "/", &save);
+	if (!verb) respond(NULL, -1);
 	if (strcmp(verb, "listen") == 0) {
 		proto = strtok_r(NULL, "/", &save);
+		if (!proto) respond(NULL, -1);
 		if (strcmp(proto, "udp") == 0) {
 			port_s = strtok_r(NULL, "/", &save);
 			if (port_s) {
@@ -119,11 +125,10 @@ static void fs_open(handle_t reqh, char *path) {
 			}
 		}
 	} else if (strcmp(verb, "connect") == 0) {
-		dstip_s = strtok_r(NULL, "/", &save);
-		// TODO proper ip parsing
-		// 0xc0a80001 == 192.168.0.1
-		uint32_t dstip = strtol(dstip_s, NULL, 0);
+		if (ip_parse(strtok_r(NULL, "/", &save), &dstip) < 0)
+			respond(NULL, -1);
 		proto = strtok_r(NULL, "/", &save);
+		if (!proto) respond(NULL, -1);
 		if (strcmp(proto, "udp") == 0) {
 			port_s = strtok_r(NULL, "/", &save);
 			if (port_s) {

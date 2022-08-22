@@ -8,6 +8,8 @@
 
 uint32_t crc32(const uint8_t *buf, size_t len);
 uint16_t ip_checksum(const uint8_t *buf, size_t len);
+/* 0 on success, negative failure */
+int ip_parse(const char *s, uint32_t *ip);
 
 static inline void nput16(void *vbuf, uint16_t n) {
 	uint8_t *b = vbuf;

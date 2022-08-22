@@ -29,3 +29,20 @@ uint16_t ip_checksum(const uint8_t *buf, size_t len) {
 		c = (c & 0xFFFF) + (c >> 16);
 	return ~c;
 }
+
+int ip_parse(const char *s, uint32_t *dest) {
+	if (!s) return -1;
+
+	uint32_t ip = strtol(s, (char**)&s, 0);
+	int parts = 1;
+	for (; parts < 4; parts++) {
+		if (!*s) break;
+		if (*s++ != '.') return -1;
+		ip <<= 8;
+		ip += strtol(s, (char**)&s, 0);
+	}
+	if (parts > 1)
+		ip = ((ip & 0xFFFFFF00) << 8 * (4 - parts)) | (ip & 0xFF);
+	*dest = ip;
+	return 0;
+}
