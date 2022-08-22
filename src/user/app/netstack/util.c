@@ -25,7 +25,7 @@ uint16_t ip_checksum(const uint8_t *buf, size_t len) {
 		buf += 2; len -= 2;
 	}
 	if (len) c += (*buf) << 8;
-	while (c >= 0xFFFF)
+	while (c > 0xFFFF)
 		c = (c & 0xFFFF) + (c >> 16);
 	return ~c;
 }
