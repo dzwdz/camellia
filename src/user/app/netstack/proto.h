@@ -46,6 +46,7 @@ struct ethq {
 extern struct ethq *ether_queue;
 
 void arp_parse(const uint8_t *buf, size_t len);
+void arp_fsread(handle_t h, long offset);
 
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
 void icmp_send(const void *payload, size_t len, struct icmp i);

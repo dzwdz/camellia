@@ -2,6 +2,8 @@
  * path format:
  * /net/raw
  *   raw ethernet frames (read-write)
+ * /net/arp
+ *   ARP cache (currently read-only)
  * /net/0.0.0.0/connect/1.2.3.4/udp/53
  *   connect from 0.0.0.0 (any ip) to 1.2.3.4 on udp port 53
  * /net/0.0.0.0/listen/udp/53
@@ -9,6 +11,7 @@
  *   open() returns once a connection to ip 0.0.0.0 on udp port 53 is received
  */
 #include "proto.h"
+#include "util.h"
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +20,7 @@
 enum handle_type {
 	H_ETHER,
 	H_UDP,
+	H_ARP,
 };
 
 struct strqueue {
@@ -79,7 +83,7 @@ static void udp_recv_enqueue(struct handle *h, handle_t reqh) {
 }
 
 static void fs_open(handle_t reqh, char *path) {
-#define respond(buf, val) do{ _syscall_fs_respond(reqh, NULL, -1, 0); return; }while(0)
+#define respond(buf, val) do{ _syscall_fs_respond(reqh, buf, val, 0); return; }while(0)
 	struct handle *h;
 	if (*path != '/') respond(NULL, -1);
 	path++;
@@ -87,6 +91,10 @@ static void fs_open(handle_t reqh, char *path) {
 	if (strcmp(path, "raw") == 0) {
 		h = malloc(sizeof *h);
 		h->type = H_ETHER;
+		respond(h, 0);
+	} else if (strcmp(path, "arp") == 0) {
+		h = malloc(sizeof *h);
+		h->type = H_ARP;
 		respond(h, 0);
 	}
 
@@ -146,6 +154,9 @@ void fs_thread(void *arg) { (void)arg;
 						break;}
 					case H_UDP:
 						udp_recv_enqueue(h, reqh);
+						break;
+					case H_ARP:
+						arp_fsread(reqh, res.offset);
 						break;
 					default:
 						_syscall_fs_respond(reqh, NULL, -1, 0);

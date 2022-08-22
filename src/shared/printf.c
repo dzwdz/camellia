@@ -171,6 +171,7 @@ int __printf_internal(const char *fmt, va_list argp,
 static void vsnprintf_backend(void *arg, const char *buf, size_t len) {
 	char **ptrs = arg;
 	size_t space = ptrs[1] - ptrs[0];
+	if (!ptrs[0]) return;
 	if (len > space) len = space;
 
 	memcpy(ptrs[0], buf, len);
