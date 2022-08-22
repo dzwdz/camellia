@@ -54,7 +54,7 @@ handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_respons
 	return (handle_t)_syscall(_SYSCALL_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
 }
 
-long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags) {
+long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags) {
 	return _syscall(_SYSCALL_FS_RESPOND, (long)hid, (long)buf, ret, (long)flags, 0);
 }
 

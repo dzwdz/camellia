@@ -276,7 +276,7 @@ handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_respons
 	return -1; // dummy
 }
 
-long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags) {
+long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags) {
 	struct handle *h = process_handle_get(process_current, hid);
 	if (!h || h->type != HANDLE_FS_REQ) SYSCALL_RETURN(-EBADF);
 	struct vfs_request *req = h->req;
@@ -294,7 +294,7 @@ long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags) {
 				panic_unimplemented();
 			/* write failures are ignored */
 		}
-		vfsreq_finish(req, buf, ret, flags, process_current);
+		vfsreq_finish(req, (void __user *)buf, ret, flags, process_current);
 	}
 	h->req = NULL;
 	process_handle_close(process_current, hid);

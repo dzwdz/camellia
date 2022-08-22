@@ -62,7 +62,7 @@ long _syscall_remove(handle_t h);
 long _syscall_close(handle_t h);
 
 handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res);
-long _syscall_fs_respond(handle_t hid, void __user *buf, long ret, int flags);
+long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags);
 
 /** Modifies the virtual address space.
  *
