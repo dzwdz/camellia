@@ -1,12 +1,20 @@
+/*
+ * path format:
+ * /net/raw
+ *   raw ethernet frames (read-write)
+ * /net/0.0.0.0/connect/1.2.3.4/udp/53
+ *   connect from 0.0.0.0 (any ip) to 1.2.3.4 on udp port 53
+ * /net/0.0.0.0/listen/udp/53
+ *   waits for a connection to any ip on udp port 53
+ *   open() returns once a connection to ip 0.0.0.0 on udp port 53 is received
+ */
 #include "proto.h"
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/fs/dir.h>
 
 enum handle_type {
-	H_ROOT,
 	H_ETHER,
 	H_UDP,
 };
@@ -70,6 +78,45 @@ static void udp_recv_enqueue(struct handle *h, handle_t reqh) {
 	}
 }
 
+static void fs_open(handle_t reqh, char *path) {
+#define respond(buf, val) do{ _syscall_fs_respond(reqh, NULL, -1, 0); return; }while(0)
+	struct handle *h;
+	if (*path != '/') respond(NULL, -1);
+	path++;
+
+	if (strcmp(path, "raw") == 0) {
+		h = malloc(sizeof *h);
+		h->type = H_ETHER;
+		respond(h, 0);
+	}
+
+	char *save;
+	const char *srcip, *verb, *proto, *port_s;
+
+	srcip = strtok_r(path, "/", &save);
+	if (strcmp(srcip, "0.0.0.0") != 0)
+		respond(NULL, -1);
+
+	verb = strtok_r(NULL, "/", &save);
+	if (strcmp(verb, "listen") == 0) {
+		proto = strtok_r(NULL, "/", &save);
+		if (strcmp(proto, "udp") == 0) {
+			port_s = strtok_r(NULL, "/", &save);
+			if (port_s) {
+				uint16_t port = strtol(port_s, NULL, 0);
+				h = malloc(sizeof *h);
+				h->type = H_UDP;
+				h->udp.c = NULL;
+				h->reqh = reqh;
+				udp_listen(port, udp_listen_callback, udp_recv_callback, h);
+				return;
+			}
+		}
+	}
+	respond(NULL, -1);
+#undef respond
+}
+
 void fs_thread(void *arg) { (void)arg;
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
@@ -81,34 +128,15 @@ void fs_thread(void *arg) { (void)arg;
 		long ret;
 		switch (res.op) {
 			case VFSOP_OPEN:
-				if (res.len == 1 && !memcmp("/", buf, 1)) {
-					h = malloc(sizeof *h);
-					h->type = H_ROOT;
-					_syscall_fs_respond(reqh, h, 0, 0);
-				} else if (res.len == 4 && !memcmp("/raw", buf, 4)) {
-					h = malloc(sizeof *h);
-					h->type = H_ETHER;
-					_syscall_fs_respond(reqh, h, 0, 0);
-				} else if (res.len > 6 && !memcmp("/udpl/", buf, 6)) {
-					uint16_t port = strtol(buf + 6, NULL, 0);
-					h = malloc(sizeof *h);
-					h->type = H_UDP;
-					h->udp.c = NULL;
-					h->reqh = reqh;
-					udp_listen(port, udp_listen_callback, udp_recv_callback, h);
+				if (res.len < buflen) {
+					buf[res.len] = '\0';
+					fs_open(reqh, buf);
 				} else {
 					_syscall_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 			case VFSOP_READ:
 				switch (h->type) {
-					case H_ROOT: {
-						struct dirbuild db;
-						dir_start(&db, res.offset, buf, sizeof buf);
-						dir_append(&db, "raw");
-						dir_append(&db, "udpl/");
-						_syscall_fs_respond(reqh, buf, dir_finish(&db), 0);
-						break;}
 					case H_ETHER: {
 						struct ethq *qe;
 						qe = malloc(sizeof *qe);
