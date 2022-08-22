@@ -65,9 +65,45 @@ static void test_strtol(void) {
 	test(!strcmp("hello", end));
 }
 
+static void test_strspn(void) {
+	test(0 == strspn("", "1234"));
+	test(0 == strspn("asdf", "1234"));
+	test(0 == strspn("a2df", "1234"));
+	test(2 == strspn("42df", "1234"));
+	test(4 == strspn("4211", "1234"));
+
+	test(0 == strcspn("", "1234"));
+	test(4 == strcspn("asdf", "1234"));
+	test(1 == strcspn("a2df", "1234"));
+}
+
+static void test_strtok(void) {
+	const char *sep = " \t";
+	{
+		char line[] = "LINE TO BE SEPARATED";
+		test(!strcmp(strtok(line, sep), "LINE"));
+		test(!strcmp(strtok(NULL, sep), "TO"));
+		test(!strcmp(strtok(NULL, sep), "BE"));
+		test(!strcmp(strtok(NULL, sep), "SEPARATED"));
+		for (int i = 0; i < 4; i++)
+			test(strtok(NULL, sep) == NULL);
+	}
+	{
+		char line[] = "  LINE TO\tBE  \t SEPARATED   ";
+		test(!strcmp(strtok(line, sep), "LINE"));
+		test(!strcmp(strtok(NULL, sep), "TO"));
+		test(!strcmp(strtok(NULL, sep), "BE"));
+		test(!strcmp(strtok(NULL, sep), "SEPARATED"));
+		for (int i = 0; i < 4; i++)
+			test(strtok(NULL, sep) == NULL);
+	}
+}
+
 void r_libc_string(void) {
 	run_test(test_memcmp);
 	run_test(test_memset);
 	run_test(test_strcmp);
 	run_test(test_strtol);
+	run_test(test_strspn);
+	run_test(test_strtok);
 }

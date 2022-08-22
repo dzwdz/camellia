@@ -48,9 +48,41 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 }
 
 char *strchr(const char *s, int c) {
-	while (*s) {
+	for (; *s; s++) {
 		if (*s == c) return (char*)s;
-		s++;
 	}
 	return NULL;
+}
+
+size_t strspn(const char *s, const char *accept) {
+	size_t l = 0;
+	for (; s[l] && strchr(accept, s[l]); l++);
+	return l;
+}
+
+size_t strcspn(const char *s, const char *reject) {
+	size_t l = 0;
+	for (; s[l] && !strchr(reject, s[l]); l++);
+	return l;
+}
+
+char *strtok(char *restrict s, const char *restrict sep) {
+	static char *state;
+	return strtok_r(s, sep, &state);
+}
+
+char *strtok_r(char *restrict s, const char *restrict sep, char **restrict state) {
+	char *end;
+	if (!s) s = *state;
+	s += strspn(s, sep); /* beginning of token */
+	if (!*s) return NULL;
+
+	end = s + strcspn(s, sep);
+	if (*end) {
+		*end = '\0';
+		*state = end + 1;
+	} else {
+		*state = end;
+	}
+	return s;
 }
