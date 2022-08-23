@@ -8,6 +8,10 @@
 
 uint32_t crc32(const uint8_t *buf, size_t len);
 uint16_t ip_checksum(const uint8_t *buf, size_t len);
+uint16_t ip_checksumphdr(
+	const uint8_t *buf, size_t len,
+	uint32_t ip1, uint32_t ip2,
+	uint16_t proto);
 /* 0 on success, negative failure */
 int ip_parse(const char *s, uint32_t *ip);
 

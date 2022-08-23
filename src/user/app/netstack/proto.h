@@ -31,6 +31,11 @@ struct ipv4 {
 	const uint8_t *header; size_t hlen;
 };
 
+struct tcp {
+	struct ipv4 ip;
+	uint16_t src, dst;
+};
+
 struct udp {
 	struct ipv4 ip;
 	uint16_t src, dst;
@@ -81,3 +86,12 @@ struct udp_conn *udpc_new(
 void udpc_send(struct udp_conn *, const void *buf, size_t len);
 /* frees */
 void udpc_close(struct udp_conn *);
+
+struct tcp_conn;
+void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
+void tcp_listen(
+	uint16_t port,
+	void (*on_conn)(struct tcp_conn *, void *carg),
+	void (*on_close)(void *carg),
+	void *carg);
+void tcpc_close(struct tcp_conn *);

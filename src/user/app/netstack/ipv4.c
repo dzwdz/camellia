@@ -148,7 +148,8 @@ static void fragmented_free(struct fragmented *inc) {
 static void ipv4_dispatch(const uint8_t *buf, size_t len, struct ipv4 ip) {
 	switch (ip.proto) {
 		case 0x01: icmp_parse(buf, len, ip); break;
-		case 0x11:  udp_parse(buf, len, ip); break;
+		case 0x06: tcp_parse(buf, len, ip); break;
+		case 0x11: udp_parse(buf, len, ip); break;
 	}
 }
 

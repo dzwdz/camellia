@@ -25,8 +25,20 @@ uint16_t ip_checksum(const uint8_t *buf, size_t len) {
 		buf += 2; len -= 2;
 	}
 	if (len) c += (*buf) << 8;
-	while (c > 0xFFFF)
-		c = (c & 0xFFFF) + (c >> 16);
+	while (c > 0xFFFF) c = (c & 0xFFFF) + (c >> 16);
+	return ~c;
+}
+
+uint16_t ip_checksumphdr(
+	const uint8_t *buf, size_t len,
+	uint32_t ip1, uint32_t ip2,
+	uint16_t proto)
+{
+	uint32_t c = (uint16_t)~ip_checksum(buf, len);
+	c += (ip1 & 0xFFFF) + (ip1 >> 16);
+	c += (ip2 & 0xFFFF) + (ip2 >> 16);
+	c += proto + len;
+	while (c > 0xFFFF) c = (c & 0xFFFF) + (c >> 16);
 	return ~c;
 }
 

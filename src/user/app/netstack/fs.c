@@ -6,19 +6,21 @@
  *   ARP cache (currently read-only)
  * /net/0.0.0.0/connect/1.2.3.4/udp/53
  *   connect from 0.0.0.0 (any ip) to 1.2.3.4 on udp port 53
- * /net/0.0.0.0/listen/udp/53
+ * /net/0.0.0.0/listen/{tcp,udp}/53
  *   waits for a connection to any ip on udp port 53
  *   open() returns once a connection to ip 0.0.0.0 on udp port 53 is received
  */
 #include "proto.h"
 #include "util.h"
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 enum handle_type {
 	H_ETHER,
+	H_TCP,
 	H_UDP,
 	H_ARP,
 };
@@ -35,9 +37,30 @@ struct handle {
 		struct udp_conn *c;
 		struct strqueue *rx, *rxlast;
 	} udp;
+	struct {
+		struct tcp_conn *c;
+	} tcp;
+	bool dead;
 	handle_t reqh;
 };
 
+
+static void tcp_listen_callback(struct tcp_conn *c, void *arg) {
+	struct handle *h = arg;
+	h->tcp.c = c;
+	_syscall_fs_respond(h->reqh, h, 0, 0);
+	h->reqh = -1;
+}
+
+static void tcp_close_callback(void *arg) {
+	struct handle *h = arg;
+	h->dead = true;
+	if (h->reqh >= 0) {
+		_syscall_fs_respond(h->reqh, NULL, -ECONNRESET, 0);
+		h->reqh = -1;
+		return;
+	}
+}
 
 static void udp_listen_callback(struct udp_conn *c, void *arg) {
 	struct handle *h = arg;
@@ -66,11 +89,11 @@ static void udp_recv_callback(const void *buf, size_t len, void *arg) {
 	}
 }
 
-static void udp_recv_enqueue(struct handle *h, handle_t reqh) {
+static void recv_enqueue(struct handle *h, handle_t reqh) {
 	if (h->reqh > 0) {
 		// TODO queue
 		_syscall_fs_respond(reqh, NULL, -1, 0);
-	} else if (h->udp.rx) {
+	} else if (h->type == H_UDP && h->udp.rx) {
 		_syscall_fs_respond(reqh, h->udp.rx->buf, h->udp.rx->len, 0);
 		h->udp.rx = h->udp.rx->next;
 		free(h->udp.rx);
@@ -87,10 +110,12 @@ static void fs_open(handle_t reqh, char *path) {
 
 	if (strcmp(path, "raw") == 0) {
 		h = malloc(sizeof *h);
+		memset(h, 0, sizeof *h);
 		h->type = H_ETHER;
 		respond(h, 0);
 	} else if (strcmp(path, "arp") == 0) {
 		h = malloc(sizeof *h);
+		memset(h, 0, sizeof *h);
 		h->type = H_ARP;
 		respond(h, 0);
 	}
@@ -118,9 +143,20 @@ static void fs_open(handle_t reqh, char *path) {
 				h = malloc(sizeof *h);
 				memset(h, 0, sizeof *h);
 				h->type = H_UDP;
-				h->udp.c = NULL;
 				h->reqh = reqh;
 				udp_listen(port, udp_listen_callback, udp_recv_callback, h);
+				return;
+			}
+		}
+		if (strcmp(proto, "tcp") == 0) {
+			port_s = strtok_r(NULL, "/", &save);
+			if (port_s) {
+				uint16_t port = strtol(port_s, NULL, 0);
+				h = malloc(sizeof *h);
+				memset(h, 0, sizeof *h);
+				h->type = H_TCP;
+				h->reqh = reqh;
+				tcp_listen(port, tcp_listen_callback, tcp_close_callback, h);
 				return;
 			}
 		}
@@ -172,6 +208,10 @@ void fs_thread(void *arg) { (void)arg;
 				}
 				break;
 			case VFSOP_READ:
+				if (h->dead) {
+					_syscall_fs_respond(reqh, NULL, -ECONNRESET, 0);
+					break;
+				}
 				switch (h->type) {
 					case H_ETHER: {
 						struct ethq *qe;
@@ -180,8 +220,9 @@ void fs_thread(void *arg) { (void)arg;
 						qe->next = ether_queue;
 						ether_queue = qe;
 						break;}
+					case H_TCP:
 					case H_UDP:
-						udp_recv_enqueue(h, reqh);
+						recv_enqueue(h, reqh);
 						break;
 					case H_ARP:
 						arp_fsread(reqh, res.offset);
@@ -191,6 +232,10 @@ void fs_thread(void *arg) { (void)arg;
 				}
 				break;
 			case VFSOP_WRITE:
+				if (h->dead) {
+					_syscall_fs_respond(reqh, NULL, -ECONNRESET, 0);
+					break;
+				}
 				switch (h->type) {
 					case H_ETHER:
 						ret = _syscall_write(state.raw_h, buf, res.len, 0, 0);
@@ -207,8 +252,8 @@ void fs_thread(void *arg) { (void)arg;
 			case VFSOP_CLOSE:
 				// TODO remove entries in queue
 				// TODO why does close even have _syscall_fs_respond?
-				if (h->type == H_UDP)
-					udpc_close(h->udp.c);
+				if (h->type == H_TCP) tcpc_close(h->tcp.c);
+				if (h->type == H_UDP) udpc_close(h->udp.c);
 				free(h);
 				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;

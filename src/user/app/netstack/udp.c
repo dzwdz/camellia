@@ -17,14 +17,15 @@ struct udp_conn {
 	void (*on_conn)(struct udp_conn *, void *); /* if non-NULL - listening, if NULL - estabilished */
 	void (*on_recv)(const void *, size_t, void *);
 	void *carg;
-	struct udp_conn *next, **prev;
+	struct udp_conn *next, **link;
 };
-struct udp_conn *conns;
+static struct udp_conn *conns;
 static void conns_append(struct udp_conn *c) {
 	c->next = conns;
-	if (c->next) *(c->next->prev) = c;
-	c->prev = &conns;
-	*c->prev = c;
+	if (c->next)
+		c->next->link = &c->next;
+	c->link = &conns;
+	*c->link = c;
 }
 void udp_listen(
 	uint16_t port,
@@ -79,8 +80,8 @@ void udpc_send(struct udp_conn *c, const void *buf, size_t len) {
 	free(pkt);
 }
 void udpc_close(struct udp_conn *c) {
-	if (c->next) c->next->prev = c->prev;
-	*(c->prev) = c->next;
+	if (c->next) c->next->link = c->link;
+	*(c->link) = c->next;
 	free(c);
 }
 
@@ -98,10 +99,10 @@ void udp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 			memcpy(&iter->rmac, ip.e.src, sizeof(mac_t));
 			iter->rip = ip.src;
 		}
-		if (iter->rip == ip.src
-			&& iter->rport == srcport
-			&& iter->lport == dstport
-			&& iter->on_recv)
+		if (iter->rip == ip.src &&
+			iter->rport == srcport &&
+			iter->lport == dstport &&
+			iter->on_recv)
 		{
 			active = true;
 			iter->on_recv(buf + Payload, len - Payload, iter->carg);
