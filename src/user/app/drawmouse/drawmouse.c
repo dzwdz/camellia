@@ -66,7 +66,7 @@ int main(void) {
 		int len = _syscall_read(fd, buf, sizeof buf, 0);
 		if (len == 0) break;
 		ring_put(&r, buf, len);
-		while (ring_size(&r) >= 3) {
+		while (ring_used(&r) >= 3) {
 			struct packet p;
 			ring_get(&r, &p, sizeof p);
 			p.dy *= -1;

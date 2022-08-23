@@ -8,7 +8,10 @@ typedef struct {
 	size_t _head, _tail;
 } ring_t;
 
-size_t	ring_size(ring_t*);
+/** Returns amount of bytes stored in the buffer. */
+size_t	ring_used(ring_t*);
+/** Returns amount of space left in the buffer. */
+size_t	ring_avail(ring_t*);
 
 void	ring_put(ring_t*, void*, size_t);
 void	ring_put1b(ring_t*, uint8_t);

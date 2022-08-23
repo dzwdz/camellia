@@ -61,7 +61,7 @@ static void main_loop(void) {
 				break;
 
 			case VFSOP_READ:
-				while (ring_size((void*)&backlog) == 0) {
+				while (ring_used((void*)&backlog) == 0) {
 					/* read raw input until we have something to output */
 					int len = _syscall_read(fd, buf, sizeof buf, 0);
 					if (len == 0) break;

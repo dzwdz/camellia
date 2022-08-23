@@ -72,7 +72,7 @@ static void accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:
-			if (ring_size((void*)&backlog) == 0) {
+			if (ring_used((void*)&backlog) == 0) {
 				/* nothing to read, join queue */
 				assert(!req->postqueue_next);
 				struct vfs_request **slot = &blocked_on;

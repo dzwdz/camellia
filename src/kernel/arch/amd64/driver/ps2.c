@@ -91,7 +91,7 @@ enum {
 };
 
 static void read_backlog(struct vfs_request *req, ring_t *r, struct vfs_request **queue) {
-	if (ring_size(r) == 0) {
+	if (ring_used(r) == 0) {
 		/* nothing to read, join queue */
 		assert(!req->postqueue_next);
 		while (*queue) queue = &(*queue)->postqueue_next;

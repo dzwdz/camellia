@@ -7,11 +7,15 @@ static bool at_end(ring_t *r) {
 		|| (r->_head + 1 == r->capacity && r->_tail == 0);
 }
 
-size_t ring_size(ring_t *r) {
+size_t ring_used(ring_t *r) {
 	if (r->_head >= r->_tail)
 		return r->_head - r->_tail;
 	else
 		return r->_head + r->capacity - r->_tail;
+}
+
+size_t ring_avail(ring_t *r) {
+	return r->capacity - ring_used(r);
 }
 
 void ring_put(ring_t *r, void *buf, size_t len) {
