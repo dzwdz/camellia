@@ -261,6 +261,10 @@ void fs_thread(void *arg) { (void)arg;
 						ret = _syscall_write(state.raw_h, buf, res.len, 0, 0);
 						_syscall_fs_respond(reqh, NULL, ret, 0);
 						break;
+					case H_TCP:
+						tcpc_send(h->tcp.c, buf, res.len);
+						_syscall_fs_respond(reqh, NULL, res.len, 0);
+						break;
 					case H_UDP:
 						udpc_send(h->udp.c, buf, res.len);
 						_syscall_fs_respond(reqh, NULL, res.len, 0);

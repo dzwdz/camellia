@@ -96,4 +96,5 @@ void tcp_listen(
 	void (*on_close)(void *carg),
 	void *carg);
 size_t tcpc_tryread(struct tcp_conn *, void *buf, size_t len);
+void tcpc_send(struct tcp_conn *, const void *buf, size_t len);
 void tcpc_close(struct tcp_conn *);

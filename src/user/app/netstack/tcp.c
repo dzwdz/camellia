@@ -4,6 +4,7 @@
  * system. */
 #include "proto.h"
 #include "util.h"
+#include <assert.h>
 #include <shared/container/ring.h>
 
 enum {
@@ -61,20 +62,22 @@ static void conns_append(struct tcp_conn *c) {
 	c->link = &conns;
 	*c->link = c;
 }
-static void tcpc_send(struct tcp_conn *c, uint16_t flags) {
-	uint8_t *pkt = malloc(MinHdr);
+static void tcpc_sendraw(struct tcp_conn *c, uint16_t flags, const void *buf, size_t len) {
+	uint8_t *pkt = malloc(MinHdr + len);
 	memset(pkt, 0, MinHdr);
 
 	nput16(pkt + SrcPort, c->lport);
 	nput16(pkt + DstPort, c->rport);
 	nput32(pkt + Seq, c->lseq);
+	c->lseq += len;
 	nput32(pkt + AckNum, c->lack);
 	flags |= (MinHdr / 4) << 12;
 	nput16(pkt + Flags, flags);
 	nput16(pkt + WinSize, ring_avail(&c->rx));
-	nput16(pkt + Checksum, ip_checksumphdr(pkt, MinHdr, c->lip, c->rip, 6));
+	memcpy(pkt + MinHdr, buf, len);
+	nput16(pkt + Checksum, ip_checksumphdr(pkt, MinHdr + len, c->lip, c->rip, 6));
 
-	ipv4_send(pkt, MinHdr, (struct ipv4){
+	ipv4_send(pkt, MinHdr + len, (struct ipv4){
 		.proto = 6,
 		.src = c->lip,
 		.dst = c->rip,
@@ -105,17 +108,28 @@ size_t tcpc_tryread(struct tcp_conn *c, void *buf, size_t len) {
 	if (!buf) return ring_used(&c->rx);
 	return ring_get(&c->rx, buf, len);
 }
+void tcpc_send(struct tcp_conn *c, const void *buf, size_t len) {
+	tcpc_sendraw(c, FlagACK | FlagPSH, buf, len);
+}
+static void tcpc_tryfree(struct tcp_conn *c) {
+	if (c->state == CLOSED && c->uclosed) {
+		if (c->next) c->next->link = c->link;
+		*c->link = c->next;
+		free(c->rx.buf);
+		free(c);
+	}
+}
 void tcpc_close(struct tcp_conn *c) {
 	/* ONLY FOR USE BY THE USER, drops their reference */
-	if (!c->uclosed) {
-		c->uclosed = true;
-		if (c->state != CLOSED && c->state != LAST_ACK && c->state != LISTEN) {
-			tcpc_send(c, FlagFIN | FlagACK);
-			c->state = LAST_ACK;
-			c->on_conn = NULL;
-			c->on_close = NULL;
-		}
+	assert(!c->uclosed);
+	c->uclosed = true;
+	if (c->state != CLOSED && c->state != LAST_ACK && c->state != LISTEN) {
+		tcpc_sendraw(c, FlagFIN | FlagACK, NULL, 0);
+		c->state = LAST_ACK;
+		c->on_conn = NULL;
+		c->on_close = NULL;
 	}
+	tcpc_tryfree(c);
 }
 
 void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
@@ -141,7 +155,7 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 			iter->rport = srcport;
 			iter->lack = seq + 1;
 			memcpy(&iter->rmac, ip.e.src, sizeof(mac_t));
-			tcpc_send(iter, FlagSYN | FlagACK);
+			tcpc_sendraw(iter, FlagSYN | FlagACK, NULL, 0);
 			iter->lseq++;
 			if (iter->on_conn) iter->on_conn(iter, iter->carg);
 			return;
@@ -153,28 +167,29 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 				if (iter->rack < acknum)
 					iter->rack = acknum;
 				if (iter->state == LAST_ACK) {
-					iter->state = CLOSED; // TODO check if ack has correct number
+					// TODO check if ack has correct number
+					iter->state = CLOSED;
+					tcpc_tryfree(iter);
 					// TODO free (also after a timeout)
 					return;
 				}
 			}
 			if (iter->lack != seq && iter->lack - 1 != seq) {
 				eprintf("remote seq jumped by %d", seq - iter->lack);
-				tcpc_send(iter, FlagACK);
+				tcpc_sendraw(iter, FlagACK, NULL, 0);
 				return;
 			}
-			// TODO min() in libc
 			// TODO check if overflows window size
-			iter->lack = seq + (payloadlen < 1 ? 1 : payloadlen);
 			if (payloadlen) {
+				iter->lack = seq + payloadlen;
 				ring_put(&iter->rx, buf + hdrlen, payloadlen);
 				if (iter->on_recv) iter->on_recv(iter->carg);
-				tcpc_send(iter, FlagACK);
+				tcpc_sendraw(iter, FlagACK, NULL, 0);
 			}
 			if (flags & FlagFIN) {
 				// TODO should resend the packet until an ACK is received
 				// TODO duplicated in tcpc_close
-				tcpc_send(iter, FlagFIN | FlagACK);
+				tcpc_sendraw(iter, FlagFIN | FlagACK, NULL, 0);
 				iter->state = LAST_ACK;
 				if (iter->on_close) iter->on_close(iter->carg);
 				return;
