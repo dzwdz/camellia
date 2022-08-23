@@ -185,6 +185,25 @@ static void fs_open(handle_t reqh, char *path) {
 			respond(NULL, -1);
 		proto = strtok_r(NULL, "/", &save);
 		if (!proto) respond(NULL, -1);
+		if (strcmp(proto, "tcp") == 0) {
+			port_s = strtok_r(NULL, "/", &save);
+			if (port_s) {
+				uint16_t port = strtol(port_s, NULL, 0);
+				h = malloc(sizeof *h);
+				memset(h, 0, sizeof *h);
+				h->type = H_TCP;
+				h->tcp.c = tcpc_new((struct tcp){
+					.dst = port,
+					.ip.dst = dstip,
+				}, tcp_recv_callback, tcp_close_callback, h);
+				if (h->tcp.c) {
+					respond(h, 0);
+				} else {
+					free(h);
+					respond(NULL, -1);
+				}
+			}
+		}
 		if (strcmp(proto, "udp") == 0) {
 			port_s = strtok_r(NULL, "/", &save);
 			if (port_s) {

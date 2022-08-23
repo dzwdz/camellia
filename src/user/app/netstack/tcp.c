@@ -31,7 +31,9 @@ enum {
 
 enum tcp_state {
 	LISTEN,
+	SYN_SENT,
 	SYN_RCVD,
+	ESTABILISHED,
 	LAST_ACK,
 	CLOSED,
 };
@@ -93,6 +95,7 @@ void tcp_listen(
 	void *carg)
 {
 	struct tcp_conn *c = malloc(sizeof *c);
+	memset(c, 0, sizeof *c);
 	c->lport = port;
 	c->lip = state.ip;
 	c->state = LISTEN;
@@ -103,6 +106,35 @@ void tcp_listen(
 	// TODO setting the ring size super low loses every nth byte. probably a bug with ring_t itself!
 	c->rx = (ring_t){malloc(4096), 4096, 0, 0};
 	conns_append(c);
+}
+struct tcp_conn *tcpc_new(
+	struct tcp t,
+	void (*on_recv)(void *carg),
+	void (*on_close)(void *carg),
+	void *carg)
+{
+	struct tcp_conn *c = malloc(sizeof *c);
+	memset(c, 0, sizeof *c);
+	c->lip = t.ip.src ? t.ip.src : state.ip;
+	c->rip = t.ip.dst;
+	c->lport = t.src ? t.src : 50002; // TODO randomize source ports
+	c->rport = t.dst;
+	if (arpcache_get(c->rip, &c->rmac) < 0) {
+		// TODO make arp request, wait for reply
+		eprintf("not in ARP cache, unimplemented");
+		free(c);
+		return NULL;
+	}
+
+	c->state = SYN_SENT;
+	c->on_recv = on_recv;
+	c->on_close = on_close;
+	c->carg = carg;
+	c->rx = (ring_t){malloc(4096), 4096, 0, 0};
+	conns_append(c);
+
+	tcpc_sendraw(c, FlagSYN, NULL, 0);
+	return c;
 }
 size_t tcpc_tryread(struct tcp_conn *c, void *buf, size_t len) {
 	if (!buf) return ring_used(&c->rx);
@@ -163,6 +195,17 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 
 		if (iter->rip == ip.src && iter->rport == srcport) {
 			// TODO doesn't handle seq/ack overflows
+			if (iter->state == SYN_SENT) {
+				if (flags & FlagSYN) {
+					iter->state = ESTABILISHED;
+					iter->lack = seq + 1;
+					tcpc_sendraw(iter, FlagACK, NULL, 0);
+					return;
+				} else {
+					// TODO resend syn?
+					return;
+				}
+			}
 			if (flags & FlagACK) {
 				if (iter->rack < acknum)
 					iter->rack = acknum;
