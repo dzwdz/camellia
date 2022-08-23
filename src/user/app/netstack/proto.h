@@ -92,6 +92,8 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
 void tcp_listen(
 	uint16_t port,
 	void (*on_conn)(struct tcp_conn *, void *carg),
+	void (*on_recv)(void *carg),
 	void (*on_close)(void *carg),
 	void *carg);
+size_t tcpc_tryread(struct tcp_conn *, void *buf, size_t len);
 void tcpc_close(struct tcp_conn *);

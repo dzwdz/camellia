@@ -39,6 +39,7 @@ struct handle {
 	} udp;
 	struct {
 		struct tcp_conn *c;
+		size_t readcap;
 	} tcp;
 	bool dead;
 	handle_t reqh;
@@ -50,6 +51,19 @@ static void tcp_listen_callback(struct tcp_conn *c, void *arg) {
 	h->tcp.c = c;
 	_syscall_fs_respond(h->reqh, h, 0, 0);
 	h->reqh = -1;
+}
+
+/* also called from recv_enqueue. yes, it's a mess */
+static void tcp_recv_callback(void *arg) {
+	struct handle *h = arg;
+	char buf[1024];
+	if (h->reqh >= 0) {
+		size_t len = tcpc_tryread(h->tcp.c, buf, sizeof buf);
+		if (len > 0) {
+			_syscall_fs_respond(h->reqh, buf, len, 0);
+			h->reqh = -1;
+		}
+	}
 }
 
 static void tcp_close_callback(void *arg) {
@@ -89,16 +103,22 @@ static void udp_recv_callback(const void *buf, size_t len, void *arg) {
 	}
 }
 
-static void recv_enqueue(struct handle *h, handle_t reqh) {
+static void recv_enqueue(struct handle *h, handle_t reqh, size_t readcap) {
 	if (h->reqh > 0) {
 		// TODO queue
 		_syscall_fs_respond(reqh, NULL, -1, 0);
-	} else if (h->type == H_UDP && h->udp.rx) {
+		return;
+	}
+	if (h->type == H_UDP && h->udp.rx) {
 		_syscall_fs_respond(reqh, h->udp.rx->buf, h->udp.rx->len, 0);
 		h->udp.rx = h->udp.rx->next;
 		free(h->udp.rx);
-	} else {
-		h->reqh = reqh;
+		return;
+	}
+	h->reqh = reqh;
+	if (h->type == H_TCP) {
+		h->tcp.readcap = readcap;
+		tcp_recv_callback(h);
 	}
 }
 
@@ -156,7 +176,7 @@ static void fs_open(handle_t reqh, char *path) {
 				memset(h, 0, sizeof *h);
 				h->type = H_TCP;
 				h->reqh = reqh;
-				tcp_listen(port, tcp_listen_callback, tcp_close_callback, h);
+				tcp_listen(port, tcp_listen_callback, tcp_recv_callback, tcp_close_callback, h);
 				return;
 			}
 		}
@@ -222,7 +242,7 @@ void fs_thread(void *arg) { (void)arg;
 						break;}
 					case H_TCP:
 					case H_UDP:
-						recv_enqueue(h, reqh);
+						recv_enqueue(h, reqh, res.capacity);
 						break;
 					case H_ARP:
 						arp_fsread(reqh, res.offset);

@@ -13,7 +13,7 @@ size_t	ring_used(ring_t*);
 /** Returns amount of space left in the buffer. */
 size_t	ring_avail(ring_t*);
 
-void	ring_put(ring_t*, void*, size_t);
+void	ring_put(ring_t*, const void*, size_t);
 void	ring_put1b(ring_t*, uint8_t);
 
 size_t	ring_get(ring_t*, void*, size_t);

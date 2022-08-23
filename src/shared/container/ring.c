@@ -18,7 +18,7 @@ size_t ring_avail(ring_t *r) {
 	return r->capacity - ring_used(r);
 }
 
-void ring_put(ring_t *r, void *buf, size_t len) {
+void ring_put(ring_t *r, const void *buf, size_t len) {
 	// TODO do something similar to ring_get
 	for (size_t i = 0; i < len; i++)
 		ring_put1b(r, ((uint8_t*)buf)[i]);

@@ -1,6 +1,10 @@
-/* Welcome to spaghetti land. */
+/* Welcome to spaghetti land.
+ * This is anything but production quality. It's throwaway code, meant
+ * only to see how networking could fit into the architecture of the
+ * system. */
 #include "proto.h"
 #include "util.h"
+#include <shared/container/ring.h>
 
 enum {
 	SrcPort = 0,
@@ -43,8 +47,11 @@ struct tcp_conn {
 	bool uclosed; /* did the user close? */
 
 	void (*on_conn)(struct tcp_conn *, void *carg);
+	void (*on_recv)(void *carg);
 	void (*on_close)(void *carg);
 	void *carg;
+
+	ring_t rx;
 };
 static struct tcp_conn *conns;
 static void conns_append(struct tcp_conn *c) {
@@ -64,7 +71,7 @@ static void tcpc_send(struct tcp_conn *c, uint16_t flags) {
 	nput32(pkt + AckNum, c->lack);
 	flags |= (MinHdr / 4) << 12;
 	nput16(pkt + Flags, flags);
-	nput16(pkt + WinSize, 4096);
+	nput16(pkt + WinSize, ring_avail(&c->rx));
 	nput16(pkt + Checksum, ip_checksumphdr(pkt, MinHdr, c->lip, c->rip, 6));
 
 	ipv4_send(pkt, MinHdr, (struct ipv4){
@@ -78,6 +85,7 @@ static void tcpc_send(struct tcp_conn *c, uint16_t flags) {
 void tcp_listen(
 	uint16_t port,
 	void (*on_conn)(struct tcp_conn *, void *carg),
+	void (*on_recv)(void *carg),
 	void (*on_close)(void *carg),
 	void *carg)
 {
@@ -86,18 +94,27 @@ void tcp_listen(
 	c->lip = state.ip;
 	c->state = LISTEN;
 	c->on_conn = on_conn;
+	c->on_recv = on_recv;
 	c->on_close = on_close;
 	c->carg = carg;
+	// TODO setting the ring size super low loses every nth byte. probably a bug with ring_t itself!
+	c->rx = (ring_t){malloc(4096), 4096, 0, 0};
 	conns_append(c);
+}
+size_t tcpc_tryread(struct tcp_conn *c, void *buf, size_t len) {
+	if (!buf) return ring_used(&c->rx);
+	return ring_get(&c->rx, buf, len);
 }
 void tcpc_close(struct tcp_conn *c) {
 	/* ONLY FOR USE BY THE USER, drops their reference */
 	if (!c->uclosed) {
 		c->uclosed = true;
-		tcpc_send(c, FlagFIN | FlagACK);
-		c->state = LAST_ACK;
-		c->on_conn = NULL;
-		c->on_close = NULL;
+		if (c->state != CLOSED && c->state != LAST_ACK && c->state != LISTEN) {
+			tcpc_send(c, FlagFIN | FlagACK);
+			c->state = LAST_ACK;
+			c->on_conn = NULL;
+			c->on_close = NULL;
+		}
 	}
 }
 
@@ -146,7 +163,14 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 				tcpc_send(iter, FlagACK);
 				return;
 			}
-			iter->lack = seq + 1;
+			// TODO min() in libc
+			// TODO check if overflows window size
+			iter->lack = seq + (payloadlen < 1 ? 1 : payloadlen);
+			if (payloadlen) {
+				ring_put(&iter->rx, buf + hdrlen, payloadlen);
+				if (iter->on_recv) iter->on_recv(iter->carg);
+				tcpc_send(iter, FlagACK);
+			}
 			if (flags & FlagFIN) {
 				// TODO should resend the packet until an ACK is received
 				// TODO duplicated in tcpc_close
