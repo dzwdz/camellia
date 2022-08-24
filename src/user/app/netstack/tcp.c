@@ -134,6 +134,7 @@ struct tcp_conn *tcpc_new(
 	conns_append(c);
 
 	tcpc_sendraw(c, FlagSYN, NULL, 0);
+	c->lseq++;
 	return c;
 }
 size_t tcpc_tryread(struct tcp_conn *c, void *buf, size_t len) {
