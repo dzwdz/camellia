@@ -1,12 +1,23 @@
-camellia
-========
-This is a small experimental kernel focused on some ideas I've had about privilege separation. I haven't written much about them yet, but I'll probably do that soon(ish).
+# camellia
+an experimental, work-in-progress, microkernel based on some of my ideas for privilege separation.
 
-main goals
-----------
-* Small, understandable, auditable. The kernel shouldn't include anything which isn't absolutely needed to implement those ideas. I'm not focusing on this too much atm, since it's still in early stages, but I'll probably spend a lot of time later slimming it down.
-* Stable syscall API, easy to implement by other people. There isn't much needed to implement those ideas, and being able to choose what exact kernel you want to use would be pretty nice.
-* Processes can always reduce their access to resources, but can *never* escalate it back. This includes stuff like setuid or whatver.
-* Easy to use access control on all scales. It should be just as easy to disallow a program access to /home, as to disallow access to every file containing swear words, as to disallow access to the internet based on some packet filter. All of those would use the same exact API.
+this README is shit, but it's still better than the old one
 
-I'm bad at explaining stuff, and I know that those look very generic, but I already have most of this planned out.
+## the ideas
+### everything is a file, but really now
+All resources are accessed through the filesystem, similarly to Plan 9. `/kdev/ata/0`, `/net/0.0.0.0/listen/tcp/80`, etc.
+This makes it easier to reason about the privileges of a process, as they're all managed in the same way.
+On Linux, `namespaces(7)` lists 8 different process namespaces - 8 separate ways to isolate each part of a process. It's easy to let something slip through.
+
+Compare that to `whitelist /bin/httpd:ro /var/www/:ro /net/0.0.0.0/listen/tcp/80 -- httpd`. It's immediately obvious what httpd can and can't do.
+
+Internally, that works somewhat like Plan 9 namespaces. `whitelist` hijacks all `open()` calls made by its children, and decides if they can pass through.
+This stacks easily. Broadly speaking, processes have full control over their childrens' resource accesses. Filesystem drivers and such use that too.
+This also makes them easy to sandbox: `mount /mnt/ whitelist /bin/fatfs /kdev/ata/0 -- fatfs /kdev/ata/0`.
+
+
+## list of stolen stuff
+* `src/user/lib/elf.h` from [adachristine](https://github.com/adachristine/sophia/tree/main/api/elf)
+* `src/user/lib/vendor/getopt` from [skeeto](https://github.com/skeeto/getopt)
+* `src/user/lib/vendor/dlmalloc` from [Doug Lea](https://gee.cs.oswego.edu/dl/html/malloc.html)
+* `src/kernel/arch/amd64/3rdparty/multiboot2.h` from the FSF
