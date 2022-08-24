@@ -12,6 +12,7 @@
  */
 #include "proto.h"
 #include "util.h"
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
@@ -58,7 +59,9 @@ static void tcp_recv_callback(void *arg) {
 	struct handle *h = arg;
 	char buf[1024];
 	if (h->reqh >= 0) {
-		size_t len = tcpc_tryread(h->tcp.c, buf, sizeof buf);
+		if (h->tcp.readcap > sizeof buf)
+			h->tcp.readcap = sizeof buf;
+		size_t len = tcpc_tryread(h->tcp.c, buf, h->tcp.readcap);
 		if (len > 0) {
 			_syscall_fs_respond(h->reqh, buf, len, 0);
 			h->reqh = -1;
@@ -122,7 +125,7 @@ static void recv_enqueue(struct handle *h, handle_t reqh, size_t readcap) {
 	}
 }
 
-static void fs_open(handle_t reqh, char *path) {
+static void fs_open(handle_t reqh, char *path, int flags) {
 #define respond(buf, val) do{ _syscall_fs_respond(reqh, buf, val, 0); return; }while(0)
 	struct handle *h;
 	if (*path != '/') respond(NULL, -1);
@@ -139,6 +142,9 @@ static void fs_open(handle_t reqh, char *path) {
 		h->type = H_ARP;
 		respond(h, 0);
 	}
+
+	/* everything below ends up sending packets */
+	if (flags & OPEN_RO) respond(NULL, -EACCES);
 
 	char *save;
 	const char *verb, *proto, *port_s;
@@ -241,7 +247,7 @@ void fs_thread(void *arg) { (void)arg;
 			case VFSOP_OPEN:
 				if (res.len < buflen) {
 					buf[res.len] = '\0';
-					fs_open(reqh, buf);
+					fs_open(reqh, buf, res.flags);
 				} else {
 					_syscall_fs_respond(reqh, NULL, -1, 0);
 				}
