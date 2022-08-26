@@ -48,6 +48,7 @@ int execv(const char *path, char *const argv[]) {
 	return -1;
 }
 
+// stdlib.h
 _Noreturn void abort(void) {
 	_syscall_exit(1);
 }
