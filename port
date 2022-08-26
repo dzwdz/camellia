@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+export REPO="$PWD"
+export PREFIX="$REPO/out/initrd/usr/"
+export PATH="$REPO/ports/bin/:$REPO/toolchain/bin/:$PATH"
+
+if [ $1 = deepclean ]; then
+	rm -rf ports/out/
+	exit
+fi
+
+mkdir -p ports/out/$1/ $PREFIX
+cd ports/out/$1/
+sh $REPO/ports/$1 $2

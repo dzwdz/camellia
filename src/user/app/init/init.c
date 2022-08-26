@@ -44,6 +44,7 @@ int main(void) {
 		fs_union((const char*[]){
 			"/init/bin/amd64/",
 			"/init/bin/sh/",
+			"/init/usr/bin/",
 			NULL
 		});
 	}
