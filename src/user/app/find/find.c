@@ -58,10 +58,10 @@ void find(const char *path) {
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
-		recurse("/");
+		find("/");
 	} else {
 		for (int i = 1; i < argc; i++)
-			recurse(argv[i]);
+			find(argv[i]);
 	}
 	return 0;
 }
