@@ -65,15 +65,35 @@ static size_t elf_spread(const void *elf) {
 	return high - low;
 }
 
+static void *malloccpy(const void *orig, size_t len) {
+	void *n = malloc(len);
+	memcpy(n, orig, len);
+	return n;
+}
+
 /* frees memory outside of [low; low + len] and jumps to *entry
  * also sets up main's stack */
-void _freejmp_chstack(void *entry, void *low, size_t len, char **argv, char **envp, void *stack); // elfload.s
+void _freejmp_chstack(void *entry, void *low, size_t len, const char **argv, char **envp, void *stack); // elfload.s
 _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
-void _freejmp(void *entry, void *low, size_t imglen, char **argv, char **envp) {
+void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **envp) {
 	size_t len;
 	union {void *b; void **ptr; uintptr_t *n;} stack;
 	stack.b = (void*)~0; /* default stack location */
+	void *stack_start = stack.b - 0x1000;
 	void *cwd;
+
+	/* copy argv off the stack */
+	int argc = 0;
+	size_t argv_len;
+	if (argv) {
+		while (argv[argc]) argc++;
+		argv_len = argc * sizeof(char *);
+		if ((void*)argv > stack_start)
+			argv = malloccpy(argv, argv_len);
+		for (int i = 0; argv[i]; i++)
+			if ((void*)argv[i] > stack_start)
+				argv[i] = malloccpy(argv[i], strlen(argv[i]) + 1);
+	}
 
 	/* push cwd */
 	len = absolutepath(NULL, NULL, 0);
@@ -82,19 +102,16 @@ void _freejmp(void *entry, void *low, size_t imglen, char **argv, char **envp) {
 	getcwd(cwd, len);
 
 	/* push argv */
-	int argc = 0;
 	if (argv) {
-		for (int i = 0; argv[i]; i++) {
+		for (int i = 0; i < argc; i++) {
 			len = strlen(argv[i]) + 1;
 			stack.b -= len;
 			memcpy(stack.b, argv[i], len);
 			argv[i] = stack.b;
-			argc++;
 		}
-		len = sizeof(char*) * argc;
 		*--(stack.ptr) = NULL; /* NULL terminate argv */
-		stack.b -= len;
-		memcpy(stack.b, argv, len);
+		stack.b -= argv_len;
+		memcpy(stack.b, argv, argv_len);
 		argv = stack.b;
 	}
 
@@ -147,7 +164,7 @@ void elf_exec(void *base, char **argv, char **envp) {
 	void *newstack = _syscall_memflag((void*)0x1000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
 	if (!newstack) return;
 
-	_freejmp_chstack(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000, argv, envp, newstack);
+	_freejmp_chstack(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000, (const char**)argv, envp, newstack);
 }
 
 void *elf_partialexec(void *base) {
