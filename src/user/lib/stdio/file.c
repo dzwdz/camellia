@@ -7,9 +7,9 @@
 #include <string.h>
 #include <unistd.h>
 
-static FILE _stdin_null  = { .fd = 0 };
-static FILE _stdout_null = { .fd = 1 };
-static FILE _stderr_null = { .fd = 2 };
+static FILE _stdin_null  = { .fd = STDIN_FILENO };
+static FILE _stdout_null = { .fd = STDOUT_FILENO };
+static FILE _stderr_null = { .fd = STDERR_FILENO };
 FILE *const stdin = &_stdin_null;
 FILE *const stdout = &_stdout_null;
 FILE *const stderr = &_stderr_null;
@@ -21,7 +21,7 @@ FILE *fopen(const char *path, const char *mode) {
 	int flags = 0;
 	char *tmppath = NULL;
 	if (!path) {
-		errno = -1;
+		errno = 1;
 		return NULL;
 	} else if (path[0] == '!') {
 		/* special handling for "!files" */
@@ -29,7 +29,7 @@ FILE *fopen(const char *path, const char *mode) {
 		if (!strcmp(path, "stdin"))  return file_clone(stdin, mode);
 		if (!strcmp(path, "stdout")) return file_clone(stdout, mode);
 		if (!strcmp(path, "stderr")) return file_clone(stderr, mode);
-		errno = -1;
+		errno = 1;
 		return NULL;
 	}
 
@@ -111,10 +111,30 @@ FILE *file_clone(const FILE *f, const char *mode) {
 	return f2;
 }
 
+// TODO popen / pclose
+FILE *popen(const char *cmd, const char *mode) {
+	(void)cmd; (void)mode;
+	errno = ENOSYS;
+	return NULL;
+}
+
+int pclose(FILE *f) {
+	(void)f;
+	errno = ENOSYS;
+	return -1;
+}
+
 int fextflags(FILE *f, int extflags) {
 	int old = f->extflags;
 	f->extflags = extflags;
 	return old;
+}
+
+int setvbuf(FILE *restrict f, char *restrict buf, int type, size_t size) {
+	(void)f; (void)buf; (void)size;
+	if (type == _IONBF) return 0;
+	errno = ENOSYS;
+	return -1;
 }
 
 static void fadvance(long amt, FILE *f) {
@@ -180,6 +200,10 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 	return nitems;
 }
 
+int fputs(const char *s, FILE *f) {
+	return fprintf(f, "%s\n", s);
+}
+
 char *fgets(char *buf, int size, FILE *f) {
 	char c = '\0';
 	long pos = 0;
@@ -192,7 +216,22 @@ char *fgets(char *buf, int size, FILE *f) {
 	return buf;
 }
 
+int fgetc(FILE *f) {
+	char c;
+	return fread(&c, 1, 1, f) ? c : EOF;
+}
+int getc(FILE *f) { return fgetc(f); }
+
+int fputc(int c, FILE *f) {
+	return fwrite(&c, 1, 1, f) ? c : EOF;
+}
+int putc(int c, FILE *f) { return fputc(c, f); }
+
 int fseek(FILE *f, long offset, int whence) {
+	return fseeko(f, offset, whence);
+}
+
+int fseeko(FILE *f, off_t offset, int whence) {
 	if (fflush(f))
 		return -1;
 
@@ -231,6 +270,10 @@ int fseek(FILE *f, long offset, int whence) {
 }
 
 long ftell(FILE *f) {
+	return ftello(f);
+}
+
+off_t ftello(FILE *f) {
 	return f->pos;
 }
 
@@ -253,4 +296,9 @@ int feof(FILE *f) {
 
 int ferror(FILE *f) {
 	return f->error;
+}
+
+void clearerr(FILE *f) {
+	f->error = false;
+	f->eof = false;
 }

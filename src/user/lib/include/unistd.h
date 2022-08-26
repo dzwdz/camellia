@@ -5,6 +5,10 @@
 int fork(void);
 int close(handle_t h);
 _Noreturn void exit(int);
+_Noreturn void _exit(int);
+
+int unlink(const char *path);
+int isatty(int fd);
 
 int execv(const char *path, char *const argv[]);
 

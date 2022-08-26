@@ -29,3 +29,12 @@ int isupper(int c) {
 	return 'A' <= c && c <= 'Z';
 }
 
+int tolower(int c) {
+	if (isupper(c)) return c - 'A' + 'a';
+	return c;
+}
+
+int toupper(int c) {
+	if (islower(c)) return c - 'a' + 'A';
+	return c;
+}

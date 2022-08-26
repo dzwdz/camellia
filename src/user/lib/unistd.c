@@ -20,6 +20,20 @@ int close(handle_t h) {
 _Noreturn void exit(int c) {
 	_syscall_exit(c);
 }
+_Noreturn void _exit(int c) { exit(c); };
+
+// TODO unlink
+int unlink(const char *path) {
+	(void)path;
+	errno = ENOSYS;
+	return -1;
+}
+
+// TODO isatty
+int isatty(int fd) {
+	return fd <= 2 ? 1 : 0;
+}
+
 
 int execv(const char *path, char *const argv[]) {
 	FILE *file = fopen(path, "r");
@@ -46,11 +60,6 @@ int execv(const char *path, char *const argv[]) {
 
 	errno = EINVAL;
 	return -1;
-}
-
-// stdlib.h
-_Noreturn void abort(void) {
-	_syscall_exit(1);
 }
 
 

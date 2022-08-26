@@ -92,6 +92,7 @@ void _freejmp(void *entry, void *low, size_t imglen, char **argv, char **envp) {
 			argc++;
 		}
 		len = sizeof(char*) * argc;
+		*--(stack.ptr) = NULL; /* NULL terminate argv */
 		stack.b -= len;
 		memcpy(stack.b, argv, len);
 		argv = stack.b;
