@@ -38,6 +38,17 @@ static void test_memset(void) {
 	free(buf);
 }
 
+static void test_memmove(void) {
+	const int partsize = 64;
+	char buf[partsize * 3];
+	for (int i = 0; i < partsize * 2; i++) {
+		memset(buf, 0, sizeof buf);
+		for (int j = 0; j < partsize; j++) buf[i + j] = j;
+		memmove(buf + partsize, buf + i, partsize);
+		for (int j = 0; j < partsize; j++) test(buf[partsize + j] == j);
+	}
+}
+
 static void test_strcmp(void) {
 	test(0 == strcmp("string", "string"));
 	test(0 > strcmp("str", "string"));
@@ -102,6 +113,7 @@ static void test_strtok(void) {
 void r_libc_string(void) {
 	run_test(test_memcmp);
 	run_test(test_memset);
+	run_test(test_memmove);
 	run_test(test_strcmp);
 	run_test(test_strtol);
 	run_test(test_strspn);

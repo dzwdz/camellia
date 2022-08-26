@@ -51,10 +51,7 @@ void fs_passthru(const char *prefix) {
 						break;
 					}
 
-					// TODO memmove
-					char tmp[64];
-					memcpy(tmp, buf, res.len);
-					memcpy(buf + prefix_len, tmp, res.len);
+					memmove(buf + prefix_len, buf, res.len);
 					memcpy(buf, prefix, prefix_len);
 					res.len += prefix_len;
 				}

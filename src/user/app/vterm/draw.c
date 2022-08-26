@@ -7,9 +7,8 @@ struct framebuf fb;
 struct rect dirty;
 
 void scroll(void) {
-	// TODO memmove. this is UD
 	size_t row_len = fb.pitch * font.h;
-	memcpy(fb.b, fb.b + row_len, fb.len - row_len);
+	memmove(fb.b, fb.b + row_len, fb.len - row_len);
 	memset(fb.b + fb.len - row_len, 0, row_len);
 	cursor.y--;
 

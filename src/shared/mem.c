@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
@@ -28,16 +29,27 @@ void *memcpy(void *dest, const void *src, size_t n) {
 	// TODO erms, rep movsb
 	union dualptr_const s = {.c = src};
 	union dualptr d = {.c = dest};
+	if (dest == src) return dest;
+	// assert(src >= dest || src + n < dest);
 
-	for (; (d.u & 7) && n != 0; n--)
+	for (; (d.u & 7) && n != 0; n--) {
 		*(d.c)++ = *(s.c)++;
-
+	}
 	while (n >= sizeof(uintptr_t)) {
 		*(d.w)++ = *(s.w)++;
 		n -= sizeof(uintptr_t);
 	}
-	while (n-- != 0)
+	while (n-- != 0) {
 		*(d.c)++ = *(s.c)++;
+	}
+	return dest;
+}
+
+void *memmove(void *dest, const void *src, size_t n) {
+	if (src >= dest || src + n < dest)
+		return memcpy(dest, src, n);
+	for (; n; n--) /* naive reverse copy */
+		((uint8_t*)dest)[n-1] = ((uint8_t*)src)[n-1];
 	return dest;
 }
 
