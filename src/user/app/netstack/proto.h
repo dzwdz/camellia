@@ -56,9 +56,11 @@ struct ethq {
 extern struct ethq *ether_queue;
 
 void arp_parse(const uint8_t *buf, size_t len);
+void arp_request(uint32_t ip);
 /* 0 on success, -1 on failure */
 int arpcache_get(uint32_t ip, mac_t *mac);
 void arp_fsread(handle_t h, long offset);
+long arp_fswrite(const char *buf, long len, long offset);
 
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);
 void icmp_send(const void *payload, size_t len, struct icmp i);

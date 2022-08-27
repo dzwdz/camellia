@@ -46,7 +46,7 @@ void arp_parse(const uint8_t *buf, size_t len) {
 				.dst = (void*)(buf + SrcMAC),
 				.type = ET_ARP,
 			});
-			nput16(pkt + HdrType, 1);
+			nput16(pkt + HdrType, HdrTypeEther);
 			nput16(pkt + ProtoType, ET_IPv4);
 			pkt[HdrALen] = 6;
 			pkt[ProtoALen] = 4;
@@ -57,6 +57,30 @@ void arp_parse(const uint8_t *buf, size_t len) {
 			ether_finish(pkt);
 		}
 	}
+}
+
+void arp_request(uint32_t ip) {
+	enum {
+		SrcMAC =  8,
+		SrcIP  = 14,
+		DstMAC = 18,
+		DstIP  = 24,
+	};
+	uint8_t *pkt = ether_start(28, (struct ethernet){
+		.src = &state.mac,
+		.dst = &MAC_BROADCAST,
+		.type = ET_ARP,
+	});
+	nput16(pkt + HdrType, HdrTypeEther);
+	nput16(pkt + ProtoType, ET_IPv4);
+	pkt[HdrALen] = 6;
+	pkt[ProtoALen] = 4;
+	nput16(pkt + Operation, OpReq);
+	memcpy(pkt + SrcMAC, state.mac, 6);
+	nput32(pkt + SrcIP, state.ip);
+	memcpy(pkt + DstMAC, &MAC_BROADCAST, 6);
+	nput32(pkt + DstIP, ip);
+	ether_finish(pkt);
 }
 
 static void arpcache_put(uint32_t ip, mac_t mac) {
@@ -109,4 +133,19 @@ void arp_fsread(handle_t h, long offset) {
 	return;
 err:
 	_syscall_fs_respond(h, NULL, -1, 0);
+}
+
+long arp_fswrite(const char *buf, long len, long offset) {
+	if (offset != -1) return -1;
+	uint32_t ip;
+	char tmp[16];
+	size_t iplen = len < 15 ? len : 15;
+	memcpy(tmp, buf, iplen);
+	tmp[iplen] = '\0';
+	if (ip_parse(tmp, &ip) < 0) {
+		return -1;
+	} else {
+		arp_request(ip);
+		return len;
+	}
 }

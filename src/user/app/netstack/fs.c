@@ -294,6 +294,9 @@ void fs_thread(void *arg) { (void)arg;
 						udpc_send(h->udp.c, buf, res.len);
 						_syscall_fs_respond(reqh, NULL, res.len, 0);
 						break;
+					case H_ARP:
+						_syscall_fs_respond(reqh, NULL, arp_fswrite(buf, res.len, res.offset), 0);
+						break;
 					default:
 						_syscall_fs_respond(reqh, NULL, -1, 0);
 				}
