@@ -70,14 +70,13 @@ void fs_whitelist(const char **list) {
 	struct fs_wait_response res;
 	const size_t buf_len = 1024;
 	char *buf = malloc(buf_len);
-	char *ipath;
 	bool passthru, inject;
 	struct dirbuild db;
 	if (!buf) exit(1);
 
 	while (!c0_fs_wait(buf, buf_len, &res)) {
+		char *ipath = res.id;
 		size_t blen;
-		ipath = res.id;
 		switch (res.op) {
 			case VFSOP_OPEN:
 				passthru = false;
@@ -85,11 +84,13 @@ void fs_whitelist(const char **list) {
 
 				for (const char **iter = list; *iter; iter++) {
 					size_t len = strlen(*iter);
+					bool ro = false;
 					if (len >= 3 && !memcmp(*iter + len - 3, ":ro", 3)) {
-						res.flags = res.flags | OPEN_RO;
+						ro = true;
 						len -= 3;
 					}
 					if (len <= res.len && !memcmp(buf, *iter, len)) {
+						if (ro) res.flags |= OPEN_RO;
 						passthru = true;
 						break;
 					}
