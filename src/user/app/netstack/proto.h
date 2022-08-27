@@ -8,7 +8,7 @@ static const mac_t MAC_BROADCAST = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 extern struct net_state {
 	mac_t mac;
-	uint32_t ip;
+	uint32_t ip, gateway;
 
 	handle_t raw_h;
 } state;

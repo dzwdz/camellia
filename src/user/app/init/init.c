@@ -69,7 +69,7 @@ int main(void) {
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/net/") {
-		const char *argv[] = {"/bin/netstack", "/kdev/eth", "192.168.0.11", NULL};
+		const char *argv[] = {"/bin/netstack", "/kdev/eth", "192.168.0.11", "192.168.0.2", NULL};
 		execv(argv[0], (void*)argv);
 	}
 

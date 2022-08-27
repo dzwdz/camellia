@@ -120,10 +120,13 @@ struct tcp_conn *tcpc_new(
 	c->lport = t.src ? t.src : 50002; // TODO randomize source ports
 	c->rport = t.dst;
 	if (arpcache_get(c->rip, &c->rmac) < 0) {
-		// TODO make arp request, wait for reply
-		eprintf("not in ARP cache, unimplemented");
-		free(c);
-		return NULL;
+		// TODO wait for ARP reply
+		arp_request(c->rip);
+		if (arpcache_get(state.gateway, &c->rmac) < 0) {
+			eprintf("neither target nor gateway not in ARP cache, dropping");
+			free(c);
+			return NULL;
+		}
 	}
 
 	c->state = SYN_SENT;

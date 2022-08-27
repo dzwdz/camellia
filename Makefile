@@ -15,7 +15,12 @@ USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
-QFLAGS  = -no-reboot -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a
+QFLAGS  = -no-reboot
+ifdef NET_DIRECT
+QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a
+else
+QFLAGS += -nic user,model=rtl8139,mac=52:54:00:ca:77:1a,net=192.168.0.0/24,hostfwd=tcp::12380-192.168.0.11:80
+endif
 ifndef NO_KVM
 QFLAGS += -enable-kvm
 endif
