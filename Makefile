@@ -17,9 +17,12 @@ SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
 QFLAGS  = -no-reboot
 ifdef NET_DIRECT
-QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a
+QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a,id=n1
 else
-QFLAGS += -nic user,model=rtl8139,mac=52:54:00:ca:77:1a,net=192.168.0.0/24,hostfwd=tcp::12380-192.168.0.11:80
+QFLAGS += -nic user,model=rtl8139,mac=52:54:00:ca:77:1a,net=192.168.0.0/24,hostfwd=tcp::12380-192.168.0.11:80,id=n1
+endif
+ifdef NET_PCAP
+QFLAGS += -object filter-dump,id=f1,netdev=n1,file=$(NET_PCAP)
 endif
 ifndef NO_KVM
 QFLAGS += -enable-kvm

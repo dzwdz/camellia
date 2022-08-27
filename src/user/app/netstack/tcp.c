@@ -245,22 +245,24 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 		}
 	}
 
-	uint8_t *pkt = malloc(MinHdr);
-	memset(pkt, 0, MinHdr);
-	nput16(pkt + SrcPort, dstport);
-	nput16(pkt + DstPort, srcport);
-	nput32(pkt + Seq, acknum);
-	nput32(pkt + AckNum, seq + 1);
-	uint16_t pktflags = FlagRST | FlagACK;
-	pktflags |= (MinHdr / 4) << 12;
-	nput16(pkt + Flags, pktflags);
-	nput16(pkt + Checksum, ip_checksumphdr(pkt, MinHdr, ip.src, ip.dst, 6));
+	if ((flags & FlagRST) == 0) {
+		uint8_t *pkt = malloc(MinHdr);
+		memset(pkt, 0, MinHdr);
+		nput16(pkt + SrcPort, dstport);
+		nput16(pkt + DstPort, srcport);
+		nput32(pkt + Seq, acknum);
+		nput32(pkt + AckNum, seq + 1);
+		uint16_t pktflags = FlagRST | FlagACK;
+		pktflags |= (MinHdr / 4) << 12;
+		nput16(pkt + Flags, pktflags);
+		nput16(pkt + Checksum, ip_checksumphdr(pkt, MinHdr, ip.src, ip.dst, 6));
 
-	ipv4_send(pkt, MinHdr, (struct ipv4){
-		.proto = 6,
-		.src = ip.dst,
-		.dst = ip.src,
-		.e.dst = ip.e.src,
-	});
-	free(pkt);
+		ipv4_send(pkt, MinHdr, (struct ipv4){
+			.proto = 6,
+			.src = ip.dst,
+			.dst = ip.src,
+			.e.dst = ip.e.src,
+		});
+		free(pkt);
+	}
 }
