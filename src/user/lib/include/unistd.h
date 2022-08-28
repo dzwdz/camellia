@@ -19,6 +19,9 @@ char *getcwd(char *buf, size_t size);
  *                 except for the root dir. Includes the null byte.
  * If size isn't enough to fit the path, returns the amount of bytes needed to fit
  * it, including the null byte.
+ *
+ * Note that some errors are only detected if *out != NULL, so you must check the return
+ * value twice.
  * @return 0 on failure, length of the path otherwise */
 size_t absolutepath(char *out, const char *in, size_t size);
 

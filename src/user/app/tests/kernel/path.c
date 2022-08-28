@@ -55,7 +55,7 @@ static void test_path_simplify(void) {
 		const char *expected = testcases[i][1];
 		int len = path_simplify(input, buf, strlen(input));
 		if (expected == NULL) {
-			test(len < 0);
+			test(len == 0);
 		} else {
 			// TODO an argument for printing info on test failure
 			test(len == (int)strlen(expected) && !memcmp(expected, buf, len));

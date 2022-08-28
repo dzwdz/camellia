@@ -163,7 +163,7 @@ size_t absolutepath(char *out, const char *in, size_t size) {
 
 	if (pos <= size) {
 		pos = path_simplify(out, out, pos);
-		if (pos > 0) out[pos] = '\0';
+		if (pos == 0) return 0;
 	}
 
 	if (pos + 1 <= size) out[pos] = '\0';

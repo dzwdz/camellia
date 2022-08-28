@@ -96,7 +96,7 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 	if (!virt_cpy_from(process_current->pages, path_buf, path, len)) goto fail;
 
 	len = path_simplify(path_buf, path_buf, len);
-	if (len < 0) goto fail;
+	if (len == 0) goto fail;
 
 	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
 	if (!mount) goto fail;
@@ -138,7 +138,7 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 	if (!virt_cpy_from(process_current->pages, path_buf, path, len)) goto fail;
 
 	len = path_simplify(path_buf, path_buf, len);
-	if (len < 0) goto fail;
+	if (len == 0) goto fail;
 
 	// remove trailing slash
 	// mounting something under `/this` and `/this/` should be equalivent
