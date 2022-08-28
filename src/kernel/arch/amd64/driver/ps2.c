@@ -1,3 +1,4 @@
+#include <camellia/errno.h>
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
@@ -22,23 +23,15 @@ static struct vfs_request *kb_queue = NULL;
 static struct vfs_request *mouse_queue = NULL;
 
 static void wait_out(void) {
-	uint8_t status;
-	do {
-		status = port_in8(PS2 + 4);
-	} while (status & 2);
+	while ((port_in8(PS2 + 4) & 2) != 0);
 }
 
 static void wait_in(void) {
-	uint8_t status;
-	do {
-		status = port_in8(PS2 + 4);
-	} while (!(status & 1));
+	while ((port_in8(PS2 + 4) & 1) == 0);
 }
 
 void ps2_init(void) {
-	vfs_root_register("/ps2", accept);
-
-	uint8_t compaq, ack;
+	uint8_t compaq;
 	wait_out();
 	port_out8(PS2 + 4, 0x20); /* get compaq status */
 
@@ -58,8 +51,10 @@ void ps2_init(void) {
 	wait_out();
 	port_out8(PS2, 0xF4); /* packet streaming */
 	wait_in();
-	ack = port_in8(PS2);
-	assert(ack == 0xFA);
+	if (port_in8(PS2) != 0xFA) /* check ACK */
+		panic_unimplemented();
+
+	vfs_root_register("/ps2", accept);
 }
 
 void ps2_irq(void) {
@@ -109,16 +104,11 @@ static void accept(struct vfs_request *req) {
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			if (!req->input.kern) panic_invalid_state();
-			if (req->input.len == 1) {
-				vfsreq_finish_short(req, H_ROOT);
-			} else if (req->input.len == 3 && !memcmp(req->input.buf_kern, "/kb", 3)) {
-				vfsreq_finish_short(req, H_KB);
-			} else if (req->input.len == 6 && !memcmp(req->input.buf_kern, "/mouse", 6)) {
-				vfsreq_finish_short(req, H_MOUSE);
-			} else {
-				vfsreq_finish_short(req, -1);
-			}
+			     if (reqpathcmp(req, "/"))      ret = H_ROOT;
+			else if (reqpathcmp(req, "/kb"))    ret = H_KB;
+			else if (reqpathcmp(req, "/mouse")) ret = H_MOUSE;
+			else                                ret = -ENOENT;
+			vfsreq_finish_short(req, ret);
 			break;
 		case VFSOP_READ:
 			if ((long __force)req->id == H_ROOT) {

@@ -17,25 +17,17 @@ void pata_init(void) {
 	vfs_root_register("/ata", accept);
 }
 
-
-static bool exacteq(struct vfs_request *req, const char *str) {
-	size_t len = strlen(str);
-	assert(req->input.kern);
-	return req->input.len == len && !memcmp(req->input.buf_kern, str, len);
-}
-
 static void accept(struct vfs_request *req) {
 	int ret;
 	long id = (long __force)req->id;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			if (!req->input.kern) panic_invalid_state();
-			ret = -ENOENT;
-			if (exacteq(req, "/")) ret = root_id;
-			else if (exacteq(req, "/0")) ret = 0;
-			else if (exacteq(req, "/1")) ret = 1;
-			else if (exacteq(req, "/2")) ret = 2;
-			else if (exacteq(req, "/3")) ret = 3;
+			     if (reqpathcmp(req, "/"))  ret = root_id;
+			else if (reqpathcmp(req, "/0")) ret = 0;
+			else if (reqpathcmp(req, "/1")) ret = 1;
+			else if (reqpathcmp(req, "/2")) ret = 2;
+			else if (reqpathcmp(req, "/3")) ret = 3;
+			else ret = -ENOENT;
 			vfsreq_finish_short(req, ret);
 			break;
 
