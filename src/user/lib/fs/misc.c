@@ -35,19 +35,37 @@ static int dir_seglen(const char *path) {
 	return len;
 }
 
+void fs_delegate(handle_t reqh, const char *path, long len, int flags) {
+	// TODO use threads
+	// TODO solve for more complex cases, e.g. fs_union
+	/* done in a separate thread/process because open() can block,
+	 * but that should only hold the caller back, and not the fs driver.
+	 *
+	 * for example, running `httpd` in one term would prevent you from doing
+	 * basically anything on the second term, because fs_dir_inject would be
+	 * stuck on open()ing the socket */
+	if (!_syscall_fork(FORK_NOREAP, NULL)) {
+		_syscall_fs_respond(reqh, NULL, _syscall_open(path, len, flags), FSR_DELEGATE);
+		exit(0);
+	}
+	close(reqh);
+}
+
 void fs_passthru(const char *prefix) {
-	struct fs_wait_response res;
-	const size_t buf_len = 1024;
-	char *buf = malloc(buf_len);
+	const size_t buflen = 1024;
+	char *buf = malloc(buflen);
 	int prefix_len = prefix ? strlen(prefix) : 0;
 	if (!buf) exit(1);
 
-	while (!c0_fs_wait(buf, buf_len, &res)) {
+	for (;;) {
+		struct fs_wait_response res;
+		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		if (reqh < 0) break;
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (prefix) {
-					if (prefix_len + res.len > buf_len) {
-						c0_fs_respond(NULL, -1, 0);
+					if (prefix_len + res.len > buflen) {
+						_syscall_fs_respond(reqh, NULL, -1, 0);
 						break;
 					}
 
@@ -55,11 +73,11 @@ void fs_passthru(const char *prefix) {
 					memcpy(buf, prefix, prefix_len);
 					res.len += prefix_len;
 				}
-				c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+				fs_delegate(reqh, buf, res.len, res.flags);
 				break;
 
 			default:
-				c0_fs_respond(NULL, -1, 0);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
@@ -67,16 +85,19 @@ void fs_passthru(const char *prefix) {
 }
 
 void fs_whitelist(const char **list) {
-	struct fs_wait_response res;
-	const size_t buf_len = 1024;
-	char *buf = malloc(buf_len);
-	bool passthru, inject;
-	struct dirbuild db;
+	const size_t buflen = 1024;
+	char *buf = malloc(buflen);
 	if (!buf) exit(1);
+	for (;;) {
+		struct fs_wait_response res;
+		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		if (reqh < 0) break;
 
-	while (!c0_fs_wait(buf, buf_len, &res)) {
 		char *ipath = res.id;
 		size_t blen;
+		bool passthru, inject;
+		struct dirbuild db;
+
 		switch (res.op) {
 			case VFSOP_OPEN:
 				passthru = false;
@@ -102,15 +123,15 @@ void fs_whitelist(const char **list) {
 					}
 				}
 				if (passthru) {
-					c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+					fs_delegate(reqh, buf, res.len, res.flags);
 				} else if (inject) {
 					// TODO all the inject points could be precomputed
 					ipath = malloc(res.len + 1);
 					memcpy(ipath, buf, res.len);
 					ipath[res.len] = '\0';
-					c0_fs_respond(ipath, 0, 0);
+					_syscall_fs_respond(reqh, ipath, 0, 0);
 				} else {
-					c0_fs_respond(NULL, -1, 0);
+					_syscall_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 
@@ -118,23 +139,23 @@ void fs_whitelist(const char **list) {
 			case VFSOP_GETSIZE:
 				blen = strlen(ipath);
 				char *target = res.op == VFSOP_READ ? buf : NULL;
-				dir_start(&db, res.offset, target, buf_len);
+				dir_start(&db, res.offset, target, buflen);
 				for (const char **iter = list; *iter; iter++) {
 					// TODO could be precomputed too
 					size_t len = strlen(*iter); // inefficient, whatever
 					if (blen < len && !memcmp(ipath, *iter, blen))
 						dir_appendl(&db, *iter + blen, dir_seglen(*iter + blen));
 				}
-				c0_fs_respond(target, dir_finish(&db), 0);
+				_syscall_fs_respond(reqh, target, dir_finish(&db), 0);
 				break;
 
 			case VFSOP_CLOSE:
 				free(ipath);
-				c0_fs_respond(NULL, 0, 0);
+				_syscall_fs_respond(reqh, NULL, 0, 0);
 				break;
 
 			default:
-				c0_fs_respond(NULL, -1, 0);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
@@ -214,19 +235,18 @@ void fs_dir_inject(const char *path) {
 		const char *inject;
 		int delegate, inject_len;
 	};
-
 	const size_t path_len = strlen(path);
-	struct fs_wait_response res;
-	struct fs_dir_handle *data;
-	const size_t buf_len = 1024;
-	char *buf = malloc(buf_len);
-	struct dirbuild db;
-
+	const size_t buflen = 1024;
+	char *buf = malloc(buflen);
 	if (!buf) exit(1);
 
-	while (!c0_fs_wait(buf, buf_len, &res)) {
-		data = res.id;
+	for (;;) {
+		struct fs_wait_response res;
+		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		if (reqh < 0) break;
+		struct fs_dir_handle *data = res.id;
 		switch (res.op) {
+			struct dirbuild db;
 			case VFSOP_OPEN:
 				if (buf[res.len - 1] == '/' &&
 						res.len < path_len && !memcmp(path, buf, res.len))
@@ -236,9 +256,9 @@ void fs_dir_inject(const char *path) {
 					data->delegate = _syscall_open(buf, res.len, res.flags);
 					data->inject = path + res.len;
 					data->inject_len = dir_seglen(data->inject);
-					c0_fs_respond(data, 0, 0);
+					_syscall_fs_respond(reqh, data, 0, 0);
 				} else {
-					c0_fs_respond(NULL, _syscall_open(buf, res.len, res.flags), FSR_DELEGATE);
+					fs_delegate(reqh, buf, res.len, res.flags);
 				}
 				break;
 
@@ -246,23 +266,23 @@ void fs_dir_inject(const char *path) {
 				if (data->delegate >= 0)
 					close(data->delegate);
 				free(data);
-				c0_fs_respond(NULL, 0, 0);
+				_syscall_fs_respond(reqh, NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
 			case VFSOP_GETSIZE:
-				if (res.capacity > buf_len)
-					res.capacity = buf_len;
+				if (res.capacity > buflen)
+					res.capacity = buflen;
 				char *target = res.op == VFSOP_READ ? buf : NULL;
 				dir_start(&db, res.offset, target, res.capacity);
 				dir_appendl(&db, data->inject, data->inject_len);
 				if (data->delegate >= 0)
 					dir_append_from(&db, data->delegate);
-				c0_fs_respond(target, dir_finish(&db), 0);
+				_syscall_fs_respond(reqh, target, dir_finish(&db), 0);
 				break;
 
 			default:
-				c0_fs_respond(NULL, -1, 0);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
