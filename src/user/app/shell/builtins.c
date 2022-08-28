@@ -192,32 +192,9 @@ static void cmd_rm(int argc, char **argv) {
 		eprintf("no arguments");
 		return;
 	}
-	const size_t buflen = PATH_MAX;
-	char *buf = malloc(buflen);
 	for (int i = 1; i < argc; i++) {
-		handle_t h;
-		long ret;
-		size_t abslen;
-		char *path = argv[i];
-		if (*path == '\0') {
-			eprintf("ignoring empty argument");
-			continue;
-		}
-		abslen = absolutepath(buf, path, buflen);
-		if (!abslen) {
-			eprintf("invalid path %s", path);
-			continue;
-		}
-		h = _syscall_open(buf, abslen - 1, 0);
-		if (h < 0) {
-			eprintf("couldn't open %s (err %u)", path, -h);
-			continue;
-		}
-		ret = _syscall_remove(h);
-		if (ret < 0) {
-			eprintf("couldn't remove %s (err %u)", path, -ret);
-			continue;
-		}
+		if (unlink(argv[i]) < 0)
+			perror(argv[i]);
 	}
 }
 

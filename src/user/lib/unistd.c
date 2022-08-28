@@ -22,10 +22,23 @@ _Noreturn void exit(int c) {
 }
 _Noreturn void _exit(int c) { exit(c); };
 
-// TODO unlink
 int unlink(const char *path) {
-	(void)path;
-	errno = ENOSYS;
+	size_t len = strlen(path) + 1;
+	char *abspath = malloc(len);
+	if (!abspath) return -1;
+
+	size_t abslen = absolutepath(abspath, path, len);
+	if (abslen == 0) { errno = EINVAL; goto err; }
+
+	handle_t h = _syscall_open(abspath, abslen - 1, 0);
+	if (h < 0) { errno = -h; goto err; }
+
+	long ret = _syscall_remove(h);
+	if (ret < 0) { errno = -ret; goto err; }
+
+	return 0;
+err:
+	free(abspath);
 	return -1;
 }
 
