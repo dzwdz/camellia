@@ -1,0 +1,20 @@
+set -eu
+camellia_path_check
+
+VERSION=lua-5.4.4
+
+fetch() {
+	wget http://www.lua.org/ftp/${VERSION}.tar.gz
+	tar xf ${VERSION}.tar.gz
+}
+
+prep() {
+	[ -d ${VERSION} ] || (fetch)
+	cd ${VERSION}
+}
+
+case $1 in
+	install) (prep; make generic "CC=cc" "MYCFLAGS=-Werror") ;;
+	clean)   (prep; make clean) ;;
+	*)       echo "usage: $0 install|clean"; false ;;
+esac

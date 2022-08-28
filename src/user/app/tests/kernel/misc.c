@@ -3,6 +3,7 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <string.h>
+#include <unistd.h>
 
 static void test_fault_kill(void) {
 	if (!fork()) { /* invalid memory access */

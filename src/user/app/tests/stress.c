@@ -1,6 +1,7 @@
 #include "tests.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 static void run_forked(void (*fn)()) {

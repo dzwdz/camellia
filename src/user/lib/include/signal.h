@@ -3,10 +3,11 @@
 
 #define SIGHUP 0
 #define SIGINT 0
-#define SIGWINCH 0
 #define SIGQUIT 0
-#define SIG_IGN 0
+#define SIGWINCH 0
+#define SIG_DFL 0
 #define SIG_ERR 0
+#define SIG_IGN 0
 
 typedef int sig_atomic_t;
 

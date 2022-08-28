@@ -2,7 +2,7 @@
 #include <camellia/syscalls.h>
 #include <shared/container/ring.h>
 #include <stdbool.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <user/lib/compat.h>
 
 

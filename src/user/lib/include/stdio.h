@@ -14,7 +14,11 @@
 #define SEEK_END 3
 
 #define _IONBF 0
+#define _IOFBF 0
 #define _IOLBF 1
+
+/* size of file buffers. not that we have any */
+#define BUFSIZ 1024
 
 /* stop fread() from trying to fill the entire buffer before returning
  * i.e. it will call _syscall_read() exactly once */
@@ -37,6 +41,7 @@ FILE *fdopen(int fd, const char *mode);
 FILE *file_clone(const FILE *, const char *mode);
 FILE *popen(const char *cmd, const char *mode);
 int pclose(FILE *f);
+FILE *tmpfile(void);
 
 int fextflags(FILE *, int extflags);
 int setvbuf(FILE *restrict f, char *restrict buf, int type, size_t size);
@@ -51,6 +56,7 @@ int fgetc(FILE *f);
 int getc(FILE *f);
 int fputc(int c, FILE *f);
 int putc(int c, FILE *f);
+int ungetc(int c, FILE *stream);
 
 int fseek(FILE *f, long offset, int whence);
 int fseeko(FILE *f, off_t offset, int whence);
@@ -67,3 +73,9 @@ int getchar(void);
 int putchar(int c);
 
 off_t lseek(int fd, off_t off, int whence);
+
+int remove(const char *path);
+int rename(const char *old, const char *new);
+
+#define L_tmpnam (5 + 16 + 1)
+char *tmpnam(char *s);

@@ -1,6 +1,7 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
+#include <stdio.h>
 #include <user/lib/elfload.h>
 #include <user/lib/fs/misc.h>
 

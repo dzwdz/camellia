@@ -38,7 +38,7 @@ endef
 
 
 .PHONY: all boot debug lint check clean
-all: out/boot.iso check
+all: out/boot.iso out/libm.a check
 
 boot: all out/hdd
 	qemu-system-x86_64 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial stdio
@@ -81,6 +81,10 @@ out/fs/boot/kernel: src/kernel/linker.ld \
 
 out/libc.a: $(call from_sources, src/user/lib/) \
             $(call from_sources, src/shared/)
+	@mkdir -p $(@D)
+	@$(AR) rcs $@ $^
+
+out/libm.a:
 	@mkdir -p $(@D)
 	@$(AR) rcs $@ $^
 

@@ -6,7 +6,11 @@
 #include <user/lib/vendor/dlmalloc/malloc.h>
 #endif
 
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
+
 _Noreturn void abort(void);
+_Noreturn void exit(int);
 
 int mkstemp(char *template);
 char *getenv(const char *name);

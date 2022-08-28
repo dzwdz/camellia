@@ -4,7 +4,6 @@
 
 int fork(void);
 int close(handle_t h);
-_Noreturn void exit(int);
 _Noreturn void _exit(int);
 
 int unlink(const char *path);

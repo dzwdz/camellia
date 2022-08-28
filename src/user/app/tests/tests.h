@@ -1,7 +1,7 @@
 #pragma once
 #include <camellia/syscalls.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 #define TMPFILEPATH "/tmp/.test_internal"
 

@@ -4,8 +4,8 @@
 #include <camellia/syscalls.h>
 #include <shared/mem.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <user/lib/compat.h>
 #include <user/lib/fs/dir.h>
 
