@@ -32,6 +32,7 @@ _isr_stage2:
 	push %r13
 	push %r14
 	push %r15
+	// TODO FXSAVE might be required on interrupts too?
 
 	// convert the return address into the vector nr
 	mov 120(%rsp), %rdi

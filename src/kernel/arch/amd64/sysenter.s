@@ -51,6 +51,12 @@ _sysexit_real:
 	mov %ax, %gs
 	*/
 
+	/* The state image referenced with an FXRSTOR instruction must have
+	 * been saved using an  FXSAVE instruction or be in the same format
+	 * as required [...] will result in an incorrect state restoration. */
+	// TODO will probably end up fucking something up in a hard to debug way
+	// sorry, future me. hopefully you have learned something from this
+	fxrstor (_sysexit_regs + 128)
 	mov $_sysexit_regs, %rsp
 	pop %r15
 	pop %r14
@@ -86,6 +92,7 @@ sysenter_stage1:
 	mov $pml4_identity, %rsp
 	mov %rsp, %cr3
 
+	fxsave (_sysexit_regs + 128)
 	mov $(_sysexit_regs + 128), %rsp
 	push %rax
 	push %rcx

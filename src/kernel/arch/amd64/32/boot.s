@@ -17,7 +17,7 @@ _start:
 	jz panic_early
 
 	mov %cr4, %eax
-	or $(1<<5), %eax // PAE
+	or $(1<<5 | 1<<9 | 1<<10), %eax // PAE | SSE | SSE
 	mov %eax, %cr4
 
 	call pml4_identity_init
@@ -30,7 +30,8 @@ _start:
 	wrmsr
 
 	mov %cr0, %eax
-	or $0x80000000, %eax
+	or $0x80000002, %eax // enable paging, coprocessor monitoring
+	and $(~4), %eax // disable coprocessor emulation
 	mov %eax, %cr0
 
 	call gdt_init

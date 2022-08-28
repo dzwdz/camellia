@@ -10,7 +10,7 @@ CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declara
 CFLAGS += -mgeneral-regs-only -Wno-address-of-packed-member
 CFLAGS += -Isrc/ -Isrc/shared/include/
 
-KERNEL_CFLAGS  = $(CFLAGS)
+KERNEL_CFLAGS  = $(CFLAGS) -mno-sse
 USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
 SPARSEFLAGS = -Wno-non-pointer-null
