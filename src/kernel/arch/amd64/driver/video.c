@@ -4,6 +4,7 @@
 #include <kernel/arch/amd64/driver/video.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 #include <shared/printf.h>
@@ -64,10 +65,9 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-static struct vfs_backend backend = BACKEND_KERN(accept);
 void video_init(struct fb_info fb_) {
 	fb = fb_;
 	snprintf(namebuf, sizeof namebuf, "%ux%ux%u", fb.width, fb.height, fb.bpp);
 	namelen = strlen(namebuf);
-	vfs_mount_root_register("/video", &backend);
+	vfs_root_register("/video", accept);
 }

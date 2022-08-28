@@ -4,6 +4,7 @@
 #include <kernel/mem/virt.h>
 #include <kernel/ring.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <stdint.h>
 
 static volatile uint8_t backlog_buf[64];
@@ -12,10 +13,8 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 static const int COM1 = 0x3f8;
 
 static void accept(struct vfs_request *req);
-
 static struct vfs_request *blocked_on = NULL;
-static struct vfs_backend backend = BACKEND_KERN(accept);
-void serial_init(void) { vfs_mount_root_register("/com1", &backend); }
+void serial_init(void) { vfs_root_register("/com1", accept); }
 
 
 static void serial_selftest(void) {
@@ -47,7 +46,6 @@ void serial_irq(void) {
 	if (blocked_on) {
 		accept(blocked_on);
 		blocked_on = blocked_on->postqueue_next;
-		vfs_backend_tryaccept(&backend);
 	}
 }
 

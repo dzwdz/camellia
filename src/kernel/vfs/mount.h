@@ -21,4 +21,4 @@ struct vfs_mount *vfs_mount_resolve(
 /** Decrements the reference count, potentially freeing the mount. */
 void vfs_mount_remref(struct vfs_mount *mnt);
 
-void vfs_mount_root_register(const char *path, struct vfs_backend *backend);
+void vfs_root_register(const char *path, void (*accept)(struct vfs_request *));

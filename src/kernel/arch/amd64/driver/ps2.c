@@ -3,6 +3,7 @@
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/ring.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
@@ -19,7 +20,6 @@ static void accept(struct vfs_request *req);
 
 static struct vfs_request *kb_queue = NULL;
 static struct vfs_request *mouse_queue = NULL;
-static struct vfs_backend backend = BACKEND_KERN(accept);
 
 static void wait_out(void) {
 	uint8_t status;
@@ -36,7 +36,7 @@ static void wait_in(void) {
 }
 
 void ps2_init(void) {
-	vfs_mount_root_register("/ps2", &backend);
+	vfs_root_register("/ps2", accept);
 
 	uint8_t compaq, ack;
 	wait_out();
@@ -71,14 +71,12 @@ void ps2_irq(void) {
 			if (mouse_queue) {
 				accept(mouse_queue);
 				mouse_queue = mouse_queue->postqueue_next;
-				vfs_backend_tryaccept(&backend);
 			}
 		} else {
 			ring_put1b((void*)&kb_backlog, port_in8(PS2));
 			if (kb_queue) {
 				accept(kb_queue);
 				kb_queue = kb_queue->postqueue_next;
-				vfs_backend_tryaccept(&backend);
 			}
 		}
 	}

@@ -3,6 +3,7 @@
 #include <kernel/arch/amd64/driver/fsroot.h>
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/util.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
@@ -34,5 +35,4 @@ static void accept(struct vfs_request *req) {
 	vfsreq_finish_short(req, handle(req));
 }
 
-static struct vfs_backend backend = BACKEND_KERN(accept);
-void vfs_root_init(void) { vfs_mount_root_register("", &backend); }
+void vfs_root_init(void) { vfs_root_register("", accept); }

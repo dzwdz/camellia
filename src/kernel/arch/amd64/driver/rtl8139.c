@@ -3,13 +3,13 @@
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 #include <stdbool.h>
 
 #define WAIT -1000
 
 static void accept(struct vfs_request *req);
-static struct vfs_backend backend = BACKEND_KERN(accept);
 static struct vfs_request *blocked_on = NULL;
 
 
@@ -80,7 +80,7 @@ void rtl8139_init(uint32_t bdf) {
 	uint64_t mac = (((uint64_t)port_in32(iobase + MAC + 4) & 0xFFFF) << 32) + port_in32(iobase + MAC);
 	kprintf("rtl8139 mac %012x\n", mac);
 
-	vfs_mount_root_register("/eth", &backend);
+	vfs_root_register("/eth", accept);
 }
 
 void rtl8139_irq(void) {

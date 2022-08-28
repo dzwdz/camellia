@@ -5,17 +5,16 @@
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
 static const int root_id = 100;
 
 static void accept(struct vfs_request *req);
-static struct vfs_backend backend = BACKEND_KERN(accept);
-
 void pata_init(void) {
 	ata_init();
-	vfs_mount_root_register("/ata", &backend);
+	vfs_root_register("/ata", accept);
 }
 
 

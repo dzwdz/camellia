@@ -9,8 +9,15 @@ struct vfs_mount *vfs_mount_seed(void) {
 	return mount_root;
 }
 
-void vfs_mount_root_register(const char *path, struct vfs_backend *backend) {
+void vfs_root_register(const char *path, void (*accept)(struct vfs_request *)) {
+	struct vfs_backend *backend = kmalloc(sizeof *backend);
 	struct vfs_mount *mount = kmalloc(sizeof *mount);
+	*backend = (struct vfs_backend) {
+		.is_user = false,
+		.potential_handlers = 1,
+		.refcount = 1,
+		.kern.accept = accept,
+	};
 	*mount = (struct vfs_mount){
 		.prev = mount_root,
 		.prefix = path,

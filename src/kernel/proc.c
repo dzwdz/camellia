@@ -1,3 +1,4 @@
+#include <camellia/flags.h>
 #include <camellia/errno.h>
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>

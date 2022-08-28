@@ -62,7 +62,6 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 		}
 
 		h->backend = kmalloc(sizeof *h->backend);
-		h->backend->heap = true;
 		h->backend->is_user = true;
 		h->backend->potential_handlers = 1;
 		h->backend->refcount = 2; // child + handle

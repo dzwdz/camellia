@@ -7,6 +7,8 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
+static void vfs_backend_user_accept(struct vfs_request *req);
+
 void vfsreq_create(struct vfs_request req_) {
 	struct vfs_request *req;
 	if (req_.caller) {
@@ -90,7 +92,7 @@ void vfs_backend_tryaccept(struct vfs_backend *backend) {
 	}
 }
 
-void vfs_backend_user_accept(struct vfs_request *req) {
+static void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
 	struct fs_wait_response res = {0};
 	struct virt_cpy_error cpyerr;
@@ -148,5 +150,5 @@ void vfs_backend_refdown(struct vfs_backend *b) {
 	if (--(b->refcount) > 0) return;
 
 	assert(!b->queue);
-	if (b->heap) kfree(b);
+	kfree(b);
 }
