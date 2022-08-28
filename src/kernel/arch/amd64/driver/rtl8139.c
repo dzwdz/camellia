@@ -1,4 +1,5 @@
 #include <kernel/arch/amd64/driver/rtl8139.h>
+#include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
@@ -94,10 +95,7 @@ void rtl8139_irq(void) {
 	/* bit 0 of cmd - Rx Buffer Empty
 	 * not a do while() because sometimes the bit is empty on IRQ. no clue why. */
 	while (!(port_in8(iobase + CMD) & 1)) {
-		if (blocked_on) {
-			accept(blocked_on);
-			blocked_on = blocked_on->postqueue_next;
-		} else {
+		if (!postqueue_pop(&blocked_on, accept)) {
 			rx_irq_enable(false);
 			break;
 		}
@@ -177,12 +175,7 @@ static void accept(struct vfs_request *req) {
 		case VFSOP_READ:
 			ret = try_rx(req->caller->pages, req->output.buf, req->output.len);
 			if (ret == WAIT) {
-				// TODO this is a pretty common pattern in drivers, try to make it unneeded
-				// TODO those asserts should actually be regular panic checks
-				assert(!req->postqueue_next);
-				struct vfs_request **slot = &blocked_on;
-				while (*slot) slot = &(*slot)->postqueue_next;
-				*slot = req;
+				postqueue_join(&blocked_on, req);
 				rx_irq_enable(true);
 			} else {
 				vfsreq_finish_short(req, ret);

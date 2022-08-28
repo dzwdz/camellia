@@ -15,3 +15,20 @@ int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
 	/* read errors are ignored. TODO write a spec */
 	return req->output.len;
 }
+
+void postqueue_join(struct vfs_request **queue, struct vfs_request *req) {
+	if (req->postqueue_next)
+		panic_invalid_state();
+
+	while (*queue)
+		queue = &(*queue)->postqueue_next;
+	*queue = req;
+}
+
+bool postqueue_pop(struct vfs_request **queue, void (*accept)(struct vfs_request *)) {
+	struct vfs_request *req = *queue;
+	if (req == NULL) return false;
+	*queue = req->postqueue_next;
+	accept(req);
+	return true;
+}

@@ -1,4 +1,5 @@
 #include <kernel/arch/amd64/driver/serial.h>
+#include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
@@ -43,10 +44,7 @@ void serial_preinit(void) {
 
 void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
-	if (blocked_on) {
-		accept(blocked_on);
-		blocked_on = blocked_on->postqueue_next;
-	}
+	postqueue_pop(&blocked_on, accept);
 }
 
 
@@ -71,11 +69,7 @@ static void accept(struct vfs_request *req) {
 			break;
 		case VFSOP_READ:
 			if (ring_used((void*)&backlog) == 0) {
-				/* nothing to read, join queue */
-				assert(!req->postqueue_next);
-				struct vfs_request **slot = &blocked_on;
-				while (*slot) slot = &(*slot)->postqueue_next;
-				*slot = req;
+				postqueue_join(&blocked_on, req);
 			} else if (req->caller) {
 				ret = ring_to_virt((void*)&backlog, req->caller->pages, req->output.buf, req->output.len);
 				// TODO output.len can overflow here

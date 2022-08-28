@@ -63,16 +63,10 @@ void ps2_irq(void) {
 		if (!(status & 1)) break; /* read while data available */
 		if (status & (1 << 5)) {
 			ring_put1b((void*)&mouse_backlog, port_in8(PS2));
-			if (mouse_queue) {
-				accept(mouse_queue);
-				mouse_queue = mouse_queue->postqueue_next;
-			}
+			postqueue_pop(&mouse_queue, accept);
 		} else {
 			ring_put1b((void*)&kb_backlog, port_in8(PS2));
-			if (kb_queue) {
-				accept(kb_queue);
-				kb_queue = kb_queue->postqueue_next;
-			}
+			postqueue_pop(&kb_queue, accept);
 		}
 	}
 }
@@ -85,10 +79,7 @@ enum {
 
 static void read_backlog(struct vfs_request *req, ring_t *r, struct vfs_request **queue) {
 	if (ring_used(r) == 0) {
-		/* nothing to read, join queue */
-		assert(!req->postqueue_next);
-		while (*queue) queue = &(*queue)->postqueue_next;
-		*queue = req;
+		postqueue_join(queue, req);
 	} else if (req->caller) {
 		int len = req->output.len;
 		if (len < 0) len = 0;

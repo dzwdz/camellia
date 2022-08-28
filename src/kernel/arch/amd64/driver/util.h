@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include <stddef.h>
 
 struct vfs_request;
@@ -10,3 +11,6 @@ int req_readcopy(struct vfs_request *req, const void *buf, size_t len);
 	(req->input.kern && \
 	 req->input.len == plen && \
 	 memcmp(req->input.buf_kern, path, plen) == 0)
+
+void postqueue_join(struct vfs_request **queue, struct vfs_request *req);
+bool postqueue_pop(struct vfs_request **queue, void (*accept)(struct vfs_request *));
