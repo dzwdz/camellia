@@ -3,6 +3,12 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+enum lenmod {
+	LM_int,
+	LM_long,
+	LM_longlong,
+};
+
 struct out_state {
 	void (*back)(void *, const char *, size_t);
 	void *backarg;
@@ -110,6 +116,20 @@ int __printf_internal(const char *fmt, va_list argp,
 		}
 
 		// TODO length modifiers
+		enum lenmod lm;
+		switch (c) {
+			case 'l':
+				lm = LM_long;
+				c = *fmt++;
+				if (c == 'l') {
+					lm = LM_longlong;
+					c = *fmt++;
+				}
+				break;
+			default:
+				lm = LM_int;
+				break;
+		}
 
 		switch (c) {
 			unsigned long n, len;
@@ -132,7 +152,9 @@ int __printf_internal(const char *fmt, va_list argp,
 				break;
 
 			case 'x':
-				n = va_arg(argp, unsigned long);
+				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
+				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
+				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
 				len = 1;
 				while (n >> (len * 4) && (len * 4) < (sizeof(n) * 8))
 					len++;
@@ -145,12 +167,16 @@ int __printf_internal(const char *fmt, va_list argp,
 				break;
 
 			case 'u':
-				n = va_arg(argp, unsigned long);
+				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
+				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
+				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
 				output_uint(&os, &m, n, 0);
 				break;
 
 			case 'd':
-				ns = va_arg(argp, int);
+				     if (lm == LM_int)      ns = va_arg(argp, int);
+				else if (lm == LM_long)     ns = va_arg(argp, long);
+				else if (lm == LM_longlong) ns = va_arg(argp, long long);
 				sign = 0;
 				if (ns < 0) {
 					ns = -ns;
