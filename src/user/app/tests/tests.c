@@ -19,6 +19,7 @@ int main(void) {
 	r_k_path();
 	r_k_threads();
 	r_libc_esemaphore();
+	r_libc_setjmp();
 	r_libc_string();
 	r_s_printf();
 	r_s_ringbuf();

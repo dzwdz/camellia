@@ -13,6 +13,7 @@ void r_k_miscsyscall(void);
 void r_k_path(void);
 void r_k_threads(void);
 void r_libc_esemaphore(void);
+void r_libc_setjmp(void);
 void r_libc_string(void);
 void r_s_printf(void);
 void r_s_ringbuf(void);
