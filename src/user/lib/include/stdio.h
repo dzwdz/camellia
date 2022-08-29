@@ -27,6 +27,8 @@
 int printf(const char *restrict fmt, ...);
 int fprintf(FILE *restrict f, const char *restrict fmt, ...);
 
+int sprintf(char *restrict s, const char *restrict fmt, ...);
+
 int vprintf(const char *restrict fmt, va_list ap);
 int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap);
 
@@ -56,7 +58,7 @@ int fgetc(FILE *f);
 int getc(FILE *f);
 int fputc(int c, FILE *f);
 int putc(int c, FILE *f);
-int ungetc(int c, FILE *stream);
+int ungetc(int c, FILE *f);
 
 int fseek(FILE *f, long offset, int whence);
 int fseeko(FILE *f, off_t offset, int whence);

@@ -31,6 +31,15 @@ int fprintf(FILE *restrict f, const char *restrict fmt, ...) {
 	return ret;
 }
 
+int sprintf(char *restrict s, const char *restrict fmt, ...) {
+	int ret;
+	va_list argp;
+	va_start(argp, fmt);
+	ret = vsnprintf(s, ~0, fmt, argp);
+	va_end(argp);
+	return ret;
+}
+
 int vprintf(const char *restrict fmt, va_list ap) {
 	return vfprintf(stdout, fmt, ap);
 }

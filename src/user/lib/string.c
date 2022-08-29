@@ -47,6 +47,12 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 	return res * sign;
 }
 
+#include <user/lib/panic.h>
+double strtod(const char *restrict s, char **restrict end) {
+	(void)s; (void)end;
+	__libc_panic("unimplemented");
+}
+
 char *strchr(const char *s, int c) {
 	for (; *s; s++) {
 		if (*s == c) return (char*)s;
@@ -64,6 +70,13 @@ size_t strcspn(const char *s, const char *reject) {
 	size_t l = 0;
 	for (; s[l] && !strchr(reject, s[l]); l++);
 	return l;
+}
+
+char *strpbrk(const char *s1, const char *s2) {
+	for (; *s1; s1++) {
+		if (strchr(s2, *s1)) return (char*)s1;
+	}
+	return NULL;
 }
 
 char *strtok(char *restrict s, const char *restrict sep) {
@@ -94,4 +107,29 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 	if (*s1 == *s2) return  0;
 	if (*s1 <  *s2) return -1;
 	else            return  1;
+}
+
+int strcoll(const char *s1, const char *s2) {
+	return strcmp(s1, s2);
+}
+
+// TODO implement strstr using Boyer-Moore
+char *strstr(const char *s1, const char *s2) {
+	size_t l1 = strlen(s1), l2 = strlen(s2);
+	for (; l2 <= l1; s1++, l1--) {
+		if (memcmp(s1, s2, l2) == 0) return (char*)s1;
+	}
+	return NULL;
+}
+
+char *strcpy(char *restrict s1, const char *restrict s2) {
+	char *ret = s1;
+	while (*s2) *s1++ = *s2++;
+	return ret;
+}
+
+// TODO strerror mapping
+char *strerror(int errnum) {
+	(void)errnum;
+	return "unknown error";
 }

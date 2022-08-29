@@ -7,15 +7,16 @@ CHECK   = sparse
 
 CFLAGS += -g -std=gnu99 -ffreestanding -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
-CFLAGS += -mgeneral-regs-only -Wno-address-of-packed-member
+CFLAGS += -Wno-address-of-packed-member
 CFLAGS += -Isrc/ -Isrc/shared/include/
 
-KERNEL_CFLAGS  = $(CFLAGS) -mno-sse
+KERNEL_CFLAGS  = $(CFLAGS) -mno-sse -mgeneral-regs-only
 USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
-QFLAGS  = -no-reboot
+# TODO optimize memory use
+QFLAGS  = -no-reboot -m 1g
 ifdef NET_DIRECT
 QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a,id=n1
 else
@@ -37,8 +38,9 @@ define from_sources
 endef
 
 
-.PHONY: all boot debug lint check clean
-all: out/boot.iso out/libm.a check
+.PHONY: all portdeps boot debug lint check clean
+all: portdeps out/boot.iso check
+portdeps: out/libc.a out/libm.a
 
 boot: all out/hdd
 	qemu-system-x86_64 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial stdio

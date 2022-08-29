@@ -141,7 +141,6 @@ char *getcwd(char *buf, size_t capacity) {
 size_t absolutepath(char *out, const char *in, size_t size) {
 	const char *realcwd = getrealcwd();
 	size_t len, pos = 0;
-	_klogf("realcwd == %x\n", (long)__initialcwd);
 	if (!in) return strlen(realcwd) + 1;
 
 	if (!(in[0] == '/')) {

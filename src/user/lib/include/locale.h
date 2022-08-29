@@ -67,4 +67,7 @@ static inline struct lconv *localeconv(void) {
 	return &locale;
 }
 
-char *setlocale(int category, const char *locale);
+static inline char *setlocale(int category, const char *locale) {
+	(void)category; (void)locale;
+	return NULL;
+}

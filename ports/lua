@@ -14,7 +14,7 @@ prep() {
 }
 
 case $1 in
-	install) (prep; make generic "CC=cc" "MYCFLAGS=-Werror") ;;
+	install) (prep; make generic "CC=cc" "MYCFLAGS=-Werror" && make install "INSTALL_TOP=$PREFIX") ;;
 	clean)   (prep; make clean) ;;
 	*)       echo "usage: $0 install|clean"; false ;;
 esac

@@ -1,11 +1,12 @@
 #include "file.h"
-#include <camellia/syscalls.h>
 #include <camellia/flags.h>
+#include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <user/lib/panic.h>
 
 static FILE _stdin_null  = { .fd = STDIN_FILENO };
 static FILE _stdout_null = { .fd = STDOUT_FILENO };
@@ -124,6 +125,13 @@ int pclose(FILE *f) {
 	return -1;
 }
 
+// TODO tmpfile()
+FILE *tmpfile(void) {
+	errno = ENOSYS;
+	return NULL;
+}
+
+
 int fextflags(FILE *f, int extflags) {
 	int old = f->extflags;
 	f->extflags = extflags;
@@ -226,6 +234,12 @@ int fputc(int c, FILE *f) {
 	return fwrite(&c, 1, 1, f) ? c : EOF;
 }
 int putc(int c, FILE *f) { return fputc(c, f); }
+
+// TODO ungetc
+int ungetc(int c, FILE *f) {
+	(void)c; (void)f;
+	__libc_panic("unimplemented");
+}
 
 int fseek(FILE *f, long offset, int whence) {
 	return fseeko(f, offset, whence);
