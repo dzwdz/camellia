@@ -18,10 +18,10 @@ void redirect(const char *exe, const char *out, const char *in) {
 			die("couldn't open %s\n", out);
 		if (!freopen(in, "r", stdin))
 			die(" couldn't open %s\n", in);
-		termcook();
 
 		for (;;) {
 			if (!fork()) {
+				termcook();
 				execv(exe, NULL);
 				fprintf(stderr, "init: couldn't start %s\n", exe);
 				_syscall_sleep(5000);

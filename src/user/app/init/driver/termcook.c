@@ -29,6 +29,8 @@ static void line_editor(handle_t input, handle_t output) {
 						linepos--;
 					}
 					break;
+				case 3: /* C-c */
+					_syscall_exit(1);
 				case 4: /* EOT, C-d */
 					if (linepos > 0) {
 						w_output(output, linebuf, linepos);
@@ -62,12 +64,17 @@ void termcook(void) {
 		return;
 
 	if (!fork()) {
+		/* the caller continues in a child process,
+		 * so it can be killed when the line editor quits */
+		_syscall_dup(stdin_pipe[0], 0, 0);
+		close(stdin_pipe[0]);
+		close(stdin_pipe[1]);
+		return;
+	}
+	if (!fork()) {
 		close(stdin_pipe[0]);
 		line_editor(0, stdin_pipe[1]);
 		exit(0);
 	}
-	/* 0 is stdin, like in unix */
-	_syscall_dup(stdin_pipe[0], 0, 0);
-	close(stdin_pipe[0]);
-	close(stdin_pipe[1]);
+	exit(_syscall_await());
 }
