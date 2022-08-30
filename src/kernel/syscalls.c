@@ -317,17 +317,18 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	}
 
 
-	for (userptr_t iter = addr; iter < addr + len; iter += PAGE_SIZE) {
-		if (pagedir_iskern(pages, iter)) {
+	for (size_t off = 0; off < len; off += PAGE_SIZE) {
+		userptr_t page = addr + off;
+		if (pagedir_iskern(pages, page)) {
 			// TODO reflect failure in return value
 			continue;
 		}
 
-		phys = pagedir_virt2phys(pages, iter, false, false);
+		phys = pagedir_virt2phys(pages, page, false, false);
 		if (!phys) {
 			// TODO test zeroing of user pages
 			phys = page_zalloc(1);
-			pagedir_map(pages, iter, phys, true, true);
+			pagedir_map(pages, page, phys, true, true);
 		}
 	}
 	SYSCALL_RETURN((uintptr_t)addr);

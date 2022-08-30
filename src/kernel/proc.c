@@ -29,11 +29,6 @@ struct process *process_seed(void *data, size_t datalen) {
 	process_first->id    = next_pid++;
 	process_first->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
 
-	// map the stack to the last page in memory
-	// TODO move to user bootstrap
-	pagedir_map(process_first->pages, (userptr_t)~PAGE_MASK, page_zalloc(1), true, true);
-	process_first->regs.rsp = (userptr_t) ~0xF;
-
 	// map .shared
 	extern char _shared_len;
 	for (size_t p = 0; p < (size_t)&_shared_len; p += PAGE_SIZE)

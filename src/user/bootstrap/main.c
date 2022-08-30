@@ -11,10 +11,8 @@ extern char _bss_start;
 extern char _bss_end;
 extern char _initrd;
 
-__attribute__((section(".text.startup")))
-void _start(void) {
-	_syscall_memflag(&_bss_start, &_bss_end - &_bss_start, MEMFLAG_PRESENT);
-
+__attribute__((section(".text")))
+_Noreturn void main(void) {
 	/* move everything provided by the kernel to /kdev */
 	MOUNT_AT("/kdev/") { fs_passthru(NULL); }
 	MOUNT_AT("/") {
