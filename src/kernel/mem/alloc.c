@@ -20,6 +20,7 @@ struct malloc_hdr *malloc_last = NULL;
 extern uint8_t pbitmap[], pbitmap_start[]; /* linker.ld */
 static size_t pbitmap_len;
 static size_t pbitmap_searchstart = 0;
+static size_t pbitmap_taken = 0;
 
 
 static bool bitmap_get(size_t i) {
@@ -32,6 +33,11 @@ static void bitmap_set(size_t i, bool v) {
 	size_t b = i / 8;
 	uint8_t m = 1 << (i&7);
 	assert(b < pbitmap_len);
+	if ((pbitmap[b] & m) ^ v) {
+		/* value changes */
+		if (v) pbitmap_taken++;
+		else   pbitmap_taken--;
+	}
 	if (v) pbitmap[b] |=  m;
 	else   pbitmap[b] &= ~m;
 }
@@ -72,6 +78,7 @@ void mem_debugprint(void) {
 		total++;
 	}
 	kprintf("  total 0x%x\n", total);
+	kprintf("pbitmap usage %u/%u\n", pbitmap_taken, pbitmap_len * 8);
 }
 
 void *page_alloc(size_t pages) {

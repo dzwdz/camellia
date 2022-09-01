@@ -6,6 +6,7 @@
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/arch/amd64/time.h>
 #include <kernel/arch/generic.h>
+#include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <stdbool.h>
@@ -53,6 +54,7 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 
 		default:
 			if ((stackframe[1] & 0x3) == 0) {
+				mem_debugprint();
 				log_interrupt(interrupt, stackframe);
 				cpu_halt();
 			} else {
