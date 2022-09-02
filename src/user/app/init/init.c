@@ -83,15 +83,6 @@ int main(void) {
 	}
 	close(killswitch_pipe[1]);
 
-	long cid = fork();
-	if (cid > 0) {
-		/* used to trigger a kernel bug
-		 * 7c96f9c03502e0c60f23f4c550d12a629f3b3daf */
-		printf("main at cid %u\n", cid);
-		_syscall_await();
-		exit(1);
-	}
-
 	if (!fork()) {
 		// TODO close on exec
 		close(killswitch_pipe[0]);
