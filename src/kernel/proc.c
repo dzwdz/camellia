@@ -26,7 +26,9 @@ struct process *process_seed(void *data, size_t datalen) {
 	process_first->state = PS_RUNNING;
 	process_first->pages = pagedir_new();
 	process_first->mount = vfs_mount_seed();
-	process_first->id    = next_pid++;
+	process_first->globalid = next_pid++;
+	process_first->cid = 1;
+	process_first->nextcid = 1;
 	process_first->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
 
 	// map .shared
@@ -68,7 +70,11 @@ struct process *process_fork(struct process *parent, int flags) {
 	child->parent  = parent;
 	parent->child  = child;
 
-	child->id = next_pid++;
+	if (parent->nextcid == 0)
+		panic_unimplemented();
+	child->cid = parent->nextcid++;
+	child->nextcid = 1;
+	child->globalid = next_pid++;
 
 	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
 		child->controlled = parent->controlled;

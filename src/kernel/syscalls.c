@@ -76,7 +76,7 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 			virt_cpy_to(process_current->pages, fs_front, &hid, sizeof hid);
 		}
 	}
-	SYSCALL_RETURN(1);
+	SYSCALL_RETURN(child->cid);
 }
 
 handle_t _syscall_open(const char __user *path, long len, int flags) {
@@ -379,12 +379,13 @@ long _syscall_execbuf(void __user *ubuf, size_t len) {
 }
 
 void _syscall_debug_klog(const void __user *buf, size_t len) {
-	(void)buf; (void)len;
-	// static char kbuf[256];
-	// if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
-	// virt_cpy_from(process_current->pages, kbuf, buf, len);
-	// kbuf[len] = '\0';
-	// kprintf("[klog] %x\t%s\n", process_current->id, kbuf);
+	if (false) {
+		static char kbuf[256];
+		if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
+		virt_cpy_from(process_current->pages, kbuf, buf, len);
+		kbuf[len] = '\0';
+		kprintf("[klog] %x\t%s\n", process_current->globalid, kbuf);
+	}
 }
 
 long _syscall(long num, long a, long b, long c, long d, long e) {

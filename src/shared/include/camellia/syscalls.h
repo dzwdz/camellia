@@ -47,7 +47,7 @@ long _syscall_await(void);
  * @param flags FORK_NOREAP, FORK_NEWFS
  * @param fs_front requires FORK_NEWFS. the front handle to the new fs is put there
  *
- * @return 0 in the child, a meaningless positive value in the parent.
+ * @return 0 in the child, the CID in the parent.
  */
 long _syscall_fork(int flags, handle_t __user *fs_front);
 
