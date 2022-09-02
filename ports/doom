@@ -1,0 +1,79 @@
+set -eu
+camellia_path_check
+
+fetch() {
+	git clone https://github.com/ozkl/doomgeneric
+	cd doomgeneric
+	# TODO use a newer commit
+	git -c advice.detachedHead=false checkout ee3ee581912dacd38af06e81da2374c1267453e8
+
+	cd doomgeneric
+	rm doomgeneric # a leftover OS X binary
+	sed s/xlib/camellia/ -i Makefile
+	sed s/-lX11// -i Makefile
+	curl -A "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0" -LO https://assets.wad-archive.com/wadarchive/files/1437fc1ac25a17d5b3cef4c9d2f74e40cae3d231/DOOM1.WAD
+
+	cat <<\EOF > doomgeneric_camellia.c
+#include <string.h>
+#include <camellia/syscalls.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <user/lib/draw/draw.h>
+
+#include "doomgeneric.h"
+
+struct framebuf fb;
+
+void DG_Init(void) {
+	if (fb_setup(&fb, "/kdev/video/") < 0) {
+		puts("DG_Init: fb_setup error");
+		abort();
+	}
+}
+
+void DG_DrawFrame(void) {
+	size_t doomw = DOOMGENERIC_RESX;
+	size_t doomh = DOOMGENERIC_RESY;
+	size_t doompitch = doomw * 4;
+	for (int y = 0; y < DOOMGENERIC_RESY; y++) {
+		memcpy(fb.b + fb.pitch * y, ((char*)DG_ScreenBuffer) + doompitch * y, doompitch);
+	}
+
+	struct rect d;
+	dirty_mark(&d, 0, 0);
+	dirty_mark(&d, doomw, doomh);
+	dirty_flush(&d, &fb);
+}
+
+static uint32_t timer = 0;
+void DG_SleepMs(uint32_t ms) {
+	timer += ms;
+	_syscall_sleep(ms);
+}
+
+uint32_t DG_GetTicksMs(void) {
+	/* if it's stupid and it works... */
+	return timer;
+}
+
+int DG_GetKey(int *pressed, unsigned char *doomKey) {
+	return 0;
+}
+
+void DG_SetWindowTitle(const char *title) {
+	(void)title;
+}
+EOF
+}
+
+prep() {
+	[ -d doomgeneric ] || (fetch)
+	cd doomgeneric/doomgeneric
+}
+
+case $1 in
+	install) (prep; make "CC=cc" && cp doomgeneric $PREFIX/bin/doom && cp DOOM1.WAD $PREFIX/) ;;
+	clean)   (prep; make clean) ;;
+	*)       echo "usage: $0 install|clean"; false ;;
+esac

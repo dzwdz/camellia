@@ -15,3 +15,8 @@ _Noreturn void exit(int);
 int mkstemp(char *template);
 char *getenv(const char *name);
 int system(const char *cmd);
+
+int abs(int i);
+
+int atoi(const char *s);
+double atof(const char *s);

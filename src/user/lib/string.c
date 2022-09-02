@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 
 long strtol(const char *restrict s, char **restrict end, int base) {
 	long res = 0;
@@ -55,7 +56,14 @@ double strtod(const char *restrict s, char **restrict end) {
 
 char *strchr(const char *s, int c) {
 	for (; *s; s++) {
-		if (*s == c) return (char*)s;
+		if (*s == c) return (char *)s;
+	}
+	return NULL;
+}
+
+char *strrchr(const char *s, int c) {
+	for (int i = strlen(s) + 1; i >= 0; i--) {
+		if (s[i] == c) return (char *)s + i;
 	}
 	return NULL;
 }
@@ -123,13 +131,45 @@ char *strstr(const char *s1, const char *s2) {
 }
 
 char *strcpy(char *restrict s1, const char *restrict s2) {
-	char *ret = s1;
 	while (*s2) *s1++ = *s2++;
-	return ret;
+	*s1 = *s2;
+	return s1;
+}
+
+char *strncpy(char *restrict s1, const char *restrict s2, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		s1[i] = s2[i];
+		if (s1[i] == '\0') return s1 + i; // TODO fill with null bytes
+	}
+	return s1 + n;
+}
+
+char *strdup(const char *s) {
+	size_t len = strlen(s) + 1;
+	char *buf = malloc(len);
+	if (buf) memcpy(buf, s, len);
+	return buf;
 }
 
 // TODO strerror mapping
 char *strerror(int errnum) {
 	(void)errnum;
 	return "unknown error";
+}
+
+/* strings.h */
+int strcasecmp(const char *s1, const char *s2) {
+	return strncasecmp(s1, s2, ~0);
+}
+
+int strncasecmp(const char *s1, const char *s2, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		char c1 = tolower(s1[i]), c2 = tolower(s2[i]);
+		if (c1 == '\0' || c1 != c2) {
+			if (c1 < c2)      return -1;
+			else if (c1 > c2) return 1;
+			else              return 0;
+		}
+	}
+	return 0;
 }

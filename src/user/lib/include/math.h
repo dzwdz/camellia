@@ -3,8 +3,6 @@
 #define INFINITY __builtin_inff()
 #define HUGE_VAL ((double)INFINITY)
 
-int abs(int i);
-
 double acos(double x);
 double asin(double x);
 double atan2(double x, double y);

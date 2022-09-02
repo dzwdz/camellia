@@ -4,6 +4,7 @@
 long strtol(const char *restrict s, char **restrict end, int base);
 double strtod(const char *restrict s, char **restrict end);
 char *strchr(const char *s, int c);
+char *strrchr(const char *s, int c);
 
 size_t strspn(const char *s, const char *accept);
 size_t strcspn(const char *s, const char *reject);
@@ -18,5 +19,7 @@ int strcoll(const char *s1, const char *s2);
 char *strstr(const char *s1, const char *s2);
 
 char *strcpy(char *restrict s1, const char *restrict s2);
+char *strncpy(char *restrict s1, const char *restrict s2, size_t n);
+char *strdup(const char *s);
 
 char *strerror(int errnum);

@@ -81,3 +81,5 @@ int rename(const char *old, const char *new);
 
 #define L_tmpnam (5 + 16 + 1)
 char *tmpnam(char *s);
+
+int sscanf(const char *restrict s, const char *restrict format, ...);

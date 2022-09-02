@@ -9,6 +9,6 @@ if [ $1 = deepclean ]; then
 	exit
 fi
 
-mkdir -p ports/out/$1/ $PREFIX
+mkdir -p ports/out/$1/ $PREFIX/bin
 cd ports/out/$1/
 sh $REPO/ports/$1 $2

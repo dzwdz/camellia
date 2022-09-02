@@ -1,11 +1,6 @@
 #include <math.h>
 #include <user/lib/panic.h>
 
-int abs(int i) {
-	return i < 0 ? -i : i;
-}
-
-
 // TODO port a libm
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 double acos(double x)	{ __libc_panic("unimplemented"); }

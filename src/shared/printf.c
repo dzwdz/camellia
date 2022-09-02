@@ -115,6 +115,18 @@ int __printf_internal(const char *fmt, va_list argp,
 			c = *fmt++;
 		}
 
+		if (c == '.') {
+			// TODO implement precision properly, this violates the spec and is stupid
+			c = *fmt++;
+			m.fill_char = '0';
+			m.field_width = 0;
+			while ('0' <= c && c <= '9') {
+				m.field_width *= 10;
+				m.field_width += c - '0';
+				c = *fmt++;
+			}
+		}
+
 		// TODO length modifiers
 		enum lenmod lm;
 		switch (c) {
@@ -174,6 +186,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				break;
 
 			case 'd':
+			case 'i':
 				     if (lm == LM_int)      ns = va_arg(argp, int);
 				else if (lm == LM_long)     ns = va_arg(argp, long);
 				else if (lm == LM_longlong) ns = va_arg(argp, long long);
