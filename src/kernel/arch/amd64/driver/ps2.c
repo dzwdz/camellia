@@ -63,10 +63,10 @@ void ps2_irq(void) {
 		if (!(status & 1)) break; /* read while data available */
 		if (status & (1 << 5)) {
 			ring_put1b((void*)&mouse_backlog, port_in8(PS2));
-			postqueue_pop(&mouse_queue, accept);
+			postqueue_ringreadall(&mouse_queue, (void*)&mouse_backlog);
 		} else {
 			ring_put1b((void*)&kb_backlog, port_in8(PS2));
-			postqueue_pop(&kb_queue, accept);
+			postqueue_ringreadall(&kb_queue, (void*)&kb_backlog);
 		}
 	}
 }
@@ -107,9 +107,11 @@ static void accept(struct vfs_request *req) {
 				ret = req_readcopy(req, data, sizeof data);
 				vfsreq_finish_short(req, ret);
 			} else if ((long __force)req->id == H_KB) {
-				read_backlog(req, (void*)&kb_backlog, &kb_queue);
+				postqueue_join(&kb_queue, req);
+				postqueue_ringreadall(&kb_queue, (void*)&kb_backlog);
 			} else if ((long __force)req->id == H_MOUSE) {
-				read_backlog(req, (void*)&mouse_backlog, &mouse_queue);
+				postqueue_join(&mouse_queue, req);
+				postqueue_ringreadall(&mouse_queue, (void*)&mouse_backlog);
 			} else panic_invalid_state();
 			break;
 		default:

@@ -3,9 +3,10 @@
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/mem/virt.h>
-#include <kernel/ring.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
+#include <kernel/ring.h>
+#include <kernel/util.h>
 #include <stdint.h>
 
 static volatile uint8_t backlog_buf[64];
@@ -14,7 +15,7 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 static const int COM1 = 0x3f8;
 
 static void accept(struct vfs_request *req);
-static struct vfs_request *blocked_on = NULL;
+static struct vfs_request *hung_reads = NULL;
 void serial_init(void) { vfs_root_register("/com1", accept); }
 
 
@@ -44,7 +45,7 @@ void serial_preinit(void) {
 
 void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
-	postqueue_pop(&blocked_on, accept);
+	postqueue_ringreadall(&hung_reads, (void*)&backlog);
 }
 
 
@@ -58,7 +59,6 @@ void serial_write(const char *buf, size_t len) {
 		serial_putchar(buf[i]);
 }
 
-
 static void accept(struct vfs_request *req) {
 	int ret;
 	bool valid;
@@ -68,15 +68,8 @@ static void accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, valid ? 0 : -1);
 			break;
 		case VFSOP_READ:
-			if (ring_used((void*)&backlog) == 0) {
-				postqueue_join(&blocked_on, req);
-			} else if (req->caller) {
-				ret = ring_to_virt((void*)&backlog, req->caller->pages, req->output.buf, req->output.len);
-				// TODO output.len can overflow here
-				vfsreq_finish_short(req, ret);
-			} else {
-				vfsreq_finish_short(req, -1);
-			}
+			postqueue_join(&hung_reads, req);
+			postqueue_ringreadall(&hung_reads, (void*)&backlog);
 			break;
 		case VFSOP_WRITE:
 			if (req->caller && !req->flags) {
