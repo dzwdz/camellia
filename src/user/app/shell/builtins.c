@@ -234,17 +234,19 @@ static void cmd_touch(int argc, char **argv) {
 
 static void cmd_whitelist(int argc, char **argv) {
 	int split = 1;
-	for (;;) {
-		if (split >= argc) {
-			eprintf("no command");
-			return;
-		}
+	for (; split < argc;) {
 		if (!strcmp("--", argv[split])) break;
 		split++;
 	}
 	argv[split] = NULL;
 	MOUNT_AT("/") { fs_whitelist((void*)&argv[1]); }
-	run_args(argc - split - 1, &argv[split + 1], NULL);
+
+	if (split < argc) {
+		run_args(argc - split - 1, &argv[split + 1], NULL);
+	} else {
+		const char **argv = (const char*[]){"shell", NULL};
+		run_args(1, (void*)argv, NULL);
+	}
 }
 
 struct builtin builtins[] = {
