@@ -40,7 +40,7 @@ endef
 
 .PHONY: all portdeps boot debug lint check clean
 all: portdeps out/boot.iso check
-portdeps: out/libc.a out/libm.a
+portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
 
 boot: all out/hdd
 	qemu-system-x86_64 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial stdio
@@ -166,6 +166,9 @@ out/obj/kernel/arch/amd64/32/%.c.o: src/kernel/arch/amd64/32/%.c
 out/obj/kernel/arch/amd64/32/%.s.o: src/kernel/arch/amd64/32/%.s
 	@mkdir -p $(@D)
 	@$(CC) -m32 -c $^ -o $@
+
+src/user/lib/include/__errno.h: src/user/lib/include/__errno.h.awk src/shared/include/camellia/errno.h
+	@awk -f $^ > $@
 
 src/user/lib/syscall.c: src/user/lib/syscall.c.awk src/shared/include/camellia/syscalls.h
 	@awk -f $^ > $@

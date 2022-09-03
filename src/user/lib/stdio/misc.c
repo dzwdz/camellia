@@ -5,7 +5,7 @@
 
 void perror(const char *s) {
 	if (s) fprintf(stderr, "%s: ", s);
-	fprintf(stderr, "errno %d\n", errno);
+	fprintf(stderr, "%s\n", strerror(errno));
 }
 
 int puts(const char *s) {

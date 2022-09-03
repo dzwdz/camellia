@@ -151,12 +151,6 @@ char *strdup(const char *s) {
 	return buf;
 }
 
-// TODO strerror mapping
-char *strerror(int errnum) {
-	(void)errnum;
-	return "unknown error";
-}
-
 /* strings.h */
 int strcasecmp(const char *s1, const char *s2) {
 	return strncasecmp(s1, s2, ~0);
