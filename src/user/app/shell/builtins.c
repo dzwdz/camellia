@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <user/lib/fs/misc.h>
 
@@ -187,6 +188,18 @@ static void cmd_ls(int argc, char **argv) {
 	}
 }
 
+static void cmd_mkdir(int argc, char **argv) {
+	// TODO mkdir -p
+	if (argc < 2) {
+		eprintf("no arguments");
+		return;
+	}
+	for (int i = 1; i < argc; i++) {
+		if (mkdir(argv[i], 0777) < 0)
+			perror(argv[i]);
+	}
+}
+
 static void cmd_rm(int argc, char **argv) {
 	if (argc < 2) {
 		eprintf("no arguments");
@@ -241,6 +254,7 @@ struct builtin builtins[] = {
 	{"hd", cmd_hexdump},
 	{"hexdump", cmd_hexdump},
 	{"ls", cmd_ls},
+	{"mkdir", cmd_mkdir},
 	{"rm", cmd_rm},
 	{"sleep", cmd_sleep},
 	{"touch", cmd_touch},

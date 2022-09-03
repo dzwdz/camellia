@@ -11,9 +11,4 @@ static inline int fstat(int fd, struct stat *sb) {
 	return -1;
 }
 
-static inline int mkdir(const char *path, mode_t mode) {
-	// TODO
-	(void)path; (void)mode;
-	errno = ENOSYS;
-	return -1;
-}
+int mkdir(const char *path, mode_t mode);
