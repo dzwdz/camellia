@@ -2,6 +2,8 @@
 #include <camellia/syscalls.h>
 #include <unistd.h>
 
+FILE *fail_trig;
+
 void run_test(void (*fn)()) {
 	if (!fork()) {
 		fn();
@@ -12,16 +14,48 @@ void run_test(void (*fn)()) {
 	}
 }
 
+int forkpipe(FILE **f, handle_t *h) {
+	handle_t ends[2];
+	if (_syscall_pipe(ends, 0) < 0) {
+		fprintf(stderr, "couldn't create pipe\n");
+		exit(1);
+	}
+	int ret = fork();
+	if (!ret) {
+		close(ends[0]);
+		*f = fdopen(ends[1], "w");
+		*h = -1;
+	} else {
+		close(ends[1]);
+		*f = NULL;
+		*h = ends[0];
+	}
+	return ret;
+}
+
 int main(void) {
-	r_k_fs();
-	r_k_misc();
-	r_k_miscsyscall();
-	r_k_path();
-	r_k_threads();
-	r_libc_esemaphore();
-	r_libc_setjmp();
-	r_libc_string();
-	r_s_printf();
-	r_s_ringbuf();
+	handle_t reader;
+	if (!forkpipe(&fail_trig, &reader)) {
+		r_k_fs();
+		r_k_misc();
+		r_k_miscsyscall();
+		r_k_path();
+		r_k_threads();
+		r_libc_esemaphore();
+		r_libc_setjmp();
+		r_libc_string();
+		r_s_printf();
+		r_s_ringbuf();
+		exit(0);
+	} else {
+		for (;;) {
+			char buf[128];
+			long ret = _syscall_read(reader, buf, sizeof buf, 0);
+			if (ret < 0) break;
+			printf("\033[31mFAIL\033[0m ");
+			fwrite(buf, ret, 1, stdout);
+			printf("\n");
+		}
+	}
 	return 0;
 }

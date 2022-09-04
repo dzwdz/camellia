@@ -8,14 +8,11 @@
 static void test_fault_kill(void) {
 	if (!fork()) { /* invalid memory access */
 		asm volatile("movb $69, 0" ::: "memory");
-		// TODO test_fail which works in children
-		printf("this shouldn't happen");
-		exit(-1);
+		test_fail();
 	}
 	if (!fork()) { /* #GP */
 		asm volatile("hlt" ::: "memory");
-		printf("this shouldn't happen");
-		exit(-1);
+		test_fail();
 	}
 
 	int await_cnt = 0;

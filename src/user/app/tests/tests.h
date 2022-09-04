@@ -18,9 +18,14 @@ void r_libc_string(void);
 void r_s_printf(void);
 void r_s_ringbuf(void);
 
+extern FILE *fail_trig;
+
+int forkpipe(FILE **f, handle_t *h);
+
 #define argify(str) str, sizeof(str) - 1
 #define test_fail() do { \
-	printf("\033[31m" "TEST FAILED: %s():%u\n" "\033[0m", __func__, __LINE__); \
+	fprintf(fail_trig, "%s():%u", __func__, __LINE__); \
+	fflush(fail_trig); \
 	exit(0); \
 } while (0)
 #define test(cond) if (!(cond)) test_fail();

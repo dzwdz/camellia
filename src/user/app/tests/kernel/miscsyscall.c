@@ -210,48 +210,64 @@ static void test_dup(void) {
 }
 
 static void test_execbuf(void) {
-	// not really a test, TODO
-	// also TODO check returning last syscall value
-	const char str1[] = "test_execbuf: string 1\n";
-	const char str2[] = "test_execbuf: and 2\n";
-	uint64_t buf[] = {
-		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str1, sizeof(str1) - 1, -1, 0,
-		EXECBUF_SYSCALL, _SYSCALL_WRITE, 1, (uintptr_t)str2, sizeof(str2) - 1, -1, 0,
-		EXECBUF_SYSCALL, _SYSCALL_EXIT, 0, 0, 0, 0, 0,
-	};
-	_syscall_execbuf(buf, sizeof buf);
-	test_fail();
+	if (!fork()) {
+		uint64_t buf[] = {
+			EXECBUF_SYSCALL, _SYSCALL_EXIT, 123, 0, 0, 0, 0,
+		};
+		_syscall_execbuf(buf, sizeof buf);
+		test_fail();
+	} else {
+		test(_syscall_await() == 123);
+	}
 }
 
 static void test_sleep(void) {
-	// TODO yet another of those fake tests that you have to verify by hand
-	if (!fork()) {
+	handle_t reader;
+	FILE *writer;
+	if (!forkpipe(&writer, &reader)) {
 		if (!fork()) {
-			_syscall_sleep(100);
-			printf("1\n");
-			_syscall_sleep(200);
-			printf("3\n");
-			_syscall_sleep(200);
-			printf("5\n");
+			if (!fork()) {
+				_syscall_sleep(100);
+				fprintf(writer, "1");
+				_syscall_sleep(200);
+				fprintf(writer, "3");
+				_syscall_sleep(200);
+				fprintf(writer, "5");
+				_syscall_exit(0);
+			}
+			if (!fork()) {
+				fprintf(writer, "0");
+				_syscall_sleep(200);
+				fprintf(writer, "2");
+				_syscall_sleep(200);
+				fprintf(writer, "4");
+				/* get killed while asleep
+				* a peaceful death, i suppose. */
+				for (;;) _syscall_sleep(1000000000);
+			}
+			_syscall_await();
 			_syscall_exit(0);
 		}
-		if (!fork()) {
-			printf("0\n");
-			_syscall_sleep(200);
-			printf("2\n");
-			_syscall_sleep(200);
-			printf("4\n");
-			/* get killed while asleep
-			* a peaceful death, i suppose. */
-			for (;;) _syscall_sleep(1000000000);
-		}
-		_syscall_await();
-		_syscall_exit(0);
-	}
 
-	/* this part checks if, after killing an asleep process, other processes can still wake up */
-	_syscall_sleep(600);
-	printf("6\n");
+		/* this part checks if, after killing an asleep process,
+		* other processes can still wake up */
+		_syscall_sleep(600);
+		fprintf(writer, "6");
+		exit(0);
+	} else {
+		const char *expected = "0123456";
+		size_t target = strlen(expected);
+		size_t pos = 0;
+		for (;;) {
+			char buf[128];
+			long ret = _syscall_read(reader, buf, sizeof buf, 0);
+			if (ret < 0) break;
+			test(pos + ret <= target);
+			test(memcmp(buf, expected + pos, ret) == 0);
+			pos += ret;
+		}
+		test(pos == target);
+	}
 }
 
 void r_k_miscsyscall(void) {
