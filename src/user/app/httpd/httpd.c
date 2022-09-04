@@ -65,7 +65,7 @@ static void handle(FILE *c) {
 }
 
 int main(int argc, char **argv) {
-	const char *path = (argc > 1) ? argv[1] : "/net/0.0.0.0/listen/tcp/80";
+	const char *path = (argc > 1) ? argv[1] : "/net/listen/0.0.0.0/tcp/80";
 	handle_t conn;
 	for (;;) {
 		conn = _syscall_open(path, strlen(path), 0);

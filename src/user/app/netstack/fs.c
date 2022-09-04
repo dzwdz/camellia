@@ -4,9 +4,9 @@
  *   raw ethernet frames (read-write)
  * /net/arp
  *   ARP cache (currently read-only)
- * /net/0.0.0.0/connect/1.2.3.4/udp/53
+ * /net/connect/0.0.0.0/1.2.3.4/udp/53
  *   connect from 0.0.0.0 (any ip) to 1.2.3.4 on udp port 53
- * /net/0.0.0.0/listen/{tcp,udp}/53
+ * /net/listen/0.0.0.0/{tcp,udp}/53
  *   waits for a connection to any ip on udp port 53
  *   open() returns once a connection to ip 0.0.0.0 on udp port 53 is received
  */
@@ -148,17 +148,18 @@ static void fs_open(handle_t reqh, char *path, int flags) {
 
 	char *save;
 	const char *verb, *proto, *port_s;
-
 	uint32_t srcip, dstip;
-	if (ip_parse(strtok_r(path, "/", &save), &srcip) < 0)
+
+	verb = strtok_r(path, "/", &save);
+	if (!verb) respond(NULL, -1);
+
+	if (ip_parse(strtok_r(NULL, "/", &save), &srcip) < 0)
 		respond(NULL, -1);
 	if (srcip != 0) {
 		eprintf("unimplemented");
 		respond(NULL, -1);
 	}
 
-	verb = strtok_r(NULL, "/", &save);
-	if (!verb) respond(NULL, -1);
 	if (strcmp(verb, "listen") == 0) {
 		proto = strtok_r(NULL, "/", &save);
 		if (!proto) respond(NULL, -1);
