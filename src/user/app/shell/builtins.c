@@ -24,7 +24,7 @@ static void cmd_cat(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		FILE *file = fopen(argv[i], "r");
 		if (!file) {
-			eprintf("couldn't open %s", argv[i]);
+			perror(argv[i]);
 			return;
 		}
 		if (!strcmp(argv[i], "!stdin")) fextflags(file, FEXT_NOFILL);
@@ -227,7 +227,7 @@ static void cmd_touch(int argc, char **argv) {
 
 	for (int i = 1; i < argc; i++) {
 		FILE *f = fopen(argv[i], "a");
-		if (!f) eprintf("couldn't touch %s\n", argv[i]);
+		if (!f) perror(argv[i]);
 		fclose(f);
 	}
 }

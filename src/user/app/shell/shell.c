@@ -50,8 +50,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		return;
 	} else if (!strcmp(argv[0], "cd")) {
 		if (chdir(argc > 1 ? argv[1] : "/") < 0)
-			eprintf("error");
-		// TODO strerror
+			perror("cd");
 		return;
 	} else if (!strcmp(argv[0], "time")) {
 		uint64_t time = __rdtsc();
