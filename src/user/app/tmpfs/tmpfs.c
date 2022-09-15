@@ -38,6 +38,7 @@ static struct node *lookup(struct node *parent, const char *path, size_t len) {
 }
 
 static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
+	/* *path is not null terminated! */
 	struct node *node = &special_root;
 	if (res->len == 0) return NULL;
 	if (res->len == 1) return node;
@@ -48,7 +49,7 @@ static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
 	size_t segpos = 0, seglen; /* segments end with a slash, inclusive */
 	while (more) {
 		struct node *const parent = node;
-		char *slash = memchr(path + segpos, '/', res->len);
+		char *slash = memchr(path + segpos, '/', res->len - segpos);
 		seglen = (slash ? (size_t)(slash - path + 1) : res->len) - segpos;
 		more = segpos + seglen < res->len;
 
