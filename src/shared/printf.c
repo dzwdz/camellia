@@ -18,6 +18,13 @@ struct out_state {
 	size_t cpos, clen;
 };
 
+struct mods {
+	char fill_char;
+	size_t field_width;
+	size_t precision;
+};
+
+
 static int flush(struct out_state *os) {
 	if (os->cpos) {
 		os->back(os->backarg, os->cache, os->cpos);
@@ -38,19 +45,25 @@ static void output(struct out_state *os, const char *buf, size_t len) {
 	os->written += len;
 }
 
-static void output_c(struct out_state *os, char c) {
-	output(os, &c, 1);
+static void output_c(struct out_state *os, char c, int amt) {
+	for (int i = 0; i < amt; i++)
+		output(os, &c, 1);
 }
 
 
-struct mods {
-	char fill_char;
-	size_t field_width;
-};
-
 static void pad(struct out_state *os, struct mods *m, size_t len) {
-	for (size_t i = 0; len + i < m->field_width; i++)
-		output(os, &m->fill_char, 1);
+	output_c(os, m->fill_char, m->field_width - len);
+}
+
+static void padnum(struct out_state *os, struct mods *m, size_t len, char sign) {
+	if (len < m->precision) {
+		output_c(os, m->fill_char, m->field_width - m->precision - (sign ? 1 : 0));
+		if (sign) output_c(os, sign, 1);
+		output_c(os, '0', m->precision - len);
+	} else {
+		output_c(os, m->fill_char, m->field_width - len - (sign ? 1 : 0));
+		if (sign) output_c(os, sign, 1);
+	}
 }
 
 static void output_uint(struct out_state *os, struct mods *m, unsigned long long n, char sign) {
@@ -64,9 +77,9 @@ static void output_uint(struct out_state *os, struct mods *m, unsigned long long
 		buf[--pos] = r + '0';
 		n = q;
 	}
-	if (sign) buf[--pos] = sign;
-	pad(os, m, sizeof(buf) - pos);
-	output(os, buf + pos, sizeof(buf) - pos);
+	size_t len = sizeof(buf) - pos;
+	padnum(os, m, len, sign);
+	output(os, buf + pos, len);
 }
 
 
@@ -95,6 +108,7 @@ int __printf_internal(const char *fmt, va_list argp,
 		struct mods m = {
 			.fill_char = ' ',
 			.field_width = 0,
+			.precision = 0,
 		};
 
 		for (bool modifier = true; modifier;) {
@@ -116,18 +130,14 @@ int __printf_internal(const char *fmt, va_list argp,
 		}
 
 		if (c == '.') {
-			// TODO implement precision properly, this violates the spec and is stupid
 			c = *fmt++;
-			m.fill_char = '0';
-			m.field_width = 0;
 			while ('0' <= c && c <= '9') {
-				m.field_width *= 10;
-				m.field_width += c - '0';
+				m.precision *= 10;
+				m.precision += c - '0';
 				c = *fmt++;
 			}
 		}
 
-		// TODO length modifiers
 		enum lenmod lm;
 		switch (c) {
 			case 'l':
@@ -149,18 +159,15 @@ int __printf_internal(const char *fmt, va_list argp,
 			char sign;
 
 			case 'c':
-				output_c(&os, va_arg(argp, int));
+				output_c(&os, va_arg(argp, int), 1);
 				break;
 
 			case 's':
 				const char *s = va_arg(argp, char*);
-				if (s) {
-					len = strlen(s);
-					pad(&os, &m, len);
-					output(&os, s, len);
-				} else {
-					pad(&os, &m, 0);
-				}
+				if (s == NULL) s = "(null)";
+				len = strlen(s);
+				pad(&os, &m, len);
+				output(&os, s, len);
 				break;
 
 			case 'x':
@@ -170,11 +177,11 @@ int __printf_internal(const char *fmt, va_list argp,
 				len = 1;
 				while (n >> (len * 4) && (len * 4) < (sizeof(n) * 8))
 					len++;
-				pad(&os, &m, len);
+				padnum(&os, &m, len, '\0');
 				while (len-- > 0) {
 					char h = '0' + ((n >> (len * 4)) & 0xf);
 					if (h > '9') h += 'a' - '9' - 1;
-					output_c(&os, h);
+					output_c(&os, h, 1);
 				}
 				break;
 
@@ -182,7 +189,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
 				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
 				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
-				output_uint(&os, &m, n, 0);
+				output_uint(&os, &m, n, '\0');
 				break;
 
 			case 'd':
@@ -190,7 +197,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				     if (lm == LM_int)      ns = va_arg(argp, int);
 				else if (lm == LM_long)     ns = va_arg(argp, long);
 				else if (lm == LM_longlong) ns = va_arg(argp, long long);
-				sign = 0;
+				sign = '\0';
 				if (ns < 0) {
 					ns = -ns;
 					sign = '-';
