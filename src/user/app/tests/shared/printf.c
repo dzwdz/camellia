@@ -43,6 +43,9 @@ static void test_printf(void) {
 	test(!strcmp(buf, " -001"));
 	snprintf(buf, sizeof buf, "%.5d", 123);
 	test(!strcmp(buf, "00123"));
+
+	snprintf(buf, sizeof buf, "%.1s,%.10s,%.*s", "hello", "hello", 3, "hello");
+	test(!strcmp(buf, "h,hello,hel"));
 }
 
 void r_s_printf(void) {

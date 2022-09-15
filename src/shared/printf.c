@@ -131,7 +131,11 @@ int __printf_internal(const char *fmt, va_list argp,
 
 		if (c == '.') {
 			c = *fmt++;
-			while ('0' <= c && c <= '9') {
+			if (c == '*') {
+				// TODO handle negative precision
+				m.precision = va_arg(argp, int);
+				c = *fmt++;
+			} else while ('0' <= c && c <= '9') {
 				m.precision *= 10;
 				m.precision += c - '0';
 				c = *fmt++;
@@ -166,6 +170,8 @@ int __printf_internal(const char *fmt, va_list argp,
 				const char *s = va_arg(argp, char*);
 				if (s == NULL) s = "(null)";
 				len = strlen(s);
+				if (len > m.precision && m.precision != 0)
+					len = m.precision;
 				pad(&os, &m, len);
 				output(&os, s, len);
 				break;
