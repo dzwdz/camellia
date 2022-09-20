@@ -35,7 +35,7 @@ static int dir_seglen(const char *path) {
 	return len;
 }
 
-void fs_delegate(handle_t reqh, const char *path, long len, int flags) {
+void forward_open(handle_t reqh, const char *path, long len, int flags) {
 	// TODO use threads
 	// TODO solve for more complex cases, e.g. fs_union
 	/* done in a separate thread/process because open() can block,
@@ -73,7 +73,7 @@ void fs_passthru(const char *prefix) {
 					memcpy(buf, prefix, prefix_len);
 					res.len += prefix_len;
 				}
-				fs_delegate(reqh, buf, res.len, res.flags);
+				forward_open(reqh, buf, res.len, res.flags);
 				break;
 
 			default:
@@ -123,7 +123,7 @@ void fs_whitelist(const char **list) {
 					}
 				}
 				if (passthru) {
-					fs_delegate(reqh, buf, res.len, res.flags);
+					forward_open(reqh, buf, res.len, res.flags);
 				} else if (inject) {
 					// TODO all the inject points could be precomputed
 					ipath = malloc(res.len + 1);
@@ -258,7 +258,7 @@ void fs_dir_inject(const char *path) {
 					data->inject_len = dir_seglen(data->inject);
 					_syscall_fs_respond(reqh, data, 0, 0);
 				} else {
-					fs_delegate(reqh, buf, res.len, res.flags);
+					forward_open(reqh, buf, res.len, res.flags);
 				}
 				break;
 

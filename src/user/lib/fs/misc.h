@@ -4,7 +4,7 @@
 
 bool fork2_n_mount(const char *path);
 
-void fs_delegate(handle_t reqh, const char *path, long len, int flags);
+void forward_open(handle_t reqh, const char *path, long len, int flags);
 
 void fs_passthru(const char *prefix);
 void fs_whitelist(const char **list);

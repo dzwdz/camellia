@@ -47,7 +47,7 @@ static void drv(const char *user) {
 				}
 				buf[res.len] = '\0';
 
-				// TODO use fs_delegate
+				// TODO use forward_open
 
 				if (segcmp(buf, 1, "Users") && segcmp(buf, 2, user)) {
 					// allow full rw access to /Users/$user/**
