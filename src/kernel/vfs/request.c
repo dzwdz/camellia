@@ -52,6 +52,7 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 			/* delegating - moving a handle to the caller */
 			assert(handler);
 			h = process_handle_take(handler, ret);
+			// TODO don't ignore OPEN_RO
 		}
 
 		if (h) {

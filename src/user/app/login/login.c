@@ -2,6 +2,7 @@
 #include <camellia/syscalls.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,42 +21,43 @@ static void cutspace(char *s) {
 	}
 }
 
-static bool accesscheck(const char *path) {
-	const char *prefix = "/Users/";
-	if (strlen(path) < strlen(prefix) || memcmp(path, prefix, strlen(prefix)))
-		return true; /* not an user dir - access allowed */
-	path += strlen(prefix);
-
-	/* skip username */
-	path = strchr(path, '/');
-	if (!path) return true;
-	path++;
-
-	/* inside an user dir */
-	const char *private = "private/";
-	return strlen(path) < strlen(private) || memcmp(path, private, strlen(private));
+bool segcmp(const char *path, int idx, const char *s2) {
+	if (idx < 0) return false;
+	while (idx > 0) {
+		if (*path == '\0') return false;
+		if (*path == '/') idx--;
+		path++;
+	}
+	/* path is at the start of the selected segment */
+	while (*s2 && *path++ == *s2++);
+	return (*path == '\0' || *path == '/') && *s2 == '\0';
 }
 
-static void drv(const char *prefix) {
+static void drv(const char *user) {
 	struct fs_wait_response res;
-	size_t prefixlen = strlen(prefix);
-	char buf[128];
-	while (!c0_fs_wait(buf, sizeof buf, &res)) {
+	char *buf = malloc(PATH_MAX);
+	while (!c0_fs_wait(buf, PATH_MAX, &res)) {
 		switch (res.op) {
 			handle_t h;
 			case VFSOP_OPEN:
-				if (res.len == sizeof buf) {
+				/* null terminate */
+				if (res.len == PATH_MAX) {
 					c0_fs_respond(NULL, -1, 0);
 					break;
 				}
 				buf[res.len] = '\0';
 
-				if (res.len >= prefixlen && !memcmp(prefix, buf, prefixlen)) {
+				// TODO use fs_delegate
+
+				if (segcmp(buf, 1, "Users") && segcmp(buf, 2, user)) {
+					// allow full rw access to /Users/$user/**
 					h = _syscall_open(buf, res.len, res.flags);
-				} else if (accesscheck(buf)) {
-					h = _syscall_open(buf, res.len, res.flags | OPEN_RO);
-				} else {
+				} else if (segcmp(buf, 1, "Users") && segcmp(buf, 3, "private")) {
+					// disallow access to /Users/*/private/**
 					h = -EACCES;
+				} else {
+					// allow ro access to everything else
+					h = _syscall_open(buf, res.len, res.flags | OPEN_RO);
 				}
 				c0_fs_respond(NULL, h, FSR_DELEGATE);
 				break;
@@ -75,7 +77,7 @@ static void trylogin(const char *user) {
 			printf("no such user: %s\n", user);
 			return;
 		}
-		MOUNT_AT("/") { drv(buf); }
+		MOUNT_AT("/") { drv(user); }
 	}
 
 	execv(shell, NULL);
