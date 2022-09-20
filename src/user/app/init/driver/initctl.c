@@ -7,7 +7,7 @@
 #include <user/lib/compat.h>
 
 void initctl_drv(handle_t killswitch) {
-	struct fs_wait_response res;
+	struct ufs_request res;
 	char buf[64];
 	const size_t buflen = sizeof buf;
 	while (!c0_fs_wait(buf, buflen, &res)) {

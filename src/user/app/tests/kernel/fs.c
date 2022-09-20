@@ -6,7 +6,7 @@ static void test_unfinished_req(void) {
 	handle_t h;
 	if (_syscall_fork(FORK_NEWFS, &h)) {
 		// TODO make a similar test with all 0s passed to fs_wait
-		struct fs_wait_response res;
+		struct ufs_request res;
 		_syscall_fs_wait(NULL, 0, &res);
 		// TODO second fs_wait
 		exit(0);

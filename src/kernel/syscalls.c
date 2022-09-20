@@ -258,7 +258,7 @@ long _syscall_close(handle_t hid) {
 	SYSCALL_RETURN(0);
 }
 
-handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
+handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
 	struct vfs_backend *backend = process_current->controlled;
 	// TODO can be used to tell if you're init
 	if (!backend) SYSCALL_RETURN(-1);

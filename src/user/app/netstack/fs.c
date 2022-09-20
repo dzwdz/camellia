@@ -239,7 +239,7 @@ void fs_thread(void *arg) { (void)arg;
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
 	for (;;) {
-		struct fs_wait_response res;
+		struct ufs_request res;
 		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		struct handle *h = res.id;

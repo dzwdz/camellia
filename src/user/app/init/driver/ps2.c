@@ -52,7 +52,7 @@ static void parse_scancode(uint8_t s) {
 
 static void main_loop(void) {
 	static char buf[512];
-	struct fs_wait_response res;
+	struct ufs_request res;
 	int ret;
 	while (!c0_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {

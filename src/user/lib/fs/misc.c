@@ -58,7 +58,7 @@ void fs_passthru(const char *prefix) {
 	if (!buf) exit(1);
 
 	for (;;) {
-		struct fs_wait_response res;
+		struct ufs_request res;
 		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		switch (res.op) {
@@ -89,7 +89,7 @@ void fs_whitelist(const char **list) {
 	char *buf = malloc(buflen);
 	if (!buf) exit(1);
 	for (;;) {
-		struct fs_wait_response res;
+		struct ufs_request res;
 		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 
@@ -163,7 +163,7 @@ void fs_whitelist(const char **list) {
 }
 
 void fs_union(const char **list) {
-	struct fs_wait_response res;
+	struct ufs_request res;
 
 	/* the buffer is split into two halves:
 	 *  the second one is filled out with the path by fs_wait
@@ -241,7 +241,7 @@ void fs_dir_inject(const char *path) {
 	if (!buf) exit(1);
 
 	for (;;) {
-		struct fs_wait_response res;
+		struct ufs_request res;
 		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		struct fs_dir_handle *data = res.id;

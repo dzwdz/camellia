@@ -5,7 +5,7 @@
 #define eprintf(fmt, ...) fprintf(stderr, "user/lib/compat: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 static handle_t h = -1;
-long c0_fs_wait(char *buf, long len, struct fs_wait_response *res) {
+long c0_fs_wait(char *buf, long len, struct ufs_request *res) {
 	if (h != -1) {
 		eprintf("didn't respond to request!");
 		c0_fs_respond(NULL, -1, 0);

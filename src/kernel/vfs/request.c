@@ -95,7 +95,7 @@ void vfs_backend_tryaccept(struct vfs_backend *backend) {
 
 static void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
-	struct fs_wait_response res = {0};
+	struct ufs_request res = {0};
 	struct virt_cpy_error cpyerr;
 	int len;
 

@@ -37,7 +37,7 @@ static struct node *lookup(struct node *parent, const char *path, size_t len) {
 	return NULL;
 }
 
-static struct node *tmpfs_open(const char *path, struct fs_wait_response *res) {
+static struct node *tmpfs_open(const char *path, struct ufs_request *res) {
 	/* *path is not null terminated! */
 	struct node *node = &special_root;
 	if (res->len == 0) return NULL;
@@ -103,7 +103,7 @@ static long remove_node(struct node *node) {
 int main(void) {
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
-	struct fs_wait_response res;
+	struct ufs_request res;
 	struct node *ptr;
 	while (!c0_fs_wait(buf, buflen, &res)) {
 		switch (res.op) {

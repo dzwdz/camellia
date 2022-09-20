@@ -32,7 +32,7 @@ struct process {
 		struct {
 			char __user *buf;
 			size_t max_len;
-			struct fs_wait_response __user *res;
+			struct ufs_request __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
 		struct {
 			struct handle *pipe;

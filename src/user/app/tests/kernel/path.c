@@ -66,7 +66,7 @@ static void test_path_simplify(void) {
 static void mount_resolve_drv(const char *path) {
 	if (fork2_n_mount(path)) return;
 
-	struct fs_wait_response res;
+	struct ufs_request res;
 	while (!c0_fs_wait(NULL, 0, &res)) {
 		// TODO does the first argument of c0_fs_respond need to be non-const?
 		c0_fs_respond((void*)path, strlen(path), 0);

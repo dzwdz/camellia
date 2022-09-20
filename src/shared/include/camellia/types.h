@@ -22,7 +22,7 @@ enum vfs_operation {
 	VFSOP_CLOSE,
 };
 
-struct fs_wait_response {
+struct ufs_request {
 	enum vfs_operation op;
 	size_t len; // how much was put in *buf
 	size_t capacity; // how much output can be accepted by the caller

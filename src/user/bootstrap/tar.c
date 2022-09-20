@@ -14,7 +14,7 @@
 static void *tar_open(const char *path, int len, void *base, size_t base_len);
 static char tar_type(void *meta);
 static void tar_dirbuild(struct dirbuild *db, const char *meta, void *base, size_t base_len);
-static void tar_read(struct fs_wait_response *res, void *base, size_t base_len);
+static void tar_read(struct ufs_request *res, void *base, size_t base_len);
 static int tar_size(void *sector);
 static int oct_parse(char *str, size_t len);
 
@@ -24,7 +24,7 @@ static const char *root_fakemeta = ""; /* see comment in tar_open */
 
 void tar_driver(void *base) {
 	static char buf[BUF_SIZE];
-	struct fs_wait_response res;
+	struct ufs_request res;
 	void *ptr;
 	while (!c0_fs_wait(buf, BUF_SIZE, &res)) {
 		switch (res.op) {
@@ -99,7 +99,7 @@ static void tar_dirbuild(struct dirbuild *db, const char *meta, void *base, size
 	}
 }
 
-static void tar_read(struct fs_wait_response *res, void *base, size_t base_len) {
+static void tar_read(struct ufs_request *res, void *base, size_t base_len) {
 	void *meta =  (void*)res->id;
 	static char buf[BUF_SIZE];
 	// TODO reuse a single buffer for both tar_driver and tar_read

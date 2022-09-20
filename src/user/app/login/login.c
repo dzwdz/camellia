@@ -34,7 +34,7 @@ bool segcmp(const char *path, int idx, const char *s2) {
 }
 
 static void drv(const char *user) {
-	struct fs_wait_response res;
+	struct ufs_request res;
 	char *buf = malloc(PATH_MAX);
 	while (!c0_fs_wait(buf, PATH_MAX, &res)) {
 		switch (res.op) {

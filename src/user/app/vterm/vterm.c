@@ -38,7 +38,7 @@ int main(void) {
 	font_load("/init/font.psf");
 
 	static char buf[512];
-	struct fs_wait_response res;
+	struct ufs_request res;
 	while (!c0_fs_wait(buf, sizeof buf, &res)) {
 		switch (res.op) {
 			case VFSOP_OPEN:

@@ -50,7 +50,7 @@ long _syscall_close(handle_t h) {
 	return _syscall(_SYSCALL_CLOSE, (long)h, 0, 0, 0, 0);
 }
 
-handle_t _syscall_fs_wait(char __user *buf, long max_len, struct fs_wait_response __user *res) {
+handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
 	return (handle_t)_syscall(_SYSCALL_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
 }
 
