@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/compat.h>
 #include <user/lib/fs/misc.h>
 
 static const char *shell = "/bin/shell";
@@ -21,7 +20,7 @@ static void cutspace(char *s) {
 	}
 }
 
-bool segcmp(const char *path, int idx, const char *s2) {
+static bool segcmp(const char *path, int idx, const char *s2) {
 	if (idx < 0) return false;
 	while (idx > 0) {
 		if (*path == '\0') return false;
@@ -34,43 +33,40 @@ bool segcmp(const char *path, int idx, const char *s2) {
 }
 
 static void drv(const char *user) {
-	struct ufs_request res;
 	char *buf = malloc(PATH_MAX);
-	while (!c0_fs_wait(buf, PATH_MAX, &res)) {
-		switch (res.op) {
-			handle_t h;
+	for (;;) {
+		struct ufs_request req;
+		handle_t reqh = _syscall_fs_wait(buf, PATH_MAX, &req);
+		if (reqh < 0) break;
+
+		switch (req.op) {
 			case VFSOP_OPEN:
-				/* null terminate */
-				if (res.len == PATH_MAX) {
-					c0_fs_respond(NULL, -1, 0);
+				/* null terminate for segcmp */
+				if (req.len == PATH_MAX) {
+					_syscall_fs_respond(reqh, NULL, -1, 0);
 					break;
 				}
-				buf[res.len] = '\0';
+				buf[req.len] = '\0';
 
-				// TODO use forward_open
-
-				if (segcmp(buf, 1, "Users") && segcmp(buf, 2, user)) {
-					// allow full rw access to /Users/$user/**
-					h = _syscall_open(buf, res.len, res.flags);
-				} else if (segcmp(buf, 1, "Users") && segcmp(buf, 3, "private")) {
-					// disallow access to /Users/*/private/**
-					h = -EACCES;
+				if (segcmp(buf, 1, "Users") && segcmp(buf, 2, user)) { //  /Users/$user/**
+					forward_open(reqh, buf, req.len, req.flags);
+				} else if (segcmp(buf, 1, "Users") && segcmp(buf, 3, "private")) { //  /Users/*/private/**
+					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
 				} else {
-					// allow ro access to everything else
-					h = _syscall_open(buf, res.len, res.flags | OPEN_RO);
+					forward_open(reqh, buf, req.len, req.flags | OPEN_RO);
 				}
-				c0_fs_respond(NULL, h, FSR_DELEGATE);
 				break;
 
 			default:
-				c0_fs_respond(NULL, -1, 0);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
+	free(buf);
 }
 
 static void trylogin(const char *user) {
-	if (strcmp(user, "root")) {
+	if (strcmp(user, "root") != 0) {
 		char buf[128];
 		snprintf(buf, sizeof buf, "/Users/%s/", user);
 		if (chdir(buf) < 0) {
