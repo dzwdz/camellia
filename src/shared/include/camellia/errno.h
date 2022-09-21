@@ -16,3 +16,4 @@
 #define ECONNRESET 12
 
 #define EISDIR 200
+#define ENAMETOOLONG 201

@@ -1,5 +1,6 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -287,6 +288,24 @@ void fs_dir_inject(const char *path) {
 		}
 	}
 	exit(0);
+}
+
+handle_t ufs_wait(char *buf, size_t len, struct ufs_request *req) {
+	handle_t reqh;
+	for (;;) {
+		reqh = _syscall_fs_wait(buf, len, req);
+		if (reqh < 0) break;
+		if (req->op == VFSOP_OPEN) {
+			if (req->len == len) {
+				_syscall_fs_respond(reqh, NULL, -ENAMETOOLONG, 0);
+				continue;
+			}
+			buf[req->len] = '\0';
+			// TODO ensure passed paths don't have null bytes in them in the kernel
+		}
+		break;
+	}
+	return reqh;
 }
 
 bool mount_at_pred(const char *path) {

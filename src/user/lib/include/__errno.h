@@ -13,4 +13,5 @@ E( 10, "EACCES")
 E( 11, "EMFILE all file descriptors taken")
 E( 12, "ECONNRESET")
 E(200, "EISDIR")
+E(201, "ENAMETOOLONG")
 #endif
