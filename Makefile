@@ -16,7 +16,7 @@ USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 SPARSEFLAGS = -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
 # TODO optimize memory use
-QFLAGS  = -no-reboot -m 1g
+QFLAGS  = -no-reboot -m 1g -gdb tcp::12366
 ifdef NET_DIRECT
 QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a,id=n1
 else
@@ -38,7 +38,7 @@ define from_sources
 endef
 
 
-.PHONY: all portdeps boot debug lint check clean
+.PHONY: all portdeps boot lint check clean
 all: portdeps out/boot.iso check
 portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
 
@@ -56,11 +56,6 @@ test: all
 	echo halt > out/qemu.in
 	@echo
 	@cat out/qemu.out
-
-debug: all
-	qemu-system-x86_64 -cdrom out/boot.iso $(QFLAGS) -serial stdio -s -S &
-	@sleep 1
-	gdb
 
 check: $(shell find src/kernel/ -type f -name *.c)
 	@echo $^ | xargs -n 1 sparse $(CFLAGS) $(SPARSEFLAGS)

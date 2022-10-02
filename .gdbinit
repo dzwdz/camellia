@@ -1,2 +1,2 @@
-file out/fs/boot/kernel.bin
-target remote localhost:1234
+file out/fs/boot/kernel
+target remote localhost:12366
