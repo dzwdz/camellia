@@ -22,8 +22,7 @@ bool fork2_n_mount(const char *path) {
 }
 
 static int dir_seglen(const char *path) {
-	/* in human terms:
-	 * if path contains /, return its position + 1
+	/* if path contains /, return its position + 1
 	 * otherwise, return strlen */
 	int len = 0;
 	while (path[len]) {
@@ -75,84 +74,6 @@ void fs_passthru(const char *prefix) {
 					res.len += prefix_len;
 				}
 				forward_open(reqh, buf, res.len, res.flags);
-				break;
-
-			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
-				break;
-		}
-	}
-	exit(0);
-}
-
-void fs_whitelist(const char **list) {
-	const size_t buflen = 1024;
-	char *buf = malloc(buflen);
-	if (!buf) exit(1);
-	for (;;) {
-		struct ufs_request res;
-		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
-		if (reqh < 0) break;
-
-		char *ipath = res.id;
-		size_t blen;
-		bool passthru, inject;
-		struct dirbuild db;
-
-		switch (res.op) {
-			case VFSOP_OPEN:
-				passthru = false;
-				inject = false;
-
-				for (const char **iter = list; *iter; iter++) {
-					size_t len = strlen(*iter);
-					bool ro = false;
-					if (len >= 3 && !memcmp(*iter + len - 3, ":ro", 3)) {
-						ro = true;
-						len -= 3;
-					}
-					if (len <= res.len && !memcmp(buf, *iter, len)) {
-						if (ro) res.flags |= OPEN_RO;
-						passthru = true;
-						break;
-					}
-					if (res.len < len &&
-						buf[res.len - 1] == '/' &&
-						!memcmp(buf, *iter, res.len))
-					{
-						inject = true;
-					}
-				}
-				if (passthru) {
-					forward_open(reqh, buf, res.len, res.flags);
-				} else if (inject) {
-					// TODO all the inject points could be precomputed
-					ipath = malloc(res.len + 1);
-					memcpy(ipath, buf, res.len);
-					ipath[res.len] = '\0';
-					_syscall_fs_respond(reqh, ipath, 0, 0);
-				} else {
-					_syscall_fs_respond(reqh, NULL, -1, 0);
-				}
-				break;
-
-			case VFSOP_READ:
-			case VFSOP_GETSIZE:
-				blen = strlen(ipath);
-				char *target = res.op == VFSOP_READ ? buf : NULL;
-				dir_start(&db, res.offset, target, buflen);
-				for (const char **iter = list; *iter; iter++) {
-					// TODO could be precomputed too
-					size_t len = strlen(*iter); // inefficient, whatever
-					if (blen < len && !memcmp(ipath, *iter, blen))
-						dir_appendl(&db, *iter + blen, dir_seglen(*iter + blen));
-				}
-				_syscall_fs_respond(reqh, target, dir_finish(&db), 0);
-				break;
-
-			case VFSOP_CLOSE:
-				free(ipath);
-				_syscall_fs_respond(reqh, NULL, 0, 0);
 				break;
 
 			default:
