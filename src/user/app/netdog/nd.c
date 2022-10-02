@@ -1,3 +1,4 @@
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,7 +35,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	conn = _syscall_open(argv[1], strlen(argv[1]), 0);
+	conn = _syscall_open(argv[1], strlen(argv[1]), OPEN_RW);
 	if (conn < 0) {
 		eprintf("couldn't open '%s', err %u", argv[1], -conn);
 		return -conn;

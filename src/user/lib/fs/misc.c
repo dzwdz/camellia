@@ -135,7 +135,7 @@ void fs_union(const char **list) {
 				size_t prefixlen = strlen(prefix);
 				// TODO only open the directories once
 				// TODO ensure trailing slash
-				handle_t h = _syscall_open(prefix, prefixlen, 0);
+				handle_t h = _syscall_open(prefix, prefixlen, OPEN_READ);
 				if (h < 0) continue;
 				end = end || dir_append_from(&db, h);
 				_syscall_close(h);

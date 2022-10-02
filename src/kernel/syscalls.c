@@ -83,7 +83,7 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 	struct vfs_mount *mount;
 	char *path_buf = NULL;
 
-	if (flags & ~(OPEN_CREATE | OPEN_RO)) SYSCALL_RETURN(-ENOSYS);
+	if (flags & ~(OPEN_RW | OPEN_CREATE)) SYSCALL_RETURN(-ENOSYS);
 
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
@@ -184,11 +184,16 @@ static long simple_vfsop(
 		enum vfs_operation vfsop, handle_t hid, void __user *buf,
 		size_t len, long offset, int flags)
 {
-	assert(vfsop != VFSOP_OPEN && vfsop != VFSOP_CLOSE);
+	assert(vfsop == VFSOP_READ
+		|| vfsop == VFSOP_WRITE
+		|| vfsop == VFSOP_GETSIZE);
 	struct handle *h = process_handle_get(process_current, hid);
 	if (!h) SYSCALL_RETURN(-1);
 	if (h->type == HANDLE_FILE) {
-		if (h->ro && !(vfsop == VFSOP_READ || vfsop == VFSOP_GETSIZE))
+		// TODO those checks really need some comprehensive tests
+		if (!h->readable && vfsop == VFSOP_READ)
+			SYSCALL_RETURN(-EACCES);
+		if (!h->writeable && vfsop == VFSOP_WRITE)
 			SYSCALL_RETURN(-EACCES);
 		struct vfs_request req = (struct vfs_request){
 			.type = vfsop,
@@ -235,19 +240,22 @@ long _syscall_getsize(handle_t hid) {
 long _syscall_remove(handle_t hid) {
 	struct handle *h = process_handle_get(process_current, hid);
 	if (!h) SYSCALL_RETURN(-EBADF);
-	if (!h->ro && h->type == HANDLE_FILE) {
-		vfsreq_create((struct vfs_request) {
-				.type = VFSOP_REMOVE,
-				.id = h->file_id,
-				.caller = process_current,
-				.backend = h->backend,
-			});
+	if (h->type != HANDLE_FILE) {
 		process_handle_close(process_current, hid);
-		return -1; // dummy
-	} else {
-		process_handle_close(process_current, hid);
-		SYSCALL_RETURN(h->ro ? -EACCES : -ENOSYS);
+		SYSCALL_RETURN(-ENOSYS);
 	}
+	if (!h->writeable) {
+		process_handle_close(process_current, hid);
+		SYSCALL_RETURN(-EACCES);
+	}
+	vfsreq_create((struct vfs_request) {
+			.type = VFSOP_REMOVE,
+			.id = h->file_id,
+			.caller = process_current,
+			.backend = h->backend,
+		});
+	process_handle_close(process_current, hid);
+	return -1; // dummy
 }
 
 long _syscall_close(handle_t hid) {

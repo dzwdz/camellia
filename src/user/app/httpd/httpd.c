@@ -21,7 +21,7 @@ static void handle(FILE *c) {
 	char *end = strchr(path, ' ');
 	if (end) *end = '\0';
 
-	handle_t h = _syscall_open(path, strlen(path), OPEN_RO);
+	handle_t h = _syscall_open(path, strlen(path), OPEN_READ);
 	if (h < 0) {
 		fprintf(c, "HTTP/1.1 404 Not Found\r\n\r\n");
 		return;
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 	const char *path = (argc > 1) ? argv[1] : "/net/listen/0.0.0.0/tcp/80";
 	handle_t conn;
 	for (;;) {
-		conn = _syscall_open(path, strlen(path), 0);
+		conn = _syscall_open(path, strlen(path), OPEN_RW);
 		if (conn < 0) {
 			eprintf("open('%s') failed, %d", path, conn);
 			return 1;

@@ -23,8 +23,12 @@ void vfsreq_create(struct vfs_request req_) {
 	memcpy(req, &req_, sizeof *req);
 	if (req->backend) req->backend->refcount++;
 
-	if (req->type == VFSOP_OPEN && (req->flags & OPEN_RO))
-		req->flags &= ~OPEN_CREATE;
+	if (req->type == VFSOP_OPEN && !(req->flags & OPEN_WRITE) && (req->flags & OPEN_CREATE)) {
+		vfsreq_finish_short(req, -EINVAL);
+		return;
+	}
+
+	// TODO if i add a handle field to vfs_request, check ->readable ->writeable here
 
 	if (req->backend && req->backend->potential_handlers) {
 		struct vfs_request **iter = &req->backend->queue;
@@ -47,7 +51,8 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 			h = handle_init(HANDLE_FILE);
 			h->backend = req->backend; req->backend->refcount++;
 			h->file_id = stored;
-			h->ro = req->flags & OPEN_RO;
+			h->readable = OPEN_READABLE(req->flags);
+			h->writeable = OPEN_WRITEABLE(req->flags);
 		} else {
 			/* delegating - moving a handle to the caller */
 			assert(handler);

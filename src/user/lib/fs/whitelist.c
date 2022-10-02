@@ -1,5 +1,6 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <user/lib/fs/dir.h>
@@ -49,6 +50,7 @@ void fs_whitelist(const char **whitelist) {
 
 		switch (res.op) {
 			case VFSOP_OPEN: {
+				bool error = false;
 				bool passthru = false;
 				bool inject = false;
 
@@ -57,8 +59,9 @@ void fs_whitelist(const char **whitelist) {
 					size_t entry_len = suffix_parse(*entry, strlen(*entry), &ro);
 					/* If *entry is a prefix of the opened path, pass the open() through. */
 					if (prefix_match(*entry, entry_len, buf, res.len)) {
-						if (ro) res.flags |= OPEN_RO;
 						passthru = true;
+						if (ro && OPEN_WRITEABLE(res.flags))
+							error = true;
 						break;
 					}
 					/* If the path is a prefix of *entry, we might need to inject a directory. */
@@ -66,7 +69,9 @@ void fs_whitelist(const char **whitelist) {
 						inject = true;
 					}
 				}
-				if (passthru) {
+				if (error) {
+					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
+				} else if (passthru) {
 					forward_open(reqh, buf, res.len, res.flags);
 				} else if (inject) {
 					// TODO all the inject points could be precomputed

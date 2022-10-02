@@ -10,7 +10,7 @@ _Noreturn void abort(void) {
 
 int mkstemp(char *template) {
 	// TODO randomize template
-	handle_t h = _syscall_open(template, strlen(template), OPEN_CREATE);
+	handle_t h = _syscall_open(template, strlen(template), OPEN_CREATE | OPEN_RW);
 	if (h < 0) {
 		errno = -h;
 		return -1;

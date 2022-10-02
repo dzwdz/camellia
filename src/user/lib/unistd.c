@@ -1,3 +1,4 @@
+#include <camellia/flags.h>
 #include <camellia/path.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
@@ -30,7 +31,8 @@ int unlink(const char *path) {
 	size_t abslen = absolutepath(abspath, path, len);
 	if (abslen == 0) { errno = EINVAL; goto err; }
 
-	handle_t h = _syscall_open(abspath, abslen - 1, 0);
+	// TODO take cwd into account
+	handle_t h = _syscall_open(abspath, abslen - 1, OPEN_WRITE);
 	if (h < 0) { errno = -h; goto err; }
 
 	long ret = _syscall_remove(h);
@@ -49,7 +51,7 @@ int isatty(int fd) {
 
 
 int execv(const char *path, char *const argv[]) {
-	FILE *file = fopen(path, "r");
+	FILE *file = fopen(path, "e");
 	char hdr[4] = {0};
 	if (!file)
 		return -1;
@@ -114,7 +116,8 @@ int chdir(const char *path) {
 		cwd2[len + 1] = '\0';
 	}
 
-	h = _syscall_open(cwd2, strlen(cwd2), 0);
+	/* check if exists */
+	h = _syscall_open(cwd2, strlen(cwd2), OPEN_READ);
 	if (h < 0) {
 		errno = ENOENT;
 		return -1;

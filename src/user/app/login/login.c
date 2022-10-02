@@ -44,8 +44,10 @@ static void drv(const char *user) {
 					forward_open(reqh, buf, req.len, req.flags);
 				} else if (segcmp(buf, 1, "Users") && segcmp(buf, 3, "private")) { //  /Users/*/private/**
 					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
+				} else if (!OPEN_WRITEABLE(req.flags)) {
+					forward_open(reqh, buf, req.len, req.flags);
 				} else {
-					forward_open(reqh, buf, req.len, req.flags | OPEN_RO);
+					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
 				}
 				break;
 

@@ -19,7 +19,8 @@ struct handle {
 	enum handle_type type;
 	struct vfs_backend *backend; // HANDLE_FILE | HANDLE_FS_FRONT
 	void __user *file_id; // only applicable to HANDLE_FILE
-	bool ro; /* currently only for HANDLE_FILE */
+	// TODO readable/writeable could be reused for pipes
+	bool readable, writeable; /* currently only for HANDLE_FILE */
 	struct vfs_request *req; /* HANDLE_FS_REQ */
 	struct {
 		struct process *queued;

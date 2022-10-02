@@ -270,6 +270,11 @@ static void test_sleep(void) {
 	}
 }
 
+static void test_badopen(void) {
+	test(_syscall_open(TMPFILEPATH, strlen(TMPFILEPATH), OPEN_CREATE | OPEN_WRITE) >= 0);
+	test(_syscall_open(TMPFILEPATH, strlen(TMPFILEPATH), OPEN_CREATE) == -EINVAL);
+}
+
 void r_k_miscsyscall(void) {
 	run_test(test_await);
 	run_test(test_pipe);
@@ -277,4 +282,5 @@ void r_k_miscsyscall(void) {
 	run_test(test_dup);
 	run_test(test_execbuf);
 	run_test(test_sleep);
+	run_test(test_badopen);
 }

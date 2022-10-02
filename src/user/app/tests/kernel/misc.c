@@ -28,7 +28,7 @@ static void test_efault(void) {
 
 	memcpy(str2, str, 16);
 
-	test((h = _syscall_open(TMPFILEPATH, strlen(TMPFILEPATH), OPEN_CREATE)));
+	test((h = _syscall_open(TMPFILEPATH, strlen(TMPFILEPATH), OPEN_CREATE | OPEN_WRITE)) >= 0);
 	test(_syscall_write(h, str, 16, 0, 0) == 16);
 	test(_syscall_write(h, str2, 16, 0, 0) == 16);
 

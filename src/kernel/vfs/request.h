@@ -42,6 +42,8 @@ struct vfs_request {
 		size_t len;
 	} output;
 
+	// TODO why doesn't this just have a reference to the handle?
+
 	void __user *id; // handle.file.id
 	long offset;
 	int flags;

@@ -144,7 +144,8 @@ static void fs_open(handle_t reqh, char *path, int flags) {
 	}
 
 	/* everything below ends up sending packets */
-	if (flags & OPEN_RO) respond(NULL, -EACCES);
+	if (!OPEN_WRITEABLE(flags))
+		respond(NULL, -EACCES);
 
 	char *save;
 	const char *verb, *proto, *port_s;

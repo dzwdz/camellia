@@ -42,8 +42,16 @@ FILE *fopen(const char *path, const char *mode) {
 		path = tmppath;
 	}
 
-	if (mode[0] == 'w' || mode[0] == 'a')
-		flags |= OPEN_CREATE;
+	if (strchr(mode, 'e')) {
+		/* camellia extension: open as executable */
+		flags |= OPEN_EXEC;
+	} else if (strchr(mode, 'r')) {
+		flags |= OPEN_READ;
+		if (strchr(mode, '+'))
+			flags |= OPEN_WRITE;
+	} else {
+		flags |= OPEN_WRITE | OPEN_CREATE;
+	}
 
 	h = _syscall_open(path, strlen(path), flags);
 	if (tmppath) free(tmppath);
