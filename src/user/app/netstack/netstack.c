@@ -1,6 +1,6 @@
 #include "proto.h"
 #include "util.h"
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 		eprintf("usage: netstack iface ip gateway");
 		return 1;
 	}
-	state.raw_h = _syscall_open(argv[1], strlen(argv[1]), OPEN_RW);
+	state.raw_h = camellia_open(argv[1], OPEN_RW);
 	if (state.raw_h < 0) {
 		eprintf("couldn't open %s", argv[1]);
 		return 1;

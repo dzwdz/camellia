@@ -1,4 +1,4 @@
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <shared/container/ring.h>
 #include <stdbool.h>
@@ -50,7 +50,7 @@ struct packet {
 
 int main(void) {
 	char buf[64];
-	handle_t fd = _syscall_open("/kdev/ps2/mouse", 15, OPEN_READ);
+	handle_t fd = camellia_open("/kdev/ps2/mouse", OPEN_READ);
 	if (fd < 0) {
 		eprintf("couldn't open mouse");
 		return 1;

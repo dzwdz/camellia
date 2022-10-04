@@ -7,5 +7,7 @@ static const char *errstr[] = {
 };
 
 char *strerror(int n) {
-	return (char*)(errstr[n] ? errstr[n] : "unknown error");
+	if (0 <= n && n * sizeof(*errstr) < sizeof(errstr) && errstr[n])
+		return (char*)errstr[n];
+	return "unknown error";
 }

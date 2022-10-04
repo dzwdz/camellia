@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 	for (; optind < argc; optind++) {
 		const char *path = argv[optind];
 		verbosef("checking %s...\n", path);
-		handle_t h = _syscall_open(path, strlen(path), OPEN_READ);
+		handle_t h = camellia_open(path, OPEN_READ);
 		if (h < 0) {
 			eprintf("couldn't open %s", path);
 			continue;

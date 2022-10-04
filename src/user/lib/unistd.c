@@ -1,4 +1,4 @@
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/path.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
@@ -24,24 +24,11 @@ _Noreturn void exit(int c) {
 _Noreturn void _exit(int c) { exit(c); };
 
 int unlink(const char *path) {
-	size_t len = strlen(path) + 1;
-	char *abspath = malloc(len);
-	if (!abspath) return -1;
-
-	size_t abslen = absolutepath(abspath, path, len);
-	if (abslen == 0) { errno = EINVAL; goto err; }
-
-	// TODO take cwd into account
-	handle_t h = _syscall_open(abspath, abslen - 1, OPEN_WRITE);
-	if (h < 0) { errno = -h; goto err; }
-
+	handle_t h = camellia_open(path, OPEN_WRITE);
+	if (h < 0) return errno = -h, -1;
 	long ret = _syscall_remove(h);
-	if (ret < 0) { errno = -ret; goto err; }
-
+	if (ret < 0) return errno = -ret, -1;
 	return 0;
-err:
-	free(abspath);
-	return -1;
 }
 
 // TODO isatty
@@ -117,12 +104,9 @@ int chdir(const char *path) {
 	}
 
 	/* check if exists */
-	h = _syscall_open(cwd2, strlen(cwd2), OPEN_READ);
-	if (h < 0) {
-		errno = ENOENT;
-		return -1;
-	}
-	_syscall_close(h);
+	h = camellia_open(cwd2, OPEN_READ);
+	if (h < 0) return errno = ENOENT, -1;
+	close(h);
 
 	tmp  = cwd;
 	cwd  = cwd2;

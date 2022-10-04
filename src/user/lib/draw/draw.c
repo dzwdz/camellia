@@ -1,4 +1,4 @@
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@ int fb_setup(struct framebuf *fb, const char *base) {
 	/* assumes the read went correctly */
 	fclose(f);
 
-	fb->fd = _syscall_open(path, strlen(path), OPEN_RW);
+	fb->fd = camellia_open(path, OPEN_RW);
 	if (fb->fd < 0) return fb->fd;
 
 	fb->width  = strtol(spec, &spec, 0);

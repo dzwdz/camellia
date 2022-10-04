@@ -1,5 +1,5 @@
 #include "file.h"
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
@@ -20,7 +20,6 @@ FILE *fopen(const char *path, const char *mode) {
 	FILE *f;
 	handle_t h;
 	int flags = 0;
-	char *tmppath = NULL;
 	if (!path) {
 		errno = 1;
 		return NULL;
@@ -30,16 +29,8 @@ FILE *fopen(const char *path, const char *mode) {
 		if (!strcmp(path, "stdin"))  return file_clone(stdin, mode);
 		if (!strcmp(path, "stdout")) return file_clone(stdout, mode);
 		if (!strcmp(path, "stderr")) return file_clone(stderr, mode);
-		errno = 1;
+		errno = ENOENT;
 		return NULL;
-	}
-
-	if (path && path[0] != '/') {
-		size_t len = absolutepath(NULL, path, 0);
-		tmppath = malloc(len);
-		if (!tmppath) return NULL;
-		absolutepath(tmppath, path, len);
-		path = tmppath;
 	}
 
 	if (strchr(mode, 'e')) {
@@ -53,12 +44,8 @@ FILE *fopen(const char *path, const char *mode) {
 		flags |= OPEN_WRITE | OPEN_CREATE;
 	}
 
-	h = _syscall_open(path, strlen(path), flags);
-	if (tmppath) free(tmppath);
-	if (h < 0) {
-		errno = -h;
-		return NULL;
-	}
+	h = camellia_open(path, flags);
+	if (h < 0) return NULL;
 
 	if (mode[0] == 'w')
 		_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);

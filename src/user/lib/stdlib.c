@@ -1,4 +1,4 @@
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <string.h>
@@ -10,7 +10,7 @@ _Noreturn void abort(void) {
 
 int mkstemp(char *template) {
 	// TODO randomize template
-	handle_t h = _syscall_open(template, strlen(template), OPEN_CREATE | OPEN_RW);
+	handle_t h = camellia_open(template, OPEN_CREATE | OPEN_RW);
 	if (h < 0) {
 		errno = -h;
 		return -1;

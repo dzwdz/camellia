@@ -1,6 +1,6 @@
 #include "builtins.h"
 #include "shell.h"
-#include <camellia/flags.h>
+#include <camellia.h>
 #include <camellia/path.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -61,7 +61,7 @@ void cmd_getsize(int argc, char **argv) {
 	}
 
 	for (int i = 1; i < argc; i++) {
-		handle_t h = _syscall_open(argv[i], strlen(argv[i]), OPEN_READ);
+		handle_t h = camellia_open(argv[i], OPEN_READ);
 		if (h < 0) {
 			eprintf("error opening %s", argv[i]);
 			continue;
