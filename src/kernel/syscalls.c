@@ -187,13 +187,14 @@ static long simple_vfsop(
 		|| vfsop == VFSOP_WRITE
 		|| vfsop == VFSOP_GETSIZE);
 	struct handle *h = process_handle_get(process_current, hid);
-	if (!h) SYSCALL_RETURN(-1);
+	if (!h) SYSCALL_RETURN(-EBADF);
+	// TODO those checks really need some comprehensive tests
+	if (vfsop == VFSOP_READ && !h->readable)
+		SYSCALL_RETURN(-EACCES);
+	if (vfsop == VFSOP_WRITE && !h->writeable)
+		SYSCALL_RETURN(-EACCES);
+
 	if (h->type == HANDLE_FILE) {
-		// TODO those checks really need some comprehensive tests
-		if (!h->readable && vfsop == VFSOP_READ)
-			SYSCALL_RETURN(-EACCES);
-		if (!h->writeable && vfsop == VFSOP_WRITE)
-			SYSCALL_RETURN(-EACCES);
 		struct vfs_request req = (struct vfs_request){
 			.type = vfsop,
 			.backend = h->backend,
@@ -213,7 +214,8 @@ static long simple_vfsop(
 		vfsreq_create(req);
 	} else if (h->type == HANDLE_PIPE) {
 		if (vfsop == VFSOP_READ || vfsop == VFSOP_WRITE) {
-			pipe_joinqueue(h, vfsop == VFSOP_READ, process_current, buf, len);
+			/* already checked if this is the correct pipe end */
+			pipe_joinqueue(h, process_current, buf, len);
 		} else SYSCALL_RETURN(-ENOSYS);
 	} else SYSCALL_RETURN(-ENOSYS);
 	return 0;
@@ -353,9 +355,10 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 		process_handle_close(process_current, ends[1]);
 		SYSCALL_RETURN(-EMFILE);
 	}
-	wend->pipe.write_end = true;
 	wend->pipe.sister = rend;
 	rend->pipe.sister = wend;
+	wend->writeable = true;
+	rend->readable = true;
 
 	virt_cpy_to(process_current->pages, user_ends, ends, sizeof ends);
 	SYSCALL_RETURN(0);

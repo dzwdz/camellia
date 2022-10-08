@@ -5,14 +5,9 @@
 
 static void pipe_trytransfer(struct handle *h);
 
-void pipe_joinqueue(struct handle *h, bool wants_write,
-		struct process *proc, void __user *pbuf, size_t pbuflen)
-{
+void pipe_joinqueue(struct handle *h, struct process *proc, void __user *pbuf, size_t pbuflen) {
 	assert(h && h->type == HANDLE_PIPE);
-	if (wants_write == h->pipe.write_end) {
-		regs_savereturn(&proc->regs, -1);
-		return;
-	}
+	assert(h->readable ^ h->writeable);
 	if (!h->pipe.sister) {
 		regs_savereturn(&proc->regs, -1);
 		return;
@@ -37,21 +32,20 @@ static void pipe_trytransfer(struct handle *h) {
 	struct process *rdr, *wtr;
 	struct virt_cpy_error cpyerr;
 	int len;
-	assert(h);
+	assert(h && h->type == HANDLE_PIPE);
+	assert(h->readable ^ h->writeable);
 	if (!h->pipe.sister) {
 		assert(!h->pipe.queued);
 		return;
 	}
 
-	rdr = h->pipe.write_end ? h->pipe.sister->pipe.queued : h->pipe.queued;
-	wtr = h->pipe.write_end ? h->pipe.queued : h->pipe.sister->pipe.queued;
-
+	rdr = h->readable ? h->pipe.queued : h->pipe.sister->pipe.queued;
+	wtr = h->writeable ? h->pipe.queued : h->pipe.sister->pipe.queued;
 	if (!(rdr && wtr)) return;
 	assert(rdr->state == PS_WAITS4PIPE);
 	assert(wtr->state == PS_WAITS4PIPE);
 
 	len = min(rdr->waits4pipe.len, wtr->waits4pipe.len);
-
 	virt_cpy(
 			rdr->pages, rdr->waits4pipe.buf,
 			wtr->pages, wtr->waits4pipe.buf,
