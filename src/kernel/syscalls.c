@@ -86,9 +86,8 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
-	// TODO remove this check - it's not worth it w/ threads
-	if (process_find_free_handle(process_current, 0) < 0)
-		SYSCALL_RETURN(-EMFILE);
+	/* Doesn't check for free handles. Another thread could use up all
+	 * handles in the meantime anyways, or free some up. */
 
 	path_buf = kmalloc(len);
 	if (!path_buf) goto fail;

@@ -64,6 +64,7 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 			// TODO write tests for caller getting killed while opening a file
 			if (!req->caller) panic_unimplemented();
 			ret = process_handle_put(req->caller, h);
+			if (ret < 0) ret = -EMFILE;
 		} else {
 			ret = -1;
 		}
