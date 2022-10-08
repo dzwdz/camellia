@@ -7,6 +7,7 @@
 
 void run_test(void (*fn)());
 
+void r_k_fdlimit(void);
 void r_k_fs(void);
 void r_k_misc(void);
 void r_k_miscsyscall(void);

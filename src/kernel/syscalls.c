@@ -51,11 +51,10 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 	child = process_fork(process_current, flags);
 	regs_savereturn(&child->regs, 0);
 
-	if ((flags & FORK_NEWFS) && fs_front) {
+	if (flags & FORK_NEWFS) {
 		struct handle *h;
 		handle_t hid = process_handle_init(process_current, HANDLE_FS_FRONT, &h);
 		if (hid < 0) {
-			// TODO test
 			child->noreap = true;
 			process_kill(child, -EMFILE);
 			SYSCALL_RETURN(-EMFILE);
@@ -87,8 +86,9 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
+	// TODO remove this check - it's not worth it w/ threads
 	if (process_find_free_handle(process_current, 0) < 0)
-		SYSCALL_RETURN(-1);
+		SYSCALL_RETURN(-EMFILE);
 
 	path_buf = kmalloc(len);
 	if (!path_buf) goto fail;
