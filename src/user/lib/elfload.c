@@ -65,9 +65,9 @@ static size_t elf_spread(const void *elf) {
 	return high - low;
 }
 
-static void *malloccpy(const void *orig, size_t len) {
+static void *memdup(const void *orig, size_t len) {
 	void *n = malloc(len);
-	memcpy(n, orig, len);
+	if (n) memcpy(n, orig, len);
 	return n;
 }
 
@@ -76,50 +76,41 @@ static void *malloccpy(const void *orig, size_t len) {
 void _freejmp_chstack(void *entry, void *low, size_t len, const char **argv, char **envp, void *stack); // elfload.s
 _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
 void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **envp) {
-	size_t len;
-	union {void *b; void **ptr; uintptr_t *n;} stack;
-	stack.b = (void*)~0; /* default stack location */
-	void *stack_start = stack.b - 0x1000;
-	void *cwd;
+	void *stack = (void*)~0;
+	struct execdata ed;
 
-	/* copy argv off the stack */
-	int argc = 0;
-	size_t argv_len;
 	if (argv) {
-		while (argv[argc]) argc++;
-		argv_len = argc * sizeof(char *);
-		if ((void*)argv > stack_start)
-			argv = malloccpy(argv, argv_len);
-		for (int i = 0; argv[i]; i++)
-			if ((void*)argv[i] > stack_start)
-				argv[i] = malloccpy(argv[i], strlen(argv[i]) + 1);
+		size_t argv_len;
+		ed.argc = 0;
+		while (argv[ed.argc]) ed.argc++;
+		argv_len = (ed.argc+1) * sizeof(char *);
+
+		/* make a copy of argv, so it doesn't get overridden
+		 * if it overlaps with the new stack. */
+		argv = memdup(argv, argv_len);
+		for (int i = 0; i < ed.argc; i++)
+			argv[i] = strdup(argv[i]);
+
+		stack -= argv_len;
+		ed.argv = stack;
+
+		for (int i = 0; i < ed.argc; i++) {
+			size_t len = strlen(argv[i]) + 1;
+			stack -= len;
+			memcpy(stack, argv[i], len);
+			ed.argv[i] = stack;
+		}
+		ed.argv[ed.argc] = NULL;
 	}
 
 	/* push cwd */
-	len = absolutepath(NULL, NULL, 0);
-	stack.b -= len;
-	cwd = stack.b;
-	getcwd(cwd, len);
+	size_t len = absolutepath(NULL, NULL, 0);
+	stack -= len;
+	getcwd(stack, len);
+	ed.cwd = stack;
 
-	/* push argv */
-	if (argv) {
-		for (int i = 0; i < argc; i++) {
-			len = strlen(argv[i]) + 1;
-			stack.b -= len;
-			memcpy(stack.b, argv[i], len);
-			argv[i] = stack.b;
-		}
-		*--(stack.ptr) = NULL; /* NULL terminate argv */
-		stack.b -= argv_len;
-		memcpy(stack.b, argv, argv_len);
-		argv = stack.b;
-	}
-
-	*--(stack.ptr) = envp;
-	*--(stack.ptr) = argv;
-	*--(stack.n)   = argc;
-
-	*--(stack.ptr) = cwd;
+	stack -= sizeof ed;
+	memcpy(stack, &ed, sizeof ed);
 
 	uintptr_t high = (uintptr_t)low + imglen;
 	uint64_t buf[] = {
@@ -127,7 +118,7 @@ void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **e
 		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
-	execbuf_chstack(stack.b, buf, sizeof buf);
+	execbuf_chstack(stack, buf, sizeof buf);
 }
 
 static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
