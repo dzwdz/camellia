@@ -2,6 +2,9 @@
 #include <camellia/syscalls.h>
 #include <unistd.h>
 
+__attribute__((visibility("hidden")))
+extern char _image_base[];
+
 FILE *fail_trig;
 
 void run_test(void (*fn)()) {
@@ -10,7 +13,9 @@ void run_test(void (*fn)()) {
 		exit(0);
 	} else {
 		/* successful tests must return 0 */
-		if (_syscall_await() != 0) test_fail();
+		if (_syscall_await() != 0) {
+			test_failf("0x%x, base 0x%x", (void*)fn - (void*)_image_base, _image_base);
+		}
 	}
 }
 

@@ -29,4 +29,9 @@ int forkpipe(FILE **f, handle_t *h);
 	fflush(fail_trig); \
 	exit(0); \
 } while (0)
+#define test_failf(fmt, ...) do { \
+	fprintf(fail_trig, "%s():%u " fmt, __func__, __LINE__, __VA_ARGS__); \
+	fflush(fail_trig); \
+	exit(0); \
+} while (0)
 #define test(cond) if (!(cond)) test_fail();
