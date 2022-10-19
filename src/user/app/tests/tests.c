@@ -14,7 +14,7 @@ void run_test(void (*fn)()) {
 	} else {
 		/* successful tests must return 0 */
 		if (_syscall_await() != 0) {
-			test_failf("0x%x, base 0x%x", (void*)fn - (void*)_image_base, _image_base);
+			test_failf("%p, base %p", (void*)fn - (void*)_image_base, _image_base);
 		}
 	}
 }

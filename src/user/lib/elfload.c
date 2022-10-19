@@ -153,7 +153,6 @@ void elf_exec(void *base, char **argv, char **envp) {
 
 	void *exebase = elf_loadmem(ehdr);
 	if (!exebase) return;
-	_klogf("exebase 0x%x", exebase);
 
 	void *newstack = _syscall_memflag((void*)0x1000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
 	if (!newstack) return;

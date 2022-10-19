@@ -37,7 +37,7 @@ int main(void) {
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
-	printf("in init (stage 2), main at 0x%x\n", &main);
+	printf("in init (stage 2), main at %p\n", &main);
 
 	MOUNT_AT("/keyboard") { ps2_drv(); }
 	MOUNT_AT("/bin/") {

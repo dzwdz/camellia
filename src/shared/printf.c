@@ -2,6 +2,7 @@
 #include <shared/printf.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 enum lenmod {
 	LM_int,
@@ -80,6 +81,18 @@ static void output_uint(struct out_state *os, struct mods *m, unsigned long long
 	size_t len = sizeof(buf) - pos;
 	padnum(os, m, len, sign);
 	output(os, buf + pos, len);
+}
+
+static void output_uint16(struct out_state *os, struct mods *m, unsigned long long n) {
+	size_t len = 1;
+	while (n >> (len * 4) && (len * 4) < (sizeof(n) * 8))
+		len++;
+	padnum(os, m, len, '\0');
+	while (len-- > 0) {
+		char h = '0' + ((n >> (len * 4)) & 0xf);
+		if (h > '9') h += 'a' - '9' - 1;
+		output_c(os, h, 1);
+	}
 }
 
 
@@ -176,19 +189,16 @@ int __printf_internal(const char *fmt, va_list argp,
 				output(&os, s, len);
 				break;
 
+			case 'p':
+				output(&os, "0x", 2);
+				output_uint16(&os, &m, (uintptr_t)va_arg(argp, void*));
+				break;
+
 			case 'x':
 				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
 				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
 				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
-				len = 1;
-				while (n >> (len * 4) && (len * 4) < (sizeof(n) * 8))
-					len++;
-				padnum(&os, &m, len, '\0');
-				while (len-- > 0) {
-					char h = '0' + ((n >> (len * 4)) & 0xf);
-					if (h > '9') h += 'a' - '9' - 1;
-					output_c(&os, h, 1);
-				}
+				output_uint16(&os, &m, n);
 				break;
 
 			case 'u':
