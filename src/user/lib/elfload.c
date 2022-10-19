@@ -71,6 +71,8 @@ static void *memdup(const void *orig, size_t len) {
 	return n;
 }
 
+static const char *default_argv[] = {NULL};
+
 /* frees memory outside of [low; low + len] and jumps to *entry
  * also sets up main's stack */
 void _freejmp_chstack(void *entry, void *low, size_t len, const char **argv, char **envp, void *stack); // elfload.s
@@ -78,30 +80,30 @@ _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
 void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **envp) {
 	void *stack = (void*)~0;
 	struct execdata ed;
+	size_t argv_len;
 
-	if (argv) {
-		size_t argv_len;
-		ed.argc = 0;
-		while (argv[ed.argc]) ed.argc++;
-		argv_len = (ed.argc+1) * sizeof(char *);
+	if (!argv) argv = default_argv;
 
-		/* make a copy of argv, so it doesn't get overridden
-		 * if it overlaps with the new stack. */
-		argv = memdup(argv, argv_len);
-		for (int i = 0; i < ed.argc; i++)
-			argv[i] = strdup(argv[i]);
+	ed.argc = 0;
+	while (argv[ed.argc]) ed.argc++;
+	argv_len = (ed.argc+1) * sizeof(char *);
 
-		stack -= argv_len;
-		ed.argv = stack;
+	/* make a copy of argv, so it doesn't get overridden
+	 * if it overlaps with the new stack. */
+	argv = memdup(argv, argv_len);
+	for (int i = 0; i < ed.argc; i++)
+		argv[i] = strdup(argv[i]);
 
-		for (int i = 0; i < ed.argc; i++) {
-			size_t len = strlen(argv[i]) + 1;
-			stack -= len;
-			memcpy(stack, argv[i], len);
-			ed.argv[i] = stack;
-		}
-		ed.argv[ed.argc] = NULL;
+	stack -= argv_len;
+	ed.argv = stack;
+
+	for (int i = 0; i < ed.argc; i++) {
+		size_t len = strlen(argv[i]) + 1;
+		stack -= len;
+		memcpy(stack, argv[i], len);
+		ed.argv[i] = stack;
 	}
+	ed.argv[ed.argc] = NULL;
 
 	/* push cwd */
 	size_t len = absolutepath(NULL, NULL, 0);

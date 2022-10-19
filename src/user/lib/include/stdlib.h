@@ -12,6 +12,9 @@
 _Noreturn void abort(void);
 _Noreturn void exit(int);
 
+const char *getprogname(void);
+void setprogname(const char *progname);
+
 int mkstemp(char *template);
 char *getenv(const char *name);
 int system(const char *cmd);

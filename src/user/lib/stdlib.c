@@ -8,6 +8,14 @@ _Noreturn void abort(void) {
 	_syscall_exit(1);
 }
 
+static const char *progname;
+const char *getprogname(void) {
+	return progname;
+}
+void setprogname(const char *pg) {
+	progname = pg;
+}
+
 int mkstemp(char *template) {
 	// TODO randomize template
 	handle_t h = camellia_open(template, OPEN_CREATE | OPEN_RW);

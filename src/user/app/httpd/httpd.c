@@ -2,11 +2,10 @@
  * easily DoSable (like the rest of the network stack), vulnerable to path traversal, etc */
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
-#define eprintf(fmt, ...) fprintf(stderr, "httpd: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 static void handle(FILE *c) {
 	char buf[2048];
@@ -69,10 +68,8 @@ int main(int argc, char **argv) {
 	handle_t conn;
 	for (;;) {
 		conn = _syscall_open(path, strlen(path), OPEN_RW);
-		if (conn < 0) {
-			eprintf("open('%s') failed, %d", path, conn);
-			return 1;
-		}
+		if (conn < 0)
+			errx(1, "open('%s') failed, errno %d", path, -conn);
 		FILE *f = fdopen(conn, "a+");
 		handle(f);
 		fclose(f);
