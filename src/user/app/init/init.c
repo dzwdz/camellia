@@ -39,7 +39,10 @@ int main(void) {
 	freopen("/kdev/com1", "a+", stderr);
 	printf("in init (stage 2), main at %p\n", &main);
 
-	MOUNT_AT("/keyboard") { ps2_drv(); }
+	MOUNT_AT("/keyboard") {
+		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
+		ps2_drv();
+	}
 	MOUNT_AT("/bin/") {
 		fs_union((const char*[]){
 			"/init/bin/amd64/",
@@ -61,15 +64,21 @@ int main(void) {
 		});
 	}
 	MOUNT_AT("/tmp/") {
+		const char *allow[] = {"/bin/tmpfs", NULL};
 		const char *argv[] = {"/bin/tmpfs", NULL};
+		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/vtty") {
+		const char *allow[] = {"/bin/vterm", "/kdev/video/", "/keyboard", "/init/font.psf", NULL};
 		const char *argv[] = {"/bin/vterm", NULL};
+		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/net/") {
+		const char *allow[] = {"/bin/netstack", "/kdev/eth", NULL};
 		const char *argv[] = {"/bin/netstack", "/kdev/eth", "192.168.0.11", "192.168.0.2", NULL};
+		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
 
