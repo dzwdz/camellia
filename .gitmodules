@@ -1,0 +1,3 @@
+[submodule "src/user/app/ext2fs/ext2"]
+	path = src/user/app/ext2fs/ext2
+	url = https://github.com/dzwdz/ext2.git

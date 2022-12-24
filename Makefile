@@ -42,8 +42,11 @@ endef
 all: portdeps out/boot.iso check
 portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
 
-boot: all out/hdd
-	qemu-system-x86_64 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial stdio
+boot: all out/fs.e2
+	qemu-system-x86_64 \
+		-drive file=out/boot.iso,format=raw,media=disk \
+		-drive file=out/fs.e2,format=raw,media=disk \
+		$(QFLAGS) -serial stdio
 
 test: all
 	@# pipes for the serial
@@ -97,9 +100,8 @@ out/fs/boot/grub/grub.cfg: grub.cfg
 	@mkdir -p $(@D)
 	@cp $< $@
 
-out/hdd:
-	@dd if=/dev/zero of=$@ bs=512 count=70000
-
+out/fs.e2:
+	@mkfs.ext2 $@ 1024 > /dev/null
 
 define userbin_template =
 out/initrd/bin/amd64/$(1): src/user/linker.ld $(call from_sources, src/user/app/$(1)) out/libc.a
@@ -108,6 +110,10 @@ out/initrd/bin/amd64/$(1): src/user/linker.ld $(call from_sources, src/user/app/
 endef
 USERBINS := $(shell ls src/user/app)
 $(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))
+
+# don't build the example implementation from libext2
+out/obj/user/app/ext2fs/ext2/example.c.o:
+	@touch $@
 
 out/initrd/%: initrd/%
 	@mkdir -p $(@D)
