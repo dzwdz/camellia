@@ -3,7 +3,7 @@
 #include <shared/container/ring.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <user/lib/compat.h>
+#include <camellia/compat.h>
 
 
 static const char keymap_lower[] = {

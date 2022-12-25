@@ -3,8 +3,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/fs/dir.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/fs/dir.h>
+#include <camellia/fs/misc.h>
 
 static int dir_seglen2(const char *path, size_t len) {
 	/* returns the length of the first segment of the path, including the trailing / (if any). */

@@ -1,8 +1,8 @@
 #include "../tests.h"
 #include <camellia/path.h>
 #include <string.h>
-#include <user/lib/compat.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/compat.h>
+#include <camellia/fs/misc.h>
 
 static void test_path_simplify(void) {
 	const char *testcases[][2] = {

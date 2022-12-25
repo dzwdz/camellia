@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/fs/misc.h>
 
 #define die(fmt, ...) do { fprintf(stderr, "init: " fmt, __VA_ARGS__); exit(1); } while (0)
 

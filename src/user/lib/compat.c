@@ -1,6 +1,6 @@
 #include <camellia/syscalls.h>
 #include <stdio.h>
-#include <user/lib/compat.h>
+#include <camellia/compat.h>
 
 #define eprintf(fmt, ...) fprintf(stderr, "user/lib/compat: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 

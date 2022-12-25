@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/fs/misc.h>
 
 static const char *shell = "/bin/shell";
 

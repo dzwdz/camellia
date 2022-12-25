@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/compat.h>
+#include <camellia/compat.h>
 
 void initctl_drv(handle_t killswitch) {
 	struct ufs_request res;

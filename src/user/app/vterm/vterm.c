@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/compat.h>
+#include <camellia/compat.h>
 
 struct point cursor = {0};
 

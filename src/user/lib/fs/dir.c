@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
-#include <user/lib/fs/dir.h>
+#include <camellia/fs/dir.h>
 
 void dir_start(struct dirbuild *db, long offset, char *buf, size_t buflen) {
 	db->offset = offset;

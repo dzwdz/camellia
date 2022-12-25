@@ -1,6 +1,8 @@
 #include "ext2/ex_cache.h"
 #include "ext2/ext2.h"
 #include <camellia/flags.h>
+#include <camellia/fs/dir.h>
+#include <camellia/fs/misc.h>
 #include <camellia/syscalls.h>
 #include <err.h>
 #include <errno.h>
@@ -8,8 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/fs/dir.h>
-#include <user/lib/fs/misc.h>
 
 struct handle {
 	uint32_t n;

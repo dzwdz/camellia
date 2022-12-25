@@ -1,14 +1,14 @@
+#include <camellia/compat.h>
 #include <camellia/flags.h>
+#include <camellia/fs/dir.h>
 #include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
-#include <shared/mem.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
-#include <user/lib/compat.h>
-#include <user/lib/fs/dir.h>
 
 struct node {
 	const char *name;

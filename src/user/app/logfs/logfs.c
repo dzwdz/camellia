@@ -3,7 +3,7 @@
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/fs/misc.h>
 
 _Noreturn void fs(void) {
 	const size_t buflen = 1024;

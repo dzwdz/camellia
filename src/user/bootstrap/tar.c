@@ -2,12 +2,11 @@
 #include <camellia/flags.h>
 #include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
-#include <shared/mem.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/compat.h>
-#include <user/lib/fs/dir.h>
+#include <camellia/compat.h>
+#include <camellia/fs/dir.h>
 
 #define BUF_SIZE 64
 

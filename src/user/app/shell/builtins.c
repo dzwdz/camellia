@@ -8,7 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/fs/misc.h>
 
 #define DEFAULT_ARGV(...) \
 	char *_argv_default[] = {argv[0], __VA_ARGS__}; \

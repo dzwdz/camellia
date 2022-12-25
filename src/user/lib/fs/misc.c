@@ -1,15 +1,14 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
-#include <shared/mem.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/compat.h>
-#include <user/lib/fs/dir.h>
-#include <user/lib/fs/misc.h>
+#include <camellia/compat.h>
+#include <camellia/fs/dir.h>
+#include <camellia/fs/misc.h>
 
 bool fork2_n_mount(const char *path) {
 	handle_t h;
