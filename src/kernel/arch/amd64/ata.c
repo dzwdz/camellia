@@ -1,6 +1,7 @@
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
+#include <kernel/util.h>
 #include <stdbool.h>
 
 static struct {
@@ -24,26 +25,36 @@ enum {
 	STATUS = 7,
 
 	CTRL   = 0x206,
-}; // offsets
+}; /* offsets */
 
-// get I/O port base for drive
 static uint16_t ata_iobase(int drive) {
 	bool secondary = drive&2;
 	return secondary ? 0x170 : 0x1F0;
 }
 
 static void ata_400ns(void) {
-	uint16_t base = ata_iobase(0); // doesn't matter
+	uint16_t base = ata_iobase(0); /* the drive doesn't matter. */
 	for (int i = 0; i < 4; i++)
 		port_in8(base + STATUS);
 }
 
 static void ata_driveselect(int drive, int lba) {
 	uint8_t v = 0xE0;
-	if (drive&1) // slave?
-		v |= 0x10; // set drive number bit
+	if (drive&1) v |= 0x10; /* slave? */
 	v |= (lba >> 24) & 0xf;
 	port_out8(ata_iobase(drive) + DRV, v);
+}
+
+static int ata_poll(int drive, int timeout) {
+	uint16_t iobase = ata_iobase(drive);
+	/* if timeout < 0, cycle forever */
+	while (timeout < 0 || timeout--) {
+		uint8_t v = port_in8(iobase + STATUS);
+		if (v & 0x80) continue; /* BSY */
+		if (v & 0x40) return 0; /* RDY */
+		// TODO check for ERR
+	}
+	return -1;
 }
 
 static void ata_softreset(int drive) {
@@ -51,14 +62,7 @@ static void ata_softreset(int drive) {
 	port_out8(iobase + CTRL, 4);
 	port_out8(iobase + CTRL, 0);
 	ata_400ns();
-
-	uint16_t timeout = 10000;
-	while (--timeout) { // TODO separate polling function
-		uint8_t v = port_in8(iobase + STATUS);
-		if (v & 0x80) continue; // still BSY, continue
-		if (v & 0x40) break; // RDY, break
-		// TODO check for ERR
-	}
+	ata_poll(drive, 10000);
 }
 
 static void ata_detecttype(int drive) {
@@ -113,8 +117,9 @@ static bool ata_identify(int drive) {
 void ata_init(void) {
 	for (int i = 0; i < 4; i++) {
 		ata_detecttype(i);
-		if (ata_drives[i].type == DEV_PATA)
+		if (ata_drives[i].type == DEV_PATA) {
 			ata_identify(i);
+		}
 	}
 }
 
@@ -123,32 +128,46 @@ bool ata_available(int drive) {
 }
 
 size_t ata_size(int drive) {
-	return ata_drives[drive].sectors * ATA_SECTOR;
+	return ata_drives[drive].sectors * 512;
 }
 
-int ata_read(int drive, uint32_t lba, void *buf) {
-	if (ata_drives[drive].type != DEV_PATA)
+int ata_read(int drive, void *buf, size_t len, size_t off) {
+	uint32_t lba, skip, cnt;
+	if (ata_drives[drive].type != DEV_PATA) {
 		panic_unimplemented();
-	int iobase = ata_iobase(drive);
+	}
 
+	lba  = off / 512;
+	skip = off % 512;
+	cnt = (len - skip + 511) / 512;
+	if (skip) cnt += 1;
+
+	int iobase = ata_iobase(drive);
 	ata_driveselect(drive, lba);
-	port_out8(iobase + FEAT, 0); // supposedly pointless
-	port_out8(iobase + SCNT, 1); // sector count
+	port_out8(iobase + FEAT, 0); /* supposedly pointless */
+	port_out8(iobase + SCNT, cnt);
 	port_out8(iobase + LBAlo, lba);
 	port_out8(iobase + LBAmid, lba >> 8);
 	port_out8(iobase + LBAhi, lba >> 16);
-	port_out8(iobase + CMD, 0x20); // READ SECTORS
+	port_out8(iobase + CMD, 0x20); /* READ SECTORS */
 
-	for (;;) { // TODO separate polling function
-		uint8_t v = port_in8(iobase + STATUS);
-		if (v & 0x80) continue; // still BSY, continue
-		if (v & 0x40) break; // RDY, break
-		// TODO check for ERR
+	for (uint32_t i = 0; i < cnt; i++) {
+		union {
+			uint16_t s;
+			char b[2];
+		} d;
+		ata_poll(drive, -1);
+		for (int j = 0; j < 256; j++) {
+			d.s = port_in16(iobase);
+			for (int k = 0; k < 2; k++) {
+				size_t byte = i * 512 + j * 2 + k;
+				if (byte < skip) continue;
+				byte -= skip;
+				if (byte < len) {
+					((char*)buf)[byte] = d.b[k];
+				}
+			}
+		}
 	}
-
-	uint16_t *b = buf;
-	for (int i = 0; i < 256; i++)
-		b[i] = port_in16(iobase);
-
-	return 512;
+	return len;
 }

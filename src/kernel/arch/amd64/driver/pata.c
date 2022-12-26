@@ -20,6 +20,8 @@ void pata_init(void) {
 static void accept(struct vfs_request *req) {
 	int ret;
 	long id = (long __force)req->id;
+	char wbuf[4096];
+	size_t len;
 	switch (req->type) {
 		case VFSOP_OPEN:
 			     if (reqpathcmp(req, "/"))  ret = root_id;
@@ -28,6 +30,7 @@ static void accept(struct vfs_request *req) {
 			else if (reqpathcmp(req, "/2")) ret = 2;
 			else if (reqpathcmp(req, "/3")) ret = 3;
 			else ret = -ENOENT;
+			// TODO don't allow opening nonexistent drives
 			vfsreq_finish_short(req, ret);
 			break;
 
@@ -46,13 +49,9 @@ static void accept(struct vfs_request *req) {
 				break;
 			}
 			fs_normslice(&req->offset, &req->output.len, ata_size(id), false);
-
-			char buf[512]; /* stupid */
-			uint32_t sector = req->offset / ATA_SECTOR;
-			size_t skip = (size_t)req->offset & (ATA_SECTOR - 1);
-			size_t len = min(req->output.len, ATA_SECTOR - skip);
-			ata_read(id, sector, buf);
-			virt_cpy_to(req->caller->pages, req->output.buf, buf + skip, len);
+			len = min(req->output.len, sizeof wbuf);
+			ata_read(id, wbuf, len, req->offset);
+			virt_cpy_to(req->caller->pages, req->output.buf, wbuf, len);
 			vfsreq_finish_short(req, len);
 			break;
 
@@ -60,8 +59,9 @@ static void accept(struct vfs_request *req) {
 			panic_unimplemented();
 
 		case VFSOP_GETSIZE:
-			if (id == root_id)
+			if (id == root_id) {
 				panic_unimplemented();
+			}
 			vfsreq_finish_short(req, ata_size(id));
 			break;
 
