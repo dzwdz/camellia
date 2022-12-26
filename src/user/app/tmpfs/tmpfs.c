@@ -1,6 +1,6 @@
-#include <camellia/compat.h>
 #include <camellia/flags.h>
 #include <camellia/fs/dir.h>
+#include <camellia/fs/misc.h>
 #include <camellia/fsutil.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
@@ -11,61 +11,77 @@
 #include <unistd.h>
 
 struct node {
-	const char *name;
-	bool directory;
+	char *name;
 	size_t namelen;
+	bool directory;
 	char *buf;
 	size_t size, capacity;
+
 	size_t open; /* amount of open handles */
 
 	struct node *sibling, *child;
-	/* each node except special_root has exacly one sibling or child reference to it
-	 * on remove(), it gets replaced with *sibling. */
+	/* Pointer to the sibling/child field referencing the node. NULL for removed
+	 * files. */
 	struct node **ref;
+
+	/* allocated by tmpfs_open
+	 * freed by node_close when (open == 0 && ref == NULL && self != node_root). */
 };
 
-static struct node special_root = {
+static struct node node_root = {
 	.directory = true,
-	.size = 0,
 };
 
-static struct node *lookup(struct node *parent, const char *path, size_t len) {
+/** Responds to open(), finding an existing node, or creating one when applicable. */
+static struct node *tmpfs_open(const char *path, struct ufs_request *req);
+/** Finds a direct child with the given name. */
+static struct node *node_getchild(struct node *parent, const char *name, size_t len);
+/** Corresponds to close(); drops a reference. */
+static void node_close(struct node *node);
+/** Removes a file. It's kept in memory until all the open handles are closed. */
+static long node_remove(struct node *node);
+
+
+static struct node *node_getchild(struct node *parent, const char *name, size_t len) {
 	for (struct node *iter = parent->child; iter; iter = iter->sibling) {
-		if (iter->namelen == len && !memcmp(path, iter->name, len))
+		if (iter->namelen == len && !memcmp(name, iter->name, len)) {
 			return iter;
+		}
 	}
 	return NULL;
 }
 
-static struct node *tmpfs_open(const char *path, struct ufs_request *res) {
+static struct node *tmpfs_open(const char *path, struct ufs_request *req) {
 	/* *path is not null terminated! */
-	struct node *node = &special_root;
-	if (res->len == 0) return NULL;
-	if (res->len == 1) return node;
+	struct node *node = &node_root;
+	if (req->len == 0) return NULL;
+	if (req->len == 1) return node; /* "/" */
 	path++;
-	res->len--;
+	req->len--;
 
 	bool more = true;
 	size_t segpos = 0, seglen; /* segments end with a slash, inclusive */
 	while (more) {
-		struct node *const parent = node;
-		char *slash = memchr(path + segpos, '/', res->len - segpos);
-		seglen = (slash ? (size_t)(slash - path + 1) : res->len) - segpos;
-		more = segpos + seglen < res->len;
+		struct node *parent = node;
+		char *slash = memchr(path + segpos, '/', req->len - segpos);
+		seglen = (slash ? (size_t)(slash - path + 1) : req->len) - segpos;
+		more = segpos + seglen < req->len;
 
-		node = lookup(parent, path + segpos, seglen);
+		node = node_getchild(parent, path + segpos, seglen);
 		if (!node) {
-			if (!more && (res->flags & OPEN_CREATE)) {
-				node = malloc(sizeof *node);
-				memset(node, 0, sizeof *node);
+			if (!more && (req->flags & OPEN_CREATE)) {
+				node = calloc(1, sizeof *node);
 
-				char *namebuf = malloc(seglen + 1);
-				memcpy(namebuf, path + segpos, seglen);
-				namebuf[seglen] = '\0';
-				node->name = namebuf;
+				node->name = malloc(seglen + 1);
+				if (node->name == NULL) {
+					free(node);
+					return NULL;
+				}
+				memcpy(node->name, path + segpos, seglen);
+				node->name[seglen] = '\0';
+
 				node->directory = slash;
 				node->namelen = seglen;
-
 				if (parent->child) {
 					parent->child->ref = &node->sibling;
 					*parent->child->ref = parent->child;
@@ -82,113 +98,99 @@ static struct node *tmpfs_open(const char *path, struct ufs_request *res) {
 	return node;
 }
 
-static void handle_down(struct node *node) {
+static void node_close(struct node *node) {
 	node->open--;
-	if (!node->ref && node != &special_root && node->open == 0) {
+	if (!node->ref && node != &node_root && node->open == 0) {
 		free(node->buf);
 		free(node);
 	}
 }
 
-static long remove_node(struct node *node) {
-	if (node == &special_root) return -1;
+static long node_remove(struct node *node) {
+	if (node == &node_root) return -1;
 	if (!node->ref) return -1;
 	if (node->child) return -ENOTEMPTY;
 	*node->ref = node->sibling;
 	node->ref = NULL;
-	handle_down(node);
+	node_close(node);
 	return 0;
 }
 
 int main(void) {
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
-	struct ufs_request res;
-	struct node *ptr;
-	while (!c0_fs_wait(buf, buflen, &res)) {
-		switch (res.op) {
+	if (!buf) return -1;
+
+	for (;;) {
+		struct ufs_request req;
+		handle_t reqh = ufs_wait(buf, buflen, &req);
+		struct node *ptr = req.id;
+		if (reqh < 0) break;
+
+		switch (req.op) {
 			case VFSOP_OPEN:
-				ptr = tmpfs_open(buf, &res);
-				c0_fs_respond(ptr, ptr ? 0 : -1, 0);
+				ptr = tmpfs_open(buf, &req);
+				_syscall_fs_respond(reqh, ptr, ptr ? 0 : -ENOENT, 0);
 				break;
 
 			case VFSOP_READ:
-				ptr = (void*)res.id;
 				if (ptr->directory) {
 					struct dirbuild db;
-					dir_start(&db, res.offset, buf, buflen);
-					for (struct node *iter = ptr->child; iter; iter = iter->sibling)
-						dir_append(&db, iter->name);
-					c0_fs_respond(buf, dir_finish(&db), 0);
+					dir_start(&db, req.offset, buf, buflen);
+					for (struct node *iter = ptr->child; iter; iter = iter->sibling) {
+						dir_appendl(&db, iter->name, iter->namelen);
+					}
+					_syscall_fs_respond(reqh, buf, dir_finish(&db), 0);
 				} else {
-					fs_normslice(&res.offset, &res.len, ptr->size, false);
-					c0_fs_respond(ptr->buf + res.offset, res.len, 0);
+					fs_normslice(&req.offset, &req.len, ptr->size, false);
+					_syscall_fs_respond(reqh, ptr->buf + req.offset, req.len, 0);
 				}
 				break;
 
 			case VFSOP_WRITE:
-				ptr = (void*)res.id;
-				if (ptr == &special_root) {
-					c0_fs_respond(NULL, -1, 0);
+				if (ptr->directory) {
+					_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
 					break;
 				}
-				if (res.len > 0 && !ptr->buf) {
-					ptr->buf = malloc(256);
-					if (!ptr->buf) {
-						c0_fs_respond(NULL, -1, 0);
-						break;
-					}
-					memset(ptr->buf, 0, 256);
-					ptr->capacity = 256;
-				}
 
-				fs_normslice(&res.offset, &res.len, ptr->size, true);
-				if (ptr->capacity <= res.offset + res.len) {
-					size_t newcap = 1;
-					while (newcap && newcap <= res.offset + res.len)
-						newcap *= 2;
-					if (!newcap) { /* overflow */
-						c0_fs_respond(NULL, -1, 0);
-						break;
-					}
-					ptr->capacity = newcap;
+				fs_normslice(&req.offset, &req.len, ptr->size, true);
+				if (ptr->capacity <= req.offset + req.len) {
+					ptr->capacity = (req.offset + req.len + 511) & ~511;
 					ptr->buf = realloc(ptr->buf, ptr->capacity);
 				}
 
-				memcpy(ptr->buf + res.offset, buf, res.len);
-				if ((res.flags & WRITE_TRUNCATE) || ptr->size < res.offset + res.len) {
-					ptr->size = res.offset + res.len;
+				memcpy(ptr->buf + req.offset, buf, req.len);
+				if ((req.flags & WRITE_TRUNCATE) || ptr->size < req.offset + req.len) {
+					ptr->size = req.offset + req.len;
 				}
-				c0_fs_respond(NULL, res.len, 0);
+				_syscall_fs_respond(reqh, NULL, req.len, 0);
 				break;
 
 			case VFSOP_GETSIZE:
-				ptr = (void*)res.id;
 				if (ptr->directory) {
 					// TODO could be cached in ptr->size
 					struct dirbuild db;
-					dir_start(&db, res.offset, NULL, buflen);
-					for (struct node *iter = ptr->child; iter; iter = iter->sibling)
+					dir_start(&db, req.offset, NULL, buflen);
+					for (struct node *iter = ptr->child; iter; iter = iter->sibling) {
 						dir_append(&db, iter->name);
-					c0_fs_respond(NULL, dir_finish(&db), 0);
+					}
+					_syscall_fs_respond(reqh, NULL, dir_finish(&db), 0);
 				} else {
-					c0_fs_respond(NULL, ptr->size, 0);
+					_syscall_fs_respond(reqh, NULL, ptr->size, 0);
 				}
 				break;
 
 			case VFSOP_REMOVE:
-				ptr = (void*)res.id;
-				c0_fs_respond(NULL, remove_node(ptr), 0);
+				_syscall_fs_respond(reqh, NULL, node_remove(ptr), 0);
 				break;
 
 			case VFSOP_CLOSE:
-				ptr = (void*)res.id;
-				handle_down(ptr);
-				c0_fs_respond(NULL, -1, 0);
+				node_close(ptr);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 
 			default:
-				c0_fs_respond(NULL, -1, 0);
+				_syscall_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
