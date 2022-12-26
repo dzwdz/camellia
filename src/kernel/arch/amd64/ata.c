@@ -1,7 +1,9 @@
+/* http://hddguru.com/documentation/2006.01.27-ATA-ATAPI-7/ */
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>
+#include <shared/mem.h>
 #include <stdbool.h>
 
 static struct {
@@ -170,4 +172,51 @@ int ata_read(int drive, void *buf, size_t len, size_t off) {
 		}
 	}
 	return len;
+}
+
+static void ata_rawwrite(int drive, const void *buf, uint32_t lba, uint32_t cnt) {
+	int iobase = ata_iobase(drive);
+	ata_driveselect(drive, lba);
+	port_out8(iobase + FEAT, 0);
+	port_out8(iobase + SCNT, cnt);
+	port_out8(iobase + LBAlo, lba);
+	port_out8(iobase + LBAmid, lba >> 8);
+	port_out8(iobase + LBAhi, lba >> 16);
+	port_out8(iobase + CMD, 0x30); /* WRITE SECTORS */
+
+	for (uint32_t i = 0; i < cnt; i++) {
+		ata_poll(drive, -1);
+		for (int j = 0; j < 256; j++) {
+			port_out16(iobase, ((uint16_t*)buf)[i * 256 + j]);
+		}
+	}
+}
+
+int ata_write(int drive, const void *buf, size_t len, size_t off) {
+	char sec[512];
+	size_t clen;
+	if (ata_drives[drive].type != DEV_PATA) {
+		panic_unimplemented();
+	}
+	if (off & 511) {
+		clen = min(len, 512 - off % 512);
+		ata_read(drive, sec, 512, off / 512);
+		memcpy(sec + off % 512, buf, clen);
+		ata_rawwrite(drive, sec, off / 512, 1);
+		off += clen,
+		buf += clen;
+		len -= clen;
+	}
+	if (512 <= len) {
+		ata_rawwrite(drive, buf, off / 512, len / 512);
+	}
+	if (len & 511) {
+		buf += len & ~511;
+		off += len & ~511;
+		len = len & 511;
+		ata_read(drive, sec, 512, off / 512);
+		memcpy(sec, buf, len);
+		ata_rawwrite(drive, sec, off / 512, 1);
+	}
+	return 0;
 }

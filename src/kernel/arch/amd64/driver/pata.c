@@ -56,7 +56,18 @@ static void accept(struct vfs_request *req) {
 			break;
 
 		case VFSOP_WRITE:
-			panic_unimplemented();
+			if (id == root_id) {
+				vfsreq_finish_short(req, -EACCES);
+				break;
+			}
+			fs_normslice(&req->offset, &req->input.len, ata_size(id), false);
+			len = min(req->input.len, sizeof wbuf);
+			if (len != 0) {
+				virt_cpy_from(req->caller->pages, wbuf, req->input.buf, len);
+				ata_write(id, wbuf, len, req->offset);
+			}
+			vfsreq_finish_short(req, len);
+			break;
 
 		case VFSOP_GETSIZE:
 			if (id == root_id) {
