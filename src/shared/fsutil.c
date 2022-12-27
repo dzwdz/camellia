@@ -16,7 +16,8 @@ void fs_normslice(long *restrict offset, size_t *restrict length, size_t max, bo
 		*offset += max + 1;
 		if (*offset < 0) {
 			/* cursor went before the file, EOF */
-			*length = *offset = 0;
+			*length = 0;
+			*offset = max;
 			goto end;
 		}
 	}
@@ -37,14 +38,13 @@ void fs_normslice(long *restrict offset, size_t *restrict length, size_t max, bo
 				*length = maxlen;
 		} else {
 			/* regular EOF */
-			*length = *offset = 0;
+			*length = 0;
+			*offset = max;
 			goto end;
 		}
 	}
 
 end:
-	if (*length == 0) *offset = 0;
-
 	assert(0 <= *offset);
 	if (!expand)
 		assert(*offset + *length <= max);
