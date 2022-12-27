@@ -109,12 +109,11 @@ char *strtok_r(char *restrict s, const char *restrict sep, char **restrict state
 }
 
 int strncmp(const char *s1, const char *s2, size_t n) {
-	while (n-- & *s1 && *s1 == *s2) {
-		s1++; s2++;
+	for (size_t i = 0; i < n; i++) {
+		if (s1[i] < s2[i]) return -1;
+		if (s1[i] > s2[i]) return  1;
 	}
-	if (*s1 == *s2) return  0;
-	if (*s1 <  *s2) return -1;
-	else            return  1;
+	return 0;
 }
 
 int strcoll(const char *s1, const char *s2) {

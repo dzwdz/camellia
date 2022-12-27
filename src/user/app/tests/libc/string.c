@@ -55,6 +55,9 @@ static void test_strcmp(void) {
 	test(0 < strcmp("string", "str"));
 
 	test(0 != strcmp("stress", "string"));
+
+	test(0 != strncmp("abc", "ab", 3));
+	test(0 == strncmp("abc", "ab", 2));
 }
 
 static void test_strtol(void) {
