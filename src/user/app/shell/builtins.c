@@ -1,14 +1,15 @@
 #include "builtins.h"
 #include "shell.h"
 #include <camellia.h>
+#include <camellia/fs/misc.h>
 #include <camellia/path.h>
+#include <err.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <camellia/fs/misc.h>
 
 #define DEFAULT_ARGV(...) \
 	char *_argv_default[] = {argv[0], __VA_ARGS__}; \
@@ -55,15 +56,11 @@ static void cmd_echo(int argc, char **argv) {
 }
 
 void cmd_getsize(int argc, char **argv) {
-	if (argc < 2) {
-		eprintf("missing arguments");
-		return;
-	}
-
+	if (argc < 2) errx(1, "no arguments");
 	for (int i = 1; i < argc; i++) {
 		handle_t h = camellia_open(argv[i], OPEN_READ);
 		if (h < 0) {
-			eprintf("error opening %s", argv[i]);
+			warn("error opening %s", argv[i]);
 			continue;
 		}
 		printf("%s: %d\n", argv[i], (int)_syscall_getsize(h));
@@ -76,7 +73,7 @@ void cmd_hexdump(int argc, char **argv) {
 	const size_t buflen = 4096;
 	uint8_t *buf = malloc(buflen);
 	FILE *file;
-	bool canonical = !strcmp(argv[0], "hd");
+	bool canonical = strcmp(argv[0], "hd") == 0;
 	size_t readlen = ~0;
 	size_t pos = 0;
 	bool raw = false;
@@ -107,8 +104,8 @@ void cmd_hexdump(int argc, char **argv) {
 	for (; optind < argc; optind++) {
 		file = fopen(argv[optind], "r");
 		if (!file) {
-			eprintf("couldn't open %s", argv[optind]);
-			return;
+			warn("couldn't open %s", argv[optind]);
+			continue;
 		}
 		if (raw) fextflags(file, FEXT_NOFILL);
 		fseek(file, pos, SEEK_SET);
@@ -175,8 +172,8 @@ static void cmd_ls(int argc, char **argv) {
 
 		file = fopen(path, "r");
 		if (!file) {
-			eprintf("couldn't open %s", argv[i]);
-			return;
+			warn("couldn't open %s", argv[i]);
+			continue;
 		}
 		for (;;) {
 			int len = fread(buf, 1, buflen, file);
@@ -191,10 +188,7 @@ static void cmd_ls(int argc, char **argv) {
 
 static void cmd_mkdir(int argc, char **argv) {
 	// TODO mkdir -p
-	if (argc < 2) {
-		eprintf("no arguments");
-		return;
-	}
+	if (argc < 2) errx(1, "no arguments");
 	for (int i = 1; i < argc; i++) {
 		if (mkdir(argv[i], 0777) < 0)
 			perror(argv[i]);
@@ -202,10 +196,7 @@ static void cmd_mkdir(int argc, char **argv) {
 }
 
 static void cmd_rm(int argc, char **argv) {
-	if (argc < 2) {
-		eprintf("no arguments");
-		return;
-	}
+	if (argc < 2) errx(1, "no arguments");
 	for (int i = 1; i < argc; i++) {
 		if (unlink(argv[i]) < 0)
 			perror(argv[i]);
@@ -213,19 +204,12 @@ static void cmd_rm(int argc, char **argv) {
 }
 
 static void cmd_sleep(int argc, char **argv) {
-	if (argc < 2) {
-		eprintf("no arguments");
-		return;
-	}
+	if (argc < 2) errx(1, "no arguments");
 	_syscall_sleep(strtol(argv[1], NULL, 0) * 1000);
 }
 
 static void cmd_touch(int argc, char **argv) {
-	if (argc <= 1) {
-		eprintf("no arguments");
-		return;
-	}
-
+	if (argc < 2) errx(1, "no arguments");
 	for (int i = 1; i < argc; i++) {
 		FILE *f = fopen(argv[i], "a");
 		if (!f) perror(argv[i]);

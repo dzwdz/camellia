@@ -2,6 +2,7 @@
 #include "shell.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -15,23 +16,20 @@ int main();
 
 static void execp(char **argv) {
 	if (!argv || !*argv) return;
-	if (argv[0][0] == '/') {
+	if (strncmp(argv[0], "/", 1) == 0 ||
+		strncmp(argv[0], "./", 2) == 0 ||
+		strncmp(argv[0], "../", 3) == 0)
+	{
 		execv(argv[0], argv);
-		return;
+	} else {
+		size_t cmdlen = strlen(argv[0]);
+		char *s = malloc(cmdlen + 6);
+		if (!s) err(1, "malloc");
+		memcpy(s, "/bin/", 5);
+		memcpy(s + 5, argv[0], cmdlen + 1);
+		execv(s, argv);
+		free(s);
 	}
-
-	size_t cmdlen = strlen(argv[0]);
-	char *s = malloc(cmdlen);
-	if (!s) {
-		eprintf("out of memory.");
-		exit(1);
-	}
-	memcpy(s, "/bin/", 5);
-	memcpy(s + 5, argv[0], cmdlen + 1);
-	argv[0] = s;
-
-	execv(s, argv);
-	free(s);
 }
 
 void run_args(int argc, char **argv, struct redir *redir) {
@@ -40,7 +38,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 	/* "special" commands that can't be handled in a subprocess */
 	if (!strcmp(argv[0], "mount")) {
 		if (argc < 3) {
-			eprintf("not enough arguments");
+			fprintf(stderr, "mount: not enough arguments\n");
 			return;
 		}
 		MOUNT_AT(argv[1]) {
@@ -71,26 +69,20 @@ void run_args(int argc, char **argv, struct redir *redir) {
 	if (redir && redir->stdout) {
 		FILE *f = fopen(redir->stdout, redir->append ? "a" : "w");
 		if (!f) {
-			eprintf("couldn't open %s for redirection", redir->stdout);
-			exit(1);
+			err(1, "couldn't open %s for redirection", redir->stdout);
 		}
 
 		/* a workaround for file offsets not being preserved across exec()s.
 		 * TODO document that weird behaviour of exec() */
-
 		handle_t p[2];
 		if (_syscall_pipe(p, 0) < 0) {
-			eprintf("couldn't create redirection pipe", redir->stdout);
-			exit(1);
+			errx(1, "couldn't create redirection pipe");
 		}
 		if (!_syscall_fork(FORK_NOREAP, NULL)) {
 			/* the child forwards data from the pipe to the file */
 			const size_t buflen = 512;
 			char *buf = malloc(buflen);
-			if (!buf) {
-				eprintf("when redirecting: malloc failure");
-				exit(1);
-			}
+			if (!buf) err(1, "when redirecting");
 			close(p[1]);
 			for (;;) {
 				long len = _syscall_read(p[0], buf, buflen, 0);
@@ -103,13 +95,13 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		fclose(f);
 		close(p[0]);
 		if (_syscall_dup(p[1], 1, 0) < 0) {
-			eprintf("dup failure");
-			exit(1);
+			errx(1, "dup() failed when redirecting");
 		}
 	}
 
 	for (struct builtin *iter = builtins; iter->name; iter++) {
 		if (!strcmp(argv[0], iter->name)) {
+			setprogname(argv[0]);
 			iter->fn(argc, argv);
 			exit(0);
 		}
@@ -117,25 +109,22 @@ void run_args(int argc, char **argv, struct redir *redir) {
 
 	execp(argv);
 	if (errno == EINVAL) {
-		eprintf("%s isn't a valid executable\n", argv[0]);
+		errx(1, "%s isn't a valid executable", argv[0]);
 	} else {
-		eprintf("unknown command: %s\n", argv[0]);
+		errx(1, "unknown command: %s", argv[0]);
 	}
-	exit(0); /* kills the subprocess */
 }
 
 static void run(char *cmd) {
-	#define ARGV_MAX 16
+#define ARGV_MAX 16
 	char *argv[ARGV_MAX];
 	struct redir redir;
-
 	int argc = parse(cmd, argv, ARGV_MAX, &redir);
 	if (argc < 0) {
-		eprintf("error parsing command");
-		return;
+		warn("parsing error");
+	} else {
+		run_args(argc, argv, &redir);
 	}
-
-	run_args(argc, argv, &redir);
 }
 
 
@@ -146,16 +135,18 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		f = fopen(argv[1], "r");
 		if (!f) {
-			eprintf("couldn't open %s\n", argv[1]);
+			err(1, "couldn't open %s", argv[1]);
 			return 1;
 		}
 	}
 
 	for (;;) {
-		if (f == stdin)
+		if (f == stdin) {
 			printf("%s $ ", getcwd(buf, sizeof buf));
-		if (!fgets(buf, 256, f))
+		}
+		if (!fgets(buf, 256, f)) {
 			return 0;
+		}
 		run(buf);
 	}
 }

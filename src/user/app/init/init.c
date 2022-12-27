@@ -21,8 +21,9 @@ void redirect(const char *exe, const char *out, const char *in) {
 
 		for (;;) {
 			if (!fork()) {
+				const char *argv[] = {exe, NULL};
 				termcook();
-				execv(exe, NULL);
+				execv(exe, (void*)argv);
 				fprintf(stderr, "init: couldn't start %s\n", exe);
 				_syscall_sleep(5000);
 				exit(1);
