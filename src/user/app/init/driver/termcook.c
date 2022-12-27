@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+enum tstate {
+	Normal,
+	Esc,
+	CSI,
+};
+
 static void w_output(handle_t output, const char *buf, size_t len) {
 	size_t pos = 0;
 	while (pos < len) {
@@ -16,12 +22,15 @@ static void w_output(handle_t output, const char *buf, size_t len) {
 static void line_editor(handle_t input, handle_t output) {
 	char readbuf[16], linebuf[256];
 	size_t linepos = 0;
+	enum tstate state = Normal;
 	for (;;) {
 		int readlen = _syscall_read(input, readbuf, sizeof readbuf, -1);
 		if (readlen < 0) return;
 		for (int i = 0; i < readlen; i++) {
 			char c = readbuf[i];
-			switch (c) {
+			switch (state) {
+			case Normal:
+				switch (c) {
 				case '\b':
 				case 0x7f:
 					if (linepos != 0) {
@@ -36,7 +45,7 @@ static void line_editor(handle_t input, handle_t output) {
 						w_output(output, linebuf, linepos);
 						linepos = 0;
 					} else {
-						_syscall_write(output, NULL, 0, 0, 0); // eof
+						_syscall_write(output, NULL, 0, 0, 0); /* EOF */
 					}
 					break;
 				case '\n':
@@ -47,12 +56,26 @@ static void line_editor(handle_t input, handle_t output) {
 					w_output(output, linebuf, linepos);
 					linepos = 0;
 					break;
+				case '\e':
+					state = Esc;
+					break;
+				case '\t':
+					break;
 				default:
 					if (linepos < sizeof linebuf) {
 						linebuf[linepos++] = c;
 						printf("%c", c);
 					}
 					break;
+				}
+				break;
+			case Esc:
+				if (c == '[') state = CSI;
+				else state = Normal;
+				break;
+			case CSI:
+				if (0x40 <= c && c <= 0x7E) state = Normal;
+				break;
 			}
 		}
 	}
