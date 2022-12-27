@@ -78,9 +78,13 @@ static const char *default_argv[] = {NULL};
 void _freejmp_chstack(void *entry, void *low, size_t len, const char **argv, char **envp, void *stack); // elfload.s
 _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
 void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **envp) {
+	// TODO error checking
+	// although i guess it's fine for it to crash
+	// also TODO just alloc a new stack
 	void *stack = (void*)~0;
 	struct execdata ed;
 	size_t argv_len;
+	size_t cwd_len = absolutepath(NULL, NULL, 0);
 
 	if (!argv) argv = default_argv;
 
@@ -91,8 +95,11 @@ void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **e
 	/* make a copy of argv, so it doesn't get overridden
 	 * if it overlaps with the new stack. */
 	argv = memdup(argv, argv_len);
-	for (int i = 0; i < ed.argc; i++)
+	for (int i = 0; i < ed.argc; i++) {
 		argv[i] = strdup(argv[i]);
+	}
+	ed.cwd = malloc(cwd_len);
+	getcwd(ed.cwd, cwd_len);
 
 	stack -= argv_len;
 	ed.argv = stack;
@@ -106,9 +113,8 @@ void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **e
 	ed.argv[ed.argc] = NULL;
 
 	/* push cwd */
-	size_t len = absolutepath(NULL, NULL, 0);
-	stack -= len;
-	getcwd(stack, len);
+	stack -= cwd_len;
+	memcpy(stack, ed.cwd, cwd_len);
 	ed.cwd = stack;
 
 	stack -= sizeof ed;
