@@ -1,5 +1,6 @@
 #include "ext2/ex_cache.h"
 #include "ext2/ext2.h"
+#include <assert.h>
 #include <camellia/flags.h>
 #include <camellia/fs/dir.h>
 #include <camellia/fs/misc.h>
@@ -54,24 +55,42 @@ do_open(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf)
 	bool is_dir = req->len == 0 || buf[req->len-1] == '/';
 	uint32_t n = ext2c_walk(fs, buf, req->len);
 	if (n == 0) {
-		_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
-		return;
-	}
+		if (is_dir) {
+			_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
+			return;
+		}
+		/* buf[0] == '/', strrchr != NULL */
+		char *name = strrchr(buf, '/') + 1;
+		uint32_t dir_n = ext2c_walk(fs, buf, name - buf);
+		if (dir_n == 0) {
+			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			return;
+		}
+		n = ext2_alloc_inode(fs, 0100700);
+		if (n == 0) {
+			_syscall_fs_respond(reqh, NULL, -1, 0);
+			return;
+		}
+		if (ext2_link(fs, dir_n, name, n, 1) < 0) {
+			_syscall_fs_respond(reqh, NULL, -1, 0);
+			return;
+		}
+	} else {
+		struct ext2d_inode *inode = ext2_req_inode(fs, n);
+		if (!inode) {
+			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			return;
+		}
+		int type = (inode->perms >> 12) & 0xF;
+		ext2_dropreq(fs, inode, false);
 
-	struct ext2d_inode *inode = ext2_req_inode(fs, n);
-	if (!inode) {
-		_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
-		return;
-	}
-	int type = (inode->perms >> 12) & 0xF;
-	ext2_dropreq(fs, inode, false);
-
-	if ((type == 0x8 && is_dir) || (type == 0x4 && !is_dir)) {
-		_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
-		return;
-	} else if (type != 0x8 && type != 0x4) {
-		_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
-		return;
+		if ((type == 0x8 && is_dir) || (type == 0x4 && !is_dir)) {
+			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			return;
+		} else if (type != 0x8 && type != 0x4) {
+			_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
+			return;
+		}
 	}
 
 	struct handle *h = malloc(sizeof *h);
@@ -79,7 +98,6 @@ do_open(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf)
 		_syscall_fs_respond(reqh, NULL, -1, 0);
 		return;
 	}
-
 	h->n = n;
 	h->dir = is_dir;
 	_syscall_fs_respond(reqh, h, 0, 0);
