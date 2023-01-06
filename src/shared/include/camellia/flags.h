@@ -27,3 +27,7 @@
  * The idea is that if all flags which allow modifying the filesystem state require
  * OPEN_WRITE to be set, filesystem handlers could just check for the OPEN_WRITE flag. */
 #define OPEN_CREATE 4
+
+
+/* special handles */
+#define HANDLE_NULLFS -2

@@ -287,6 +287,14 @@ handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
 }
 
 struct handle *process_handle_get(struct process *p, handle_t id) {
+	if (id == HANDLE_NULLFS) {
+		static struct handle h = (struct handle){
+			.type = HANDLE_FS_FRONT,
+			.backend = NULL,
+			.refcount = 2,
+		};
+		return &h;
+	}
 	if (id < 0 || id >= HANDLE_MAX) return NULL;
 	return p->_handles[id];
 }
@@ -311,7 +319,7 @@ handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
 
 	if (to == from) return to;
 	toh = &p->_handles[to];
-	fromh = (from >= 0 && from < HANDLE_MAX) ? p->_handles[from] : NULL;
+	fromh = process_handle_get(p, from);
 
 	if (*toh) handle_close(*toh);
 	*toh = fromh;
@@ -321,7 +329,9 @@ handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
 }
 
 struct handle *process_handle_take(struct process *p, handle_t hid) {
-	if (hid < 0 || hid >= HANDLE_MAX) return NULL;
+	if (hid < 0 || hid >= HANDLE_MAX) {
+		return process_handle_get(p, hid);
+	}
 	struct handle *h = p->_handles[hid];
 	p->_handles[hid] = NULL;
 	return h;

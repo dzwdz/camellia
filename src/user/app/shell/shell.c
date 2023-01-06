@@ -46,6 +46,13 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			exit(1);
 		}
 		return;
+	} else if (!strcmp(argv[0], "shadow")) {
+		if (argc < 2) {
+			fprintf(stderr, "shadow: missing path\n");
+		} else {
+			_syscall_mount(HANDLE_NULLFS, argv[1], strlen(argv[1]));
+		}
+		return;
 	} else if (!strcmp(argv[0], "cd")) {
 		if (chdir(argc > 1 ? argv[1] : "/") < 0)
 			perror("cd");

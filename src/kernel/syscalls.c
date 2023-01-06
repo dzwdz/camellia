@@ -145,13 +145,11 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 		len--;
 	}
 
-	if (hid >= 0) { // mounting a real backend?
-		struct handle *handle = process_handle_get(process_current, hid);
-		if (!handle || handle->type != HANDLE_FS_FRONT)
-			goto fail;
-		backend = handle->backend;
-		backend->refcount++;
-	} // otherwise backend == NULL
+	struct handle *handle = process_handle_get(process_current, hid);
+	if (!handle || handle->type != HANDLE_FS_FRONT)
+		goto fail;
+	backend = handle->backend;
+	if (backend) backend->refcount++;
 
 	// append to mount list
 	// TODO move to kernel/vfs/mount.c
