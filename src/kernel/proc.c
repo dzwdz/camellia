@@ -1,18 +1,19 @@
-#include <camellia/flags.h>
 #include <camellia/errno.h>
+#include <camellia/flags.h>
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>
 #include <kernel/mem/alloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
+#include <kernel/vfs/procfs.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
 static struct process *process_first = NULL;
 struct process *process_current;
 
-static uint32_t next_pid = 0;
+static uint32_t next_pid = 1;
 
 
 /** Removes a process from the process tree. */
@@ -211,6 +212,8 @@ void process_try2collect(struct process *dead) {
 		process_transition(parent, PS_RUNNING);
 	}
 
+	handle_close(dead->specialh.procfs);
+	assert(dead->refcount == 0);
 	if (dead != process_first) {
 		process_forget(dead);
 		kfree(dead);
@@ -291,12 +294,25 @@ struct handle *process_handle_get(struct process *p, handle_t id) {
 		static struct handle h = (struct handle){
 			.type = HANDLE_FS_FRONT,
 			.backend = NULL,
-			.refcount = 2,
+			.refcount = 2, /* never free */
 		};
 		return &h;
+	} else if (id == HANDLE_PROCFS) {
+		if (!p->specialh.procfs) {
+			struct handle *h = kmalloc(sizeof *h);
+			*h = (struct handle){
+				.type = HANDLE_FS_FRONT,
+				.backend = procfs_backend(p),
+				.refcount = 1,
+			};
+			p->specialh.procfs = h;
+		}
+		return p->specialh.procfs;
+	} else if (0 <= id && id < HANDLE_MAX) {
+		return p->_handles[id];
+	} else {
+		return NULL;
 	}
-	if (id < 0 || id >= HANDLE_MAX) return NULL;
-	return p->_handles[id];
 }
 
 handle_t process_handle_init(struct process *p, enum handle_type type, struct handle **hs) {

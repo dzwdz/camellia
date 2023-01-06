@@ -52,6 +52,16 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		} else {
 			_syscall_mount(HANDLE_NULLFS, argv[1], strlen(argv[1]));
 		}
+	} else if (!strcmp(argv[0], "procmnt")) {
+		if (argc < 2) {
+			fprintf(stderr, "procmnt: missing mountpoint\n");
+			return;
+		}
+		_syscall_mount(HANDLE_PROCFS, argv[1], strlen(argv[1]));
+		if (!fork2_n_mount("/")) {
+			fs_dir_inject(argv[1]);
+			exit(1);
+		}
 		return;
 	} else if (!strcmp(argv[0], "cd")) {
 		if (chdir(argc > 1 ? argv[1] : "/") < 0)

@@ -50,10 +50,14 @@ struct process {
 	struct vfs_mount *mount;
 	struct handle **_handles; /* points to struct handle *[HANDLE_MAX] */
 	uint64_t *handles_refcount; /* works just like pages_refcount */
+	struct {
+		struct handle *procfs;
+	} specialh;
 
 	uint32_t cid; /* child id. unique amongst all of this process' siblings */
 	uint32_t nextcid; /* the child id to assign to the next spawned child */
-	uint32_t globalid; /* only for debugging, don't expose to userland */
+	uint32_t globalid; /* only for internal use, don't expose to userland */
+	uint32_t refcount; /* non-owning. should always be 0 on kill */
 	bool noreap;
 
 	/* allocated once, the requests from WAITS4FS get stored here */

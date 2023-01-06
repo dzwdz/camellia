@@ -20,6 +20,9 @@ _Noreturn void main(void) {
 		fs_whitelist(l);
 	}
 
+	_syscall_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
+	MOUNT_AT("/") { fs_dir_inject("/proc/"); }
+
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
 	const char *initpath = "bin/amd64/init";

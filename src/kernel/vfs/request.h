@@ -22,6 +22,8 @@ struct vfs_backend {
 		} user;
 		struct {
 			void (*accept)(struct vfs_request *);
+			void (*cleanup)(struct vfs_backend *);
+			void *data;
 		} kern;
 	};
 };

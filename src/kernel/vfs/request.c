@@ -155,7 +155,9 @@ void vfs_backend_refdown(struct vfs_backend *b) {
 	assert(b);
 	assert(b->refcount > 0);
 	if (--(b->refcount) > 0) return;
-
 	assert(!b->queue);
+	if (!b->is_user && b->kern.cleanup) {
+		b->kern.cleanup(b);
+	}
 	kfree(b);
 }
