@@ -22,8 +22,6 @@
 
 #define _SYSCALL_SLEEP 15
 
-#define _SYSCALL_PROCFS 16
-
 #define _SYSCALL_EXECBUF 100
 
 #define _SYSCALL_DEBUG_KLOG 101
@@ -79,8 +77,6 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
 long _syscall_pipe(handle_t __user user_ends[2], int flags);
 
 void _syscall_sleep(long ms);
-
-handle_t _syscall_procfs(void);
 
 /* see shared/execbuf.h */
 long _syscall_execbuf(void __user *buf, size_t len);
