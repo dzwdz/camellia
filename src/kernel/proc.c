@@ -120,7 +120,7 @@ static bool unref(uint64_t *refcount) {
 }
 
 void process_kill(struct process *p, int ret) {
-	if (p->state != PS_DEAD) {
+	if (proc_alive(p)) {
 		if (p->controlled) {
 			// TODO vfs_backend_user_handlerdown
 			assert(p->controlled->potential_handlers > 0);
@@ -174,7 +174,7 @@ void process_kill(struct process *p, int ret) {
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
 
-		process_transition(p, PS_DEAD);
+		process_transition(p, PS_TOREAP);
 		p->death_msg = ret;
 
 		if (p->execbuf.buf) {
@@ -185,38 +185,53 @@ void process_kill(struct process *p, int ret) {
 		if (unref(p->pages_refcount)) {
 			pagedir_free(p->pages);
 		}
-
-		// TODO VULN unbounded recursion
-		struct process *c2;
-		for (struct process *c = p->child; c; c = c2) {
-			c2 = c->sibling;
-			process_kill(c, -1);
-		}
 	}
 
-	assert(!p->child);
-	process_try2collect(p);
+	assert(!proc_alive(p));
+	process_tryreap(p);
 
-	if (p == process_first) shutdown();
+	if (p == process_first) {
+		shutdown();
+	}
 }
 
-void process_try2collect(struct process *dead) {
-	assert(dead && dead->state == PS_DEAD);
-	assert(!dead->child);
+void process_tryreap(struct process *dead) {
+	struct process *parent;
+	assert(dead && !proc_alive(dead));
+	parent = dead->parent;
 
-	struct process *parent = dead->parent;
-	if (!dead->noreap && parent && parent->state != PS_DEAD) { /* reapable? */
-		if (parent->state != PS_WAITS4CHILDDEATH)
-			return; /* don't reap yet */
-		regs_savereturn(&parent->regs, dead->death_msg);
-		process_transition(parent, PS_RUNNING);
+	if (dead->state == PS_TOREAP) {
+		if (!dead->noreap && parent && proc_alive(parent)) { /* reapable? */
+			if (parent->state != PS_WAITS4CHILDDEATH) {
+				return; /* don't reap yet */
+			}
+			regs_savereturn(&parent->regs, dead->death_msg);
+			process_transition(parent, PS_RUNNING);
+		}
+		/* can't be reaped anymore */
+		process_transition(dead, PS_TOMBSTONE);
+	}
+
+	assert(dead->state == PS_TOMBSTONE);
+	for (struct process *p = dead->child; p; p = p->sibling) {
+		assert(p->state != PS_TOREAP);
+	}
+
+	if (dead->child) {
+		return; /* keep the tombstone */
 	}
 
 	handle_close(dead->specialh.procfs);
 	assert(dead->refcount == 0);
-	if (dead != process_first) {
+	if (parent) {
+		/* not applicable to init */
 		process_forget(dead);
 		kfree(dead);
+
+		// TODO force gcc to optimize the tail call here
+		if (!proc_alive(parent)) {
+			process_tryreap(parent);
+		}
 	}
 }
 
@@ -365,8 +380,11 @@ handle_t process_handle_put(struct process *p, struct handle *h) {
 }
 
 void process_transition(struct process *p, enum process_state state) {
-	assert(p->state != PS_DEAD);
-	if (state != PS_RUNNING && state != PS_DEAD)
+	assert(p->state != PS_TOMBSTONE);
+	if (state == PS_TOMBSTONE) {
+		assert(p->state == PS_TOREAP);
+	} else if (state != PS_RUNNING && state != PS_TOREAP) {
 		assert(p->state == PS_RUNNING);
+	}
 	p->state = state;
 }

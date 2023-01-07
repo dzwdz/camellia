@@ -6,9 +6,12 @@ struct vfs_mount;
 
 #define HANDLE_MAX 16
 
+/* legal transitions described by process_transition */
 enum process_state {
 	PS_RUNNING,
-	PS_DEAD, // return message not collected
+	PS_TOREAP, /* return message not collected */
+	PS_TOMBSTONE, /* fully dead, supports alive children */
+
 	PS_WAITS4CHILDDEATH,
 	PS_WAITS4FS,
 	PS_WAITS4REQUEST,
@@ -17,6 +20,8 @@ enum process_state {
 
 	PS_LAST,
 };
+
+#define proc_alive(p) (p && p->state != PS_TOREAP && p->state != PS_TOMBSTONE)
 
 struct process {
 	struct pagedir *pages;
@@ -80,8 +85,8 @@ struct process *process_seed(void *data, size_t datalen);
 struct process *process_fork(struct process *parent, int flags);
 
 void process_kill(struct process *proc, int ret);
-/** Tries to free a process / collect its return value. */
-void process_try2collect(struct process *dead);
+/** Tries to reap a dead process / free a tombstone. */
+void process_tryreap(struct process *dead);
 
 /** Switches execution to any running process. */
 _Noreturn void process_switch_any(void);

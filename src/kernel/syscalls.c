@@ -32,8 +32,8 @@ long _syscall_await(void) {
 	{
 		if (iter->noreap) continue;
 		has_children = true;
-		if (iter->state == PS_DEAD) {
-			process_try2collect(iter);
+		if (iter->state == PS_TOREAP) {
+			process_tryreap(iter);
 			return 0; // dummy
 		}
 	}
