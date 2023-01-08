@@ -9,6 +9,7 @@ struct vfs_mount;
 /* legal transitions described by process_transition */
 enum process_state {
 	PS_RUNNING,
+	PS_DYING, /* during process_kill - mostly treated as alive */
 	PS_TOREAP, /* return message not collected */
 	PS_TOMBSTONE, /* fully dead, supports alive children */
 
@@ -85,7 +86,10 @@ struct process *process_seed(void *data, size_t datalen);
 struct process *process_fork(struct process *parent, int flags);
 
 void process_kill(struct process *proc, int ret);
-/** Tries to reap a dead process / free a tombstone. */
+/** Kills all descendants. */
+void process_filicide(struct process *proc, int ret);
+/** Tries to reap a dead process / free a tombstone.
+ * Can also free all dead parents of *dead. Be careful. */
 void process_tryreap(struct process *dead);
 
 /** Switches execution to any running process. */

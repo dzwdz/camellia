@@ -68,6 +68,7 @@ static void test_semaphore(void) {
 		esem_free(sem1);
 		esem_free(sem2);
 
+		_syscall_filicide();
 		exit(0);
 	} else {
 		close(pipe[1]);

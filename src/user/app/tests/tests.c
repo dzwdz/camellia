@@ -10,6 +10,7 @@ FILE *fail_trig;
 void run_test(void (*fn)()) {
 	if (!fork()) {
 		fn();
+		_syscall_filicide();
 		exit(0);
 	} else {
 		/* successful tests must return 0 */
@@ -41,10 +42,10 @@ int forkpipe(FILE **f, handle_t *h) {
 int main(void) {
 	handle_t reader;
 	if (!forkpipe(&fail_trig, &reader)) {
-		r_k_fdlimit();
-		r_k_fs();
-		r_k_misc();
 		r_k_miscsyscall();
+		r_k_fs();
+		r_k_fdlimit();
+		r_k_misc();
 		r_k_path();
 		r_k_threads();
 		r_libc_esemaphore();

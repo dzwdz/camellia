@@ -3,27 +3,22 @@
 #define _SYSCALL_EXIT 0
 #define _SYSCALL_AWAIT 1
 #define _SYSCALL_FORK 2
-
 #define _SYSCALL_OPEN 3
 #define _SYSCALL_MOUNT 4
 #define _SYSCALL_DUP 5
-
 #define _SYSCALL_READ 6
 #define _SYSCALL_WRITE 7
 #define _SYSCALL_GETSIZE 8
 #define _SYSCALL_REMOVE 9
 #define _SYSCALL_CLOSE 10
-
 #define _SYSCALL_FS_WAIT 11
 #define _SYSCALL_FS_RESPOND 12
-
 #define _SYSCALL_MEMFLAG 13
 #define _SYSCALL_PIPE 14
-
 #define _SYSCALL_SLEEP 15
+#define _SYSCALL_FILICIDE 16
 
 #define _SYSCALL_EXECBUF 100
-
 #define _SYSCALL_DEBUG_KLOG 101
 
 #ifndef ASM_FILE
@@ -77,6 +72,8 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
 long _syscall_pipe(handle_t __user user_ends[2], int flags);
 
 void _syscall_sleep(long ms);
+
+void _syscall_filicide(void);
 
 /* see shared/execbuf.h */
 long _syscall_execbuf(void __user *buf, size_t len);

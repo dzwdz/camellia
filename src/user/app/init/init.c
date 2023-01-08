@@ -104,5 +104,6 @@ int main(void) {
 	}
 
 	_syscall_read(killswitch_pipe[0], NULL, 0, 0);
+	_syscall_filicide();
 	return 0;
 }

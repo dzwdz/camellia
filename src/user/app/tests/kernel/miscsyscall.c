@@ -26,6 +26,20 @@ static void test_await(void) {
 		test(counts[i] == 1);
 }
 
+static void test_await2(void) {
+	/* hangs on failure */
+	if (!fork()) {
+		if (!fork()) {
+			for (;;) _syscall_sleep(1000000000);
+		} else {
+			exit(123);
+		}
+	}
+	test(_syscall_await() == 123);
+	test(_syscall_await() == ~0); /* don't wait for tombstone */
+	_syscall_filicide();
+}
+
 static void test_pipe(void) {
 	const char *pipe_msgs[2] = {"hello", "world"};
 	handle_t ends[2];
@@ -246,6 +260,7 @@ static void test_sleep(void) {
 				for (;;) _syscall_sleep(1000000000);
 			}
 			_syscall_await();
+			_syscall_filicide();
 			_syscall_exit(0);
 		}
 
@@ -277,6 +292,7 @@ static void test_badopen(void) {
 
 void r_k_miscsyscall(void) {
 	run_test(test_await);
+	run_test(test_await2);
 	run_test(test_pipe);
 	run_test(test_memflag);
 	run_test(test_dup);

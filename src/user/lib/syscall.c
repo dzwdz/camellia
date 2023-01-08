@@ -70,6 +70,10 @@ void _syscall_sleep(long ms) {
 	return (void)_syscall(_SYSCALL_SLEEP, ms, 0, 0, 0, 0);
 }
 
+void _syscall_filicide(void) {
+	return (void)_syscall(_SYSCALL_FILICIDE, 0, 0, 0, 0, 0);
+}
+
 long _syscall_execbuf(void __user *buf, size_t len) {
 	return _syscall(_SYSCALL_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }

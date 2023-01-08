@@ -162,8 +162,9 @@ void process_kill(struct process *p, int ret) {
 			*iter = p->waits4pipe.next;
 		}
 
-		if (p->state == PS_WAITS4TIMER)
+		if (p->state == PS_WAITS4TIMER) {
 			timer_deschedule(p);
+		}
 
 		if (unref(p->handles_refcount)) {
 			for (handle_t hid = 0; hid < HANDLE_MAX; hid++)
@@ -174,8 +175,17 @@ void process_kill(struct process *p, int ret) {
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
 
-		process_transition(p, PS_TOREAP);
+		process_transition(p, PS_DYING);
 		p->death_msg = ret;
+
+		/* tombstone TOREAP children */
+		for (struct process *it = p->child; it; ) {
+			struct process *sibling = it->sibling;
+			if (it->state == PS_TOREAP) {
+				process_tryreap(it);
+			}
+			it = sibling;
+		}
 
 		if (p->execbuf.buf) {
 			kfree(p->execbuf.buf);
@@ -187,7 +197,9 @@ void process_kill(struct process *p, int ret) {
 		}
 	}
 
-	assert(!proc_alive(p));
+	if (p->state == PS_DYING) {
+		process_transition(p, PS_TOREAP);
+	}
 	process_tryreap(p);
 
 	if (p == process_first) {
@@ -195,13 +207,34 @@ void process_kill(struct process *p, int ret) {
 	}
 }
 
+void process_filicide(struct process *parent, int ret) {
+	// O(n^2), but doable in linear time
+	for (;;) {
+		struct process *p = parent->child;
+		while (p && p->state == PS_TOREAP) {
+			p = p->sibling;
+		}
+		if (!p) return; /* no more killable children */
+		while (p->child) {
+			p = p->child;
+		}
+		if (p->parent != parent) {
+			/* prevent infinite loop */
+			p->noreap = true;
+		}
+		process_kill(p, ret);
+	}
+}
+
 void process_tryreap(struct process *dead) {
+	// TODO low try writing a linter that prevents other functions from using *dead afterwards
 	struct process *parent;
 	assert(dead && !proc_alive(dead));
 	parent = dead->parent;
 
 	if (dead->state == PS_TOREAP) {
-		if (!dead->noreap && parent && proc_alive(parent)) { /* reapable? */
+		if (!dead->noreap && parent && proc_alive(parent) && parent->state != PS_DYING) {
+			/* reapable? */
 			if (parent->state != PS_WAITS4CHILDDEATH) {
 				return; /* don't reap yet */
 			}
@@ -210,6 +243,7 @@ void process_tryreap(struct process *dead) {
 		}
 		/* can't be reaped anymore */
 		process_transition(dead, PS_TOMBSTONE);
+		dead->noreap = true;
 	}
 
 	assert(dead->state == PS_TOMBSTONE);
@@ -218,13 +252,18 @@ void process_tryreap(struct process *dead) {
 	}
 
 	if (dead->child) {
+		struct process *p = dead->child;
+		while (p->child) p = p->child;
+		assert(p->state != PS_TOREAP);
+		assert(p->state != PS_TOMBSTONE);
+		assert(proc_alive(p));
+
 		return; /* keep the tombstone */
 	}
 
 	handle_close(dead->specialh.procfs);
 	assert(dead->refcount == 0);
-	if (parent) {
-		/* not applicable to init */
+	if (parent) { /* not applicable to init */
 		process_forget(dead);
 		kfree(dead);
 
@@ -238,6 +277,7 @@ void process_tryreap(struct process *dead) {
 /** Removes a process from the process tree. */
 static void process_forget(struct process *p) {
 	assert(p->parent);
+	assert(p->parent->child);
 
 	if (p->parent->child == p) {
 		p->parent->child = p->sibling;
@@ -383,7 +423,9 @@ void process_transition(struct process *p, enum process_state state) {
 	assert(p->state != PS_TOMBSTONE);
 	if (state == PS_TOMBSTONE) {
 		assert(p->state == PS_TOREAP);
-	} else if (state != PS_RUNNING && state != PS_TOREAP) {
+	} else if (state == PS_TOREAP) {
+		assert(p->state == PS_DYING);
+	} else if (state != PS_RUNNING && state != PS_DYING) {
 		assert(p->state == PS_RUNNING);
 	}
 	p->state = state;
