@@ -36,7 +36,7 @@ void handle_close(struct handle *h) {
 	}
 
 	if (h->backend)
-		vfs_backend_refdown(h->backend);
+		vfs_backend_refdown(h->backend, true);
 
 	// TODO sanity check to check if refcount is true. handle_sanity?
 

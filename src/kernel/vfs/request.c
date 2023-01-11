@@ -21,7 +21,10 @@ void vfsreq_create(struct vfs_request req_) {
 		req = kmalloc(sizeof *req);
 	}
 	memcpy(req, &req_, sizeof *req);
-	if (req->backend) req->backend->refcount++;
+	if (req->backend) {
+		assert(req->backend->usehcnt);
+		req->backend->usehcnt++;
+	}
 
 	if (req->type == VFSOP_OPEN && !(req->flags & OPEN_WRITE) && (req->flags & OPEN_CREATE)) {
 		vfsreq_finish_short(req, -EINVAL);
@@ -30,7 +33,7 @@ void vfsreq_create(struct vfs_request req_) {
 
 	// TODO if i add a handle field to vfs_request, check ->readable ->writeable here
 
-	if (req->backend && req->backend->potential_handlers) {
+	if (req->backend && req->backend->provhcnt) {
 		struct vfs_request **iter = &req->backend->queue;
 		while (*iter != NULL) // find free spot in queue
 			iter = &(*iter)->queue_next;
@@ -49,7 +52,8 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		if (!(flags & FSR_DELEGATE)) {
 			/* default behavior - create a new handle for the file, wrap the id */
 			h = handle_init(HANDLE_FILE);
-			h->backend = req->backend; req->backend->refcount++;
+			h->backend = req->backend;
+			req->backend->usehcnt++;
 			h->file_id = stored;
 			h->readable = OPEN_READABLE(req->flags);
 			h->writeable = OPEN_WRITEABLE(req->flags);
@@ -74,7 +78,7 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		kfree(req->input.buf_kern);
 
 	if (req->backend)
-		vfs_backend_refdown(req->backend);
+		vfs_backend_refdown(req->backend, true);
 
 	if (req->caller) {
 		assert(req->caller->state == PS_WAITS4FS);
@@ -151,13 +155,35 @@ static void vfs_backend_user_accept(struct vfs_request *req) {
 	return;
 }
 
-void vfs_backend_refdown(struct vfs_backend *b) {
+void vfs_backend_refdown(struct vfs_backend *b, bool use) {
+	size_t *field = use ? &b->usehcnt : &b->provhcnt;
 	assert(b);
-	assert(b->refcount > 0);
-	if (--(b->refcount) > 0) return;
-	assert(!b->queue);
-	if (!b->is_user && b->kern.cleanup) {
-		b->kern.cleanup(b);
+	assert(0 < *field);
+	*field -= 1;
+
+	if (b->provhcnt == 0 && use == false) {
+		struct vfs_request *q = b->queue;
+		while (q) {
+			struct vfs_request *q2 = q->queue_next;
+			vfsreq_finish_short(q, -1);
+			q = q2;
+		}
+		b->queue = NULL;
 	}
-	kfree(b);
+	if (b->usehcnt == 0 && use == true) {
+		if (!b->is_user && b->kern.cleanup) {
+			b->kern.cleanup(b);
+		}
+		if (b->is_user && b->user.handler) {
+			struct process *p = b->user.handler;
+			b->user.handler = NULL;
+			assert(p->state == PS_WAITS4REQUEST);
+			regs_savereturn(&p->regs, -EPIPE);
+			process_transition(p, PS_RUNNING);
+		}
+	}
+	if (b->usehcnt == 0 && b->provhcnt == 0) {
+		assert(!b->queue);
+		kfree(b);
+	}
 }

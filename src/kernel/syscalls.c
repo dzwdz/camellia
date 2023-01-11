@@ -62,8 +62,8 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 
 		h->backend = kzalloc(sizeof *h->backend);
 		h->backend->is_user = true;
-		h->backend->potential_handlers = 1;
-		h->backend->refcount = 2; // child + handle
+		h->backend->provhcnt = 1; /* child */
+		h->backend->usehcnt = 1; /* handle */
 		h->backend->user.handler = NULL;
 		h->backend->queue = NULL;
 		child->controlled = h->backend;
@@ -149,7 +149,10 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 	if (!handle || handle->type != HANDLE_FS_FRONT)
 		goto fail;
 	backend = handle->backend;
-	if (backend) backend->refcount++;
+	if (backend) {
+		assert(backend->usehcnt);
+		backend->usehcnt++;
+	}
 
 	// append to mount list
 	// TODO move to kernel/vfs/mount.c
@@ -269,6 +272,10 @@ handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __u
 	struct vfs_backend *backend = process_current->controlled;
 	// TODO can be used to tell if you're init
 	if (!backend) SYSCALL_RETURN(-1);
+	if (backend->usehcnt == 0) {
+		/* nothing on the other end. EPIPE seems fitting */
+		SYSCALL_RETURN(-EPIPE);
+	}
 
 	process_transition(process_current, PS_WAITS4REQUEST);
 	if (backend->user.handler)

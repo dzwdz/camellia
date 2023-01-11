@@ -79,8 +79,8 @@ struct process *process_fork(struct process *parent, int flags) {
 
 	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
 		child->controlled = parent->controlled;
-		child->controlled->potential_handlers++;
-		child->controlled->refcount++;
+		assert(child->controlled->provhcnt);
+		child->controlled->provhcnt++;
 	}
 
 	child->mount = parent->mount;
@@ -123,24 +123,12 @@ void process_kill(struct process *p, int ret) {
 	if (proc_alive(p)) {
 		if (p->controlled) {
 			// TODO vfs_backend_user_handlerdown
-			assert(p->controlled->potential_handlers > 0);
-			p->controlled->potential_handlers--;
-			if (p->controlled->potential_handlers == 0) {
-				// orphaned
-				struct vfs_request *q = p->controlled->queue;
-				while (q) {
-					struct vfs_request *q2 = q->queue_next;
-					vfsreq_finish_short(q, -1);
-					q = q2;
-				}
-				p->controlled->queue = NULL;
-			}
+			assert(p->controlled->provhcnt > 0);
 			if (p->controlled->user.handler == p) {
 				assert(p->state == PS_WAITS4REQUEST);
 				p->controlled->user.handler = NULL;
 			}
-
-			vfs_backend_refdown(p->controlled);
+			vfs_backend_refdown(p->controlled, false);
 			p->controlled = NULL;
 		}
 

@@ -14,8 +14,8 @@ void vfs_root_register(const char *path, void (*accept)(struct vfs_request *)) {
 	struct vfs_mount *mount = kmalloc(sizeof *mount);
 	*backend = (struct vfs_backend) {
 		.is_user = false,
-		.potential_handlers = 1,
-		.refcount = 1,
+		.usehcnt = 1,
+		.provhcnt = 1,
 		.kern.accept = accept,
 	};
 	*mount = (struct vfs_mount){
@@ -55,11 +55,15 @@ void vfs_mount_remref(struct vfs_mount *mnt) {
 	if (--(mnt->refs) > 0) return;
 
 	struct vfs_mount *prev = mnt->prev;
-	if (mnt->backend)
-		vfs_backend_refdown(mnt->backend);
-	if (mnt->prefix_owned)
+	if (mnt->backend) {
+		vfs_backend_refdown(mnt->backend, true);
+	}
+	if (mnt->prefix_owned) {
 		kfree((void*)mnt->prefix);
+	}
 	kfree(mnt);
 
-	if (prev) vfs_mount_remref(prev);
+	if (prev) {
+		vfs_mount_remref(prev);
+	}
 }

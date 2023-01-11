@@ -14,6 +14,7 @@
 #define EACCES 10
 #define EMFILE 11 /* all file descriptors taken */
 #define ECONNRESET 12
+#define EPIPE 13
 
 #define EISDIR 200
 #define ENAMETOOLONG 201

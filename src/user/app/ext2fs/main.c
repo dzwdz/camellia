@@ -230,6 +230,7 @@ main(int argc, char **argv)
 			break;
 		}
 	}
+	warnx("cleaning up");
 
 	return 1;
 }

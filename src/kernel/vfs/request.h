@@ -5,15 +5,17 @@
 
 // describes something which can act as an access function
 struct vfs_backend {
-	/* references:
-	 *   struct vfs_mount
-	 *   struct vfs_request
-	 *   struct process
-	 *   struct handle
-	 */
-	size_t refcount;
+	/* amount of using references
+	 *  struct vfs_mount
+	 *  struct vfs_request
+	 *  struct handle
+	 * once it reaches 0, it'll never increase */
+	size_t usehcnt; /* struct vfs_mount */
+	/* amount of providing references
+	 *  struct process
+	 * 0 - orphaned, will never increase */
+	size_t provhcnt;
 
-	size_t potential_handlers; // 0 - orphaned
 	struct vfs_request *queue;
 	bool is_user;
 	union {
@@ -72,4 +74,6 @@ static inline void vfsreq_finish_short(struct vfs_request *req, long ret) {
 /** Try to accept an enqueued request */
 void vfs_backend_tryaccept(struct vfs_backend *);
 
-void vfs_backend_refdown(struct vfs_backend *);
+// TODO the bool arg is confusing. maybe this should just be a function
+// that verified the refcount and potentially frees the backend
+void vfs_backend_refdown(struct vfs_backend *, bool use);

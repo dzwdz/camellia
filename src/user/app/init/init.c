@@ -29,6 +29,7 @@ void redirect(const char *exe, const char *out, const char *in) {
 				exit(1);
 			}
 			_syscall_await();
+			_syscall_filicide();
 		}
 	}
 }

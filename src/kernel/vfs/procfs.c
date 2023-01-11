@@ -110,8 +110,8 @@ procfs_backend(struct process *proc)
 	struct vfs_backend *be = kzalloc(sizeof(struct vfs_backend));
 	*be = (struct vfs_backend) {
 		.is_user = false,
-		.potential_handlers = 1,
-		.refcount = 1,
+		.provhcnt = 1,
+		.usehcnt = 1,
 		.kern.accept = procfs_accept,
 		.kern.data = proc,
 		.kern.cleanup = procfs_cleanup,
