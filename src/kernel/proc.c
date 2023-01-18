@@ -295,7 +295,7 @@ _Noreturn void process_switch_any(void) {
 		if (process_current && process_current->state == PS_RUNNING)
 			process_switch(process_current);
 
-		for (struct process *p = process_first; p; p = process_next(p)) {
+		for (struct process *p = process_first; p; p = process_next(p, NULL)) {
 			if (p->state == PS_RUNNING)
 				process_switch(p);
 		}
@@ -304,7 +304,7 @@ _Noreturn void process_switch_any(void) {
 	}
 }
 
-struct process *process_next(struct process *p) {
+struct process *process_next(struct process *p, struct process *root) {
 	/* depth-first search, the order is:
 	 *         1
 	 *        / \
@@ -319,7 +319,8 @@ struct process *process_next(struct process *p) {
 	/* looking at the diagram above - we're at 4, want to find 5 */
 	while (!p->sibling) {
 		p = p->parent;
-		if (!p) return NULL;
+		if (root) assert(p);
+		if (!p || p == root) return NULL;
 	}
 	return p->sibling;
 }

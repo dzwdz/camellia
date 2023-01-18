@@ -96,7 +96,7 @@ void process_tryreap(struct process *dead);
 _Noreturn void process_switch_any(void);
 
 /** Used for iterating over all processes */
-struct process *process_next(struct process *);
+struct process *process_next(struct process *p, struct process *root);
 
 handle_t process_find_free_handle(struct process *proc, handle_t start_at);
 struct handle *process_handle_get(struct process *, handle_t);

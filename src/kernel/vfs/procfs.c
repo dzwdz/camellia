@@ -45,7 +45,7 @@ openpath(const char *path, size_t len, struct process *p)
 static struct process *
 findgid(uint32_t gid, struct process *root)
 {
-	for (struct process *p = root; p; p = process_next(p)) {
+	for (struct process *p = root; p; p = process_next(p, root)) {
 		if (p->globalid == gid) return p;
 	}
 	return NULL;
