@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 struct handle {
 	uint32_t n;
@@ -191,6 +192,8 @@ err:
 int
 main(int argc, char **argv)
 {
+	intr_set(NULL);
+
 	if (argc < 2) errx(1, "bad usage");
 	// TODO pread/pwrite for normal handles
 	FILE *disk = fopen(argv[1], "r+");

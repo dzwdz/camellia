@@ -378,6 +378,16 @@ void _syscall_filicide(void) {
 	process_filicide(process_current, -1);
 }
 
+void _syscall_intr(void) {
+	for (struct process *p = process_current->child; p; p = process_next(p, process_current)) {
+		process_intr(p);
+	}
+}
+
+void _syscall_intr_set(void __user *ip) {
+	process_current->intr_fn = ip;
+}
+
 long _syscall_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
@@ -428,6 +438,8 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYSCALL_PIPE:	_syscall_pipe((userptr_t)a, b);
 		break; case _SYSCALL_SLEEP:	_syscall_sleep(a);
 		break; case _SYSCALL_FILICIDE:	_syscall_filicide();
+		break; case _SYSCALL_INTR:	_syscall_intr();
+		break; case _SYSCALL_INTR_SET:	_syscall_intr_set((userptr_t)a);
 		break; case _SYSCALL_EXECBUF:	_syscall_execbuf((userptr_t)a, b);
 		break; case _SYSCALL_DEBUG_KLOG:	_syscall_debug_klog((userptr_t)a, b);
 		break;

@@ -30,3 +30,8 @@ struct ufs_request {
 	long offset;
 	int flags;
 };
+
+struct intr_data {
+	void __user *ip;
+	void __user *sp; /* last for pop %rsp */
+};

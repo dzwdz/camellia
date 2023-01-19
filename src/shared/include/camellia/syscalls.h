@@ -17,6 +17,8 @@
 #define _SYSCALL_PIPE 14
 #define _SYSCALL_SLEEP 15
 #define _SYSCALL_FILICIDE 16
+#define _SYSCALL_INTR 17
+#define _SYSCALL_INTR_SET 18
 
 #define _SYSCALL_EXECBUF 100
 #define _SYSCALL_DEBUG_KLOG 101
@@ -74,6 +76,8 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags);
 void _syscall_sleep(long ms);
 
 void _syscall_filicide(void);
+void _syscall_intr(void);
+void _syscall_intr_set(void __user *ip);
 
 /* see shared/execbuf.h */
 long _syscall_execbuf(void __user *buf, size_t len);

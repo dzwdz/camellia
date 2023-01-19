@@ -26,3 +26,6 @@ size_t absolutepath(char *out, const char *in, size_t size);
 
 // TODO put in an internal libc header
 void __setinitialcwd(const char *c);
+
+void intr_set(void (*fn)(void));
+void intr_default(void);

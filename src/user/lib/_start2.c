@@ -17,9 +17,13 @@ const char *shortname(const char *path) {
 	return path;
 }
 
+void intr_trampoline(void); /* intr.s */
+
 _Noreturn void _start2(struct execdata *ed) {
 	const char *progname;
 	elf_selfreloc();
+	_syscall_intr_set(intr_trampoline);
+	intr_set(intr_default);
 	__setinitialcwd(ed->cwd);
 
 	progname = shortname(ed->argv[0]);

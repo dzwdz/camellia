@@ -3,6 +3,7 @@
 #include <camellia/syscalls.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <camellia/fs/misc.h>
 
@@ -29,7 +30,7 @@ void redirect(const char *exe, const char *out, const char *in) {
 				exit(1);
 			}
 			_syscall_await();
-			_syscall_filicide();
+			_syscall_intr();
 		}
 	}
 }
@@ -39,7 +40,7 @@ int main(void) {
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
-	printf("in init (stage 2), main at %p\n", &main);
+	printf("[init] stage 2, main at %p\n", &main);
 
 	MOUNT_AT("/keyboard") {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
@@ -104,7 +105,22 @@ int main(void) {
 		exit(1);
 	}
 
-	_syscall_read(killswitch_pipe[0], NULL, 0, 0);
+	char buf[128];
+	for (;;) {
+		if (_syscall_read(killswitch_pipe[0], buf, 128, 0) != 4) {
+			break;
+		}
+		if (memcmp(buf, "intr", 4) == 0) {
+			_syscall_intr();
+		} else if (memcmp(buf, "halt", 4) == 0) {
+			break;
+		}
+	}
+	printf("[init] intr\n");
+	_syscall_intr();
+	_syscall_sleep(1000);
+	printf("[init] filicide\n");
 	_syscall_filicide();
+	printf("[init] goodbye\n");
 	return 0;
 }

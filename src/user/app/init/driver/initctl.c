@@ -29,7 +29,9 @@ void initctl_drv(handle_t killswitch) {
 				}
 				if (!strcmp(buf, "halt")) {
 					_syscall_write(killswitch, "halt", 4, 0, 0);
-					exit(1);
+				}
+				if (!strcmp(buf, "intr")) {
+					_syscall_write(killswitch, "intr", 4, 0, 0);
 				}
 				c0_fs_respond(NULL, res.len, 0);
 				break;

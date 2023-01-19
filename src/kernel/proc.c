@@ -3,6 +3,7 @@
 #include <kernel/arch/generic.h>
 #include <kernel/execbuf.h>
 #include <kernel/mem/alloc.h>
+#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
@@ -65,6 +66,7 @@ struct process *process_fork(struct process *parent, int flags) {
 	child->regs  = parent->regs;
 	child->state = parent->state;
 	assert(child->state == PS_RUNNING); // not copying the state union
+	child->intr_fn = parent->intr_fn;
 
 	child->noreap  = (flags & FORK_NOREAP) > 0;
 
@@ -188,11 +190,14 @@ void process_kill(struct process *p, int ret) {
 	}
 
 	if (p->state == PS_DYING) {
-		if (p->parent && proc_alive(p->parent) && !p->noreap) {
+		if (p->parent && proc_alive(p->parent)) {
 			process_transition(p, PS_TOREAP);
 		} else {
 			process_transition(p, PS_TOMBSTONE);
 		}
+	}
+	if (p == process_first) {
+		assert(!p->child);
 	}
 	process_tryreap(p);
 
@@ -269,6 +274,21 @@ void process_tryreap(struct process *dead) {
 			process_tryreap(parent);
 		}
 	}
+}
+
+void process_intr(struct process *p) {
+	if (!p->intr_fn) return;
+
+	/* save old rsp,rip */
+	struct intr_data d;
+	void __user *sp = p->regs.rsp - 128 - sizeof(d);
+	d.ip = (void __user *)p->regs.rcx;
+	d.sp = p->regs.rsp;
+	virt_cpy_to(p->pages, sp, &d, sizeof(d));
+
+	/* switch to intr handler */
+	p->regs.rcx = (uint64_t)p->intr_fn;
+	p->regs.rsp = sp;
 }
 
 /** Removes a process from the process tree. */
@@ -447,6 +467,11 @@ void process_transition(struct process *p, enum process_state state) {
 		assert(p->state == PS_TOREAP || p->state == PS_DYING);
 	} else if (state == PS_TOREAP) {
 		assert(p->state == PS_DYING);
+
+		assert(!p->parent || proc_alive(p->parent));
+		for (struct process *it = p->child; it; it = it->sibling) {
+			assert(p->state != PS_TOREAP);
+		}
 	} else if (state != PS_RUNNING && state != PS_DYING) {
 		assert(p->state == PS_RUNNING);
 	}

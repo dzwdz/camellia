@@ -81,6 +81,9 @@ struct process {
 	/* vfs_backend controlled (not exclusively) by this process */
 	struct vfs_backend *controlled;
 
+	/* interrupt handler */
+	void __user *intr_fn;
+
 	struct {
 		void *buf;
 		size_t len;
@@ -99,6 +102,8 @@ void process_kill(struct process *proc, int ret);
 void process_filicide(struct process *proc, int ret);
 /** Tries to reap a dead process / free a tombstone. */
 void process_tryreap(struct process *dead);
+
+void process_intr(struct process *proc);
 
 /** Switches execution to any running process. */
 _Noreturn void process_switch_any(void);

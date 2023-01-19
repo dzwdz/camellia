@@ -144,7 +144,6 @@ static void run(char *cmd) {
 	}
 }
 
-
 int main(int argc, char **argv) {
 	static char buf[256];
 	FILE *f = stdin;
