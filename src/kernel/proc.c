@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 static struct process *process_first = NULL;
+static struct process *process_forgotten = NULL; /* linked list */
 struct process *process_current;
 
 static uint32_t next_pid = 1;
@@ -18,6 +19,7 @@ static uint32_t next_pid = 1;
 
 /** Removes a process from the process tree. */
 static void process_forget(struct process *p);
+static void process_free_forgotten(void);
 static _Noreturn void process_switch(struct process *proc);
 
 
@@ -186,39 +188,46 @@ void process_kill(struct process *p, int ret) {
 	}
 
 	if (p->state == PS_DYING) {
-		process_transition(p, PS_TOREAP);
+		if (p->parent && proc_alive(p->parent) && !p->noreap) {
+			process_transition(p, PS_TOREAP);
+		} else {
+			process_transition(p, PS_TOMBSTONE);
+		}
 	}
 	process_tryreap(p);
 
 	if (p == process_first) {
+		process_free_forgotten();
 		shutdown();
 	}
 }
 
 void process_filicide(struct process *parent, int ret) {
-	// O(n^2), but doable in linear time
-	for (;;) {
-		struct process *p = parent->child;
-		while (p && p->state == PS_TOREAP) {
-			p = p->sibling;
-		}
-		if (!p) return; /* no more killable children */
-		while (p->child) {
-			p = p->child;
-		}
-		if (p->parent != parent) {
-			/* prevent infinite loop */
+	/* Kill deeper descendants. */
+	struct process *child, *child2;
+	for (child = parent->child; child; child = child2) {
+		child2 = child->sibling;
+
+		// O(n^2), but doable in linear time
+		while (child->child) {
+			struct process *p = child->child;
+			while (p->child) p = p->child;
 			p->noreap = true;
+			process_kill(p, ret);
 		}
-		process_kill(p, ret);
+
+		if (proc_alive(child)) {
+			process_kill(child, ret);
+		}
+		child = NULL;
 	}
 }
 
 void process_tryreap(struct process *dead) {
-	// TODO low try writing a linter that prevents other functions from using *dead afterwards
 	struct process *parent;
 	assert(dead && !proc_alive(dead));
 	parent = dead->parent;
+	if (parent) assert(parent->child);
 
 	if (dead->state == PS_TOREAP) {
 		if (!dead->noreap && parent && proc_alive(parent) && parent->state != PS_DYING) {
@@ -242,10 +251,11 @@ void process_tryreap(struct process *dead) {
 	if (dead->child) {
 		struct process *p = dead->child;
 		while (p->child) p = p->child;
-		assert(p->state != PS_TOREAP);
-		assert(p->state != PS_TOMBSTONE);
-		assert(proc_alive(p));
-
+		if (p->state == PS_TOREAP) {
+			assert(proc_alive(p->parent));
+		} else {
+			assert(proc_alive(p));
+		}
 		return; /* keep the tombstone */
 	}
 
@@ -253,7 +263,6 @@ void process_tryreap(struct process *dead) {
 	assert(dead->refcount == 0);
 	if (parent) { /* not applicable to init */
 		process_forget(dead);
-		kfree(dead);
 
 		// TODO force gcc to optimize the tail call here
 		if (!proc_alive(parent)) {
@@ -266,6 +275,7 @@ void process_tryreap(struct process *dead) {
 static void process_forget(struct process *p) {
 	assert(p->parent);
 	assert(p->parent->child);
+	assert(!p->child);
 
 	if (p->parent->child == p) {
 		p->parent->child = p->sibling;
@@ -277,6 +287,21 @@ static void process_forget(struct process *p) {
 			assert(prev);
 		}
 		prev->sibling = p->sibling;
+	}
+
+	p->parent = NULL;
+	p->sibling = process_forgotten;
+	process_forgotten = p;
+	process_transition(p, PS_FORGOTTEN);
+}
+
+static void process_free_forgotten(void) {
+	while (process_forgotten) {
+		struct process *p = process_forgotten;
+		process_forgotten = p->sibling;
+
+		process_transition(p, PS_FREED);
+		kfree(p);
 	}
 }
 
@@ -291,6 +316,10 @@ static _Noreturn void process_switch(struct process *proc) {
 }
 
 _Noreturn void process_switch_any(void) {
+	/* At this point there will be no leftover pointers to forgotten
+	 * processes on the stack, so it's safe to free them. */
+	process_free_forgotten();
+
 	for (;;) {
 		if (process_current && process_current->state == PS_RUNNING)
 			process_switch(process_current);
@@ -409,9 +438,13 @@ handle_t process_handle_put(struct process *p, struct handle *h) {
 }
 
 void process_transition(struct process *p, enum process_state state) {
-	assert(p->state != PS_TOMBSTONE);
-	if (state == PS_TOMBSTONE) {
-		assert(p->state == PS_TOREAP);
+	assert(p->state != PS_FREED);
+	if (state == PS_FREED) {
+		assert(p->state == PS_FORGOTTEN);
+	} else if (state == PS_FORGOTTEN) {
+		assert(p->state == PS_TOMBSTONE);
+	} else if (state == PS_TOMBSTONE) {
+		assert(p->state == PS_TOREAP || p->state == PS_DYING);
 	} else if (state == PS_TOREAP) {
 		assert(p->state == PS_DYING);
 	} else if (state != PS_RUNNING && state != PS_DYING) {

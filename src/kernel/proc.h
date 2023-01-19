@@ -12,6 +12,10 @@ enum process_state {
 	PS_DYING, /* during process_kill - mostly treated as alive */
 	PS_TOREAP, /* return message not collected */
 	PS_TOMBSTONE, /* fully dead, supports alive children */
+	/* not in the process tree, waits for free.
+	 * *sibling holds a linked list of all the FORGOTTEN processes */
+	PS_FORGOTTEN,
+	PS_FREED, /* only meant to detect double frees */
 
 	PS_WAITS4CHILDDEATH,
 	PS_WAITS4FS,
@@ -22,7 +26,12 @@ enum process_state {
 	PS_LAST,
 };
 
-#define proc_alive(p) (p && p->state != PS_TOREAP && p->state != PS_TOMBSTONE)
+#define proc_alive(p) (p \
+		&& p->state != PS_TOREAP \
+		&& p->state != PS_TOMBSTONE \
+		&& p->state != PS_FORGOTTEN \
+		&& p->state != PS_FREED \
+		)
 
 struct process {
 	struct pagedir *pages;
@@ -88,8 +97,7 @@ struct process *process_fork(struct process *parent, int flags);
 void process_kill(struct process *proc, int ret);
 /** Kills all descendants. */
 void process_filicide(struct process *proc, int ret);
-/** Tries to reap a dead process / free a tombstone.
- * Can also free all dead parents of *dead. Be careful. */
+/** Tries to reap a dead process / free a tombstone. */
 void process_tryreap(struct process *dead);
 
 /** Switches execution to any running process. */
