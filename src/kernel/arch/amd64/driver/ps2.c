@@ -77,19 +77,6 @@ enum {
 	H_MOUSE,
 };
 
-static void read_backlog(struct vfs_request *req, ring_t *r, struct vfs_request **queue) {
-	if (ring_used(r) == 0) {
-		postqueue_join(queue, req);
-	} else if (req->caller) {
-		int len = req->output.len;
-		if (len < 0) len = 0;
-		len = ring_to_virt(r, req->caller->pages, req->output.buf, len);
-		vfsreq_finish_short(req, len);
-	} else {
-		vfsreq_finish_short(req, -1);
-	}
-}
-
 static void accept(struct vfs_request *req) {
 	// when you fix something here go also fix it in the COM1 driver
 	int ret;
