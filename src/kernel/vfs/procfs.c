@@ -9,6 +9,7 @@
 enum phandle_type {
 	PhDir,
 	PhIntr,
+	PhMem,
 };
 
 struct phandle {
@@ -57,6 +58,8 @@ openpath(const char *path, size_t len, struct process *p)
 		type = PhDir;
 	} else if (len == 4 && memcmp(path, "intr", 4) == 0) {
 		type = PhIntr;
+	} else if (len == 3 && memcmp(path, "mem", 3) == 0) {
+		type = PhMem;
 	} else {
 		return NULL;
 	}
@@ -105,6 +108,7 @@ procfs_accept(struct vfs_request *req)
 			return;
 		}
 		pos += snprintf(buf + pos, 512 - pos, "intr")+1;
+		pos += snprintf(buf + pos, 512 - pos, "mem")+1;
 		for (struct process *iter = p->child; iter; iter = iter->sibling) {
 			assert(pos < 512);
 			// processes could possibly be identified by unique identifiers instead
@@ -118,6 +122,13 @@ procfs_accept(struct vfs_request *req)
 		assert(0 <= pos && (size_t)pos <= sizeof buf);
 		virt_cpy_to(req->caller->pages, req->output.buf, buf, pos);
 		vfsreq_finish_short(req, pos);
+	} else if (req->type == VFSOP_READ && h->type == PhMem) {
+		size_t res = virt_cpy(
+				req->caller->pages, req->output.buf,
+				p->pages, (__user void*)req->offset,
+				req->output.len, NULL
+		);
+		vfsreq_finish_short(req, res);
 	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
 		process_intr(p);
 		vfsreq_finish_short(req, req->input.len);

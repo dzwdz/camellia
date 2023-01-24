@@ -36,11 +36,12 @@ void redirect(const char *exe, const char *out, const char *in) {
 }
 
 int main(void) {
+	const char *teststr = "I am teststr.\n";
 	handle_t killswitch_pipe[2];
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
-	printf("[init] stage 2, main at %p\n", &main);
+	printf("[init] stage 2, main at %p, testtr at %p\n", &main, teststr);
 
 	MOUNT_AT("/keyboard") {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
