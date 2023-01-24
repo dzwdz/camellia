@@ -123,6 +123,10 @@ procfs_accept(struct vfs_request *req)
 		virt_cpy_to(req->caller->pages, req->output.buf, buf, pos);
 		vfsreq_finish_short(req, pos);
 	} else if (req->type == VFSOP_READ && h->type == PhMem) {
+		if (p->pages == NULL || req->caller->pages == NULL) {
+			vfsreq_finish_short(req, 0);
+			return;
+		}
 		size_t res = virt_cpy(
 				req->caller->pages, req->output.buf,
 				p->pages, (__user void*)req->offset,
