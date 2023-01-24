@@ -196,8 +196,8 @@ void process_kill(struct process *p, int ret) {
 			process_transition(p, PS_TOMBSTONE);
 		}
 	}
-	if (p == process_first) {
-		assert(!p->child);
+	if (p == process_first && p->child) {
+		_panic("init killed prematurely");
 	}
 	process_tryreap(p);
 
