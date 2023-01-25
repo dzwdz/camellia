@@ -4,7 +4,7 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <kernel/arch/generic.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/proc.h>

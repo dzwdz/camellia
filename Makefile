@@ -71,7 +71,7 @@ clean:
 out/boot.iso: out/fs/boot/kernel out/fs/boot/grub/grub.cfg out/fs/boot/init
 	@grub-mkrescue -o $@ out/fs/ > /dev/null 2>&1
 
-out/fs/boot/kernel: src/kernel/linker.ld \
+out/fs/boot/kernel: src/kernel/arch/amd64/linker.ld \
                     $(call from_sources, src/kernel/) \
                     $(call from_sources, src/shared/)
 	@mkdir -p $(@D)

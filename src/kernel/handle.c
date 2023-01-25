@@ -1,5 +1,5 @@
 #include <kernel/handle.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/proc.h>

@@ -1,12 +1,12 @@
 #include <kernel/arch/generic.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/util.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MALLOC_MAGIC 0xACAB1312
+#define MALLOC_MAGIC 0xA770C666
 
 struct malloc_hdr {
 	uint32_t magic;

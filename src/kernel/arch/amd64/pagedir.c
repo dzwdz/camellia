@@ -1,6 +1,6 @@
 #include <kernel/arch/amd64/paging.h>
 #include <kernel/arch/generic.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <shared/mem.h>
 #include <stdint.h>

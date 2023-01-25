@@ -6,7 +6,7 @@
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/tty/tty.h>
 #include <kernel/arch/generic.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 

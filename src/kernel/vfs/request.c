@@ -1,6 +1,6 @@
 #include <camellia/errno.h>
 #include <camellia/flags.h>
-#include <kernel/mem/alloc.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
