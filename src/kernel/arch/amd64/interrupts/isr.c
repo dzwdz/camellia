@@ -17,6 +17,10 @@ bool isr_test_interrupt_called = false;
 static void log_interrupt(int interrupt, uint64_t *stackframe) {
 	kprintf("interrupt %x, rip = k/%08x, cs 0x%x, code 0x%x\n",
 			interrupt, stackframe[0], stackframe[1], stackframe[-1]);
+	if ((stackframe[1] & 0x3) == 0) {
+		uint64_t *stack = (void*)stackframe[3];
+		kprintf("kernel rip = %p, *rip = %p\n", stack, *stack);
+	}
 	if (interrupt == 0xe) {
 		uint64_t addr = 0x69;
 		asm("mov %%cr2, %0" : "=r"(addr));
@@ -54,7 +58,7 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 
 		default:
 			if ((stackframe[1] & 0x3) == 0) {
-				mem_debugprint();
+				// mem_debugprint();
 				log_interrupt(interrupt, stackframe);
 				cpu_halt();
 			} else {

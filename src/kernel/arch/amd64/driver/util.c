@@ -9,10 +9,8 @@ int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
 	if (!req->caller) return -1;
 	assert(req->type == VFSOP_READ);
 	fs_normslice(&req->offset, &req->output.len, len, false);
-	virt_cpy_to(
-			req->caller->pages, req->output.buf,
-			buf + req->offset, req->output.len);
 	/* read errors are ignored. TODO write a spec */
+	pcpy_to(req->caller, req->output.buf, buf + req->offset, req->output.len);
 	return req->output.len;
 }
 
@@ -48,8 +46,9 @@ void postqueue_ringreadall(struct vfs_request **queue, ring_t *r) {
 	for (req = *queue; req; req = req->postqueue_next) {
 		size_t ret = min(mlen, req->output.len);
 		assert(req->type == VFSOP_READ);
-		if (req->caller)
-			virt_cpy_to(req->caller->pages, req->output.buf, tmp, ret);
+		if (req->caller) {
+			pcpy_to(req->caller, req->output.buf, tmp, ret);
+		}
 		vfsreq_finish_short(req, ret);
 	}
 	*queue = NULL;

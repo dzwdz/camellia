@@ -72,7 +72,7 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 			/* failure ignored. if you pass an invalid pointer to this function,
 			 * you just don't receive the handle. you'll probably segfault
 			 * trying to access it anyways */
-			virt_cpy_to(process_current->pages, fs_front, &hid, sizeof hid);
+			pcpy_to(process_current, fs_front, &hid, sizeof hid);
 		}
 	}
 	SYSCALL_RETURN(child->cid);
@@ -90,8 +90,9 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 	 * handles in the meantime anyways, or free some up. */
 
 	path_buf = kmalloc(len);
-	if (!path_buf) goto fail;
-	if (!virt_cpy_from(process_current->pages, path_buf, path, len)) goto fail;
+	if (pcpy_from(process_current, path_buf, path, len) < (size_t)len) {
+		goto fail;
+	}
 
 	len = path_simplify(path_buf, path_buf, len);
 	if (len == 0) goto fail;
@@ -132,8 +133,9 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 		SYSCALL_RETURN(-1);
 
 	path_buf = kmalloc(len);
-	if (!path_buf) goto fail;
-	if (!virt_cpy_from(process_current->pages, path_buf, path, len)) goto fail;
+	if (pcpy_from(process_current, path_buf, path, len) < (size_t)len) {
+		goto fail;
+	}
 
 	len = path_simplify(path_buf, path_buf, len);
 	if (len == 0) goto fail;
@@ -299,13 +301,11 @@ long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int fla
 			// TODO document
 			// TODO move to vfsreq_finish
 			ret = min(ret, capped_cast32(req->output.len));
-			struct virt_cpy_error err;
-			virt_cpy(req->caller->pages, req->output.buf,
-					process_current->pages, buf, ret, &err);
-
-			if (err.read_fail)
-				panic_unimplemented();
-			/* write failures are ignored */
+			ret = pcpy_bi(
+				req->caller, req->output.buf,
+				process_current, buf,
+				ret
+			);
 		}
 		vfsreq_finish(req, (void __user *)buf, ret, flags, process_current);
 	}
@@ -365,7 +365,7 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	wend->writeable = true;
 	rend->readable = true;
 
-	virt_cpy_to(process_current->pages, user_ends, ends, sizeof ends);
+	pcpy_to(process_current, user_ends, ends, sizeof ends);
 	SYSCALL_RETURN(0);
 }
 
@@ -397,7 +397,7 @@ long _syscall_execbuf(void __user *ubuf, size_t len) {
 	// TODO consider supporting nesting execbufs
 
 	char *kbuf = kmalloc(len);
-	if (!virt_cpy_from(process_current->pages, kbuf, ubuf, len)) {
+	if (pcpy_from(process_current, kbuf, ubuf, len) < len) {
 		kfree(kbuf);
 		SYSCALL_RETURN(-1);
 	}
@@ -411,7 +411,7 @@ void _syscall_debug_klog(const void __user *buf, size_t len) {
 	if (false) {
 		static char kbuf[256];
 		if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
-		virt_cpy_from(process_current->pages, kbuf, buf, len);
+		pcpy_from(process_current, kbuf, buf, len);
 		kbuf[len] = '\0';
 		kprintf("[klog] %x\t%s\n", process_current->globalid, kbuf);
 	}

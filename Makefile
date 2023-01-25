@@ -7,7 +7,7 @@ CHECK   = sparse
 
 CFLAGS += -g -std=gnu99 -ffreestanding -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
-CFLAGS += -Wno-address-of-packed-member
+CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
 CFLAGS += -Isrc/ -Isrc/shared/include/
 
 KERNEL_CFLAGS  = $(CFLAGS) -mno-sse -mgeneral-regs-only

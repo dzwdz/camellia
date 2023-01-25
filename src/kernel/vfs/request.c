@@ -106,27 +106,26 @@ void vfs_backend_tryaccept(struct vfs_backend *backend) {
 static void vfs_backend_user_accept(struct vfs_request *req) {
 	struct process *handler;
 	struct ufs_request res = {0};
-	struct virt_cpy_error cpyerr;
 	int len;
 
 	assert(req && req->backend && req->backend->user.handler);
 	handler = req->backend->user.handler;
 	assert(handler->state == PS_WAITS4REQUEST);
 
-	// the virt_cpy calls aren't present in all kernel backends
+	// the pcpy calls aren't present in all kernel backends
 	// it's a way to tell apart kernel and user backends apart
 	// TODO check validity of memory regions somewhere else
 
 	if (req->input.buf) {
+		__user void *buf = handler->awaited_req.buf;
 		len = min(req->input.len, handler->awaited_req.max_len);
-		virt_cpy(handler->pages, handler->awaited_req.buf,
-				 req->input.kern ? NULL : req->caller->pages, req->input.buf,
-				 len, &cpyerr);
-		if (cpyerr.write_fail)
-			panic_unimplemented();
-		if (cpyerr.read_fail) {
-			vfsreq_finish_short(req, -EFAULT);
-			return;
+		if (req->input.kern) {
+			pcpy_to(handler, buf, req->input.buf_kern, len);
+		} else {
+			len = pcpy_bi(
+				handler, buf,
+				req->caller, req->input.buf, len
+			);
 		}
 	} else {
 		len = req->output.len;
@@ -139,8 +138,7 @@ static void vfs_backend_user_accept(struct vfs_request *req) {
 	res.flags    = req->flags;
 	res.op       = req->type;
 
-	if (!virt_cpy_to(handler->pages,
-				handler->awaited_req.res, &res, sizeof res))
+	if (pcpy_to(handler, handler->awaited_req.res, &res, sizeof res) < sizeof(res))
 	{
 		panic_unimplemented();
 	}

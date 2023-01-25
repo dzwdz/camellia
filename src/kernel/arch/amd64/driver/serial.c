@@ -73,13 +73,14 @@ static void accept(struct vfs_request *req) {
 			break;
 		case VFSOP_WRITE:
 			if (req->caller && !req->flags) {
-				struct virt_iter iter;
-				virt_iter_new(&iter, req->input.buf, req->input.len,
-						req->caller->pages, true, false);
-				while (virt_iter_next(&iter))
-					serial_write(iter.frag, iter.frag_len);
-				ret = iter.prior;
-			} else ret = -1;
+				char buf[4096];
+				size_t len = min(sizeof buf, req->input.len);
+				len = pcpy_from(req->caller, buf, req->input.buf, len);
+				serial_write(buf, len);
+				ret = len;
+			} else {
+				ret = -1;
+			}
 			vfsreq_finish_short(req, ret);
 			break;
 		default:

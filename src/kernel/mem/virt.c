@@ -1,13 +1,50 @@
+/* Copies stuff between different pagedirs. Mostly a wrapper behind an old,
+ * bad interface. */
+
+// TODO ensure the behaviour of kernel vs user fs on faults is the same
+
 #include <kernel/arch/generic.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
+#include <kernel/proc.h>
 #include <kernel/util.h>
 #include <shared/mem.h>
 
-void virt_iter_new(
-		struct virt_iter *iter, void __user *virt, size_t length,
-		struct pagedir *pages, bool user, bool writeable)
-{
+struct virt_iter {
+	void *frag;
+	size_t frag_len;
+	size_t prior; // sum of all prior frag_lens
+	bool error;
+
+	void __user *_virt;
+	size_t _remaining;
+	struct pagedir *_pages;
+	bool _user;
+	bool _writeable;
+};
+
+struct virt_cpy_error { // unused
+	bool read_fail, write_fail;
+};
+
+/* if pages == NULL, creates an iterator over physical memory. */
+static void virt_iter_new(
+	struct virt_iter *iter, void __user *virt, size_t length,
+	struct pagedir *pages, bool user, bool writeable
+);
+static bool virt_iter_next(struct virt_iter *);
+static size_t virt_cpy(
+	struct pagedir *dest_pages,       void __user *dest,
+	struct pagedir  *src_pages, const void __user *src,
+	size_t length, struct virt_cpy_error *err
+);
+
+
+static void
+virt_iter_new(
+	struct virt_iter *iter, void __user *virt, size_t length,
+	struct pagedir *pages, bool user, bool writeable
+) {
 	iter->frag       = NULL;
 	iter->frag_len   = 0;
 	iter->prior      = 0;
@@ -19,7 +56,9 @@ void virt_iter_new(
 	iter->_writeable = writeable;
 }
 
-bool virt_iter_next(struct virt_iter *iter) {
+static bool
+virt_iter_next(struct virt_iter *iter)
+{
 	/* note: While i'm pretty sure that this should always work, this
 	 * was only tested in cases where the pages were consecutive both in
 	 * virtual and physical memory, which might not always be the case.
@@ -53,11 +92,12 @@ bool virt_iter_next(struct virt_iter *iter) {
 	return true;
 }
 
-size_t virt_cpy(
+static size_t
+virt_cpy(
 		struct pagedir *dest_pages,       void __user *dest,
 		struct pagedir  *src_pages, const void __user *src,
-		size_t length, struct virt_cpy_error *err)
-{
+		size_t length, struct virt_cpy_error *err
+) {
 	struct virt_iter dest_iter, src_iter;
 	size_t total = 0, partial;
 
@@ -89,4 +129,32 @@ size_t virt_cpy(
 	else
 		assert(total == length);
 	return total;
+}
+
+size_t
+pcpy_to(struct process *p, __user void *dst, const void *src, size_t len)
+{
+	assert(p);
+	if (!p->pages) return 0;
+	return virt_cpy(p->pages, dst, NULL, (__user void*)src, len, NULL);
+}
+
+size_t
+pcpy_from(struct process *p, void *dst, const __user void *src, size_t len)
+{
+	assert(p);
+	if (!p->pages) return 0;
+	return virt_cpy(NULL, (__user void*)dst, p->pages, src, len, NULL);
+}
+
+size_t
+pcpy_bi(
+	struct process *dstp, __user void *dst,
+	struct process *srcp, const __user void *src,
+	size_t len
+) {
+	assert(dstp && srcp);
+	if (!dstp->pages) return 0;
+	if (!srcp->pages) return 0;
+	return virt_cpy(dstp->pages, dst, srcp->pages, src, len, NULL);
 }

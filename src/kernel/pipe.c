@@ -30,7 +30,6 @@ void pipe_joinqueue(struct handle *h, struct process *proc, void __user *pbuf, s
 
 static void pipe_trytransfer(struct handle *h) {
 	struct process *rdr, *wtr;
-	struct virt_cpy_error cpyerr;
 	int len;
 	assert(h && h->type == HANDLE_PIPE);
 	assert(h->readable ^ h->writeable);
@@ -46,12 +45,11 @@ static void pipe_trytransfer(struct handle *h) {
 	assert(wtr->state == PS_WAITS4PIPE);
 
 	len = min(rdr->waits4pipe.len, wtr->waits4pipe.len);
-	virt_cpy(
-			rdr->pages, rdr->waits4pipe.buf,
-			wtr->pages, wtr->waits4pipe.buf,
-			len, &cpyerr);
-	if (cpyerr.read_fail || cpyerr.write_fail)
-		panic_unimplemented();
+	len = pcpy_bi(
+		rdr, rdr->waits4pipe.buf,
+		wtr, wtr->waits4pipe.buf,
+		len
+	);
 	h->pipe.queued = h->pipe.queued->waits4pipe.next;
 	h->pipe.sister->pipe.queued = h->pipe.sister->pipe.queued->waits4pipe.next;
 	process_transition(rdr, PS_RUNNING);

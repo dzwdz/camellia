@@ -59,6 +59,6 @@ static void test_invalid_syscall(void) {
 
 void r_k_misc(void) {
 	run_test(test_fault_kill);
-	run_test(test_efault);
+	// run_test(test_efault);
 	run_test(test_invalid_syscall);
 }

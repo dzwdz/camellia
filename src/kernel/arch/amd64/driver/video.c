@@ -42,11 +42,8 @@ static int handle(struct vfs_request *req) {
 				return -1;
 			}
 			fs_normslice(&req->offset, &req->input.len, fb.size, false);
-			if (!virt_cpy_from(req->caller->pages, fb.b + req->offset,
-					req->input.buf, req->input.len))
-			{
-				return -EFAULT;
-			}
+			/* parial writes ignored */
+			pcpy_from(req->caller, fb.b + req->offset, req->input.buf, req->input.len);
 			return req->input.len;
 
 		case VFSOP_GETSIZE:

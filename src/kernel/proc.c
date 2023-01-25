@@ -163,6 +163,7 @@ void process_kill(struct process *p, int ret) {
 				process_handle_close(p, hid);
 			kfree(p->_handles);
 		}
+		p->_handles = NULL;
 
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
@@ -187,6 +188,7 @@ void process_kill(struct process *p, int ret) {
 		if (unref(p->pages_refcount)) {
 			pagedir_free(p->pages);
 		}
+		p->pages = NULL;
 	}
 
 	if (p->state == PS_DYING) {
@@ -284,7 +286,7 @@ void process_intr(struct process *p) {
 	void __user *sp = p->regs.rsp - 128 - sizeof(d);
 	d.ip = (void __user *)p->regs.rcx;
 	d.sp = p->regs.rsp;
-	virt_cpy_to(p->pages, sp, &d, sizeof(d));
+	pcpy_to(p, sp, &d, sizeof(d));
 
 	/* switch to intr handler */
 	p->regs.rcx = (uint64_t)p->intr_fn;

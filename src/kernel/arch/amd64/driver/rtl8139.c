@@ -105,7 +105,7 @@ void rtl8139_irq(void) {
 	port_out16(iobase + INTRSTATUS, status);
 }
 
-static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
+static int try_rx(struct process *proc, void __user *dest, size_t dlen) {
 	uint16_t flags, size;
 	/* bit 0 - Rx Buffer Empty */
 	if (port_in8(iobase + CMD) & 1) return WAIT;
@@ -125,11 +125,11 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	// kprintf("packet size 0x%x, flags 0x%x, rxpos %x\n", size, flags, rxpos - 4);
 	if (dlen > size) dlen = size;
 	if (rxpos + dlen <= rxbuf_baselen) {
-		virt_cpy_to(pages, dest, rxbuf + rxpos, dlen);
+		pcpy_to(proc, dest, rxbuf + rxpos, dlen);
 	} else {
 		size_t chunk = rxbuf_baselen - rxpos;
-		virt_cpy_to(pages, dest, rxbuf + rxpos, chunk);
-		virt_cpy_to(pages, dest + chunk, rxbuf, dlen - chunk);
+		pcpy_to(proc, dest, rxbuf + rxpos, chunk);
+		pcpy_to(proc, dest + chunk, rxbuf, dlen - chunk);
 	}
 
 	rxpos += size;
@@ -140,7 +140,7 @@ static int try_rx(struct pagedir *pages, void __user *dest, size_t dlen) {
 	return size;
 }
 
-static int try_tx(struct pagedir *pages, const void __user *src, size_t slen) {
+static int try_tx(struct process *proc, const void __user *src, size_t slen) {
 	static uint8_t desc = 0;
 
 	if (slen > 0xFFF) return -1;
@@ -153,7 +153,9 @@ static int try_tx(struct pagedir *pages, const void __user *src, size_t slen) {
 		panic_unimplemented();
 	}
 
-	virt_cpy_from(pages, txbuf[desc], src, slen);
+	if (pcpy_from(proc, txbuf[desc], src, slen) < slen) {
+		return -1;
+	}
 	assert((long)(void*)txbuf <= 0xFFFFFFFF);
 	port_out32(iobase + TXSTART0  + desc*4, (long)(void*)txbuf[desc]);
 	port_out32(iobase + TXSTATUS0 + desc*4, slen);
@@ -173,7 +175,7 @@ static void accept(struct vfs_request *req) {
 			vfsreq_finish_short(req, req->input.len == 0 ? 0 : -1);
 			break;
 		case VFSOP_READ:
-			ret = try_rx(req->caller->pages, req->output.buf, req->output.len);
+			ret = try_rx(req->caller, req->output.buf, req->output.len);
 			if (ret == WAIT) {
 				postqueue_join(&blocked_on, req);
 				rx_irq_enable(true);
@@ -183,7 +185,7 @@ static void accept(struct vfs_request *req) {
 			break;
 		case VFSOP_WRITE:
 			assert(!req->input.kern);
-			vfsreq_finish_short(req, try_tx(req->caller->pages, req->input.buf, req->input.len));
+			vfsreq_finish_short(req, try_tx(req->caller, req->input.buf, req->input.len));
 			break;
 		default:
 			vfsreq_finish_short(req, -1);

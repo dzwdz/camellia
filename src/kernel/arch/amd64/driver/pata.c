@@ -51,7 +51,7 @@ static void accept(struct vfs_request *req) {
 			fs_normslice(&req->offset, &req->output.len, ata_size(id), false);
 			len = min(req->output.len, sizeof wbuf);
 			ata_read(id, wbuf, len, req->offset);
-			virt_cpy_to(req->caller->pages, req->output.buf, wbuf, len);
+			pcpy_to(req->caller, req->output.buf, wbuf, len);
 			vfsreq_finish_short(req, len);
 			break;
 
@@ -63,7 +63,7 @@ static void accept(struct vfs_request *req) {
 			fs_normslice(&req->offset, &req->input.len, ata_size(id), false);
 			len = min(req->input.len, sizeof wbuf);
 			if (len != 0) {
-				virt_cpy_from(req->caller->pages, wbuf, req->input.buf, len);
+				len = pcpy_from(req->caller, wbuf, req->input.buf, len);
 				ata_write(id, wbuf, len, req->offset);
 			}
 			vfsreq_finish_short(req, len);

@@ -1,4 +1,5 @@
 #include <camellia/errno.h>
+#include <kernel/mem/alloc.h>
 #include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -120,17 +121,17 @@ procfs_accept(struct vfs_request *req)
 			}
 		}
 		assert(0 <= pos && (size_t)pos <= sizeof buf);
-		virt_cpy_to(req->caller->pages, req->output.buf, buf, pos);
+		pcpy_to(req->caller, req->output.buf, buf, pos);
 		vfsreq_finish_short(req, pos);
 	} else if (req->type == VFSOP_READ && h->type == PhMem) {
 		if (p->pages == NULL || req->caller->pages == NULL) {
 			vfsreq_finish_short(req, 0);
 			return;
 		}
-		size_t res = virt_cpy(
-				req->caller->pages, req->output.buf,
-				p->pages, (__user void*)req->offset,
-				req->output.len, NULL
+		size_t res = pcpy_bi(
+				req->caller, req->output.buf,
+				p, (__user void*)req->offset,
+				req->output.len
 		);
 		vfsreq_finish_short(req, res);
 	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
