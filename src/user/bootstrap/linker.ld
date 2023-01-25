@@ -3,7 +3,7 @@ OUTPUT_FORMAT("binary")
 
 SECTIONS
 {
-	. = 0x10000;
+	. = 0x20000;
 	_bss_start = .;
 	.bss BLOCK(4K) : ALIGN(4K)
 	{

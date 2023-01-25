@@ -1,3 +1,4 @@
+#include <_proc.h>
 #include <camellia.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
@@ -14,6 +15,19 @@ const char *getprogname(void) {
 }
 void setprogname(const char *pg) {
 	progname = pg;
+}
+
+void setproctitle(const char *fmt, ...) {
+	if (!fmt) {
+		strcpy(_libc_psdata, progname);
+		return;
+	}
+	sprintf(_libc_psdata, "%s: ", progname);
+
+	va_list argp;
+	va_start(argp, fmt);
+	vsnprintf(_libc_psdata + strlen(_libc_psdata), 128, fmt, argp);
+	va_end(argp);
 }
 
 int mkstemp(char *template) {

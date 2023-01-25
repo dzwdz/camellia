@@ -14,6 +14,7 @@ _Noreturn void exit(int);
 
 const char *getprogname(void);
 void setprogname(const char *progname);
+void setproctitle(const char *fmt, ...);
 
 int mkstemp(char *template);
 char *getenv(const char *name);

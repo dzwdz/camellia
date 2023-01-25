@@ -233,11 +233,13 @@ bool mount_at_pred(const char *path) {
 	if (!fork2_n_mount(path)) {
 		/* child -> go into the for body */
 		_klogf("%s: impl", path);
+		setproctitle("i'%s'", path);
 		return true;
 	}
 
 	if (strcmp("/", path) && !fork2_n_mount("/")) {
 		_klogf("%s: dir", path);
+		setproctitle("d'%s'", path);
 		fs_dir_inject(path);
 		exit(1);
 	}

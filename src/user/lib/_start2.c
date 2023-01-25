@@ -1,3 +1,5 @@
+#include <_proc.h>
+#include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +24,15 @@ void intr_trampoline(void); /* intr.s */
 _Noreturn void _start2(struct execdata *ed) {
 	const char *progname;
 	elf_selfreloc();
+
+	/* done first so it isn't allocated elsewhere by accident */
+	_syscall_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
+	if (ed->argv[0]) {
+		strcpy(_libc_psdata, ed->argv[0]);
+	} else {
+		strcpy(_libc_psdata, "?");
+	}
+
 	_syscall_intr_set(intr_trampoline);
 	intr_set(intr_default);
 	__setinitialcwd(ed->cwd);

@@ -1,3 +1,4 @@
+#include <_proc.h>
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <stdio.h>
@@ -13,6 +14,10 @@ extern char _initrd;
 
 __attribute__((section(".text")))
 _Noreturn void main(void) {
+	_syscall_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
+	setprogname("bootstrap");
+	setproctitle(NULL);
+
 	/* move everything provided by the kernel to /kdev */
 	MOUNT_AT("/kdev/") { fs_passthru(NULL); }
 	MOUNT_AT("/") {
@@ -26,10 +31,11 @@ _Noreturn void main(void) {
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
 	const char *initpath = "bin/amd64/init";
+	char *initargv[] = {"init", NULL};
 	void *init = tar_find(initpath, strlen(initpath), &_initrd, ~0) + 512;
 	if (init) {
 		_klogf("execing init");
-		elf_exec(init, NULL, NULL);
+		elf_exec(init, initargv, NULL);
 		_klogf("elf_exec failed");
 	} else {
 		_klogf("couldn't find init.elf");

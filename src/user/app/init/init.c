@@ -41,7 +41,7 @@ int main(void) {
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
-	printf("[init] stage 2, main at %p, testtr at %p\n", &main, teststr);
+	printf("[init] stage 2, main at %p, teststr at %p\n", &main, teststr);
 
 	MOUNT_AT("/keyboard") {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
@@ -101,8 +101,6 @@ int main(void) {
 		close(killswitch_pipe[0]);
 		redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
 		redirect("/bin/shell", "/vtty", "/keyboard");
-		// TODO busy loop without no children
-		for (;;) _syscall_await();
 		exit(1);
 	}
 
