@@ -11,7 +11,7 @@ _Noreturn void fs(void) {
 	if (!buf) err(1, "malloc");
 	for (;;) {
 		struct ufs_request req;
-		handle_t reqh = ufs_wait(buf, buflen, &req);
+		hid_t reqh = ufs_wait(buf, buflen, &req);
 		if (reqh < 0) errx(1, "ufs_wait error");
 
 		switch (req.op) {
@@ -23,7 +23,7 @@ _Noreturn void fs(void) {
 				/* Unsupported vfs operation.
 				 * Currently if you never create your own file descriptors you won't receive
 				 * anything but VFSOP_OPEN, but it's idiomatic to handle this anyways. */
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}

@@ -14,7 +14,7 @@ extern char _initrd;
 
 __attribute__((section(".text")))
 _Noreturn void main(void) {
-	_syscall_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
+	_sys_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
 	setprogname("bootstrap");
 	setproctitle(NULL);
 
@@ -25,7 +25,7 @@ _Noreturn void main(void) {
 		fs_whitelist(l);
 	}
 
-	_syscall_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
+	_sys_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
 	MOUNT_AT("/") { fs_dir_inject("/proc/"); }
 
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
@@ -40,5 +40,5 @@ _Noreturn void main(void) {
 	} else {
 		_klogf("couldn't find init.elf");
 	}
-	_syscall_exit(1);
+	_sys_exit(1);
 }

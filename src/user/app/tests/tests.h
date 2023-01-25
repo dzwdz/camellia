@@ -21,7 +21,7 @@ void r_s_ringbuf(void);
 
 extern FILE *fail_trig;
 
-int forkpipe(FILE **f, handle_t *h);
+int forkpipe(FILE **f, hid_t *h);
 
 #define argify(str) str, sizeof(str) - 1
 #define test_fail() do { \

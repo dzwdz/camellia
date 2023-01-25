@@ -11,9 +11,9 @@
 #include <camellia/fs/misc.h>
 
 bool fork2_n_mount(const char *path) {
-	handle_t h;
-	if (_syscall_fork(FORK_NEWFS, &h) > 0) { /* parent */
-		_syscall_mount(h, path, strlen(path));
+	hid_t h;
+	if (_sys_fork(FORK_NEWFS, &h) > 0) { /* parent */
+		_sys_mount(h, path, strlen(path));
 		close(h);
 		return true;
 	}
@@ -34,7 +34,7 @@ static int dir_seglen(const char *path) {
 	return len;
 }
 
-void forward_open(handle_t reqh, const char *path, long len, int flags) {
+void forward_open(hid_t reqh, const char *path, long len, int flags) {
 	// TODO use threads
 	// TODO solve for more complex cases, e.g. fs_union
 	/* done in a separate thread/process because open() can block,
@@ -43,8 +43,8 @@ void forward_open(handle_t reqh, const char *path, long len, int flags) {
 	 * for example, running `httpd` in one term would prevent you from doing
 	 * basically anything on the second term, because fs_dir_inject would be
 	 * stuck on open()ing the socket */
-	if (!_syscall_fork(FORK_NOREAP, NULL)) {
-		_syscall_fs_respond(reqh, NULL, _syscall_open(path, len, flags), FSR_DELEGATE);
+	if (!_sys_fork(FORK_NOREAP, NULL)) {
+		_sys_fs_respond(reqh, NULL, _sys_open(path, len, flags), FSR_DELEGATE);
 		exit(0);
 	}
 	close(reqh);
@@ -58,13 +58,13 @@ void fs_passthru(const char *prefix) {
 
 	for (;;) {
 		struct ufs_request res;
-		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		hid_t reqh = _sys_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		switch (res.op) {
 			case VFSOP_OPEN:
 				if (prefix) {
 					if (prefix_len + res.len > buflen) {
-						_syscall_fs_respond(reqh, NULL, -1, 0);
+						_sys_fs_respond(reqh, NULL, -1, 0);
 						break;
 					}
 
@@ -76,7 +76,7 @@ void fs_passthru(const char *prefix) {
 				break;
 
 			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
@@ -114,7 +114,7 @@ void fs_union(const char **list) {
 					char *path = post - prefixlen;
 					memcpy(path, prefix, prefixlen);
 
-					ret = _syscall_open(path, prefixlen + res.len, res.flags);
+					ret = _sys_open(path, prefixlen + res.len, res.flags);
 
 					post[res.len] = '\0';
 				}
@@ -134,10 +134,10 @@ void fs_union(const char **list) {
 				size_t prefixlen = strlen(prefix);
 				// TODO only open the directories once
 				// TODO ensure trailing slash
-				handle_t h = _syscall_open(prefix, prefixlen, OPEN_READ);
+				hid_t h = _sys_open(prefix, prefixlen, OPEN_READ);
 				if (h < 0) continue;
 				end = end || dir_append_from(&db, h);
-				_syscall_close(h);
+				_sys_close(h);
 			}
 			c0_fs_respond(target, dir_finish(&db), 0);
 			break;
@@ -163,7 +163,7 @@ void fs_dir_inject(const char *path) {
 
 	for (;;) {
 		struct ufs_request res;
-		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		hid_t reqh = _sys_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		struct fs_dir_handle *data = res.id;
 		switch (res.op) {
@@ -174,10 +174,10 @@ void fs_dir_inject(const char *path) {
 				{
 					/* opening a directory that we're injecting into */
 					data = malloc(sizeof *data);
-					data->delegate = _syscall_open(buf, res.len, res.flags);
+					data->delegate = _sys_open(buf, res.len, res.flags);
 					data->inject = path + res.len;
 					data->inject_len = dir_seglen(data->inject);
-					_syscall_fs_respond(reqh, data, 0, 0);
+					_sys_fs_respond(reqh, data, 0, 0);
 				} else {
 					forward_open(reqh, buf, res.len, res.flags);
 				}
@@ -187,7 +187,7 @@ void fs_dir_inject(const char *path) {
 				if (data->delegate >= 0)
 					close(data->delegate);
 				free(data);
-				_syscall_fs_respond(reqh, NULL, 0, 0);
+				_sys_fs_respond(reqh, NULL, 0, 0);
 				break;
 
 			case VFSOP_READ:
@@ -199,25 +199,25 @@ void fs_dir_inject(const char *path) {
 				dir_appendl(&db, data->inject, data->inject_len);
 				if (data->delegate >= 0)
 					dir_append_from(&db, data->delegate);
-				_syscall_fs_respond(reqh, target, dir_finish(&db), 0);
+				_sys_fs_respond(reqh, target, dir_finish(&db), 0);
 				break;
 
 			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}
 	exit(0);
 }
 
-handle_t ufs_wait(char *buf, size_t len, struct ufs_request *req) {
-	handle_t reqh;
+hid_t ufs_wait(char *buf, size_t len, struct ufs_request *req) {
+	hid_t reqh;
 	for (;;) {
-		reqh = _syscall_fs_wait(buf, len, req);
+		reqh = _sys_fs_wait(buf, len, req);
 		if (reqh < 0) break;
 		if (req->op == VFSOP_OPEN) {
 			if (req->len == len) {
-				_syscall_fs_respond(reqh, NULL, -ENAMETOOLONG, 0);
+				_sys_fs_respond(reqh, NULL, -ENAMETOOLONG, 0);
 				continue;
 			}
 			buf[req->len] = '\0';

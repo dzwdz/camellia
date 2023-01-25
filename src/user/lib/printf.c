@@ -51,6 +51,6 @@ int _klogf(const char *fmt, ...) {
 	va_start(argp, fmt);
 	ret = vsnprintf(buf, sizeof buf, fmt, argp);
 	va_end(argp);
-	_syscall_debug_klog(buf, ret);
+	_sys_debug_klog(buf, ret);
 	return ret;
 }

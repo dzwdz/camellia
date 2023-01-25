@@ -18,7 +18,7 @@ FILE *const stderr = &_stderr_null;
 
 FILE *fopen(const char *path, const char *mode) {
 	FILE *f;
-	handle_t h;
+	hid_t h;
 	int flags = 0;
 	if (!path) {
 		errno = 1;
@@ -48,7 +48,7 @@ FILE *fopen(const char *path, const char *mode) {
 	if (h < 0) return NULL;
 
 	if (mode[0] == 'w')
-		_syscall_write(h, NULL, 0, 0, WRITE_TRUNCATE);
+		_sys_write(h, NULL, 0, 0, WRITE_TRUNCATE);
 
 	f = fdopen(h, mode);
 	if (!f) close(h);
@@ -65,7 +65,7 @@ FILE *fopen(const char *path, const char *mode) {
 	if (f->fd == f2->fd) {
 		f2->fd = -1;
 	} else {
-		if (_syscall_dup(f2->fd, f->fd, 0) < 0) goto fail2;
+		if (_sys_dup(f2->fd, f->fd, 0) < 0) goto fail2;
 	}
 	f->pos = f2->pos;
 	f->eof = f2->eof;
@@ -92,7 +92,7 @@ FILE *fdopen(int fd, const char *mode) {
 }
 
 FILE *file_clone(const FILE *f, const char *mode) {
-	handle_t h = _syscall_dup(f->fd, -1, 0);
+	hid_t h = _sys_dup(f->fd, -1, 0);
 	FILE *f2;
 	if (h < 0) return NULL;
 
@@ -159,7 +159,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 		return 0;
 
 	while (pos < total) {
-		long res = _syscall_read(f->fd, buf + pos, total - pos, f->pos);
+		long res = _sys_read(f->fd, buf + pos, total - pos, f->pos);
 		if (res < 0) {
 			f->error = true;
 			errno = -res;
@@ -187,7 +187,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 		return 0;
 
 	while (pos < total) {
-		long res = _syscall_write(f->fd, buf + pos, total - pos, f->pos, 0);
+		long res = _sys_write(f->fd, buf + pos, total - pos, f->pos, 0);
 		if (res < 0) {
 			f->error = true;
 			errno = -res;
@@ -253,7 +253,7 @@ int fseeko(FILE *f, off_t offset, int whence) {
 			base = f->pos;
 			break;
 		case SEEK_END:
-			base = _syscall_getsize(f->fd);
+			base = _sys_getsize(f->fd);
 			if (base < 0)
 				base = -1;
 			break;

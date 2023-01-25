@@ -94,11 +94,11 @@ static void test_mount_resolve(void) {
 	for (size_t i = 0; i < sizeof(testcases) / sizeof(testcases[0]); i++) {
 		const char *input    = testcases[i][0];
 		const char *expected = testcases[i][1];
-		handle_t h = _syscall_open(input, strlen(input), 0);
+		hid_t h = _sys_open(input, strlen(input), 0);
 		test(h >= 0);
-		int len = _syscall_read(h, buf, sizeof buf, 0);
+		int len = _sys_read(h, buf, sizeof buf, 0);
 		test(len == (int)strlen(expected) && !memcmp(expected, buf, len));
-		_syscall_close(h);
+		_sys_close(h);
 	}
 }
 

@@ -3,22 +3,22 @@
 #include <kernel/vfs/mount.h>
 #include <shared/mem.h>
 
-static struct vfs_mount *mount_root = NULL;
+static VfsMount *mount_root = NULL;
 
-struct vfs_mount *vfs_mount_seed(void) {
+VfsMount *vfs_mount_seed(void) {
 	return mount_root;
 }
 
-void vfs_root_register(const char *path, void (*accept)(struct vfs_request *)) {
-	struct vfs_backend *backend = kmalloc(sizeof *backend);
-	struct vfs_mount *mount = kmalloc(sizeof *mount);
-	*backend = (struct vfs_backend) {
+void vfs_root_register(const char *path, void (*accept)(VfsReq *)) {
+	VfsBackend *backend = kmalloc(sizeof *backend);
+	VfsMount *mount = kmalloc(sizeof *mount);
+	*backend = (VfsBackend) {
 		.is_user = false,
 		.usehcnt = 1,
 		.provhcnt = 1,
 		.kern.accept = accept,
 	};
-	*mount = (struct vfs_mount){
+	*mount = (VfsMount){
 		.prev = mount_root,
 		.prefix = path,
 		.prefix_len = strlen(path),
@@ -29,8 +29,8 @@ void vfs_root_register(const char *path, void (*accept)(struct vfs_request *)) {
 }
 
 
-struct vfs_mount *vfs_mount_resolve(
-		struct vfs_mount *top, const char *path, size_t path_len)
+VfsMount *vfs_mount_resolve(
+		VfsMount *top, const char *path, size_t path_len)
 {
 	for (; top; top = top->prev) {
 		if (top->prefix_len > path_len)
@@ -49,12 +49,12 @@ struct vfs_mount *vfs_mount_resolve(
 	return top;
 }
 
-void vfs_mount_remref(struct vfs_mount *mnt) {
+void vfs_mount_remref(VfsMount *mnt) {
 	assert(mnt);
 	assert(mnt->refs > 0);
 	if (--(mnt->refs) > 0) return;
 
-	struct vfs_mount *prev = mnt->prev;
+	VfsMount *prev = mnt->prev;
 	if (mnt->backend) {
 		vfs_backend_refdown(mnt->backend, true);
 	}

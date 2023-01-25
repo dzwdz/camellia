@@ -43,14 +43,14 @@ struct handle {
 		size_t readcap;
 	} tcp;
 	bool dead;
-	handle_t reqh;
+	hid_t reqh;
 };
 
 
 static void tcp_listen_callback(struct tcp_conn *c, void *arg) {
 	struct handle *h = arg;
 	h->tcp.c = c;
-	_syscall_fs_respond(h->reqh, h, 0, 0);
+	_sys_fs_respond(h->reqh, h, 0, 0);
 	h->reqh = -1;
 }
 
@@ -63,7 +63,7 @@ static void tcp_recv_callback(void *arg) {
 			h->tcp.readcap = sizeof buf;
 		size_t len = tcpc_tryread(h->tcp.c, buf, h->tcp.readcap);
 		if (len > 0) {
-			_syscall_fs_respond(h->reqh, buf, len, 0);
+			_sys_fs_respond(h->reqh, buf, len, 0);
 			h->reqh = -1;
 		}
 	}
@@ -73,7 +73,7 @@ static void tcp_close_callback(void *arg) {
 	struct handle *h = arg;
 	h->dead = true;
 	if (h->reqh >= 0) {
-		_syscall_fs_respond(h->reqh, NULL, -ECONNRESET, 0);
+		_sys_fs_respond(h->reqh, NULL, -ECONNRESET, 0);
 		h->reqh = -1;
 		return;
 	}
@@ -82,14 +82,14 @@ static void tcp_close_callback(void *arg) {
 static void udp_listen_callback(struct udp_conn *c, void *arg) {
 	struct handle *h = arg;
 	h->udp.c = c;
-	_syscall_fs_respond(h->reqh, h, 0, 0);
+	_sys_fs_respond(h->reqh, h, 0, 0);
 	h->reqh = -1;
 }
 
 static void udp_recv_callback(const void *buf, size_t len, void *arg) {
 	struct handle *h = arg;
 	if (h->reqh >= 0) {
-		_syscall_fs_respond(h->reqh, buf, len, 0);
+		_sys_fs_respond(h->reqh, buf, len, 0);
 		h->reqh = -1;
 		return;
 	}
@@ -106,14 +106,14 @@ static void udp_recv_callback(const void *buf, size_t len, void *arg) {
 	}
 }
 
-static void recv_enqueue(struct handle *h, handle_t reqh, size_t readcap) {
+static void recv_enqueue(struct handle *h, hid_t reqh, size_t readcap) {
 	if (h->reqh > 0) {
 		// TODO queue
-		_syscall_fs_respond(reqh, NULL, -1, 0);
+		_sys_fs_respond(reqh, NULL, -1, 0);
 		return;
 	}
 	if (h->type == H_UDP && h->udp.rx) {
-		_syscall_fs_respond(reqh, h->udp.rx->buf, h->udp.rx->len, 0);
+		_sys_fs_respond(reqh, h->udp.rx->buf, h->udp.rx->len, 0);
 		h->udp.rx = h->udp.rx->next;
 		free(h->udp.rx);
 		return;
@@ -125,8 +125,8 @@ static void recv_enqueue(struct handle *h, handle_t reqh, size_t readcap) {
 	}
 }
 
-static void fs_open(handle_t reqh, char *path, int flags) {
-#define respond(buf, val) do{ _syscall_fs_respond(reqh, buf, val, 0); return; }while(0)
+static void fs_open(hid_t reqh, char *path, int flags) {
+#define respond(buf, val) do{ _sys_fs_respond(reqh, buf, val, 0); return; }while(0)
 	struct handle *h;
 	if (*path != '/') respond(NULL, -1);
 	path++;
@@ -241,7 +241,7 @@ void fs_thread(void *arg) { (void)arg;
 	char *buf = malloc(buflen);
 	for (;;) {
 		struct ufs_request res;
-		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		hid_t reqh = _sys_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 		struct handle *h = res.id;
 		long ret;
@@ -251,12 +251,12 @@ void fs_thread(void *arg) { (void)arg;
 					buf[res.len] = '\0';
 					fs_open(reqh, buf, res.flags);
 				} else {
-					_syscall_fs_respond(reqh, NULL, -1, 0);
+					_sys_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 			case VFSOP_READ:
 				if (h->dead) {
-					_syscall_fs_respond(reqh, NULL, -ECONNRESET, 0);
+					_sys_fs_respond(reqh, NULL, -ECONNRESET, 0);
 					break;
 				}
 				switch (h->type) {
@@ -275,44 +275,44 @@ void fs_thread(void *arg) { (void)arg;
 						arp_fsread(reqh, res.offset);
 						break;
 					default:
-						_syscall_fs_respond(reqh, NULL, -1, 0);
+						_sys_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 			case VFSOP_WRITE:
 				if (h->dead) {
-					_syscall_fs_respond(reqh, NULL, -ECONNRESET, 0);
+					_sys_fs_respond(reqh, NULL, -ECONNRESET, 0);
 					break;
 				}
 				switch (h->type) {
 					case H_ETHER:
-						ret = _syscall_write(state.raw_h, buf, res.len, 0, 0);
-						_syscall_fs_respond(reqh, NULL, ret, 0);
+						ret = _sys_write(state.raw_h, buf, res.len, 0, 0);
+						_sys_fs_respond(reqh, NULL, ret, 0);
 						break;
 					case H_TCP:
 						tcpc_send(h->tcp.c, buf, res.len);
-						_syscall_fs_respond(reqh, NULL, res.len, 0);
+						_sys_fs_respond(reqh, NULL, res.len, 0);
 						break;
 					case H_UDP:
 						udpc_send(h->udp.c, buf, res.len);
-						_syscall_fs_respond(reqh, NULL, res.len, 0);
+						_sys_fs_respond(reqh, NULL, res.len, 0);
 						break;
 					case H_ARP:
-						_syscall_fs_respond(reqh, NULL, arp_fswrite(buf, res.len, res.offset), 0);
+						_sys_fs_respond(reqh, NULL, arp_fswrite(buf, res.len, res.offset), 0);
 						break;
 					default:
-						_syscall_fs_respond(reqh, NULL, -1, 0);
+						_sys_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 			case VFSOP_CLOSE:
 				// TODO remove entries in queue
-				// TODO why does close even have _syscall_fs_respond?
+				// TODO why does close even have _sys_fs_respond?
 				if (h->type == H_TCP) tcpc_close(h->tcp.c);
 				if (h->type == H_UDP) udpc_close(h->udp.c);
 				free(h);
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}

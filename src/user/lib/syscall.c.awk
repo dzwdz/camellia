@@ -14,7 +14,7 @@ BEGIN {
 	sub(/;/, " {");
 	print $0;
 
-	name = substr($0, match($0, /_syscall_[^(]+/), RLENGTH);
+	name = substr($0, match($0, /_sys_[^(]+/), RLENGTH);
 	rets = substr($0, 0, RSTART - 1);
 	sub(/ *$/, "", rets)
 

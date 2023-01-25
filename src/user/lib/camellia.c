@@ -5,8 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
-handle_t camellia_open(const char *path, int flags) {
-	handle_t ret;
+hid_t camellia_open(const char *path, int flags) {
+	hid_t ret;
 	char *buf;
 	size_t len;
 
@@ -20,7 +20,7 @@ handle_t camellia_open(const char *path, int flags) {
 	if (!buf)
 		return -errno;
 	absolutepath(buf, path, len);
-	ret = _syscall_open(buf, strlen(buf), flags);
+	ret = _sys_open(buf, strlen(buf), flags);
 	free(buf);
 
 	if (ret < 0)

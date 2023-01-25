@@ -18,7 +18,7 @@ struct virt_iter {
 
 	void __user *_virt;
 	size_t _remaining;
-	struct pagedir *_pages;
+	Pagedir *_pages;
 	bool _user;
 	bool _writeable;
 };
@@ -30,12 +30,12 @@ struct virt_cpy_error { // unused
 /* if pages == NULL, creates an iterator over physical memory. */
 static void virt_iter_new(
 	struct virt_iter *iter, void __user *virt, size_t length,
-	struct pagedir *pages, bool user, bool writeable
+	Pagedir *pages, bool user, bool writeable
 );
 static bool virt_iter_next(struct virt_iter *);
 static size_t virt_cpy(
-	struct pagedir *dest_pages,       void __user *dest,
-	struct pagedir  *src_pages, const void __user *src,
+	Pagedir *dest_pages,       void __user *dest,
+	Pagedir  *src_pages, const void __user *src,
 	size_t length, struct virt_cpy_error *err
 );
 
@@ -43,7 +43,7 @@ static size_t virt_cpy(
 static void
 virt_iter_new(
 	struct virt_iter *iter, void __user *virt, size_t length,
-	struct pagedir *pages, bool user, bool writeable
+	Pagedir *pages, bool user, bool writeable
 ) {
 	iter->frag       = NULL;
 	iter->frag_len   = 0;
@@ -94,8 +94,8 @@ virt_iter_next(struct virt_iter *iter)
 
 static size_t
 virt_cpy(
-		struct pagedir *dest_pages,       void __user *dest,
-		struct pagedir  *src_pages, const void __user *src,
+		Pagedir *dest_pages,       void __user *dest,
+		Pagedir  *src_pages, const void __user *src,
 		size_t length, struct virt_cpy_error *err
 ) {
 	struct virt_iter dest_iter, src_iter;
@@ -132,7 +132,7 @@ virt_cpy(
 }
 
 size_t
-pcpy_to(struct process *p, __user void *dst, const void *src, size_t len)
+pcpy_to(Proc *p, __user void *dst, const void *src, size_t len)
 {
 	assert(p);
 	if (!p->pages) return 0;
@@ -140,7 +140,7 @@ pcpy_to(struct process *p, __user void *dst, const void *src, size_t len)
 }
 
 size_t
-pcpy_from(struct process *p, void *dst, const __user void *src, size_t len)
+pcpy_from(Proc *p, void *dst, const __user void *src, size_t len)
 {
 	assert(p);
 	if (!p->pages) return 0;
@@ -149,8 +149,8 @@ pcpy_from(struct process *p, void *dst, const __user void *src, size_t len)
 
 size_t
 pcpy_bi(
-	struct process *dstp, __user void *dst,
-	struct process *srcp, const __user void *src,
+	Proc *dstp, __user void *dst,
+	Proc *srcp, const __user void *src,
 	size_t len
 ) {
 	assert(dstp && srcp);

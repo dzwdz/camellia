@@ -43,7 +43,7 @@ void fs_whitelist(const char **whitelist) {
 	if (!buf) exit(1);
 	for (;;) {
 		struct ufs_request res;
-		handle_t reqh = _syscall_fs_wait(buf, buflen, &res);
+		hid_t reqh = _sys_fs_wait(buf, buflen, &res);
 		if (reqh < 0) break;
 
 		char *ipath = res.id; /* the path of the open()ed directory */
@@ -70,7 +70,7 @@ void fs_whitelist(const char **whitelist) {
 					}
 				}
 				if (error) {
-					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
+					_sys_fs_respond(reqh, NULL, -EACCES, 0);
 				} else if (passthru) {
 					forward_open(reqh, buf, res.len, res.flags);
 				} else if (inject) {
@@ -78,9 +78,9 @@ void fs_whitelist(const char **whitelist) {
 					ipath = malloc(res.len + 1);
 					memcpy(ipath, buf, res.len);
 					ipath[res.len] = '\0';
-					_syscall_fs_respond(reqh, ipath, 0, 0);
+					_sys_fs_respond(reqh, ipath, 0, 0);
 				} else {
-					_syscall_fs_respond(reqh, NULL, -1, 0);
+					_sys_fs_respond(reqh, NULL, -1, 0);
 				}
 				break;
 			}
@@ -96,16 +96,16 @@ void fs_whitelist(const char **whitelist) {
 					if (ilen < elen && !memcmp(ipath, *entry, ilen))
 						dir_appendl(&db, *entry + ilen, dir_seglen2(*entry + ilen, elen - ilen));
 				}
-				_syscall_fs_respond(reqh, target, dir_finish(&db), 0);
+				_sys_fs_respond(reqh, target, dir_finish(&db), 0);
 				break;
 			}
 			case VFSOP_CLOSE: {
 				free(ipath);
-				_syscall_fs_respond(reqh, NULL, 0, 0);
+				_sys_fs_respond(reqh, NULL, 0, 0);
 				break;
 			}
 			default: {
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 			}
 		}

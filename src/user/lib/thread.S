@@ -18,7 +18,7 @@ thread_creates:
 
 	mov %rdi, %rsi
 	or $(FORK_SHAREMEM | FORK_SHAREHANDLE), %rsi
-	mov $_SYSCALL_FORK, %rdi
+	mov $_SYS_FORK, %rdi
 	xor %rdx, %rdx
 	syscall
 
@@ -34,7 +34,7 @@ thread_creates:
 	mov %r13, %rdi
 	call *%r12
 
-	mov $_SYSCALL_EXIT, %rdi
+	mov $_SYS_EXIT, %rdi
 	xor %rsi, %rsi
 	syscall
 	hlt /* if all else fails... */

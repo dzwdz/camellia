@@ -1,10 +1,9 @@
 #pragma once
-#include <camellia/types.h>
 #include <kernel/arch/amd64/registers.h>
+#include <kernel/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
-struct process;
 
 // i have no idea where else to put it
 // some code assumes that it's a power of 2
@@ -25,28 +24,28 @@ void shutdown(void);
 void cpu_pause(void);
 
 uint64_t uptime_ms(void);
-void timer_schedule(struct process *p, uint64_t time);
-void timer_deschedule(struct process *p);
+void timer_schedule(Proc *p, uint64_t time);
+void timer_deschedule(Proc *p);
 
 // src/arch/i386/sysenter.s
-_Noreturn void sysexit(struct registers);
+_Noreturn void sysexit(CpuRegs);
 
 // all of those can allocate memory
-struct pagedir *pagedir_new(void);
-struct pagedir *pagedir_copy(const struct pagedir *orig);
+Pagedir *pagedir_new(void);
+Pagedir *pagedir_copy(const Pagedir *orig);
 
-void pagedir_free(struct pagedir *);
-void pagedir_unmap_user(struct pagedir *dir, void __user *virt, size_t len);
-void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
+void pagedir_free(Pagedir *);
+void pagedir_unmap_user(Pagedir *dir, void __user *virt, size_t len);
+void pagedir_map(Pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable);
-bool pagedir_iskern(struct pagedir *, const void __user *virt);
+bool pagedir_iskern(Pagedir *, const void __user *virt);
 
-void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t len);
+void __user *pagedir_findfree(Pagedir *dir, char __user *start, size_t len);
 
-void pagedir_switch(struct pagedir *);
+void pagedir_switch(Pagedir *);
 
 // return 0 on failure
-void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
+void *pagedir_virt2phys(Pagedir *dir, const void __user *virt,
                         bool user, bool writeable);
 
 int kprintf(const char *fmt, ...);

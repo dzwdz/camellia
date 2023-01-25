@@ -5,88 +5,88 @@
 #include <camellia/syscalls.h>
 
 
-_Noreturn void _syscall_exit(long ret) {
-	_syscall(_SYSCALL_EXIT, ret, 0, 0, 0, 0);
+_Noreturn void _sys_exit(long ret) {
+	_syscall(_SYS_EXIT, ret, 0, 0, 0, 0);
 	__builtin_unreachable();
 }
 
-long _syscall_await(void) {
-	return _syscall(_SYSCALL_AWAIT, 0, 0, 0, 0, 0);
+long _sys_await(void) {
+	return _syscall(_SYS_AWAIT, 0, 0, 0, 0, 0);
 }
 
-long _syscall_fork(int flags, handle_t __user *fs_front) {
-	return _syscall(_SYSCALL_FORK, (long)flags, (long)fs_front, 0, 0, 0);
+long _sys_fork(int flags, hid_t __user *fs_front) {
+	return _syscall(_SYS_FORK, (long)flags, (long)fs_front, 0, 0, 0);
 }
 
-handle_t _syscall_open(const char __user *path, long len, int flags) {
-	return (handle_t)_syscall(_SYSCALL_OPEN, (long)path, len, (long)flags, 0, 0);
+hid_t _sys_open(const char __user *path, long len, int flags) {
+	return (hid_t)_syscall(_SYS_OPEN, (long)path, len, (long)flags, 0, 0);
 }
 
-long _syscall_mount(handle_t h, const char __user *path, long len) {
-	return _syscall(_SYSCALL_MOUNT, (long)h, (long)path, len, 0, 0);
+long _sys_mount(hid_t h, const char __user *path, long len) {
+	return _syscall(_SYS_MOUNT, (long)h, (long)path, len, 0, 0);
 }
 
-handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
-	return (handle_t)_syscall(_SYSCALL_DUP, (long)from, (long)to, (long)flags, 0, 0);
+hid_t _sys_dup(hid_t from, hid_t to, int flags) {
+	return (hid_t)_syscall(_SYS_DUP, (long)from, (long)to, (long)flags, 0, 0);
 }
 
-long _syscall_read(handle_t h, void __user *buf, size_t len, long offset) {
-	return _syscall(_SYSCALL_READ, (long)h, (long)buf, (long)len, offset, 0);
+long _sys_read(hid_t h, void __user *buf, size_t len, long offset) {
+	return _syscall(_SYS_READ, (long)h, (long)buf, (long)len, offset, 0);
 }
 
-long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset, int flags) {
-	return _syscall(_SYSCALL_WRITE, (long)h, (long)buf, (long)len, offset, (long)flags);
+long _sys_write(hid_t h, const void __user *buf, size_t len, long offset, int flags) {
+	return _syscall(_SYS_WRITE, (long)h, (long)buf, (long)len, offset, (long)flags);
 }
 
-long _syscall_getsize(handle_t h) {
-	return _syscall(_SYSCALL_GETSIZE, (long)h, 0, 0, 0, 0);
+long _sys_getsize(hid_t h) {
+	return _syscall(_SYS_GETSIZE, (long)h, 0, 0, 0, 0);
 }
 
-long _syscall_remove(handle_t h) {
-	return _syscall(_SYSCALL_REMOVE, (long)h, 0, 0, 0, 0);
+long _sys_remove(hid_t h) {
+	return _syscall(_SYS_REMOVE, (long)h, 0, 0, 0, 0);
 }
 
-long _syscall_close(handle_t h) {
-	return _syscall(_SYSCALL_CLOSE, (long)h, 0, 0, 0, 0);
+long _sys_close(hid_t h) {
+	return _syscall(_SYS_CLOSE, (long)h, 0, 0, 0, 0);
 }
 
-handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
-	return (handle_t)_syscall(_SYSCALL_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
+hid_t _sys_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
+	return (hid_t)_syscall(_SYS_FS_WAIT, (long)buf, max_len, (long)res, 0, 0);
 }
 
-long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags) {
-	return _syscall(_SYSCALL_FS_RESPOND, (long)hid, (long)buf, ret, (long)flags, 0);
+long _sys_fs_respond(hid_t hid, const void __user *buf, long ret, int flags) {
+	return _syscall(_SYS_FS_RESPOND, (long)hid, (long)buf, ret, (long)flags, 0);
 }
 
-void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
-	return (void __user *)_syscall(_SYSCALL_MEMFLAG, (long)addr, (long)len, (long)flags, 0, 0);
+void __user *_sys_memflag(void __user *addr, size_t len, int flags) {
+	return (void __user *)_syscall(_SYS_MEMFLAG, (long)addr, (long)len, (long)flags, 0, 0);
 }
 
-long _syscall_pipe(handle_t __user user_ends[2], int flags) {
-	return _syscall(_SYSCALL_PIPE, (long)user_ends, (long)flags, 0, 0, 0);
+long _sys_pipe(hid_t __user user_ends[2], int flags) {
+	return _syscall(_SYS_PIPE, (long)user_ends, (long)flags, 0, 0, 0);
 }
 
-void _syscall_sleep(long ms) {
-	return (void)_syscall(_SYSCALL_SLEEP, ms, 0, 0, 0, 0);
+void _sys_sleep(long ms) {
+	return (void)_syscall(_SYS_SLEEP, ms, 0, 0, 0, 0);
 }
 
-void _syscall_filicide(void) {
-	return (void)_syscall(_SYSCALL_FILICIDE, 0, 0, 0, 0, 0);
+void _sys_filicide(void) {
+	return (void)_syscall(_SYS_FILICIDE, 0, 0, 0, 0, 0);
 }
 
-void _syscall_intr(void) {
-	return (void)_syscall(_SYSCALL_INTR, 0, 0, 0, 0, 0);
+void _sys_intr(void) {
+	return (void)_syscall(_SYS_INTR, 0, 0, 0, 0, 0);
 }
 
-void _syscall_intr_set(void __user *ip) {
-	return (void)_syscall(_SYSCALL_INTR_SET, (long)ip, 0, 0, 0, 0);
+void _sys_intr_set(void __user *ip) {
+	return (void)_syscall(_SYS_INTR_SET, (long)ip, 0, 0, 0, 0);
 }
 
-long _syscall_execbuf(void __user *buf, size_t len) {
-	return _syscall(_SYSCALL_EXECBUF, (long)buf, (long)len, 0, 0, 0);
+long _sys_execbuf(void __user *buf, size_t len) {
+	return _syscall(_SYS_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }
 
-void _syscall_debug_klog(const void __user *buf, size_t len) {
-	return (void)_syscall(_SYSCALL_DEBUG_KLOG, (long)buf, (long)len, 0, 0, 0);
+void _sys_debug_klog(const void __user *buf, size_t len) {
+	return (void)_syscall(_SYS_DEBUG_KLOG, (long)buf, (long)len, 0, 0, 0);
 }
 

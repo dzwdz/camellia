@@ -3,9 +3,9 @@
 #include <kernel/pipe.h>
 #include <kernel/util.h>
 
-static void pipe_trytransfer(struct handle *h);
+static void pipe_trytransfer(Handle *h);
 
-void pipe_joinqueue(struct handle *h, struct process *proc, void __user *pbuf, size_t pbuflen) {
+void pipe_joinqueue(Handle *h, Proc *proc, void __user *pbuf, size_t pbuflen) {
 	assert(h && h->type == HANDLE_PIPE);
 	assert(h->readable ^ h->writeable);
 	if (!h->pipe.sister) {
@@ -13,13 +13,13 @@ void pipe_joinqueue(struct handle *h, struct process *proc, void __user *pbuf, s
 		return;
 	}
 
-	struct process **slot = &h->pipe.queued;
+	Proc **slot = &h->pipe.queued;
 	while (*slot) {
 		assert((*slot)->state == PS_WAITS4PIPE);
 		slot = &((*slot)->waits4pipe.next);
 	}
 
-	process_transition(proc, PS_WAITS4PIPE);
+	proc_setstate(proc, PS_WAITS4PIPE);
 	*slot = proc;
 	proc->waits4pipe.pipe = h;
 	proc->waits4pipe.buf = pbuf;
@@ -28,8 +28,8 @@ void pipe_joinqueue(struct handle *h, struct process *proc, void __user *pbuf, s
 	pipe_trytransfer(h);
 }
 
-static void pipe_trytransfer(struct handle *h) {
-	struct process *rdr, *wtr;
+static void pipe_trytransfer(Handle *h) {
+	Proc *rdr, *wtr;
 	int len;
 	assert(h && h->type == HANDLE_PIPE);
 	assert(h->readable ^ h->writeable);
@@ -52,17 +52,17 @@ static void pipe_trytransfer(struct handle *h) {
 	);
 	h->pipe.queued = h->pipe.queued->waits4pipe.next;
 	h->pipe.sister->pipe.queued = h->pipe.sister->pipe.queued->waits4pipe.next;
-	process_transition(rdr, PS_RUNNING);
-	process_transition(wtr, PS_RUNNING);
+	proc_setstate(rdr, PS_RUNNING);
+	proc_setstate(wtr, PS_RUNNING);
 	regs_savereturn(&rdr->regs, len);
 	regs_savereturn(&wtr->regs, len);
 }
 
-void pipe_invalidate_end(struct handle *h) {
-	struct process *p = h->pipe.queued;
+void pipe_invalidate_end(Handle *h) {
+	Proc *p = h->pipe.queued;
 	while (p) {
 		assert(p->state == PS_WAITS4PIPE);
-		process_transition(p, PS_RUNNING);
+		proc_setstate(p, PS_RUNNING);
 		regs_savereturn(&p->regs, -1);
 		p = p->waits4pipe.next;
 	}

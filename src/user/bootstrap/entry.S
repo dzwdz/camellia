@@ -9,14 +9,14 @@
 .global _start
 .type _start, @function
 _start:
-	mov $_SYSCALL_MEMFLAG, %rdi
+	mov $_SYS_MEMFLAG, %rdi
 	mov $(STACK_TOP & ~0xFFF - (STACK_PAGES - 1) * 0x1000), %rsi
 	mov $(STACK_PAGES * 0x1000), %rdx
 	mov $MEMFLAG_PRESENT, %r10
 	syscall
 	mov $(STACK_TOP & ~0xF), %rsp
 
-	mov $_SYSCALL_MEMFLAG, %rdi
+	mov $_SYS_MEMFLAG, %rdi
 	mov $_bss_start, %rsi
 	mov $_bss_end, %rdx
 	sub $_bss_start, %rdx

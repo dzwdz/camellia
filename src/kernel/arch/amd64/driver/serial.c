@@ -14,8 +14,8 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
 static const int COM1 = 0x3f8;
 
-static void accept(struct vfs_request *req);
-static struct vfs_request *hung_reads = NULL;
+static void accept(VfsReq *req);
+static VfsReq *hung_reads = NULL;
 void serial_init(void) { vfs_root_register("/com1", accept); }
 
 
@@ -59,7 +59,7 @@ void serial_write(const char *buf, size_t len) {
 		serial_putchar(buf[i]);
 }
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	int ret;
 	bool valid;
 	switch (req->type) {

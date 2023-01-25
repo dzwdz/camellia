@@ -6,7 +6,7 @@
 #include <string.h>
 #include <camellia/compat.h>
 
-void initctl_drv(handle_t killswitch) {
+void initctl_drv(hid_t killswitch) {
 	struct ufs_request res;
 	char buf[64];
 	const size_t buflen = sizeof buf;
@@ -28,10 +28,10 @@ void initctl_drv(handle_t killswitch) {
 					}
 				}
 				if (!strcmp(buf, "halt")) {
-					_syscall_write(killswitch, "halt", 4, 0, 0);
+					_sys_write(killswitch, "halt", 4, 0, 0);
 				}
 				if (!strcmp(buf, "intr")) {
-					_syscall_write(killswitch, "intr", 4, 0, 0);
+					_sys_write(killswitch, "intr", 4, 0, 0);
 				}
 				c0_fs_respond(NULL, res.len, 0);
 				break;

@@ -31,7 +31,7 @@ typedef union pe_generic_t {
 	void *as_ptr;
 } pe_generic_t; // pageentry_generic
 
-struct pagedir { /* on amd64 actually points to pml4. the name is like this for historical reasons */
+struct Pagedir { /* on amd64 actually points to pml4 */
 	pe_generic_t e[512];
 } __attribute__((packed));
 

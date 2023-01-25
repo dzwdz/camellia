@@ -8,7 +8,7 @@ struct framebuf {
 	uint8_t bpp;
 	char *b;
 
-	handle_t fd;
+	hid_t fd;
 };
 
 struct rect { uint32_t x1, y1, x2, y2; };

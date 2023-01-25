@@ -2,7 +2,7 @@
 #include <camellia/types.h>
 
 struct evil_sem {
-	handle_t wait, signal;
+	hid_t wait, signal;
 };
 
 void esem_signal(struct evil_sem *sem);

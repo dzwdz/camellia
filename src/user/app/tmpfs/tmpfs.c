@@ -123,14 +123,14 @@ int main(void) {
 
 	for (;;) {
 		struct ufs_request req;
-		handle_t reqh = ufs_wait(buf, buflen, &req);
+		hid_t reqh = ufs_wait(buf, buflen, &req);
 		struct node *ptr = req.id;
 		if (reqh < 0) break;
 
 		switch (req.op) {
 			case VFSOP_OPEN:
 				ptr = tmpfs_open(buf, &req);
-				_syscall_fs_respond(reqh, ptr, ptr ? 0 : -ENOENT, 0);
+				_sys_fs_respond(reqh, ptr, ptr ? 0 : -ENOENT, 0);
 				break;
 
 			case VFSOP_READ:
@@ -140,16 +140,16 @@ int main(void) {
 					for (struct node *iter = ptr->child; iter; iter = iter->sibling) {
 						dir_appendl(&db, iter->name, iter->namelen);
 					}
-					_syscall_fs_respond(reqh, buf, dir_finish(&db), 0);
+					_sys_fs_respond(reqh, buf, dir_finish(&db), 0);
 				} else {
 					fs_normslice(&req.offset, &req.len, ptr->size, false);
-					_syscall_fs_respond(reqh, ptr->buf + req.offset, req.len, 0);
+					_sys_fs_respond(reqh, ptr->buf + req.offset, req.len, 0);
 				}
 				break;
 
 			case VFSOP_WRITE:
 				if (ptr->directory) {
-					_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
+					_sys_fs_respond(reqh, NULL, -ENOSYS, 0);
 					break;
 				}
 
@@ -163,7 +163,7 @@ int main(void) {
 				if ((req.flags & WRITE_TRUNCATE) || ptr->size < req.offset + req.len) {
 					ptr->size = req.offset + req.len;
 				}
-				_syscall_fs_respond(reqh, NULL, req.len, 0);
+				_sys_fs_respond(reqh, NULL, req.len, 0);
 				break;
 
 			case VFSOP_GETSIZE:
@@ -174,23 +174,23 @@ int main(void) {
 					for (struct node *iter = ptr->child; iter; iter = iter->sibling) {
 						dir_append(&db, iter->name);
 					}
-					_syscall_fs_respond(reqh, NULL, dir_finish(&db), 0);
+					_sys_fs_respond(reqh, NULL, dir_finish(&db), 0);
 				} else {
-					_syscall_fs_respond(reqh, NULL, ptr->size, 0);
+					_sys_fs_respond(reqh, NULL, ptr->size, 0);
 				}
 				break;
 
 			case VFSOP_REMOVE:
-				_syscall_fs_respond(reqh, NULL, node_remove(ptr), 0);
+				_sys_fs_respond(reqh, NULL, node_remove(ptr), 0);
 				break;
 
 			case VFSOP_CLOSE:
 				node_close(ptr);
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 
 			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}

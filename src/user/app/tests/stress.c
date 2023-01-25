@@ -11,7 +11,7 @@ static void run_forked(void (*fn)()) {
 	} else {
 		/* successful tests must return 0
 		 * TODO add a better fail msg */
-		if (_syscall_await() != 0) test_fail();
+		if (_sys_await() != 0) test_fail();
 	}
 }
 
@@ -19,7 +19,7 @@ static void run_forked(void (*fn)()) {
 static void stress_fork(void) {
 	for (size_t i = 0; i < 2048; i++) {
 		if (!fork()) exit(0);
-		_syscall_await();
+		_sys_await();
 	}
 }
 

@@ -6,20 +6,20 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-struct handle *handle_init(enum handle_type type) {
-	struct handle *h = kzalloc(sizeof *h);
+Handle *handle_init(enum handle_type type) {
+	Handle *h = kzalloc(sizeof *h);
 	h->type = type;
 	h->refcount = 1;
 	return h;
 }
 
-void handle_close(struct handle *h) {
+void handle_close(Handle *h) {
 	if (!h) return;
 	assert(h->refcount > 0);
 	if (--(h->refcount) > 0) return;
 
 	if (h->type == HANDLE_FILE) {
-		vfsreq_create((struct vfs_request) {
+		vfsreq_create((VfsReq) {
 				.type = VFSOP_CLOSE,
 				.id = h->file_id,
 				.caller = NULL,

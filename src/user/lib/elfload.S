@@ -15,6 +15,6 @@ _freejmp_chstack:
 // _Noreturn void execbuf_chstack(void *stack, void __user *buf, size_t len);
 execbuf_chstack:
 	mov %rdi, %rsp
-	mov $_SYSCALL_EXECBUF, %rdi
+	mov $_SYS_EXECBUF, %rdi
 	syscall
 	hlt // if execbuf failed we might as well crash

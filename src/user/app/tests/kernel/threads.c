@@ -18,13 +18,13 @@ static void test_basic_thread(void) {
 	test(global_n == 10);
 }
 
-handle_t global_h;
+hid_t global_h;
 static void shared_handle(void *sem) {
-	handle_t ends[2];
-	test(_syscall_pipe(ends, 0) >= 0);
+	hid_t ends[2];
+	test(_sys_pipe(ends, 0) >= 0);
 	global_h = ends[0];
 	esem_signal(sem);
-	_syscall_write(ends[1], "Hello!", 7, -1, 0);
+	_sys_write(ends[1], "Hello!", 7, -1, 0);
 }
 static void test_shared_handle(void) {
 	struct evil_sem *sem = esem_new(0);
@@ -34,7 +34,7 @@ static void test_shared_handle(void) {
 	esem_wait(sem);
 
 	test(global_h >= 0);
-	test(_syscall_read(global_h, buf, sizeof buf, 0) == 7);
+	test(_sys_read(global_h, buf, sizeof buf, 0) == 7);
 	test(!strcmp("Hello!", buf));
 }
 
@@ -44,7 +44,7 @@ static void many_thread(void *arg) {
 static void test_many_threads(void) {
 	uint64_t n = 0;
 	for (int i = 0; i < 10; i++) thread_create(0, many_thread, &n);
-	for (int i = 0; i < 10; i++) _syscall_await();
+	for (int i = 0; i < 10; i++) _sys_await();
 	test(n == 100);
 }
 

@@ -5,7 +5,7 @@
 static void flush_combined(struct rect pix, struct framebuf *fb) {
 	size_t low  = fb->pitch * pix.y1 + 4 * pix.x1;
 	size_t high = fb->pitch * pix.y2 + 4 * pix.y2 + 4;
-	_syscall_write(fb->fd, fb->b + low, high - low, low, 0);
+	_sys_write(fb->fd, fb->b + low, high - low, low, 0);
 }
 
 static void flush_split(struct rect pix, struct framebuf *fb) {
@@ -21,14 +21,14 @@ static void flush_split(struct rect pix, struct framebuf *fb) {
 		size_t high = fb->pitch * y + 4 * pix.x2 + 4;
 
 		execbuf[epos++] = EXECBUF_SYSCALL;
-		execbuf[epos++] = _SYSCALL_WRITE;
+		execbuf[epos++] = _SYS_WRITE;
 		execbuf[epos++] = fb->fd;
 		execbuf[epos++] = (uintptr_t)fb->b + low;
 		execbuf[epos++] = high - low;
 		execbuf[epos++] = low;
 		execbuf[epos++] = 0;
 	}
-	_syscall_execbuf(execbuf, epos * sizeof(uint64_t));
+	_sys_execbuf(execbuf, epos * sizeof(uint64_t));
 }
 
 void dirty_flush(struct rect *d, struct framebuf *fb) {

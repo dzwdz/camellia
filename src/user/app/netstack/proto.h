@@ -10,7 +10,7 @@ extern struct net_state {
 	mac_t mac;
 	uint32_t ip, gateway;
 
-	handle_t raw_h;
+	hid_t raw_h;
 } state;
 
 enum { /* ethertype */
@@ -51,7 +51,7 @@ struct icmp {
  * will break if i implement a scheduler*/
 struct ethq {
 	struct ethq *next;
-	handle_t h;
+	hid_t h;
 };
 extern struct ethq *ether_queue;
 
@@ -59,7 +59,7 @@ void arp_parse(const uint8_t *buf, size_t len);
 void arp_request(uint32_t ip);
 /* 0 on success, -1 on failure */
 int arpcache_get(uint32_t ip, mac_t *mac);
-void arp_fsread(handle_t h, long offset);
+void arp_fsread(hid_t h, long offset);
 long arp_fswrite(const char *buf, long len, long offset);
 
 void icmp_parse(const uint8_t *buf, size_t len, struct ipv4 ip);

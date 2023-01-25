@@ -19,7 +19,7 @@ void ether_parse(const uint8_t *buf, size_t len) {
 
 	for (struct ethq **iter = &ether_queue; iter && *iter; ) {
 		struct ethq *qe = *iter;
-		_syscall_fs_respond(qe->h, buf, len, 0);
+		_sys_fs_respond(qe->h, buf, len, 0);
 		/* remove entry */
 		/* yes, doing it this way here doesn't make sense. i'm preparing for filtering */
 		*iter = qe->next;
@@ -54,6 +54,6 @@ uint8_t *ether_start(size_t len, struct ethernet ether) {
 void ether_finish(uint8_t *pkt) {
 	uint8_t *buf = pkt - Payload - fhoff;
 	size_t len = *(size_t*)buf;
-	_syscall_write(state.raw_h, buf + fhoff, len, 0, 0);
+	_sys_write(state.raw_h, buf + fhoff, len, 0, 0);
 	free(buf);
 }

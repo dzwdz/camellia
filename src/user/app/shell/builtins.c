@@ -58,13 +58,13 @@ static void cmd_echo(int argc, char **argv) {
 void cmd_getsize(int argc, char **argv) {
 	if (argc < 2) errx(1, "no arguments");
 	for (int i = 1; i < argc; i++) {
-		handle_t h = camellia_open(argv[i], OPEN_READ);
+		hid_t h = camellia_open(argv[i], OPEN_READ);
 		if (h < 0) {
 			warn("error opening %s", argv[i]);
 			continue;
 		}
-		printf("%s: %d\n", argv[i], (int)_syscall_getsize(h));
-		_syscall_close(h);
+		printf("%s: %d\n", argv[i], (int)_sys_getsize(h));
+		_sys_close(h);
 	}
 }
 
@@ -205,7 +205,7 @@ static void cmd_rm(int argc, char **argv) {
 
 static void cmd_sleep(int argc, char **argv) {
 	if (argc < 2) errx(1, "no arguments");
-	_syscall_sleep(strtol(argv[1], NULL, 0) * 1000);
+	_sys_sleep(strtol(argv[1], NULL, 0) * 1000);
 }
 
 static void cmd_touch(int argc, char **argv) {

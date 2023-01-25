@@ -26,18 +26,18 @@ void redirect(const char *exe, const char *out, const char *in) {
 				termcook();
 				execv(exe, (void*)argv);
 				fprintf(stderr, "init: couldn't start %s\n", exe);
-				_syscall_sleep(5000);
+				_sys_sleep(5000);
 				exit(1);
 			}
-			_syscall_await();
-			_syscall_intr();
+			_sys_await();
+			_sys_intr();
 		}
 	}
 }
 
 int main(void) {
 	const char *teststr = "I am teststr.\n";
-	handle_t killswitch_pipe[2];
+	hid_t killswitch_pipe[2];
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
@@ -86,7 +86,7 @@ int main(void) {
 		execv(argv[0], (void*)argv);
 	}
 
-	if (_syscall_pipe(killswitch_pipe, 0) < 0) {
+	if (_sys_pipe(killswitch_pipe, 0) < 0) {
 		printf("couldn't create the killswitch pipe, quitting...\n");
 		return 1;
 	}
@@ -106,20 +106,20 @@ int main(void) {
 
 	char buf[128];
 	for (;;) {
-		if (_syscall_read(killswitch_pipe[0], buf, 128, 0) != 4) {
+		if (_sys_read(killswitch_pipe[0], buf, 128, 0) != 4) {
 			break;
 		}
 		if (memcmp(buf, "intr", 4) == 0) {
-			_syscall_intr();
+			_sys_intr();
 		} else if (memcmp(buf, "halt", 4) == 0) {
 			break;
 		}
 	}
 	printf("[init] intr\n");
-	_syscall_intr();
-	_syscall_sleep(1000);
+	_sys_intr();
+	_sys_sleep(1000);
 	printf("[init] filicide\n");
-	_syscall_filicide();
+	_sys_filicide();
 	printf("[init] goodbye\n");
 	return 0;
 }

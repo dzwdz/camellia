@@ -3,7 +3,7 @@
 #include <kernel/proc.h>
 
 static uint64_t uptime = 0, goal = ~0;
-static struct process *scheduled = NULL;
+static Proc *scheduled = NULL;
 
 uint64_t uptime_ms(void) { return uptime; }
 
@@ -16,18 +16,18 @@ void pit_irq(void) {
 	uptime++;
 	if (uptime < goal) return;
 
-	struct process *p = scheduled;
+	Proc *p = scheduled;
 	assert(p);
 	scheduled = p->waits4timer.next;
-	process_transition(p, PS_RUNNING);
+	proc_setstate(p, PS_RUNNING);
 	update_goal();
 }
 
-void timer_schedule(struct process *p, uint64_t time) {
-	process_transition(p, PS_WAITS4TIMER);
+void timer_schedule(Proc *p, uint64_t time) {
+	proc_setstate(p, PS_WAITS4TIMER);
 	p->waits4timer.goal = time;
 
-	struct process **slot = &scheduled;
+	Proc **slot = &scheduled;
 	while (*slot && (*slot)->waits4timer.goal <= time) {
 		assert((*slot)->state == PS_WAITS4TIMER);
 		slot = &(*slot)->waits4timer.next;
@@ -37,10 +37,10 @@ void timer_schedule(struct process *p, uint64_t time) {
 	update_goal();
 }
 
-void timer_deschedule(struct process *p) {
+void timer_deschedule(Proc *p) {
 	assert(p->state == PS_WAITS4TIMER);
 
-	struct process **slot = &scheduled;
+	Proc **slot = &scheduled;
 	while (*slot && *slot != p)
 		slot = &(*slot)->waits4timer.next;
 	assert(*slot);

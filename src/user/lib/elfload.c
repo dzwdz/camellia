@@ -46,7 +46,7 @@ static bool load_phdr(const void *elf, void *exebase, size_t idx) {
 	}
 	// TODO overlap check
 	// TODO don't ignore flags
-	_syscall_memflag(exebase + phdr->p_vaddr, phdr->p_memsz, MEMFLAG_PRESENT);
+	_sys_memflag(exebase + phdr->p_vaddr, phdr->p_memsz, MEMFLAG_PRESENT);
 	// TODO check that filesz <= memsz
 	memcpy(exebase + phdr->p_vaddr, elf + phdr->p_offset, phdr->p_filesz);
 	return true;
@@ -122,8 +122,8 @@ void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **e
 
 	uintptr_t high = (uintptr_t)low + imglen;
 	uint64_t buf[] = {
-		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, 0, (uintptr_t)low, 0, 0, 0,
-		EXECBUF_SYSCALL, _SYSCALL_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0, 0,
+		EXECBUF_SYSCALL, _SYS_MEMFLAG, 0, (uintptr_t)low, 0, 0, 0,
+		EXECBUF_SYSCALL, _SYS_MEMFLAG, high, ~0 - 0xF000 - high, 0, 0, 0,
 		EXECBUF_JMP, (uintptr_t)entry,
 	};
 	execbuf_chstack(stack, buf, sizeof buf);
@@ -137,7 +137,7 @@ static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
 			exebase = (void*)0;
 			break;
 		case ET_DYN:
-			exebase = _syscall_memflag((void*)0x1000, spread, MEMFLAG_FINDFREE);
+			exebase = _sys_memflag((void*)0x1000, spread, MEMFLAG_FINDFREE);
 			if (!exebase)
 				return NULL;
 			break;
@@ -146,7 +146,7 @@ static void *elf_loadmem(struct Elf64_Ehdr *ehdr) {
 	}
 	for (size_t phi = 0; phi < ehdr->e_phnum; phi++) {
 		if (!load_phdr((void*)ehdr, exebase, phi)) {
-			_syscall_memflag(exebase, spread, 0);
+			_sys_memflag(exebase, spread, 0);
 			return NULL;
 		}
 	}
@@ -160,7 +160,7 @@ void elf_exec(void *base, char **argv, char **envp) {
 	void *exebase = elf_loadmem(ehdr);
 	if (!exebase) return;
 
-	void *newstack = _syscall_memflag((void*)0x11000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
+	void *newstack = _sys_memflag((void*)0x11000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
 	if (!newstack) return;
 
 	_freejmp_chstack(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000, (const char**)argv, envp, newstack);

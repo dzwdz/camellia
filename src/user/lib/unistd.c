@@ -11,22 +11,22 @@
 int errno = 0;
 
 int fork(void) {
-	return _syscall_fork(0, NULL);
+	return _sys_fork(0, NULL);
 }
 
-int close(handle_t h) {
-	return _syscall_close(h);
+int close(hid_t h) {
+	return _sys_close(h);
 }
 
 _Noreturn void exit(int c) {
-	_syscall_exit(c);
+	_sys_exit(c);
 }
 _Noreturn void _exit(int c) { exit(c); };
 
 int unlink(const char *path) {
-	handle_t h = camellia_open(path, OPEN_WRITE);
+	hid_t h = camellia_open(path, OPEN_WRITE);
 	if (h < 0) return errno = -h, -1;
-	long ret = _syscall_remove(h);
+	long ret = _sys_remove(h);
 	if (ret < 0) return errno = -ret, -1;
 	return 0;
 }
@@ -79,7 +79,7 @@ static const char *getrealcwd(void) {
 }
 
 int chdir(const char *path) {
-	handle_t h;
+	hid_t h;
 	char *tmp;
 	size_t len = absolutepath(NULL, path, 0) + 1; /* +1 for the trailing slash */
 	if (cwdcapacity < len) {

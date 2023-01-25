@@ -4,5 +4,5 @@
 
 _Noreturn void __badassert(const char *func, const char *file, int line) {
 	fprintf(stderr, "assertion failure %s:%s:%u\n", file, func, line);
-	_syscall_exit(1);
+	_sys_exit(1);
 }

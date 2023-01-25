@@ -13,12 +13,12 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) {
 		return NULL;
 	}
 
-	void *p = _syscall_memflag(addr, len, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
+	void *p = _sys_memflag(addr, len, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
 	if (!p) errno = ENOMEM;
 	return p;
 }
 
 int munmap(void *addr, size_t len) {
-	_syscall_memflag(addr, len, 0);
+	_sys_memflag(addr, len, 0);
 	return 0;
 }

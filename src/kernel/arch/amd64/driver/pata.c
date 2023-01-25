@@ -11,13 +11,13 @@
 
 static const int root_id = 100;
 
-static void accept(struct vfs_request *req);
+static void accept(VfsReq *req);
 void pata_init(void) {
 	ata_init();
 	vfs_root_register("/ata", accept);
 }
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	int ret;
 	long id = (long __force)req->id;
 	char wbuf[4096];

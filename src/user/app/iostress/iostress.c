@@ -26,9 +26,9 @@ int main(int argc, char **argv) {
 	for (long i = 0; i < num_runs; i++) {
 		uint64_t time = __rdtsc();
 		for (long j = 0; j < num_calls; j++)
-			_syscall_write(1, inbuf, num_bytes, -1, 0);
+			_sys_write(1, inbuf, num_bytes, -1, 0);
 		results[i] = __rdtsc() - time;
-		_syscall_write(1, "\n", 1, -1, 0);
+		_sys_write(1, "\n", 1, -1, 0);
 	}
 
 	uint64_t total = 0;

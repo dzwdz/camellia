@@ -18,14 +18,14 @@ struct phandle {
 	enum phandle_type type;
 };
 
-static struct phandle *openpath(const char *path, size_t len, struct process *root);
-static struct process *findgid(uint32_t gid, struct process *root);
-static void procfs_accept(struct vfs_request *req);
-static void procfs_cleanup(struct vfs_backend *be);
+static struct phandle *openpath(const char *path, size_t len, Proc *root);
+static Proc *findgid(uint32_t gid, Proc *root);
+static void procfs_accept(VfsReq *req);
+static void procfs_cleanup(VfsBackend *be);
 static int isdigit(int c);
 
 static struct phandle *
-openpath(const char *path, size_t len, struct process *p)
+openpath(const char *path, size_t len, Proc *p)
 {
 	struct phandle *h;
 	enum phandle_type type;
@@ -71,21 +71,21 @@ openpath(const char *path, size_t len, struct process *p)
 	return h;
 }
 
-static struct process *
-findgid(uint32_t gid, struct process *root)
+static Proc *
+findgid(uint32_t gid, Proc *root)
 {
-	for (struct process *p = root; p; p = process_next(p, root)) {
+	for (Proc *p = root; p; p = proc_next(p, root)) {
 		if (p->globalid == gid) return p;
 	}
 	return NULL;
 }
 
 static void
-procfs_accept(struct vfs_request *req)
+procfs_accept(VfsReq *req)
 {
-	struct process *root = req->backend->kern.data;
+	Proc *root = req->backend->kern.data;
 	struct phandle *h = (__force void*)req->id;
-	struct process *p;
+	Proc *p;
 	char buf[512];
 	assert(root);
 	if (req->type == VFSOP_OPEN) {
@@ -110,7 +110,7 @@ procfs_accept(struct vfs_request *req)
 		}
 		pos += snprintf(buf + pos, 512 - pos, "intr")+1;
 		pos += snprintf(buf + pos, 512 - pos, "mem")+1;
-		for (struct process *iter = p->child; iter; iter = iter->sibling) {
+		for (Proc *iter = p->child; iter; iter = iter->sibling) {
 			assert(pos < 512);
 			// processes could possibly be identified by unique identifiers instead
 			// e.g. an encrypted gid, or just a randomly generated one
@@ -135,7 +135,7 @@ procfs_accept(struct vfs_request *req)
 		);
 		vfsreq_finish_short(req, res);
 	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
-		process_intr(p);
+		proc_intr(p);
 		vfsreq_finish_short(req, req->input.len);
 	} else if (req->type == VFSOP_CLOSE) {
 		kfree(h);
@@ -146,9 +146,9 @@ procfs_accept(struct vfs_request *req)
 }
 
 static void
-procfs_cleanup(struct vfs_backend *be)
+procfs_cleanup(VfsBackend *be)
 {
-	struct process *p = be->kern.data;
+	Proc *p = be->kern.data;
 	assert(p);
 	p->refcount--;
 }
@@ -158,11 +158,11 @@ isdigit(int c) {
 	return '0' <= c && c <= '9';
 }
 
-struct vfs_backend *
-procfs_backend(struct process *proc)
+VfsBackend *
+procfs_backend(Proc *proc)
 {
-	struct vfs_backend *be = kzalloc(sizeof(struct vfs_backend));
-	*be = (struct vfs_backend) {
+	VfsBackend *be = kzalloc(sizeof(VfsBackend));
+	*be = (VfsBackend) {
 		.is_user = false,
 		.provhcnt = 1,
 		.usehcnt = 1,

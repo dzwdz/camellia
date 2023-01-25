@@ -8,7 +8,7 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-static int handle(struct vfs_request *req) {
+static int handle(VfsReq *req) {
 	// TODO document directory read format
 	// TODO don't hardcode
 	const char dir[] =
@@ -31,7 +31,7 @@ static int handle(struct vfs_request *req) {
 	}
 }
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	vfsreq_finish_short(req, handle(req));
 }
 

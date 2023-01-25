@@ -50,14 +50,14 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		if (argc < 2) {
 			fprintf(stderr, "shadow: missing path\n");
 		} else {
-			_syscall_mount(HANDLE_NULLFS, argv[1], strlen(argv[1]));
+			_sys_mount(HANDLE_NULLFS, argv[1], strlen(argv[1]));
 		}
 	} else if (!strcmp(argv[0], "procmnt")) {
 		if (argc < 2) {
 			fprintf(stderr, "procmnt: missing mountpoint\n");
 			return;
 		}
-		_syscall_mount(HANDLE_PROCFS, argv[1], strlen(argv[1]));
+		_sys_mount(HANDLE_PROCFS, argv[1], strlen(argv[1]));
 		if (!fork2_n_mount("/")) {
 			fs_dir_inject(argv[1]);
 			exit(1);
@@ -79,7 +79,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 	}
 
 	if (fork()) {
-		_syscall_await();
+		_sys_await();
 		return;
 	}
 
@@ -91,18 +91,18 @@ void run_args(int argc, char **argv, struct redir *redir) {
 
 		/* a workaround for file offsets not being preserved across exec()s.
 		 * TODO document that weird behaviour of exec() */
-		handle_t p[2];
-		if (_syscall_pipe(p, 0) < 0) {
+		hid_t p[2];
+		if (_sys_pipe(p, 0) < 0) {
 			errx(1, "couldn't create redirection pipe");
 		}
-		if (!_syscall_fork(FORK_NOREAP, NULL)) {
+		if (!_sys_fork(FORK_NOREAP, NULL)) {
 			/* the child forwards data from the pipe to the file */
 			const size_t buflen = 512;
 			char *buf = malloc(buflen);
 			if (!buf) err(1, "when redirecting");
 			close(p[1]);
 			for (;;) {
-				long len = _syscall_read(p[0], buf, buflen, 0);
+				long len = _sys_read(p[0], buf, buflen, 0);
 				if (len < 0) exit(0);
 				fwrite(buf, 1, len, f);
 				if (ferror(f)) exit(0);
@@ -111,7 +111,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 
 		fclose(f);
 		close(p[0]);
-		if (_syscall_dup(p[1], 1, 0) < 0) {
+		if (_sys_dup(p[1], 1, 0) < 0) {
 			errx(1, "dup() failed when redirecting");
 		}
 	}

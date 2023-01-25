@@ -21,7 +21,7 @@
 #define BUFSIZ 1024
 
 /* stop fread() from trying to fill the entire buffer before returning
- * i.e. it will call _syscall_read() exactly once */
+ * i.e. it will call _sys_read() exactly once */
 #define FEXT_NOFILL 1
 
 int printf(const char *restrict fmt, ...);

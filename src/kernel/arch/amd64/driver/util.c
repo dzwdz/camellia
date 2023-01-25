@@ -5,7 +5,7 @@
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
 
-int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
+int req_readcopy(VfsReq *req, const void *buf, size_t len) {
 	if (!req->caller) return -1;
 	assert(req->type == VFSOP_READ);
 	fs_normslice(&req->offset, &req->output.len, len, false);
@@ -14,7 +14,7 @@ int req_readcopy(struct vfs_request *req, const void *buf, size_t len) {
 	return req->output.len;
 }
 
-void postqueue_join(struct vfs_request **queue, struct vfs_request *req) {
+void postqueue_join(VfsReq **queue, VfsReq *req) {
 	if (req->postqueue_next)
 		panic_invalid_state();
 
@@ -23,16 +23,16 @@ void postqueue_join(struct vfs_request **queue, struct vfs_request *req) {
 	*queue = req;
 }
 
-bool postqueue_pop(struct vfs_request **queue, void (*accept)(struct vfs_request *)) {
-	struct vfs_request *req = *queue;
+bool postqueue_pop(VfsReq **queue, void (*accept)(VfsReq *)) {
+	VfsReq *req = *queue;
 	if (req == NULL) return false;
 	*queue = req->postqueue_next;
 	accept(req);
 	return true;
 }
 
-void postqueue_ringreadall(struct vfs_request **queue, ring_t *r) {
-	struct vfs_request *req;
+void postqueue_ringreadall(VfsReq **queue, ring_t *r) {
+	VfsReq *req;
 	char tmp[64];
 	size_t mlen = 0;
 	if (ring_used(r) == 0) return;

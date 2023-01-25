@@ -1,7 +1,8 @@
 #pragma once
+#include <kernel/types.h>
 
 // sysenter.c
-extern struct registers _sysexit_regs;
+extern CpuRegs _sysexit_regs;
 _Noreturn void sysenter_stage2(void);
 
 // sysenter.s

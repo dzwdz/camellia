@@ -10,21 +10,21 @@ enum tstate {
 	CSI,
 };
 
-static void w_output(handle_t output, const char *buf, size_t len) {
+static void w_output(hid_t output, const char *buf, size_t len) {
 	size_t pos = 0;
 	while (pos < len) {
-		int ret = _syscall_write(output, buf + pos, len - pos, pos, 0);
+		int ret = _sys_write(output, buf + pos, len - pos, pos, 0);
 		if (ret < 0) break;
 		pos += ret;
 	}
 }
 
-static void line_editor(handle_t input, handle_t output) {
+static void line_editor(hid_t input, hid_t output) {
 	char readbuf[16], linebuf[256];
 	size_t linepos = 0;
 	enum tstate state = Normal;
 	for (;;) {
-		int readlen = _syscall_read(input, readbuf, sizeof readbuf, -1);
+		int readlen = _sys_read(input, readbuf, sizeof readbuf, -1);
 		if (readlen < 0) return;
 		for (int i = 0; i < readlen; i++) {
 			char c = readbuf[i];
@@ -39,13 +39,13 @@ static void line_editor(handle_t input, handle_t output) {
 					}
 					break;
 				case 3: /* C-c */
-					_syscall_exit(1);
+					_sys_exit(1);
 				case 4: /* EOT, C-d */
 					if (linepos > 0) {
 						w_output(output, linebuf, linepos);
 						linepos = 0;
 					} else {
-						_syscall_write(output, NULL, 0, 0, 0); /* EOF */
+						_sys_write(output, NULL, 0, 0, 0); /* EOF */
 					}
 					break;
 				case '\n':
@@ -82,14 +82,14 @@ static void line_editor(handle_t input, handle_t output) {
 }
 
 void termcook(void) {
-	handle_t stdin_pipe[2] = {-1, -1};
-	if (_syscall_pipe(stdin_pipe, 0) < 0)
+	hid_t stdin_pipe[2] = {-1, -1};
+	if (_sys_pipe(stdin_pipe, 0) < 0)
 		return;
 
 	if (!fork()) {
 		/* the caller continues in a child process,
 		 * so it can be killed when the line editor quits */
-		_syscall_dup(stdin_pipe[0], 0, 0);
+		_sys_dup(stdin_pipe[0], 0, 0);
 		close(stdin_pipe[0]);
 		close(stdin_pipe[1]);
 		return;
@@ -99,5 +99,5 @@ void termcook(void) {
 		line_editor(0, stdin_pipe[1]);
 		exit(0);
 	}
-	exit(_syscall_await());
+	exit(_sys_await());
 }

@@ -6,7 +6,7 @@
 #include <user/lib/panic.h>
 
 _Noreturn void abort(void) {
-	_syscall_exit(1);
+	_sys_exit(1);
 }
 
 static const char *progname;
@@ -32,7 +32,7 @@ void setproctitle(const char *fmt, ...) {
 
 int mkstemp(char *template) {
 	// TODO randomize template
-	handle_t h = camellia_open(template, OPEN_CREATE | OPEN_RW);
+	hid_t h = camellia_open(template, OPEN_CREATE | OPEN_RW);
 	if (h < 0) {
 		errno = -h;
 		return -1;

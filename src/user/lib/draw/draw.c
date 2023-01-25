@@ -43,11 +43,11 @@ int fb_setup(struct framebuf *fb, const char *base) {
 	fb->bpp = strtol(spec, &spec, 0);
 	if (fb->bpp != 32) return -EINVAL;
 
-	fb->len = _syscall_getsize(fb->fd);
+	fb->len = _sys_getsize(fb->fd);
 	fb->pitch = fb->len / fb->height;
 	fb->b = malloc(fb->len);
 
-	_syscall_read(fb->fd, fb->b, fb->len, 0);
+	_sys_read(fb->fd, fb->b, fb->len, 0);
 
 	return 0;
 }

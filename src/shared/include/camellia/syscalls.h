@@ -1,27 +1,27 @@
 #pragma once
 
-#define _SYSCALL_EXIT 0
-#define _SYSCALL_AWAIT 1
-#define _SYSCALL_FORK 2
-#define _SYSCALL_OPEN 3
-#define _SYSCALL_MOUNT 4
-#define _SYSCALL_DUP 5
-#define _SYSCALL_READ 6
-#define _SYSCALL_WRITE 7
-#define _SYSCALL_GETSIZE 8
-#define _SYSCALL_REMOVE 9
-#define _SYSCALL_CLOSE 10
-#define _SYSCALL_FS_WAIT 11
-#define _SYSCALL_FS_RESPOND 12
-#define _SYSCALL_MEMFLAG 13
-#define _SYSCALL_PIPE 14
-#define _SYSCALL_SLEEP 15
-#define _SYSCALL_FILICIDE 16
-#define _SYSCALL_INTR 17
-#define _SYSCALL_INTR_SET 18
+#define _SYS_EXIT 0
+#define _SYS_AWAIT 1
+#define _SYS_FORK 2
+#define _SYS_OPEN 3
+#define _SYS_MOUNT 4
+#define _SYS_DUP 5
+#define _SYS_READ 6
+#define _SYS_WRITE 7
+#define _SYS_GETSIZE 8
+#define _SYS_REMOVE 9
+#define _SYS_CLOSE 10
+#define _SYS_FS_WAIT 11
+#define _SYS_FS_RESPOND 12
+#define _SYS_MEMFLAG 13
+#define _SYS_PIPE 14
+#define _SYS_SLEEP 15
+#define _SYS_FILICIDE 16
+#define _SYS_INTR 17
+#define _SYS_INTR_SET 18
 
-#define _SYSCALL_EXECBUF 100
-#define _SYSCALL_DEBUG_KLOG 101
+#define _SYS_EXECBUF 100
+#define _SYS_DEBUG_KLOG 101
 
 #ifndef ASM_FILE
 #include <camellia/types.h>
@@ -31,12 +31,12 @@ long _syscall(long, long, long, long, long, long);
 
 /** Kills the current process.
  */
-_Noreturn void _syscall_exit(long ret);
+_Noreturn void _sys_exit(long ret);
 
 /** Waits for a child to exit.
  * @return the value the child passed to exit()
  */
-long _syscall_await(void);
+long _sys_await(void);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.
@@ -46,20 +46,20 @@ long _syscall_await(void);
  *
  * @return 0 in the child, the CID in the parent.
  */
-long _syscall_fork(int flags, handle_t __user *fs_front);
+long _sys_fork(int flags, hid_t __user *fs_front);
 
-handle_t _syscall_open(const char __user *path, long len, int flags);
-long _syscall_mount(handle_t h, const char __user *path, long len);
-handle_t _syscall_dup(handle_t from, handle_t to, int flags);
+hid_t _sys_open(const char __user *path, long len, int flags);
+long _sys_mount(hid_t h, const char __user *path, long len);
+hid_t _sys_dup(hid_t from, hid_t to, int flags);
 
-long _syscall_read(handle_t h, void __user *buf, size_t len, long offset);
-long _syscall_write(handle_t h, const void __user *buf, size_t len, long offset, int flags);
-long _syscall_getsize(handle_t h);
-long _syscall_remove(handle_t h);
-long _syscall_close(handle_t h);
+long _sys_read(hid_t h, void __user *buf, size_t len, long offset);
+long _sys_write(hid_t h, const void __user *buf, size_t len, long offset, int flags);
+long _sys_getsize(hid_t h);
+long _sys_remove(hid_t h);
+long _sys_close(hid_t h);
 
-handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res);
-long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags);
+hid_t _sys_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res);
+long _sys_fs_respond(hid_t hid, const void __user *buf, long ret, int flags);
 
 /** Modifies the virtual address space.
  *
@@ -70,18 +70,18 @@ long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int fla
  *
  * @return address of the first affected page (usually == addr)
  */
-void __user *_syscall_memflag(void __user *addr, size_t len, int flags);
-long _syscall_pipe(handle_t __user user_ends[2], int flags);
+void __user *_sys_memflag(void __user *addr, size_t len, int flags);
+long _sys_pipe(hid_t __user user_ends[2], int flags);
 
-void _syscall_sleep(long ms);
+void _sys_sleep(long ms);
 
-void _syscall_filicide(void);
-void _syscall_intr(void);
-void _syscall_intr_set(void __user *ip);
+void _sys_filicide(void);
+void _sys_intr(void);
+void _sys_intr_set(void __user *ip);
 
 /* see shared/execbuf.h */
-long _syscall_execbuf(void __user *buf, size_t len);
+long _sys_execbuf(void __user *buf, size_t len);
 
-void _syscall_debug_klog(const void __user *buf, size_t len);
+void _sys_debug_klog(const void __user *buf, size_t len);
 
 #endif

@@ -11,9 +11,9 @@
 #endif
 
 typedef void __user * userptr_t;
-typedef int handle_t;
+typedef int hid_t;
 
-enum vfs_operation {
+enum vfs_op {
 	VFSOP_OPEN,
 	VFSOP_READ,
 	VFSOP_WRITE,
@@ -23,7 +23,7 @@ enum vfs_operation {
 };
 
 struct ufs_request {
-	enum vfs_operation op;
+	enum vfs_op op;
 	size_t len; // how much was put in *buf
 	size_t capacity; // how much output can be accepted by the caller
 	void __user *id;  // file id (returned by the open handler, passed to other calls)

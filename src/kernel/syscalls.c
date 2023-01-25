@@ -13,50 +13,50 @@
 #include <stdint.h>
 
 #define SYSCALL_RETURN(val) do { \
-	assert(process_current->state == PS_RUNNING); \
-	regs_savereturn(&process_current->regs, (long)(val)); \
+	assert(proc_cur->state == PS_RUNNING); \
+	regs_savereturn(&proc_cur->regs, (long)(val)); \
 	return 0; \
 } while (0)
 
-_Noreturn void _syscall_exit(long ret) {
-	process_kill(process_current, ret);
-	process_switch_any();
+_Noreturn void _sys_exit(long ret) {
+	proc_kill(proc_cur, ret);
+	proc_switch_any();
 }
 
-long _syscall_await(void) {
+long _sys_await(void) {
 	bool has_children = false;
-	process_transition(process_current, PS_WAITS4CHILDDEATH);
+	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
 
-	for (struct process *iter = process_current->child;
+	for (Proc *iter = proc_cur->child;
 			iter; iter = iter->sibling)
 	{
 		if (iter->noreap) continue;
 		has_children = true;
 		if (iter->state == PS_TOREAP) {
-			process_tryreap(iter);
+			proc_tryreap(iter);
 			return 0; // dummy
 		}
 	}
 
 	if (!has_children) {
-		process_transition(process_current, PS_RUNNING);
+		proc_setstate(proc_cur, PS_RUNNING);
 		SYSCALL_RETURN(~0); // TODO errno
 	}
 	return 0; // dummy
 }
 
-long _syscall_fork(int flags, handle_t __user *fs_front) {
-	struct process *child;
+long _sys_fork(int flags, hid_t __user *fs_front) {
+	Proc *child;
 
-	child = process_fork(process_current, flags);
+	child = proc_fork(proc_cur, flags);
 	regs_savereturn(&child->regs, 0);
 
 	if (flags & FORK_NEWFS) {
-		struct handle *h;
-		handle_t hid = process_handle_init(process_current, HANDLE_FS_FRONT, &h);
+		Handle *h;
+		hid_t hid = proc_handle_init(proc_cur, HANDLE_FS_FRONT, &h);
 		if (hid < 0) {
 			child->noreap = true;
-			process_kill(child, -EMFILE);
+			proc_kill(child, -EMFILE);
 			SYSCALL_RETURN(-EMFILE);
 		}
 
@@ -72,14 +72,14 @@ long _syscall_fork(int flags, handle_t __user *fs_front) {
 			/* failure ignored. if you pass an invalid pointer to this function,
 			 * you just don't receive the handle. you'll probably segfault
 			 * trying to access it anyways */
-			pcpy_to(process_current, fs_front, &hid, sizeof hid);
+			pcpy_to(proc_cur, fs_front, &hid, sizeof hid);
 		}
 	}
 	SYSCALL_RETURN(child->cid);
 }
 
-handle_t _syscall_open(const char __user *path, long len, int flags) {
-	struct vfs_mount *mount;
+hid_t _sys_open(const char __user *path, long len, int flags) {
+	VfsMount *mount;
 	char *path_buf = NULL;
 
 	if (flags & ~(OPEN_RW | OPEN_CREATE)) SYSCALL_RETURN(-ENOSYS);
@@ -90,14 +90,14 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 	 * handles in the meantime anyways, or free some up. */
 
 	path_buf = kmalloc(len);
-	if (pcpy_from(process_current, path_buf, path, len) < (size_t)len) {
+	if (pcpy_from(proc_cur, path_buf, path, len) < (size_t)len) {
 		goto fail;
 	}
 
 	len = path_simplify(path_buf, path_buf, len);
 	if (len == 0) goto fail;
 
-	mount = vfs_mount_resolve(process_current->mount, path_buf, len);
+	mount = vfs_mount_resolve(proc_cur->mount, path_buf, len);
 	if (!mount) goto fail;
 
 	if (mount->prefix_len > 0) { // strip prefix
@@ -107,14 +107,14 @@ handle_t _syscall_open(const char __user *path, long len, int flags) {
 		memcpy(path_buf, path_buf + mount->prefix_len, len);
 	}
 
-	vfsreq_create((struct vfs_request) {
+	vfsreq_create((VfsReq) {
 			.type = VFSOP_OPEN,
 			.input = {
 				.kern = true,
 				.buf_kern = path_buf,
 				.len = len,
 			},
-			.caller = process_current,
+			.caller = proc_cur,
 			.backend = mount->backend,
 			.flags = flags,
 		});
@@ -124,16 +124,16 @@ fail:
 	SYSCALL_RETURN(-1);
 }
 
-long _syscall_mount(handle_t hid, const char __user *path, long len) {
-	struct vfs_mount *mount = NULL;
-	struct vfs_backend *backend = NULL;
+long _sys_mount(hid_t hid, const char __user *path, long len) {
+	VfsMount *mount = NULL;
+	VfsBackend *backend = NULL;
 	char *path_buf = NULL;
 
 	if (PATH_MAX < len)
 		SYSCALL_RETURN(-1);
 
 	path_buf = kmalloc(len);
-	if (pcpy_from(process_current, path_buf, path, len) < (size_t)len) {
+	if (pcpy_from(proc_cur, path_buf, path, len) < (size_t)len) {
 		goto fail;
 	}
 
@@ -147,7 +147,7 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 		len--;
 	}
 
-	struct handle *handle = process_handle_get(process_current, hid);
+	Handle *handle = proc_handle_get(proc_cur, hid);
 	if (!handle || handle->type != HANDLE_FS_FRONT)
 		goto fail;
 	backend = handle->backend;
@@ -159,13 +159,13 @@ long _syscall_mount(handle_t hid, const char __user *path, long len) {
 	// append to mount list
 	// TODO move to kernel/vfs/mount.c
 	mount = kmalloc(sizeof *mount);
-	mount->prev = process_current->mount;
+	mount->prev = proc_cur->mount;
 	mount->prefix = path_buf;
 	mount->prefix_owned = true;
 	mount->prefix_len = len;
 	mount->backend = backend;
 	mount->refs = 1;
-	process_current->mount = mount;
+	proc_cur->mount = mount;
 
 	kmalloc_sanity(mount);
 	kmalloc_sanity(mount->prefix);
@@ -177,19 +177,19 @@ fail:
 	SYSCALL_RETURN(-1);
 }
 
-handle_t _syscall_dup(handle_t from, handle_t to, int flags) {
+hid_t _sys_dup(hid_t from, hid_t to, int flags) {
 	if (flags != 0) SYSCALL_RETURN(-ENOSYS);
-	SYSCALL_RETURN(process_handle_dup(process_current, from, to));
+	SYSCALL_RETURN(proc_handle_dup(proc_cur, from, to));
 }
 
 static long simple_vfsop(
-		enum vfs_operation vfsop, handle_t hid, void __user *buf,
+		enum vfs_op vfsop, hid_t hid, void __user *buf,
 		size_t len, long offset, int flags)
 {
 	assert(vfsop == VFSOP_READ
 		|| vfsop == VFSOP_WRITE
 		|| vfsop == VFSOP_GETSIZE);
-	struct handle *h = process_handle_get(process_current, hid);
+	Handle *h = proc_handle_get(proc_cur, hid);
 	if (!h) SYSCALL_RETURN(-EBADF);
 	// TODO those checks really need some comprehensive tests
 	if (vfsop == VFSOP_READ && !h->readable)
@@ -198,11 +198,11 @@ static long simple_vfsop(
 		SYSCALL_RETURN(-EACCES);
 
 	if (h->type == HANDLE_FILE) {
-		struct vfs_request req = (struct vfs_request){
+		VfsReq req = (VfsReq){
 			.type = vfsop,
 			.backend = h->backend,
 			.id = h->file_id,
-			.caller = process_current,
+			.caller = proc_cur,
 			.offset = offset,
 			.flags = flags,
 		};
@@ -218,60 +218,60 @@ static long simple_vfsop(
 	} else if (h->type == HANDLE_PIPE) {
 		if (vfsop == VFSOP_READ || vfsop == VFSOP_WRITE) {
 			/* already checked if this is the correct pipe end */
-			pipe_joinqueue(h, process_current, buf, len);
+			pipe_joinqueue(h, proc_cur, buf, len);
 		} else SYSCALL_RETURN(-ENOSYS);
 	} else SYSCALL_RETURN(-ENOSYS);
 	return 0;
 }
 
-long _syscall_read(handle_t hid, void __user *buf, size_t len, long offset) {
+long _sys_read(hid_t hid, void __user *buf, size_t len, long offset) {
 	simple_vfsop(VFSOP_READ, hid, buf, len, offset, 0);
 	return 0;
 }
 
-long _syscall_write(handle_t hid, const void __user *buf, size_t len, long offset, int flags) {
+long _sys_write(hid_t hid, const void __user *buf, size_t len, long offset, int flags) {
 	if (flags & ~(WRITE_TRUNCATE))
 		SYSCALL_RETURN(-ENOSYS);
 	simple_vfsop(VFSOP_WRITE, hid, (userptr_t)buf, len, offset, flags);
 	return 0;
 }
 
-long _syscall_getsize(handle_t hid) {
+long _sys_getsize(hid_t hid) {
 	simple_vfsop(VFSOP_GETSIZE, hid, NULL, 0, 0, 0);
 	return 0;
 }
 
-long _syscall_remove(handle_t hid) {
-	struct handle *h = process_handle_get(process_current, hid);
+long _sys_remove(hid_t hid) {
+	Handle *h = proc_handle_get(proc_cur, hid);
 	if (!h) SYSCALL_RETURN(-EBADF);
 	if (h->type != HANDLE_FILE) {
-		process_handle_close(process_current, hid);
+		proc_handle_close(proc_cur, hid);
 		SYSCALL_RETURN(-ENOSYS);
 	}
 	if (!h->writeable) {
-		process_handle_close(process_current, hid);
+		proc_handle_close(proc_cur, hid);
 		SYSCALL_RETURN(-EACCES);
 	}
-	vfsreq_create((struct vfs_request) {
+	vfsreq_create((VfsReq) {
 			.type = VFSOP_REMOVE,
 			.id = h->file_id,
-			.caller = process_current,
+			.caller = proc_cur,
 			.backend = h->backend,
 		});
-	process_handle_close(process_current, hid);
+	proc_handle_close(proc_cur, hid);
 	return -1; // dummy
 }
 
-long _syscall_close(handle_t hid) {
-	if (!process_handle_get(process_current, hid)) {
+long _sys_close(hid_t hid) {
+	if (!proc_handle_get(proc_cur, hid)) {
 		SYSCALL_RETURN(-EBADF);
 	}
-	process_handle_close(process_current, hid);
+	proc_handle_close(proc_cur, hid);
 	SYSCALL_RETURN(0);
 }
 
-handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
-	struct vfs_backend *backend = process_current->controlled;
+hid_t _sys_fs_wait(char __user *buf, long max_len, struct ufs_request __user *res) {
+	VfsBackend *backend = proc_cur->controlled;
 	// TODO can be used to tell if you're init
 	if (!backend) SYSCALL_RETURN(-1);
 	if (backend->usehcnt == 0) {
@@ -279,22 +279,22 @@ handle_t _syscall_fs_wait(char __user *buf, long max_len, struct ufs_request __u
 		SYSCALL_RETURN(-EPIPE);
 	}
 
-	process_transition(process_current, PS_WAITS4REQUEST);
+	proc_setstate(proc_cur, PS_WAITS4REQUEST);
 	if (backend->user.handler)
 		panic_unimplemented();
-	backend->user.handler = process_current;
-	process_current->awaited_req.buf     = buf;
-	process_current->awaited_req.max_len = max_len;
-	process_current->awaited_req.res     = res;
+	backend->user.handler = proc_cur;
+	proc_cur->awaited_req.buf     = buf;
+	proc_cur->awaited_req.max_len = max_len;
+	proc_cur->awaited_req.res     = res;
 
 	vfs_backend_tryaccept(backend); // sets return value
 	return -1; // dummy
 }
 
-long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int flags) {
-	struct handle *h = process_handle_get(process_current, hid);
+long _sys_fs_respond(hid_t hid, const void __user *buf, long ret, int flags) {
+	Handle *h = proc_handle_get(proc_cur, hid);
 	if (!h || h->type != HANDLE_FS_REQ) SYSCALL_RETURN(-EBADF);
-	struct vfs_request *req = h->req;
+	VfsReq *req = h->req;
 	if (req) {
 		if (req->output.len > 0 && ret > 0) {
 			// if this vfsop outputs data and ret is positive, it's the length of the buffer
@@ -303,19 +303,19 @@ long _syscall_fs_respond(handle_t hid, const void __user *buf, long ret, int fla
 			ret = min(ret, capped_cast32(req->output.len));
 			ret = pcpy_bi(
 				req->caller, req->output.buf,
-				process_current, buf,
+				proc_cur, buf,
 				ret
 			);
 		}
-		vfsreq_finish(req, (void __user *)buf, ret, flags, process_current);
+		vfsreq_finish(req, (void __user *)buf, ret, flags, proc_cur);
 	}
 	h->req = NULL;
-	process_handle_close(process_current, hid);
+	proc_handle_close(proc_cur, hid);
 	SYSCALL_RETURN(0);
 }
 
-void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
-	struct pagedir *pages = process_current->pages;
+void __user *_sys_memflag(void __user *addr, size_t len, int flags) {
+	Pagedir *pages = proc_cur->pages;
 	void *phys;
 	addr = (userptr_t)((uintptr_t __force)addr & ~PAGE_MASK); // align to page boundary
 
@@ -348,16 +348,16 @@ void __user *_syscall_memflag(void __user *addr, size_t len, int flags) {
 	SYSCALL_RETURN((uintptr_t)addr);
 }
 
-long _syscall_pipe(handle_t __user user_ends[2], int flags) {
+long _sys_pipe(hid_t __user user_ends[2], int flags) {
 	if (flags) SYSCALL_RETURN(-ENOSYS);
 
-	handle_t ends[2];
-	struct handle *rend, *wend;
-	ends[0] = process_handle_init(process_current, HANDLE_PIPE, &rend);
-	ends[1] = process_handle_init(process_current, HANDLE_PIPE, &wend);
+	hid_t ends[2];
+	Handle *rend, *wend;
+	ends[0] = proc_handle_init(proc_cur, HANDLE_PIPE, &rend);
+	ends[1] = proc_handle_init(proc_cur, HANDLE_PIPE, &wend);
 	if (ends[0] < 0 || ends[1] < 0) {
-		process_handle_close(process_current, ends[0]);
-		process_handle_close(process_current, ends[1]);
+		proc_handle_close(proc_cur, ends[0]);
+		proc_handle_close(proc_cur, ends[1]);
 		SYSCALL_RETURN(-EMFILE);
 	}
 	wend->pipe.sister = rend;
@@ -365,55 +365,55 @@ long _syscall_pipe(handle_t __user user_ends[2], int flags) {
 	wend->writeable = true;
 	rend->readable = true;
 
-	pcpy_to(process_current, user_ends, ends, sizeof ends);
+	pcpy_to(proc_cur, user_ends, ends, sizeof ends);
 	SYSCALL_RETURN(0);
 }
 
-void _syscall_sleep(long ms) {
+void _sys_sleep(long ms) {
 	// TODO no overflow check - can leak current uptime
-	timer_schedule(process_current, uptime_ms() + ms);
+	timer_schedule(proc_cur, uptime_ms() + ms);
 }
 
-void _syscall_filicide(void) {
-	process_filicide(process_current, -1);
+void _sys_filicide(void) {
+	proc_filicide(proc_cur, -1);
 }
 
-void _syscall_intr(void) {
-	for (struct process *p = process_current->child; p; p = process_next(p, process_current)) {
-		process_intr(p);
+void _sys_intr(void) {
+	for (Proc *p = proc_cur->child; p; p = proc_next(p, proc_cur)) {
+		proc_intr(p);
 	}
 }
 
-void _syscall_intr_set(void __user *ip) {
-	process_current->intr_fn = ip;
+void _sys_intr_set(void __user *ip) {
+	proc_cur->intr_fn = ip;
 }
 
-long _syscall_execbuf(void __user *ubuf, size_t len) {
+long _sys_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
 		SYSCALL_RETURN(-1);
-	if (process_current->execbuf.buf)
+	if (proc_cur->execbuf.buf)
 		SYSCALL_RETURN(-1);
 	// TODO consider supporting nesting execbufs
 
 	char *kbuf = kmalloc(len);
-	if (pcpy_from(process_current, kbuf, ubuf, len) < len) {
+	if (pcpy_from(proc_cur, kbuf, ubuf, len) < len) {
 		kfree(kbuf);
 		SYSCALL_RETURN(-1);
 	}
-	process_current->execbuf.buf = kbuf;
-	process_current->execbuf.len = len;
-	process_current->execbuf.pos = 0;
+	proc_cur->execbuf.buf = kbuf;
+	proc_cur->execbuf.len = len;
+	proc_cur->execbuf.pos = 0;
 	SYSCALL_RETURN(0);
 }
 
-void _syscall_debug_klog(const void __user *buf, size_t len) {
+void _sys_debug_klog(const void __user *buf, size_t len) {
 	if (false) {
 		static char kbuf[256];
 		if (len >= sizeof(kbuf)) len = sizeof(kbuf) - 1;
-		pcpy_from(process_current, kbuf, buf, len);
+		pcpy_from(proc_cur, kbuf, buf, len);
 		kbuf[len] = '\0';
-		kprintf("[klog] %x\t%s\n", process_current->globalid, kbuf);
+		kprintf("[klog] %x\t%s\n", proc_cur->globalid, kbuf);
 	}
 }
 
@@ -421,30 +421,30 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 	/* note: this isn't the only place where syscalls get called from!
 	 *       see execbuf */
 	switch (num) {
-		break; case _SYSCALL_EXIT:	_syscall_exit(a);
-		break; case _SYSCALL_AWAIT:	_syscall_await();
-		break; case _SYSCALL_FORK:	_syscall_fork(a, (userptr_t)b);
-		break; case _SYSCALL_OPEN:	_syscall_open((userptr_t)a, b, c);
-		break; case _SYSCALL_MOUNT:	_syscall_mount(a, (userptr_t)b, c);
-		break; case _SYSCALL_DUP:	_syscall_dup(a, b, c);
-		break; case _SYSCALL_READ:	_syscall_read(a, (userptr_t)b, c, d);
-		break; case _SYSCALL_WRITE:	_syscall_write(a, (userptr_t)b, c, d, e);
-		break; case _SYSCALL_GETSIZE:	_syscall_getsize(a);
-		break; case _SYSCALL_REMOVE:	_syscall_remove(a);
-		break; case _SYSCALL_CLOSE:	_syscall_close(a);
-		break; case _SYSCALL_FS_WAIT:	_syscall_fs_wait((userptr_t)a, b, (userptr_t)c);
-		break; case _SYSCALL_FS_RESPOND:	_syscall_fs_respond(a, (userptr_t)b, c, d);
-		break; case _SYSCALL_MEMFLAG:	_syscall_memflag((userptr_t)a, b, c);
-		break; case _SYSCALL_PIPE:	_syscall_pipe((userptr_t)a, b);
-		break; case _SYSCALL_SLEEP:	_syscall_sleep(a);
-		break; case _SYSCALL_FILICIDE:	_syscall_filicide();
-		break; case _SYSCALL_INTR:	_syscall_intr();
-		break; case _SYSCALL_INTR_SET:	_syscall_intr_set((userptr_t)a);
-		break; case _SYSCALL_EXECBUF:	_syscall_execbuf((userptr_t)a, b);
-		break; case _SYSCALL_DEBUG_KLOG:	_syscall_debug_klog((userptr_t)a, b);
+		break; case _SYS_EXIT:	_sys_exit(a);
+		break; case _SYS_AWAIT:	_sys_await();
+		break; case _SYS_FORK:	_sys_fork(a, (userptr_t)b);
+		break; case _SYS_OPEN:	_sys_open((userptr_t)a, b, c);
+		break; case _SYS_MOUNT:	_sys_mount(a, (userptr_t)b, c);
+		break; case _SYS_DUP:	_sys_dup(a, b, c);
+		break; case _SYS_READ:	_sys_read(a, (userptr_t)b, c, d);
+		break; case _SYS_WRITE:	_sys_write(a, (userptr_t)b, c, d, e);
+		break; case _SYS_GETSIZE:	_sys_getsize(a);
+		break; case _SYS_REMOVE:	_sys_remove(a);
+		break; case _SYS_CLOSE:	_sys_close(a);
+		break; case _SYS_FS_WAIT:	_sys_fs_wait((userptr_t)a, b, (userptr_t)c);
+		break; case _SYS_FS_RESPOND:	_sys_fs_respond(a, (userptr_t)b, c, d);
+		break; case _SYS_MEMFLAG:	_sys_memflag((userptr_t)a, b, c);
+		break; case _SYS_PIPE:	_sys_pipe((userptr_t)a, b);
+		break; case _SYS_SLEEP:	_sys_sleep(a);
+		break; case _SYS_FILICIDE:	_sys_filicide();
+		break; case _SYS_INTR:	_sys_intr();
+		break; case _SYS_INTR_SET:	_sys_intr_set((userptr_t)a);
+		break; case _SYS_EXECBUF:	_sys_execbuf((userptr_t)a, b);
+		break; case _SYS_DEBUG_KLOG:	_sys_debug_klog((userptr_t)a, b);
 		break;
 		default:
-			regs_savereturn(&process_current->regs, -1);
+			regs_savereturn(&proc_cur->regs, -1);
 			break;
 	}
 	/* return value is unused. execution continues in sysenter_stage2 */

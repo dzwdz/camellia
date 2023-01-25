@@ -13,7 +13,7 @@ static bool verbose = false;
 #define eprintf(fmt, ...) fprintf(stderr, "iochk: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 
-void check(handle_t h) {
+void check(hid_t h) {
 	const size_t buflen = 4096;
 	const size_t offsets[] = {
 		0, 1, 2, 3, 4, 5, 6, 7,
@@ -28,7 +28,7 @@ void check(handle_t h) {
 	}
 
 	long offlast = 0;
-	long retlast = _syscall_read(h, buflast, buflen, offlast);
+	long retlast = _sys_read(h, buflast, buflen, offlast);
 	if (retlast < 0) {
 		eprintf("error %d when reading at offset %d", retlast, offlast);
 		goto end;
@@ -41,7 +41,7 @@ void check(handle_t h) {
 		assert(diff >= 0);
 		if (retlast < diff) break;
 
-		long retcur = _syscall_read(h, bufcur, buflen, offcur);
+		long retcur = _sys_read(h, bufcur, buflen, offcur);
 		if (retcur < 0) {
 			eprintf("error %d when reading at offset %d", retlast, offcur);
 			break;
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 	for (; optind < argc; optind++) {
 		const char *path = argv[optind];
 		verbosef("checking %s...\n", path);
-		handle_t h = camellia_open(path, OPEN_READ);
+		hid_t h = camellia_open(path, OPEN_READ);
 		if (h < 0) {
 			eprintf("couldn't open %s", path);
 			continue;

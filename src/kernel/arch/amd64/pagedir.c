@@ -31,11 +31,11 @@ static __user void *addr_canonize(const __user void *addr) {
 }
 
 
-struct pagedir *pagedir_new(void) {
+Pagedir *pagedir_new(void) {
 	return page_zalloc(1);
 }
 
-void pagedir_free(struct pagedir *dir) {
+void pagedir_free(Pagedir *dir) {
 	for (int i = 0; i < 512; i++) {
 		if (!dir->e[i].present) continue;
 		assert(!dir->e[i].large);
@@ -66,7 +66,7 @@ void pagedir_free(struct pagedir *dir) {
 }
 
 static pe_generic_t*
-get_entry(struct pagedir *dir, const void __user *virt) {
+get_entry(Pagedir *dir, const void __user *virt) {
 	pe_generic_t *pml4e, *pdpte, *pde, *pte;
 	const union virt_addr v = {.full = (void __user *)virt};
 
@@ -88,7 +88,7 @@ get_entry(struct pagedir *dir, const void __user *virt) {
 	return pte;
 }
 
-void pagedir_unmap_user(struct pagedir *dir, void __user *virt, size_t len) {
+void pagedir_unmap_user(Pagedir *dir, void __user *virt, size_t len) {
 	// TODO rewrite this
 	const void __user *end = addr_canonize(virt + len);
 	union virt_addr v = {.full = virt};
@@ -144,7 +144,7 @@ void pagedir_unmap_user(struct pagedir *dir, void __user *virt, size_t len) {
 	}
 }
 
-void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
+void pagedir_map(Pagedir *dir, void __user *virt, void *phys,
                  bool user, bool writeable)
 {
 	pe_generic_t *pml4e, *pdpte, *pde, *pte;
@@ -191,13 +191,13 @@ void pagedir_map(struct pagedir *dir, void __user *virt, void *phys,
 }
 
 extern void *pagedir_current;
-void pagedir_switch(struct pagedir *dir) {
+void pagedir_switch(Pagedir *dir) {
 	pagedir_current = dir;
 }
 
 // creates a new pagedir with exact copies of the user pages
-struct pagedir *pagedir_copy(const struct pagedir *pml4_old) {
-	struct pagedir *pml4_new = page_zalloc(1);
+Pagedir *pagedir_copy(const Pagedir *pml4_old) {
+	Pagedir *pml4_new = page_zalloc(1);
 
 	for (int i = 0; i < 512; i++) {
 		if (!pml4_old->e[i].present) continue;
@@ -239,12 +239,12 @@ struct pagedir *pagedir_copy(const struct pagedir *pml4_old) {
 	return pml4_new;
 }
 
-bool pagedir_iskern(struct pagedir *dir, const void __user *virt) {
+bool pagedir_iskern(Pagedir *dir, const void __user *virt) {
 	pe_generic_t *page = get_entry(dir, virt);
 	return page && page->present && !page->user;
 }
 
-void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
+void *pagedir_virt2phys(Pagedir *dir, const void __user *virt,
                         bool user, bool writeable)
 {
 	pe_generic_t *page = get_entry(dir, virt);
@@ -255,7 +255,7 @@ void *pagedir_virt2phys(struct pagedir *dir, const void __user *virt,
 	return addr_extract(*page) + ((uintptr_t)virt & PAGE_MASK);
 }
 
-void __user *pagedir_findfree(struct pagedir *dir, char __user *start, size_t len) {
+void __user *pagedir_findfree(Pagedir *dir, char __user *start, size_t len) {
 	// TODO dogshit slow
 	pe_generic_t *page;
 	char __user *iter;

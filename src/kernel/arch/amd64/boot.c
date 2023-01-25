@@ -28,7 +28,7 @@ static void *mbi_tag(void *mbi, uint32_t type) {
 }
 
 void kmain_early(void *mbi) {
-	struct fb_info vid;
+	GfxInfo vid;
 	struct {
 		void *addr; size_t len;
 	} init;
@@ -78,8 +78,8 @@ void kmain_early(void *mbi) {
 	pci_init();
 
 	kprintf("running init...\n");
-	process_seed(init.addr, init.len);
-	process_switch_any();
+	proc_seed(init.addr, init.len);
+	proc_switch_any();
 }
 
 void shutdown(void) {

@@ -36,23 +36,23 @@ static void drv(const char *user) {
 	char *buf = malloc(PATH_MAX);
 	for (;;) {
 		struct ufs_request req;
-		handle_t reqh = ufs_wait(buf, PATH_MAX, &req);
+		hid_t reqh = ufs_wait(buf, PATH_MAX, &req);
 		if (reqh < 0) break;
 		switch (req.op) {
 			case VFSOP_OPEN:
 				if (segcmp(buf, 1, "Users") && segcmp(buf, 2, user)) { //  /Users/$user/**
 					forward_open(reqh, buf, req.len, req.flags);
 				} else if (segcmp(buf, 1, "Users") && segcmp(buf, 3, "private")) { //  /Users/*/private/**
-					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
+					_sys_fs_respond(reqh, NULL, -EACCES, 0);
 				} else if (!OPEN_WRITEABLE(req.flags)) {
 					forward_open(reqh, buf, req.len, req.flags);
 				} else {
-					_syscall_fs_respond(reqh, NULL, -EACCES, 0);
+					_sys_fs_respond(reqh, NULL, -EACCES, 0);
 				}
 				break;
 
 			default:
-				_syscall_fs_respond(reqh, NULL, -1, 0);
+				_sys_fs_respond(reqh, NULL, -1, 0);
 				break;
 		}
 	}

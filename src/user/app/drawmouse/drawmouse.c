@@ -50,7 +50,7 @@ struct packet {
 
 int main(void) {
 	char buf[64];
-	handle_t fd = camellia_open("/kdev/ps2/mouse", OPEN_READ);
+	hid_t fd = camellia_open("/kdev/ps2/mouse", OPEN_READ);
 	if (fd < 0) {
 		eprintf("couldn't open mouse");
 		return 1;
@@ -64,7 +64,7 @@ int main(void) {
 
 
 	for (;;) {
-		int len = _syscall_read(fd, buf, sizeof buf, 0);
+		int len = _sys_read(fd, buf, sizeof buf, 0);
 		if (len == 0) break;
 		ring_put(&r, buf, len);
 		while (ring_used(&r) >= 3) {

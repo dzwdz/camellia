@@ -1,15 +1,15 @@
 #pragma once
 #include <kernel/arch/generic.h>
 #include <kernel/handle.h>
+#include <kernel/types.h>
 #include <stdbool.h>
-struct vfs_mount;
 
 #define HANDLE_MAX 16
 
-/* legal transitions described by process_transition */
-enum process_state {
+/* legal transitions described by proc_setstate */
+enum proc_state {
 	PS_RUNNING,
-	PS_DYING, /* during process_kill - mostly treated as alive */
+	PS_DYING, /* during proc_kill - mostly treated as alive */
 	PS_TOREAP, /* return message not collected */
 	PS_TOMBSTONE, /* fully dead, supports alive children */
 	/* not in the process tree, waits for free.
@@ -33,15 +33,15 @@ enum process_state {
 		&& p->state != PS_FREED \
 		)
 
-struct process {
-	struct pagedir *pages;
+struct Proc {
+	Pagedir *pages;
 	/* if NULL, refcount == 1. kmalloc'd */
 	uint64_t *pages_refcount;
 
-	struct registers regs;
-	struct process *sibling, *child, *parent;
+	CpuRegs regs;
+	Proc *sibling, *child, *parent;
 
-	enum process_state state;
+	enum proc_state state;
 	union { /* saved value, meaning depends on .state */
 		int death_msg; // PS_DEAD
 		struct {
@@ -50,23 +50,23 @@ struct process {
 			struct ufs_request __user *res;
 		} awaited_req; // PS_WAITS4REQUEST
 		struct {
-			struct handle *pipe;
+			Handle *pipe;
 			char __user *buf;
 			size_t len;
-			struct process *next;
+			Proc *next;
 		} waits4pipe;
 		struct {
 			/* managed by timer_schedule */
 			uint64_t goal;
-			struct process *next;
+			Proc *next;
 		} waits4timer;
 	};
 
-	struct vfs_mount *mount;
-	struct handle **_handles; /* points to struct handle *[HANDLE_MAX] */
+	VfsMount *mount;
+	Handle **_handles; /* points to Handle *[HANDLE_MAX] */
 	uint64_t *handles_refcount; /* works just like pages_refcount */
 	struct {
-		struct handle *procfs;
+		Handle *procfs;
 	} specialh;
 
 	uint32_t cid; /* child id. unique amongst all of this process' siblings */
@@ -76,10 +76,10 @@ struct process {
 	bool noreap;
 
 	/* allocated once, the requests from WAITS4FS get stored here */
-	struct vfs_request *reqslot;
+	VfsReq *reqslot;
 
 	/* vfs_backend controlled (not exclusively) by this process */
-	struct vfs_backend *controlled;
+	VfsBackend *controlled;
 
 	/* interrupt handler */
 	void __user *intr_fn;
@@ -91,40 +91,40 @@ struct process {
 	} execbuf;
 };
 
-extern struct process *process_current;
+extern Proc *proc_cur;
 
 /** Creates the root process. */
-struct process *process_seed(void *data, size_t datalen);
-struct process *process_fork(struct process *parent, int flags);
+Proc *proc_seed(void *data, size_t datalen);
+Proc *proc_fork(Proc *parent, int flags);
 
-void process_kill(struct process *proc, int ret);
+void proc_kill(Proc *proc, int ret);
 /** Kills all descendants. */
-void process_filicide(struct process *proc, int ret);
+void proc_filicide(Proc *proc, int ret);
 /** Tries to reap a dead process / free a tombstone. */
-void process_tryreap(struct process *dead);
+void proc_tryreap(Proc *dead);
 
-void process_intr(struct process *proc);
+void proc_intr(Proc *proc);
 
 /** Switches execution to any running process. */
-_Noreturn void process_switch_any(void);
+_Noreturn void proc_switch_any(void);
 
 /** Used for iterating over all processes */
-struct process *process_next(struct process *p, struct process *root);
+Proc *proc_next(Proc *p, Proc *root);
 
-handle_t process_find_free_handle(struct process *proc, handle_t start_at);
-struct handle *process_handle_get(struct process *, handle_t);
-handle_t process_handle_init(struct process *, enum handle_type, struct handle **);
-handle_t process_handle_dup(struct process *p, handle_t from, handle_t to);
-static inline void process_handle_close(struct process *p, handle_t hid) {
+hid_t proc_find_free_handle(Proc *proc, hid_t start_at);
+Handle *proc_handle_get(Proc *, hid_t);
+hid_t proc_handle_init(Proc *, enum handle_type, Handle **);
+hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to);
+static inline void proc_handle_close(Proc *p, hid_t hid) {
 	// TODO test
-	process_handle_dup(p, -1, hid);
+	proc_handle_dup(p, -1, hid);
 }
 
 /* Gets a handle and removes the process' reference to it, without decreasing the refcount.
- * Meant to be used together with process_handle_put. */
-struct handle *process_handle_take(struct process *, handle_t);
+ * Meant to be used together with proc_handle_put. */
+Handle *proc_hid_take(Proc *, hid_t);
 /* Put a handle in a process, taking the ownership away from the caller.
  * Doesn't increase the refcount on success, decreases it on failure. */
-handle_t process_handle_put(struct process *, struct handle *);
+hid_t proc_handle_put(Proc *, Handle *);
 
-void process_transition(struct process *, enum process_state);
+void proc_setstate(Proc *, enum proc_state);

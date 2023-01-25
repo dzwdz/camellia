@@ -10,19 +10,19 @@ FILE *fail_trig;
 void run_test(void (*fn)()) {
 	if (!fork()) {
 		fn();
-		_syscall_filicide();
+		_sys_filicide();
 		exit(0);
 	} else {
 		/* successful tests must return 0 */
-		if (_syscall_await() != 0) {
+		if (_sys_await() != 0) {
 			test_failf("%p, base %p", (void*)fn - (void*)_image_base, _image_base);
 		}
 	}
 }
 
-int forkpipe(FILE **f, handle_t *h) {
-	handle_t ends[2];
-	if (_syscall_pipe(ends, 0) < 0) {
+int forkpipe(FILE **f, hid_t *h) {
+	hid_t ends[2];
+	if (_sys_pipe(ends, 0) < 0) {
 		fprintf(stderr, "couldn't create pipe\n");
 		exit(1);
 	}
@@ -40,7 +40,7 @@ int forkpipe(FILE **f, handle_t *h) {
 }
 
 int main(void) {
-	handle_t reader;
+	hid_t reader;
 	if (!forkpipe(&fail_trig, &reader)) {
 		r_k_miscsyscall();
 		r_k_fs();
@@ -57,7 +57,7 @@ int main(void) {
 	} else {
 		for (;;) {
 			char buf[128];
-			long ret = _syscall_read(reader, buf, sizeof buf, 0);
+			long ret = _sys_read(reader, buf, sizeof buf, 0);
 			if (ret < 0) break;
 			printf("\033[31mFAIL\033[0m ");
 			fwrite(buf, ret, 1, stdout);

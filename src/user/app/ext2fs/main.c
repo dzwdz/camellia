@@ -21,10 +21,10 @@ struct handle {
 
 static int my_read(void *fp, void *buf, size_t len, size_t off);
 static int my_write(void *fp, const void *buf, size_t len, size_t off);
-static void do_open(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf);
-static void do_read(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf, size_t buflen);
-static void do_write(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf);
-static void do_getsize(struct ext2 *fs, handle_t reqh, struct ufs_request *req);
+static void do_open(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf);
+static void do_read(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf, size_t buflen);
+static void do_write(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf);
+static void do_getsize(struct ext2 *fs, hid_t reqh, struct ufs_request *req);
 
 static int
 my_read(void *fp, void *buf, size_t len, size_t off)
@@ -51,61 +51,61 @@ my_write(void *fp, const void *buf, size_t len, size_t off)
 }
 
 static void
-do_open(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf)
+do_open(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf)
 {
 	bool is_dir = req->len == 0 || buf[req->len-1] == '/';
 	uint32_t n = ext2c_walk(fs, buf, req->len);
 	if (n == 0) {
 		if (is_dir) {
-			_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
+			_sys_fs_respond(reqh, NULL, -ENOSYS, 0);
 			return;
 		}
 		/* buf[0] == '/', strrchr != NULL */
 		char *name = strrchr(buf, '/') + 1;
 		uint32_t dir_n = ext2c_walk(fs, buf, name - buf);
 		if (dir_n == 0) {
-			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			_sys_fs_respond(reqh, NULL, -ENOENT, 0);
 			return;
 		}
 		n = ext2_alloc_inode(fs, 0100700);
 		if (n == 0) {
-			_syscall_fs_respond(reqh, NULL, -1, 0);
+			_sys_fs_respond(reqh, NULL, -1, 0);
 			return;
 		}
 		if (ext2_link(fs, dir_n, name, n, 1) < 0) {
-			_syscall_fs_respond(reqh, NULL, -1, 0);
+			_sys_fs_respond(reqh, NULL, -1, 0);
 			return;
 		}
 	} else {
 		struct ext2d_inode *inode = ext2_req_inode(fs, n);
 		if (!inode) {
-			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			_sys_fs_respond(reqh, NULL, -ENOENT, 0);
 			return;
 		}
 		int type = (inode->perms >> 12) & 0xF;
 		ext2_dropreq(fs, inode, false);
 
 		if ((type == 0x8 && is_dir) || (type == 0x4 && !is_dir)) {
-			_syscall_fs_respond(reqh, NULL, -ENOENT, 0);
+			_sys_fs_respond(reqh, NULL, -ENOENT, 0);
 			return;
 		} else if (type != 0x8 && type != 0x4) {
-			_syscall_fs_respond(reqh, NULL, -ENOSYS, 0);
+			_sys_fs_respond(reqh, NULL, -ENOSYS, 0);
 			return;
 		}
 	}
 
 	struct handle *h = malloc(sizeof *h);
 	if (!h) {
-		_syscall_fs_respond(reqh, NULL, -1, 0);
+		_sys_fs_respond(reqh, NULL, -1, 0);
 		return;
 	}
 	h->n = n;
 	h->dir = is_dir;
-	_syscall_fs_respond(reqh, h, 0, 0);
+	_sys_fs_respond(reqh, h, 0, 0);
 }
 
 static void
-do_read(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf, size_t buflen)
+do_read(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf, size_t buflen)
 {
 	struct handle *h = req->id;
 	if (!h->dir) {
@@ -116,7 +116,7 @@ do_read(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf, size
 
 		void *b = ext2_req_file(fs, h->n, &req->capacity, req->offset);
 		if (!b) goto err;
-		_syscall_fs_respond(reqh, b, req->capacity, 0);
+		_sys_fs_respond(reqh, b, req->capacity, 0);
 		ext2_dropreq(fs, b, false);
 	} else {
 		struct dirbuild db;
@@ -142,15 +142,15 @@ do_read(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf, size
 				dir_appendl(&db, iter.ent->name, iter.ent->namelen_lower);
 			}
 		}
-		_syscall_fs_respond(reqh, buf, dir_finish(&db), 0);
+		_sys_fs_respond(reqh, buf, dir_finish(&db), 0);
 	}
 	return;
 err:
-	_syscall_fs_respond(reqh, NULL, -1, 0);
+	_sys_fs_respond(reqh, NULL, -1, 0);
 }
 
 static void
-do_write(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf)
+do_write(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf)
 {
 	struct handle *h = req->id;
 	if (h->dir) goto err;
@@ -169,24 +169,24 @@ do_write(struct ext2 *fs, handle_t reqh, struct ufs_request *req, char *buf)
 	inode = NULL;
 
 	int ret = ext2_write(fs, h->n, buf, req->len, req->offset);
-	_syscall_fs_respond(reqh, NULL, ret, 0);
+	_sys_fs_respond(reqh, NULL, ret, 0);
 	return;
 err:
-	_syscall_fs_respond(reqh, NULL, -1, 0);
+	_sys_fs_respond(reqh, NULL, -1, 0);
 }
 
 static void
-do_getsize(struct ext2 *fs, handle_t reqh, struct ufs_request *req) {
+do_getsize(struct ext2 *fs, hid_t reqh, struct ufs_request *req) {
 	struct handle *h = req->id;
 	if (h->dir) goto err;
 
 	struct ext2d_inode *inode = ext2_req_inode(fs, h->n);
 	if (!inode) goto err;
-	_syscall_fs_respond(reqh, NULL, inode->size_lower, 0);
+	_sys_fs_respond(reqh, NULL, inode->size_lower, 0);
 	ext2_dropreq(fs, inode, false);
 	return;
 err:
-	_syscall_fs_respond(reqh, NULL, -1, 0);
+	_sys_fs_respond(reqh, NULL, -1, 0);
 }
 
 int
@@ -208,7 +208,7 @@ main(int argc, char **argv)
 	char *buf = malloc(buflen);
 	struct ufs_request req;
 	for (;;) {
-		handle_t reqh = ufs_wait(buf, buflen, &req);
+		hid_t reqh = ufs_wait(buf, buflen, &req);
 		struct handle *h = req.id;
 		if (reqh < 0) break;
 		switch (req.op) {
@@ -226,10 +226,10 @@ main(int argc, char **argv)
 			break;
 		case VFSOP_CLOSE:
 			free(h);
-			_syscall_fs_respond(reqh, NULL, -1, 0);
+			_sys_fs_respond(reqh, NULL, -1, 0);
 			break;
 		default:
-			_syscall_fs_respond(reqh, NULL, -1, 0);
+			_sys_fs_respond(reqh, NULL, -1, 0);
 			break;
 		}
 	}

@@ -9,7 +9,7 @@
 #include <shared/mem.h>
 #include <shared/printf.h>
 
-static struct fb_info fb;
+static GfxInfo fb;
 static char namebuf[64];
 static size_t namelen;
 
@@ -18,7 +18,7 @@ enum {
 	H_FB,
 };
 
-static int handle(struct vfs_request *req) {
+static int handle(VfsReq *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (!req->input.kern) panic_invalid_state();
@@ -54,7 +54,7 @@ static int handle(struct vfs_request *req) {
 	}
 }
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	if (req->caller) {
 		vfsreq_finish_short(req, handle(req));
 	} else {
@@ -62,7 +62,7 @@ static void accept(struct vfs_request *req) {
 	}
 }
 
-void video_init(struct fb_info fb_) {
+void video_init(GfxInfo fb_) {
 	fb = fb_;
 	snprintf(namebuf, sizeof namebuf, "%ux%ux%u", fb.width, fb.height, fb.bpp);
 	namelen = strlen(namebuf);

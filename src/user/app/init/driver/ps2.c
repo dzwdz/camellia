@@ -32,7 +32,7 @@ static const char keymap_upper[] = {
 static volatile uint8_t backlog_buf[16];
 static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
-static handle_t fd;
+static hid_t fd;
 
 static bool keys[0x80] = {0};
 
@@ -63,7 +63,7 @@ static void main_loop(void) {
 			case VFSOP_READ:
 				while (ring_used((void*)&backlog) == 0) {
 					/* read raw input until we have something to output */
-					int len = _syscall_read(fd, buf, sizeof buf, 0);
+					int len = _sys_read(fd, buf, sizeof buf, 0);
 					if (len == 0) break;
 					for (int i = 0; i < len; i++)
 						parse_scancode(buf[i]);
@@ -80,7 +80,7 @@ static void main_loop(void) {
 }
 
 void ps2_drv(void) {
-	fd = _syscall_open("/kdev/ps2/kb", 12, 0);
+	fd = _sys_open("/kdev/ps2/kb", 12, 0);
 	if (fd < 0) exit(1);
 
 	main_loop();

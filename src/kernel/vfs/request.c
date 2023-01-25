@@ -7,12 +7,12 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-static void vfs_backend_user_accept(struct vfs_request *req);
+static void vfs_backend_user_accept(VfsReq *req);
 
-void vfsreq_create(struct vfs_request req_) {
-	struct vfs_request *req;
+void vfsreq_create(VfsReq req_) {
+	VfsReq *req;
 	if (req_.caller) {
-		process_transition(req_.caller, PS_WAITS4FS);
+		proc_setstate(req_.caller, PS_WAITS4FS);
 		if (!req_.caller->reqslot)
 			req_.caller->reqslot = kmalloc(sizeof *req);
 		req = req_.caller->reqslot;
@@ -34,7 +34,7 @@ void vfsreq_create(struct vfs_request req_) {
 	// TODO if i add a handle field to vfs_request, check ->readable ->writeable here
 
 	if (req->backend && req->backend->provhcnt) {
-		struct vfs_request **iter = &req->backend->queue;
+		VfsReq **iter = &req->backend->queue;
 		while (*iter != NULL) // find free spot in queue
 			iter = &(*iter)->queue_next;
 		*iter = req;
@@ -44,11 +44,11 @@ void vfsreq_create(struct vfs_request req_) {
 	}
 }
 
-void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
-		int flags, struct process *handler)
+void vfsreq_finish(VfsReq *req, char __user *stored, long ret,
+		int flags, Proc *handler)
 {
 	if (req->type == VFSOP_OPEN && ret >= 0) {
-		struct handle *h;
+		Handle *h;
 		if (!(flags & FSR_DELEGATE)) {
 			/* default behavior - create a new handle for the file, wrap the id */
 			h = handle_init(HANDLE_FILE);
@@ -60,14 +60,14 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 		} else {
 			/* delegating - moving a handle to the caller */
 			assert(handler);
-			h = process_handle_take(handler, ret);
+			h = proc_hid_take(handler, ret);
 			// TODO don't ignore OPEN_RO
 		}
 
 		if (h) {
 			// TODO write tests for caller getting killed while opening a file
 			if (!req->caller) panic_unimplemented();
-			ret = process_handle_put(req->caller, h);
+			ret = proc_handle_put(req->caller, h);
 			if (ret < 0) ret = -EMFILE;
 		} else {
 			ret = -1;
@@ -83,14 +83,14 @@ void vfsreq_finish(struct vfs_request *req, char __user *stored, long ret,
 	if (req->caller) {
 		assert(req->caller->state == PS_WAITS4FS);
 		regs_savereturn(&req->caller->regs, ret);
-		process_transition(req->caller, PS_RUNNING);
+		proc_setstate(req->caller, PS_RUNNING);
 	} else {
 		kfree(req);
 	}
 }
 
-void vfs_backend_tryaccept(struct vfs_backend *backend) {
-	struct vfs_request *req = backend->queue;
+void vfs_backend_tryaccept(VfsBackend *backend) {
+	VfsReq *req = backend->queue;
 	if (!req) return;
 	if (backend->is_user && !backend->user.handler) return;
 
@@ -103,8 +103,8 @@ void vfs_backend_tryaccept(struct vfs_backend *backend) {
 	}
 }
 
-static void vfs_backend_user_accept(struct vfs_request *req) {
-	struct process *handler;
+static void vfs_backend_user_accept(VfsReq *req) {
+	Proc *handler;
 	struct ufs_request res = {0};
 	int len;
 
@@ -143,26 +143,26 @@ static void vfs_backend_user_accept(struct vfs_request *req) {
 		panic_unimplemented();
 	}
 
-	struct handle *h;
-	handle_t hid = process_handle_init(handler, HANDLE_FS_REQ, &h);
+	Handle *h;
+	hid_t hid = proc_handle_init(handler, HANDLE_FS_REQ, &h);
 	if (hid < 0) panic_unimplemented();
 	h->req = req;
-	process_transition(handler, PS_RUNNING);
+	proc_setstate(handler, PS_RUNNING);
 	regs_savereturn(&handler->regs, hid);
 	req->backend->user.handler = NULL;
 	return;
 }
 
-void vfs_backend_refdown(struct vfs_backend *b, bool use) {
+void vfs_backend_refdown(VfsBackend *b, bool use) {
 	size_t *field = use ? &b->usehcnt : &b->provhcnt;
 	assert(b);
 	assert(0 < *field);
 	*field -= 1;
 
 	if (b->provhcnt == 0 && use == false) {
-		struct vfs_request *q = b->queue;
+		VfsReq *q = b->queue;
 		while (q) {
-			struct vfs_request *q2 = q->queue_next;
+			VfsReq *q2 = q->queue_next;
 			vfsreq_finish_short(q, -1);
 			q = q2;
 		}
@@ -173,11 +173,11 @@ void vfs_backend_refdown(struct vfs_backend *b, bool use) {
 			b->kern.cleanup(b);
 		}
 		if (b->is_user && b->user.handler) {
-			struct process *p = b->user.handler;
+			Proc *p = b->user.handler;
 			b->user.handler = NULL;
 			assert(p->state == PS_WAITS4REQUEST);
 			regs_savereturn(&p->regs, -EPIPE);
-			process_transition(p, PS_RUNNING);
+			proc_setstate(p, PS_RUNNING);
 		}
 	}
 	if (b->usehcnt == 0 && b->provhcnt == 0) {

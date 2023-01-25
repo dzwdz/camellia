@@ -10,8 +10,8 @@
 
 #define WAIT -1000
 
-static void accept(struct vfs_request *req);
-static struct vfs_request *blocked_on = NULL;
+static void accept(VfsReq *req);
+static VfsReq *blocked_on = NULL;
 
 
 enum {
@@ -105,7 +105,7 @@ void rtl8139_irq(void) {
 	port_out16(iobase + INTRSTATUS, status);
 }
 
-static int try_rx(struct process *proc, void __user *dest, size_t dlen) {
+static int try_rx(Proc *proc, void __user *dest, size_t dlen) {
 	uint16_t flags, size;
 	/* bit 0 - Rx Buffer Empty */
 	if (port_in8(iobase + CMD) & 1) return WAIT;
@@ -140,7 +140,7 @@ static int try_rx(struct process *proc, void __user *dest, size_t dlen) {
 	return size;
 }
 
-static int try_tx(struct process *proc, const void __user *src, size_t slen) {
+static int try_tx(Proc *proc, const void __user *src, size_t slen) {
 	static uint8_t desc = 0;
 
 	if (slen > 0xFFF) return -1;
@@ -164,7 +164,7 @@ static int try_tx(struct process *proc, const void __user *src, size_t slen) {
 	return slen;
 }
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	if (!req->caller) {
 		vfsreq_finish_short(req, -1);
 		return;

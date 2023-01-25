@@ -45,13 +45,13 @@ bool dir_appendl(struct dirbuild *db, const char *name, size_t len) {
 	return false;
 }
 
-bool dir_append_from(struct dirbuild *db, handle_t h) {
+bool dir_append_from(struct dirbuild *db, hid_t h) {
 	if (db->error) return true;
 	if (db->buf && db->bpos == db->blen) return false;
 
 	int ret;
 	if (db->buf) {
-		ret = _syscall_read(h, db->buf + db->bpos, db->blen - db->bpos, db->offset);
+		ret = _sys_read(h, db->buf + db->bpos, db->blen - db->bpos, db->offset);
 		if (ret < 0) {
 			db->error = ret;
 			return true;
@@ -63,7 +63,7 @@ bool dir_append_from(struct dirbuild *db, handle_t h) {
 		} /* else ret == 0, EOF, need getsize */
 	}
 
-	ret = _syscall_getsize(h);
+	ret = _sys_getsize(h);
 	if (ret < 0) {
 		db->error = ret;
 		return true;

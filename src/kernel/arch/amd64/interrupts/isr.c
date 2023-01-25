@@ -62,8 +62,8 @@ void isr_stage3(int interrupt, uint64_t *stackframe) {
 				log_interrupt(interrupt, stackframe);
 				cpu_halt();
 			} else {
-				process_kill(process_current, interrupt);
-				process_switch_any();
+				proc_kill(proc_cur, interrupt);
+				proc_switch_any();
 			}
 	}
 }

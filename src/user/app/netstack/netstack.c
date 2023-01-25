@@ -17,7 +17,7 @@ void network_thread(void *arg) { (void)arg;
 	const size_t buflen = 4096;
 	char *buf = malloc(buflen);
 	for (;;) {
-		long ret = _syscall_read(state.raw_h, buf, buflen, -1);
+		long ret = _sys_read(state.raw_h, buf, buflen, -1);
 		if (ret < 0) break;
 		ether_parse((void*)buf, ret);
 	}
@@ -49,6 +49,6 @@ int main(int argc, char **argv) {
 	arp_request(state.gateway);
 	thread_create(0, network_thread, NULL);
 	thread_create(0, fs_thread, NULL);
-	_syscall_await();
+	_sys_await();
 	return 0;
 }

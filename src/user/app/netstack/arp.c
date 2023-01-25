@@ -107,7 +107,7 @@ int arpcache_get(uint32_t ip, mac_t *mac) {
 	return -1;
 }
 
-void arp_fsread(handle_t h, long offset) {
+void arp_fsread(hid_t h, long offset) {
 	const char *fmt = "%08x\t%02x:%02x:%02x:%02x:%02x:%02x\n";
 	long linelen = snprintf(NULL, 0, fmt, 0, 1, 2, 3, 4, 5, 6) + 1;
 	char buf[28];
@@ -129,10 +129,10 @@ void arp_fsread(handle_t h, long offset) {
 		cur->mac[3],
 		cur->mac[4],
 		cur->mac[5]);
-	_syscall_fs_respond(h, buf + offset, linelen - offset, 0);
+	_sys_fs_respond(h, buf + offset, linelen - offset, 0);
 	return;
 err:
-	_syscall_fs_respond(h, NULL, -1, 0);
+	_sys_fs_respond(h, NULL, -1, 0);
 }
 
 long arp_fswrite(const char *buf, long len, long offset) {

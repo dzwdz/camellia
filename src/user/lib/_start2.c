@@ -26,14 +26,14 @@ _Noreturn void _start2(struct execdata *ed) {
 	elf_selfreloc();
 
 	/* done first so it isn't allocated elsewhere by accident */
-	_syscall_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
+	_sys_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
 	if (ed->argv[0]) {
 		strcpy(_libc_psdata, ed->argv[0]);
 	} else {
 		strcpy(_libc_psdata, "?");
 	}
 
-	_syscall_intr_set(intr_trampoline);
+	_sys_intr_set(intr_trampoline);
 	intr_set(intr_default);
 	__setinitialcwd(ed->cwd);
 

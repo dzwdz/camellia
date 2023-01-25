@@ -11,46 +11,46 @@
 #include <shared/mem.h>
 #include <stdint.h>
 
-static struct process *process_first = NULL;
-static struct process *process_forgotten = NULL; /* linked list */
-struct process *process_current;
+static Proc *proc_first = NULL;
+static Proc *proc_forgotten = NULL; /* linked list */
+Proc *proc_cur;
 
 static uint32_t next_pid = 1;
 
 
 /** Removes a process from the process tree. */
-static void process_forget(struct process *p);
-static void process_free_forgotten(void);
-static _Noreturn void process_switch(struct process *proc);
+static void proc_forget(Proc *p);
+static void proc_free_forgotten(void);
+static _Noreturn void proc_switch(Proc *proc);
 
 
-struct process *process_seed(void *data, size_t datalen) {
-	assert(!process_first);
-	process_first = kzalloc(sizeof *process_first);
-	process_first->state = PS_RUNNING;
-	process_first->pages = pagedir_new();
-	process_first->mount = vfs_mount_seed();
-	process_first->globalid = next_pid++;
-	process_first->cid = 1;
-	process_first->nextcid = 1;
-	process_first->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
+Proc *proc_seed(void *data, size_t datalen) {
+	assert(!proc_first);
+	proc_first = kzalloc(sizeof *proc_first);
+	proc_first->state = PS_RUNNING;
+	proc_first->pages = pagedir_new();
+	proc_first->mount = vfs_mount_seed();
+	proc_first->globalid = next_pid++;
+	proc_first->cid = 1;
+	proc_first->nextcid = 1;
+	proc_first->_handles = kzalloc(sizeof(Handle) * HANDLE_MAX);
 
 	// map .shared
 	extern char _shared_len;
 	for (size_t p = 0; p < (size_t)&_shared_len; p += PAGE_SIZE)
-		pagedir_map(process_first->pages, (userptr_t)p, (void*)p, false, true);
+		pagedir_map(proc_first->pages, (userptr_t)p, (void*)p, false, true);
 
 	// map the init module as rw
 	void __user *init_base = (userptr_t)0x200000;
 	for (uintptr_t off = 0; off < datalen; off += PAGE_SIZE)
-		pagedir_map(process_first->pages, init_base + off, data + off, true, true);
-	process_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
+		pagedir_map(proc_first->pages, init_base + off, data + off, true, true);
+	proc_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
 
-	return process_first;
+	return proc_first;
 }
 
-struct process *process_fork(struct process *parent, int flags) {
-	struct process *child = kzalloc(sizeof *child);
+Proc *proc_fork(Proc *parent, int flags) {
+	Proc *child = kzalloc(sizeof *child);
 
 	if (flags & FORK_SHAREMEM) {
 		if (!parent->pages_refcount) {
@@ -100,8 +100,8 @@ struct process *process_fork(struct process *parent, int flags) {
 		child->handles_refcount = parent->handles_refcount;
 		child->_handles = parent->_handles;
 	} else {
-		child->_handles = kzalloc(sizeof(struct handle) * HANDLE_MAX);
-		for (handle_t h = 0; h < HANDLE_MAX; h++) {
+		child->_handles = kzalloc(sizeof(Handle) * HANDLE_MAX);
+		for (hid_t h = 0; h < HANDLE_MAX; h++) {
 			child->_handles[h] = parent->_handles[h];
 			if (child->_handles[h])
 				child->_handles[h]->refcount++;
@@ -123,7 +123,7 @@ static bool unref(uint64_t *refcount) {
 	return false;
 }
 
-void process_kill(struct process *p, int ret) {
+void proc_kill(Proc *p, int ret) {
 	if (proc_alive(p)) {
 		if (p->controlled) {
 			// TODO vfs_backend_user_handlerdown
@@ -145,7 +145,7 @@ void process_kill(struct process *p, int ret) {
 		}
 
 		if (p->state == PS_WAITS4PIPE) {
-			struct process **iter = &p->waits4pipe.pipe->pipe.queued;
+			Proc **iter = &p->waits4pipe.pipe->pipe.queued;
 			while (*iter && *iter != p) {
 				assert((*iter)->state == PS_WAITS4PIPE);
 				iter = &(*iter)->waits4pipe.next;
@@ -159,8 +159,8 @@ void process_kill(struct process *p, int ret) {
 		}
 
 		if (unref(p->handles_refcount)) {
-			for (handle_t hid = 0; hid < HANDLE_MAX; hid++)
-				process_handle_close(p, hid);
+			for (hid_t hid = 0; hid < HANDLE_MAX; hid++)
+				proc_handle_close(p, hid);
 			kfree(p->_handles);
 		}
 		p->_handles = NULL;
@@ -168,14 +168,14 @@ void process_kill(struct process *p, int ret) {
 		vfs_mount_remref(p->mount);
 		p->mount = NULL;
 
-		process_transition(p, PS_DYING);
+		proc_setstate(p, PS_DYING);
 		p->death_msg = ret;
 
 		/* tombstone TOREAP children */
-		for (struct process *it = p->child; it; ) {
-			struct process *sibling = it->sibling;
+		for (Proc *it = p->child; it; ) {
+			Proc *sibling = it->sibling;
 			if (it->state == PS_TOREAP) {
-				process_tryreap(it);
+				proc_tryreap(it);
 			}
 			it = sibling;
 		}
@@ -193,45 +193,45 @@ void process_kill(struct process *p, int ret) {
 
 	if (p->state == PS_DYING) {
 		if (p->parent && proc_alive(p->parent)) {
-			process_transition(p, PS_TOREAP);
+			proc_setstate(p, PS_TOREAP);
 		} else {
-			process_transition(p, PS_TOMBSTONE);
+			proc_setstate(p, PS_TOMBSTONE);
 		}
 	}
-	if (p == process_first && p->child) {
+	if (p == proc_first && p->child) {
 		_panic("init killed prematurely");
 	}
-	process_tryreap(p);
+	proc_tryreap(p);
 
-	if (p == process_first) {
-		process_free_forgotten();
+	if (p == proc_first) {
+		proc_free_forgotten();
 		shutdown();
 	}
 }
 
-void process_filicide(struct process *parent, int ret) {
+void proc_filicide(Proc *parent, int ret) {
 	/* Kill deeper descendants. */
-	struct process *child, *child2;
+	Proc *child, *child2;
 	for (child = parent->child; child; child = child2) {
 		child2 = child->sibling;
 
 		// O(n^2), but doable in linear time
 		while (child->child) {
-			struct process *p = child->child;
+			Proc *p = child->child;
 			while (p->child) p = p->child;
 			p->noreap = true;
-			process_kill(p, ret);
+			proc_kill(p, ret);
 		}
 
 		if (proc_alive(child)) {
-			process_kill(child, ret);
+			proc_kill(child, ret);
 		}
 		child = NULL;
 	}
 }
 
-void process_tryreap(struct process *dead) {
-	struct process *parent;
+void proc_tryreap(Proc *dead) {
+	Proc *parent;
 	assert(dead && !proc_alive(dead));
 	parent = dead->parent;
 	if (parent) assert(parent->child);
@@ -243,20 +243,20 @@ void process_tryreap(struct process *dead) {
 				return; /* don't reap yet */
 			}
 			regs_savereturn(&parent->regs, dead->death_msg);
-			process_transition(parent, PS_RUNNING);
+			proc_setstate(parent, PS_RUNNING);
 		}
 		/* can't be reaped anymore */
-		process_transition(dead, PS_TOMBSTONE);
+		proc_setstate(dead, PS_TOMBSTONE);
 		dead->noreap = true;
 	}
 
 	assert(dead->state == PS_TOMBSTONE);
-	for (struct process *p = dead->child; p; p = p->sibling) {
+	for (Proc *p = dead->child; p; p = p->sibling) {
 		assert(p->state != PS_TOREAP);
 	}
 
 	if (dead->child) {
-		struct process *p = dead->child;
+		Proc *p = dead->child;
 		while (p->child) p = p->child;
 		if (p->state == PS_TOREAP) {
 			assert(proc_alive(p->parent));
@@ -269,16 +269,16 @@ void process_tryreap(struct process *dead) {
 	handle_close(dead->specialh.procfs);
 	assert(dead->refcount == 0);
 	if (parent) { /* not applicable to init */
-		process_forget(dead);
+		proc_forget(dead);
 
 		// TODO force gcc to optimize the tail call here
 		if (!proc_alive(parent)) {
-			process_tryreap(parent);
+			proc_tryreap(parent);
 		}
 	}
 }
 
-void process_intr(struct process *p) {
+void proc_intr(Proc *p) {
 	if (!p->intr_fn) return;
 
 	/* save old rsp,rip */
@@ -294,7 +294,7 @@ void process_intr(struct process *p) {
 }
 
 /** Removes a process from the process tree. */
-static void process_forget(struct process *p) {
+static void proc_forget(Proc *p) {
 	assert(p->parent);
 	assert(p->parent->child);
 	assert(!p->child);
@@ -303,7 +303,7 @@ static void process_forget(struct process *p) {
 		p->parent->child = p->sibling;
 	} else {
 		// this would be simpler if siblings were a doubly linked list
-		struct process *prev = p->parent->child;
+		Proc *prev = p->parent->child;
 		while (prev->sibling != p) {
 			prev = prev->sibling;
 			assert(prev);
@@ -312,24 +312,24 @@ static void process_forget(struct process *p) {
 	}
 
 	p->parent = NULL;
-	p->sibling = process_forgotten;
-	process_forgotten = p;
-	process_transition(p, PS_FORGOTTEN);
+	p->sibling = proc_forgotten;
+	proc_forgotten = p;
+	proc_setstate(p, PS_FORGOTTEN);
 }
 
-static void process_free_forgotten(void) {
-	while (process_forgotten) {
-		struct process *p = process_forgotten;
-		process_forgotten = p->sibling;
+static void proc_free_forgotten(void) {
+	while (proc_forgotten) {
+		Proc *p = proc_forgotten;
+		proc_forgotten = p->sibling;
 
-		process_transition(p, PS_FREED);
+		proc_setstate(p, PS_FREED);
 		kfree(p);
 	}
 }
 
-static _Noreturn void process_switch(struct process *proc) {
+static _Noreturn void proc_switch(Proc *proc) {
 	assert(proc->state == PS_RUNNING);
-	process_current = proc;
+	proc_cur = proc;
 	pagedir_switch(proc->pages);
 	if (proc->execbuf.buf)
 		execbuf_run(proc);
@@ -337,25 +337,25 @@ static _Noreturn void process_switch(struct process *proc) {
 		sysexit(proc->regs);
 }
 
-_Noreturn void process_switch_any(void) {
+_Noreturn void proc_switch_any(void) {
 	/* At this point there will be no leftover pointers to forgotten
 	 * processes on the stack, so it's safe to free them. */
-	process_free_forgotten();
+	proc_free_forgotten();
 
 	for (;;) {
-		if (process_current && process_current->state == PS_RUNNING)
-			process_switch(process_current);
+		if (proc_cur && proc_cur->state == PS_RUNNING)
+			proc_switch(proc_cur);
 
-		for (struct process *p = process_first; p; p = process_next(p, NULL)) {
+		for (Proc *p = proc_first; p; p = proc_next(p, NULL)) {
 			if (p->state == PS_RUNNING)
-				process_switch(p);
+				proc_switch(p);
 		}
 
 		cpu_pause();
 	}
 }
 
-struct process *process_next(struct process *p, struct process *root) {
+Proc *proc_next(Proc *p, Proc *root) {
 	/* depth-first search, the order is:
 	 *         1
 	 *        / \
@@ -376,17 +376,17 @@ struct process *process_next(struct process *p, struct process *root) {
 	return p->sibling;
 }
 
-handle_t process_find_free_handle(struct process *proc, handle_t start_at) {
-	for (handle_t hid = start_at; hid < HANDLE_MAX; hid++) {
+hid_t proc_find_free_handle(Proc *proc, hid_t start_at) {
+	for (hid_t hid = start_at; hid < HANDLE_MAX; hid++) {
 		if (proc->_handles[hid] == NULL)
 			return hid;
 	}
 	return -1;
 }
 
-struct handle *process_handle_get(struct process *p, handle_t id) {
+Handle *proc_handle_get(Proc *p, hid_t id) {
 	if (id == HANDLE_NULLFS) {
-		static struct handle h = (struct handle){
+		static Handle h = (Handle){
 			.type = HANDLE_FS_FRONT,
 			.backend = NULL,
 			.refcount = 2, /* never free */
@@ -394,8 +394,8 @@ struct handle *process_handle_get(struct process *p, handle_t id) {
 		return &h;
 	} else if (id == HANDLE_PROCFS) {
 		if (!p->specialh.procfs) {
-			struct handle *h = kmalloc(sizeof *h);
-			*h = (struct handle){
+			Handle *h = kmalloc(sizeof *h);
+			*h = (Handle){
 				.type = HANDLE_FS_FRONT,
 				.backend = procfs_backend(p),
 				.refcount = 1,
@@ -410,19 +410,19 @@ struct handle *process_handle_get(struct process *p, handle_t id) {
 	}
 }
 
-handle_t process_handle_init(struct process *p, enum handle_type type, struct handle **hs) {
-	handle_t hid = process_find_free_handle(p, 1);
+hid_t proc_handle_init(Proc *p, enum handle_type type, Handle **hs) {
+	hid_t hid = proc_find_free_handle(p, 1);
 	if (hid < 0) return -1;
 	p->_handles[hid] = handle_init(type);
 	if (hs) *hs = p->_handles[hid];
 	return hid;
 }
 
-handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
-	struct handle *fromh, **toh;
+hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to) {
+	Handle *fromh, **toh;
 
 	if (to < 0) {
-		to = process_find_free_handle(p, 0);
+		to = proc_find_free_handle(p, 0);
 		if (to < 0) return -EMFILE;
 	} else if (to >= HANDLE_MAX) {
 		return -EBADF;
@@ -430,7 +430,7 @@ handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
 
 	if (to == from) return to;
 	toh = &p->_handles[to];
-	fromh = process_handle_get(p, from);
+	fromh = proc_handle_get(p, from);
 
 	if (*toh) handle_close(*toh);
 	*toh = fromh;
@@ -439,18 +439,18 @@ handle_t process_handle_dup(struct process *p, handle_t from, handle_t to) {
 	return to;
 }
 
-struct handle *process_handle_take(struct process *p, handle_t hid) {
+Handle *proc_hid_take(Proc *p, hid_t hid) {
 	if (hid < 0 || hid >= HANDLE_MAX) {
-		return process_handle_get(p, hid);
+		return proc_handle_get(p, hid);
 	}
-	struct handle *h = p->_handles[hid];
+	Handle *h = p->_handles[hid];
 	p->_handles[hid] = NULL;
 	return h;
 }
 
-handle_t process_handle_put(struct process *p, struct handle *h) {
+hid_t proc_handle_put(Proc *p, Handle *h) {
 	assert(h);
-	handle_t hid = process_find_free_handle(p, 1);
+	hid_t hid = proc_find_free_handle(p, 1);
 	if (hid < 0) {
 		handle_close(h);
 		return hid;
@@ -459,7 +459,7 @@ handle_t process_handle_put(struct process *p, struct handle *h) {
 	return hid;
 }
 
-void process_transition(struct process *p, enum process_state state) {
+void proc_setstate(Proc *p, enum proc_state state) {
 	assert(p->state != PS_FREED);
 	if (state == PS_FREED) {
 		assert(p->state == PS_FORGOTTEN);
@@ -471,7 +471,7 @@ void process_transition(struct process *p, enum process_state state) {
 		assert(p->state == PS_DYING);
 
 		assert(!p->parent || proc_alive(p->parent));
-		for (struct process *it = p->child; it; it = it->sibling) {
+		for (Proc *it = p->child; it; it = it->sibling) {
 			assert(p->state != PS_TOREAP);
 		}
 	} else if (state != PS_RUNNING && state != PS_DYING) {

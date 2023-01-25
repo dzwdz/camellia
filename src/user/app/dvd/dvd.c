@@ -36,7 +36,7 @@ int main(void) {
 		y += dy;
 		draw_rect(x, y, w, h, col++);
 		dirty_flush(&dirty, &fb);
-		_syscall_sleep(1000 / 60);
+		_sys_sleep(1000 / 60);
 	}
 
 	return 1;

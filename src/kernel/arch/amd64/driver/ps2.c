@@ -17,10 +17,10 @@ static volatile ring_t kb_backlog = {(void*)kb_buf, sizeof kb_buf, 0, 0};
 static volatile uint8_t mouse_buf[64];
 static volatile ring_t mouse_backlog = {(void*)mouse_buf, sizeof mouse_buf, 0, 0};
 
-static void accept(struct vfs_request *req);
+static void accept(VfsReq *req);
 
-static struct vfs_request *kb_queue = NULL;
-static struct vfs_request *mouse_queue = NULL;
+static VfsReq *kb_queue = NULL;
+static VfsReq *mouse_queue = NULL;
 
 static void wait_out(void) {
 	while ((port_in8(PS2 + 4) & 2) != 0);
@@ -77,7 +77,7 @@ enum {
 	H_MOUSE,
 };
 
-static void accept(struct vfs_request *req) {
+static void accept(VfsReq *req) {
 	// when you fix something here go also fix it in the COM1 driver
 	int ret;
 	switch (req->type) {

@@ -5,27 +5,27 @@
 #include <user/lib/esemaphore.h>
 
 void esem_signal(struct evil_sem *sem) {
-	_syscall_write(sem->signal, NULL, 0, 0, 0);
+	_sys_write(sem->signal, NULL, 0, 0, 0);
 }
 
 void esem_wait(struct evil_sem *sem) {
-	_syscall_read(sem->wait, NULL, 0, 0);
+	_sys_read(sem->wait, NULL, 0, 0);
 }
 
 struct evil_sem *esem_new(int value) {
-	handle_t ends_wait[2], ends_signal[2];
+	hid_t ends_wait[2], ends_signal[2];
 	struct evil_sem *sem;
 
 	if (value < 0) return NULL;
-	if (_syscall_pipe(ends_wait, 0) < 0) return NULL;
-	if (_syscall_pipe(ends_signal, 0) < 0) goto fail_signal;
+	if (_sys_pipe(ends_wait, 0) < 0) return NULL;
+	if (_sys_pipe(ends_signal, 0) < 0) goto fail_signal;
 	if (!(sem = malloc(sizeof *sem))) goto fail_malloc;
 
-	if (!_syscall_fork(FORK_NOREAP, NULL)) {
+	if (!_sys_fork(FORK_NOREAP, NULL)) {
 		close(ends_signal[1]);
-		while (_syscall_read(ends_signal[0], NULL, 0, 0) >= 0) {
-			if (!_syscall_fork(FORK_NOREAP, NULL)) {
-				_syscall_write(ends_wait[1], NULL, 0, 0, 0);
+		while (_sys_read(ends_signal[0], NULL, 0, 0) >= 0) {
+			if (!_sys_fork(FORK_NOREAP, NULL)) {
+				_sys_write(ends_wait[1], NULL, 0, 0, 0);
 				exit(0);
 			}
 		}
