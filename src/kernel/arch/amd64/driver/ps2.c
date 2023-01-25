@@ -1,7 +1,7 @@
 #include <camellia/errno.h>
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/driver/util.h>
-#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -50,8 +50,12 @@ void ps2_init(void) {
 	wait_out();
 	port_out8(PS2, 0xF4); /* packet streaming */
 	wait_in();
-	if (port_in8(PS2) != 0xFA) /* check ACK */
+	if (port_in8(PS2) != 0xFA) { /* check ACK */
 		panic_unimplemented();
+	}
+
+	irq_fn[IRQ_PS2KB] = ps2_irq;
+	irq_fn[IRQ_PS2MOUSE] = ps2_irq;
 
 	vfs_root_register("/ps2", accept);
 }

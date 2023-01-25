@@ -1,6 +1,6 @@
 #include <kernel/arch/amd64/driver/serial.h>
 #include <kernel/arch/amd64/driver/util.h>
-#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -25,6 +25,8 @@ static void serial_selftest(void) {
 }
 
 void serial_preinit(void) {
+	irq_fn[IRQ_COM1] = serial_irq;
+
 	// see https://www.sci.muni.cz/docs/pc/serport.txt
 	// set baud rate divisor
 	port_out8(COM1 + 3, 0b10000000); // enable DLAB

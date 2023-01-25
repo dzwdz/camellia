@@ -1,5 +1,6 @@
 #include <kernel/arch/amd64/driver/rtl8139.h>
 #include <kernel/arch/amd64/driver/util.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
@@ -47,6 +48,7 @@ static void rx_irq_enable(bool v) {
 void rtl8139_init(uint32_t bdf) {
 	if (iobase) panic_unimplemented(); /* multiple devices */
 	iobase = pcicfg_iobase(bdf);
+	irq_fn[IRQ_RTL8139] = rtl8139_irq;
 
 	/* also includes the status, because i have only implemented w32 */
 	uint32_t cmd = pcicfg_r32(bdf, PCICFG_CMD);

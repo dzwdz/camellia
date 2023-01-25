@@ -1,3 +1,5 @@
+#include <kernel/arch/amd64/boot.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/time.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -47,4 +49,8 @@ void timer_deschedule(Proc *p) {
 	*slot = p->waits4timer.next;
 
 	update_goal();
+}
+
+void timer_init(void) {
+	irq_fn[IRQ_PIT] = pit_irq;
 }

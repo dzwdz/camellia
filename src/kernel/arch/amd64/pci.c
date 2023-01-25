@@ -1,5 +1,5 @@
 #include <kernel/arch/amd64/driver/rtl8139.h>
-#include <kernel/arch/amd64/interrupts/irq.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/arch/generic.h>

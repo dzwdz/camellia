@@ -1,5 +1,5 @@
 #include <kernel/arch/amd64/boot.h>
-#include <kernel/arch/amd64/interrupts/isr.h>
+#include <kernel/arch/amd64/interrupts.h>
 #include <kernel/panic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,7 +30,6 @@ static struct lidt_arg lidt_arg;
 
 static void idt_prepare(void);
 static void idt_load(void);
-static void idt_test(void);
 
 
 static void idt_prepare(void) {
@@ -55,13 +54,7 @@ static void idt_load(void) {
 	asm("lidt (%0)" : : "r" (&lidt_arg) : "memory");
 }
 
-static void idt_test(void) {
-	asm("int $0x34" : : : "memory");
-	assert(isr_test_interrupt_called);
-}
-
 void idt_init(void) {
 	idt_prepare();
 	idt_load();
-	idt_test();
 }
