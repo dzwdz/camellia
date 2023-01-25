@@ -5,7 +5,6 @@
 #include <kernel/arch/amd64/driver/ps2.h>
 #include <kernel/arch/amd64/driver/serial.h>
 #include <kernel/arch/amd64/driver/video.h>
-#include <kernel/arch/amd64/interrupts/idt.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/tty/tty.h>

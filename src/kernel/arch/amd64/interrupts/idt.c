@@ -1,5 +1,4 @@
-#include <kernel/arch/amd64/32/gdt.h>
-#include <kernel/arch/amd64/interrupts/idt.h>
+#include <kernel/arch/amd64/boot.h>
 #include <kernel/arch/amd64/interrupts/isr.h>
 #include <kernel/panic.h>
 #include <stdbool.h>

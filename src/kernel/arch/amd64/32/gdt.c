@@ -1,5 +1,5 @@
-#include <kernel/arch/amd64/32/gdt.h>
 #include <kernel/arch/amd64/32/util.h>
+#include <kernel/arch/amd64/boot.h>
 #include <stdbool.h>
 #include <stdint.h>
 

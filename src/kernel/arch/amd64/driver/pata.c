@@ -3,7 +3,6 @@
 #include <kernel/arch/amd64/ata.h>
 #include <kernel/arch/amd64/driver/pata.h>
 #include <kernel/arch/amd64/driver/util.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>

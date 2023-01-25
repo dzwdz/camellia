@@ -1,6 +1,5 @@
 #include <camellia/errno.h>
 #include <kernel/mem/alloc.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/procfs.h>

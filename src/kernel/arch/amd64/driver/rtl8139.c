@@ -2,7 +2,6 @@
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/port_io.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>

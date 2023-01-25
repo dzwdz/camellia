@@ -2,10 +2,8 @@
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/interrupts/irq.h>
 #include <kernel/arch/amd64/port_io.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/ring.h>
 #include <kernel/util.h>
 #include <stdint.h>
 

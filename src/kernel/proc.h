@@ -128,3 +128,11 @@ Handle *proc_hid_take(Proc *, hid_t);
 hid_t proc_handle_put(Proc *, Handle *);
 
 void proc_setstate(Proc *, enum proc_state);
+
+size_t pcpy_to(Proc *p, __user void *dst, const void *src, size_t len);
+size_t pcpy_from(Proc *p, void *dst, const __user void *src, size_t len);
+size_t pcpy_bi(
+	Proc *dstp, __user void *dst,
+	Proc *srcp, const __user void *src,
+	size_t len
+);

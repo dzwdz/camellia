@@ -1,6 +1,5 @@
 #include <camellia/fsutil.h>
 #include <kernel/arch/amd64/driver/util.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>
@@ -52,4 +51,11 @@ void postqueue_ringreadall(VfsReq **queue, ring_t *r) {
 		vfsreq_finish_short(req, ret);
 	}
 	*queue = NULL;
+}
+
+size_t ring_to_virt(ring_t *r, Proc *proc, void __user *ubuf, size_t max) {
+	char tmp[32];
+	if (max > sizeof tmp) max = sizeof tmp;
+	max = ring_get(r, tmp, max);
+	return pcpy_to(proc, ubuf, tmp, max);
 }

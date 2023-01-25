@@ -4,7 +4,6 @@
 // TODO ensure the behaviour of kernel vs user fs on faults is the same
 
 #include <kernel/arch/generic.h>
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>

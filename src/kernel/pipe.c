@@ -1,4 +1,3 @@
-#include <kernel/mem/virt.h>
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/util.h>

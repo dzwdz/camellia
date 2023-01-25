@@ -5,7 +5,6 @@
 #include <kernel/arch/amd64/port_io.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
-#include <kernel/ring.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 

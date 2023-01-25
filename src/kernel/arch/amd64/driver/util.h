@@ -19,3 +19,5 @@ bool postqueue_pop(VfsReq **queue, void (*accept)(VfsReq *));
 /** If there are any pending read requests, and the ring buffer isn't empty, fulfill them
  * all with a single read. */
 void postqueue_ringreadall(VfsReq **queue, ring_t *r);
+
+size_t ring_to_virt(ring_t *r, Proc *proc, void __user *ubuf, size_t max);
