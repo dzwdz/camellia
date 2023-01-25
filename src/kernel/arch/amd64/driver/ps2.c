@@ -1,5 +1,5 @@
 #include <camellia/errno.h>
-#include <kernel/arch/amd64/driver/ps2.h>
+#include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/port_io.h>
@@ -17,6 +17,7 @@ static volatile uint8_t mouse_buf[64];
 static volatile ring_t mouse_backlog = {(void*)mouse_buf, sizeof mouse_buf, 0, 0};
 
 static void accept(VfsReq *req);
+static void ps2_irq(void);
 
 static VfsReq *kb_queue = NULL;
 static VfsReq *mouse_queue = NULL;
@@ -60,7 +61,7 @@ void ps2_init(void) {
 	vfs_root_register("/ps2", accept);
 }
 
-void ps2_irq(void) {
+static void ps2_irq(void) {
 	for (;;) {
 		uint64_t status = port_in8(PS2 + 4);
 		if (!(status & 1)) break; /* read while data available */

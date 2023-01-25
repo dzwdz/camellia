@@ -1,4 +1,4 @@
-#include <kernel/arch/amd64/driver/rtl8139.h>
+#include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/pci.h>
@@ -11,6 +11,7 @@
 #define WAIT -1000
 
 static void accept(VfsReq *req);
+static void rtl8139_irq(void);
 static VfsReq *blocked_on = NULL;
 
 
@@ -85,7 +86,7 @@ void rtl8139_init(uint32_t bdf) {
 	vfs_root_register("/eth", accept);
 }
 
-void rtl8139_irq(void) {
+static void rtl8139_irq(void) {
 	uint16_t status = port_in16(iobase + INTRSTATUS);
 	if (!(status & 1)) {
 		kprintf("bad rtl8139 status 0x%x\n", status);

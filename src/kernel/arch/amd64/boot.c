@@ -1,10 +1,7 @@
 #include <kernel/arch/amd64/3rdparty/multiboot2.h>
 #include <kernel/arch/amd64/boot.h>
-#include <kernel/arch/amd64/driver/fsroot.h>
-#include <kernel/arch/amd64/driver/pata.h>
-#include <kernel/arch/amd64/driver/ps2.h>
+#include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/serial.h>
-#include <kernel/arch/amd64/driver/video.h>
 #include <kernel/arch/amd64/interrupts.h>
 #include <kernel/arch/amd64/pci.h>
 #include <kernel/arch/amd64/tty/tty.h>

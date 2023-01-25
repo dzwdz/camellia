@@ -1,7 +1,7 @@
 #include <camellia/errno.h>
 #include <camellia/fsutil.h>
+#include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/util.h>
-#include <kernel/arch/amd64/driver/video.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/request.h>

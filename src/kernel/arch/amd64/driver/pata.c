@@ -1,7 +1,7 @@
 #include <camellia/errno.h>
 #include <camellia/fsutil.h>
 #include <kernel/arch/amd64/ata.h>
-#include <kernel/arch/amd64/driver/pata.h>
+#include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/util.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>

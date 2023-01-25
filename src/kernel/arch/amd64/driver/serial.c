@@ -13,6 +13,7 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 static const int COM1 = 0x3f8;
 
 static void accept(VfsReq *req);
+static void serial_irq(void);
 static VfsReq *hung_reads = NULL;
 void serial_init(void) { vfs_root_register("/com1", accept); }
 
@@ -43,7 +44,7 @@ void serial_preinit(void) {
 }
 
 
-void serial_irq(void) {
+static void serial_irq(void) {
 	ring_put1b((void*)&backlog, port_in8(COM1));
 	postqueue_ringreadall(&hung_reads, (void*)&backlog);
 }
