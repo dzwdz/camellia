@@ -96,7 +96,7 @@ out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
 	@cat $^ > $@
 
-out/fs/boot/grub/grub.cfg: grub.cfg
+out/fs/boot/grub/grub.cfg: src/kernel/arch/amd64/grub.cfg
 	@mkdir -p $(@D)
 	@cp $< $@
 
