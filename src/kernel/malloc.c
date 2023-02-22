@@ -155,12 +155,16 @@ void *kmalloc(size_t len) {
 	malloc_last = hdr;
 
 	addr = (void*)hdr + sizeof(struct malloc_hdr);
+#ifndef NDEBUG
+	memset(addr, 0xCC, len);
+#endif
 	kmalloc_sanity(addr);
 	return addr;
 }
 
 void kfree(void *ptr) {
 	struct malloc_hdr *hdr;
+	uint32_t page_amt;
 	if (ptr == NULL) return;
 
 	hdr = ptr - sizeof(struct malloc_hdr);
@@ -173,5 +177,9 @@ void kfree(void *ptr) {
 		hdr->prev->next = hdr->next;
 	if (malloc_last == hdr)
 		malloc_last = hdr->prev;
-	page_free(hdr, hdr->page_amt);
+	page_amt = hdr->page_amt;
+#ifndef NDEBUG
+	memset(hdr, 0xC0, page_amt * PAGE_SIZE);
+#endif
+	page_free(hdr, page_amt);
 }
