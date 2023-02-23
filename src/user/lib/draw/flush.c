@@ -1,6 +1,6 @@
 #include <camellia/execbuf.h>
 #include <camellia/syscalls.h>
-#include <user/lib/draw/draw.h>
+#include <draw.h>
 
 static void flush_combined(struct rect pix, struct framebuf *fb) {
 	size_t low  = fb->pitch * pix.y1 + 4 * pix.x1;

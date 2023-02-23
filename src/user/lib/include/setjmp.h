@@ -1,5 +1,5 @@
 #pragma once
-#include <user/lib/panic.h>
+#include <bits/panic.h>
 
 typedef uint64_t jmp_buf[8]; /* rbx, rsp, rbp, r12, r13, r14, r15, rip */
 typedef char sigjmp_buf[1];

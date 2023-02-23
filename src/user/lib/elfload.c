@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/elf.h>
-#include <user/lib/elfload.h>
+#include "elf.h"
+#include <elfload.h>
 
 void elf_execf(FILE *f, char **argv, char **envp) {
 	void *buf;

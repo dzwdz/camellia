@@ -5,7 +5,7 @@
 #include "proto.h"
 #include "util.h"
 #include <assert.h>
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 
 enum {
 	SrcPort = 0,

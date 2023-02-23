@@ -1,5 +1,5 @@
 #include "../tests.h"
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <string.h>
 
 static void test_ringbuf(void) {

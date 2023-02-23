@@ -8,13 +8,13 @@ CHECK   = sparse
 CFLAGS += -g -std=gnu99 -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
 CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
-CFLAGS += -Isrc/ -Isrc/shared/include/
+CFLAGS += -Isrc/shared/include/
 
-KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only
-LIBC_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/ -ffreestanding
+KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only -Isrc/
+LIBC_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/ -ffreestanding -Isrc/
 USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
-SPARSEFLAGS = -Wno-non-pointer-null
+SPARSEFLAGS = -$(KERNEL_CFLAGS) -Wno-non-pointer-null
 LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
 # TODO optimize memory use
 QFLAGS  = -no-reboot -m 1g -gdb tcp::12366
@@ -62,7 +62,7 @@ test: all
 	@cat out/qemu.out
 
 check: $(shell find src/kernel/ -type f -name *.c)
-	@echo $^ | xargs -n 1 sparse $(CFLAGS) $(SPARSEFLAGS)
+	@echo $^ | xargs -n 1 sparse $(SPARSEFLAGS)
 	@tools/linter/main.rb
 
 clean:

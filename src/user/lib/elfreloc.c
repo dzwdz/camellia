@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <user/lib/elf.h>
+#include "elf.h"
 
 __attribute__((visibility("hidden")))
 extern struct Elf64_Dyn _DYNAMIC[];

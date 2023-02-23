@@ -2,7 +2,7 @@
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <string.h>
-#include <user/lib/thread.h>
+#include <thread.h>
 
 #define eprintf(fmt, ...) fprintf(stderr, "netdog: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 

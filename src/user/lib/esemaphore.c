@@ -2,7 +2,7 @@
 #include <camellia/syscalls.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <user/lib/esemaphore.h>
+#include <esemaphore.h>
 
 void esem_signal(struct evil_sem *sem) {
 	_sys_write(sem->signal, NULL, 0, 0, 0);

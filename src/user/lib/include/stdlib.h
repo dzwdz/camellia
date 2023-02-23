@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #ifndef NO_MALLOC_H
-#include <user/lib/vendor/dlmalloc/malloc.h>
+#include <malloc.h>
 #endif
 
 #define EXIT_SUCCESS 0

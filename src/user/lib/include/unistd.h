@@ -1,6 +1,6 @@
 #pragma once
 #include <camellia/types.h> // TODO only needed because of hid_t
-#include <user/lib/vendor/getopt/getopt.h>
+#include <getopt.h>
 
 int fork(void);
 int close(hid_t h);

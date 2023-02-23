@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/thread.h>
+#include <thread.h>
 
 struct net_state state = {
 	// TODO dynamically get mac

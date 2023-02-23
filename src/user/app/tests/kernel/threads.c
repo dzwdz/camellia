@@ -2,8 +2,8 @@
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <string.h>
-#include <user/lib/esemaphore.h>
-#include <user/lib/thread.h>
+#include <esemaphore.h>
+#include <thread.h>
 
 int global_n;
 static void basic_thread(void *sem) {

@@ -1,5 +1,5 @@
 #include <math.h>
-#include <user/lib/panic.h>
+#include <bits/panic.h>
 
 // TODO port a libm
 #pragma GCC diagnostic ignored "-Wunused-parameter"

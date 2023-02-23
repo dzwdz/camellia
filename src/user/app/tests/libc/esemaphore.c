@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/esemaphore.h>
+#include <esemaphore.h>
 
 static void odd(hid_t out, struct evil_sem *sem1, struct evil_sem *sem2) {
 	_sys_write(out, "1", 1, -1, 0);

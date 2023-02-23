@@ -1,6 +1,6 @@
 #pragma once
 #include <kernel/types.h>
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <stdbool.h>
 #include <stddef.h>
 

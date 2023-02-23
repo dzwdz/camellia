@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/panic.h>
+#include <bits/panic.h>
 
 static FILE _stdin_null  = { .fd = STDIN_FILENO };
 static FILE _stdout_null = { .fd = STDOUT_FILENO };

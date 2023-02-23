@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/draw/draw.h>
+#include <draw.h>
 
 void dirty_reset(struct rect *d) {
 	d->x1 = ~0; d->y1 = ~0;

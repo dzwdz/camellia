@@ -3,7 +3,7 @@
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <string.h>
-#include <user/lib/panic.h>
+#include <bits/panic.h>
 
 _Noreturn void abort(void) {
 	_sys_exit(1);

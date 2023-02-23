@@ -1,4 +1,4 @@
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <shared/mem.h>
 #include <stdbool.h>
 

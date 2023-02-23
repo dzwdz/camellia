@@ -1,6 +1,6 @@
 #include "driver.h"
 #include <camellia/syscalls.h>
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <camellia/compat.h>

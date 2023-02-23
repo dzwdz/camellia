@@ -2,7 +2,7 @@
 #include <camellia/types.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <user/lib/draw/draw.h>
+#include <draw.h>
 
 #define eprintf(fmt, ...) fprintf(stderr, "vterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 

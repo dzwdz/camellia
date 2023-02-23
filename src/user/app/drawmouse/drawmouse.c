@@ -1,11 +1,11 @@
 #include <camellia.h>
 #include <camellia/syscalls.h>
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <user/lib/draw/draw.h>
+#include <draw.h>
 
 #define MOUSE_SIZE 10
 

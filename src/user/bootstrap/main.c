@@ -3,7 +3,7 @@
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <string.h>
-#include <user/lib/elfload.h>
+#include <elfload.h>
 #include <camellia/fs/misc.h>
 
 #include "tar.h"

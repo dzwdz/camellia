@@ -48,7 +48,7 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 	return res * sign;
 }
 
-#include <user/lib/panic.h>
+#include <bits/panic.h>
 double strtod(const char *restrict s, char **restrict end) {
 	(void)s; (void)end;
 	__libc_panic("unimplemented");
