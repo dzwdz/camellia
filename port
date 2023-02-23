@@ -2,7 +2,7 @@
 set -eu
 export REPO="$PWD"
 export PREFIX="$REPO/out/initrd/usr/"
-export PATH="$REPO/ports/bin/:$REPO/toolchain/bin/:$PATH"
+export PATH="$REPO/ports/bin/:$REPO/toolchain/prefix/bin/:$PATH"
 
 if [ $1 = deepclean ]; then
 	rm -rf ports/out/

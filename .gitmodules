@@ -1,3 +1,10 @@
 [submodule "src/user/app/ext2fs/ext2"]
 	path = src/user/app/ext2fs/ext2
 	url = https://github.com/dzwdz/ext2.git
+[submodule "toolchain/binutils"]
+	path = toolchain/binutils
+	url = https://github.com/dzwdz/camellia-binutils
+	branch = camellia
+[submodule "toolchain/gcc"]
+	path = toolchain/gcc
+	url = https://github.com/dzwdz/gcc

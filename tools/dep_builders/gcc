@@ -1,54 +1,29 @@
 #!/bin/sh
 set -eu
 
-TOOL="gcc"
-VER="11.2.0"
-# this is ugly
-{ HASHES=$(cat) ; } <<'HASHES'
-f0837f1bf8244a5cc23bd96ff6366712a791cfae01df8e25b137698aca26efc1  toolchain/cache/gcc-11.2.0.tar.gz
-HASHES
-
-export PREFIX="$(pwd)/toolchain/"
-export CACHE="$(pwd)/toolchain/cache/"
-export PATH="$(pwd)/toolchain/bin/:$PATH"
-export TARGET=x86_64-elf
-
-
 # ensure that we're in the repo root
 if [ ! -d .git ]; then
 	echo please cd to the repo\'s main directory
 	exit
 fi
 
+export PREFIX="$(pwd)/toolchain/prefix/"
+export PATH="$(pwd)/toolchain/prefix/bin/:$PATH"
+BUILDDIR="$(pwd)/toolchain/gcc-build/"
+SYSROOT="$(pwd)/sysroot/"
 mkdir -p $PREFIX
+mkdir -p $BUILDDIR
 
-echo "downloading missing files..."
-tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER/$TOOL-$VER.tar.gz"
-tools/dep_builders/dl "https://ftp.gnu.org/gnu/$TOOL/$TOOL-$VER/$TOOL-$VER.tar.gz.sig"
-tools/dep_builders/dl "https://ftp.gnu.org/gnu/gnu-keyring.gpg"
+cd $BUILDDIR
 
-echo "verifying signatures..."
-if ! gpg --verify --keyring toolchain/cache/gnu-keyring.gpg $CACHE/$TOOL-$VER.tar.gz.sig
-then
-	echo "THE SIGNATURE COULDN'T BE VERIFIED. something's fishy."
-	exit
-fi
-echo "$HASHES" | sha256sum --check || exit
-
-echo "unpacking the tarball..."
-tar xf toolchain/cache/$TOOL-$VER.tar.gz -C $CACHE
-
-echo "downloading required libraries..."
-cd $CACHE/$TOOL-$VER
-./contrib/download_prerequisites
-
-echo "building..."
-rm -rf $CACHE/$TOOL-$VER/builddir
-mkdir $CACHE/$TOOL-$VER/builddir
-cd $CACHE/$TOOL-$VER/builddir
-
-../configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c --without-headers
+../gcc/configure \
+	--target=x86_64-camellia \
+	--prefix="$PREFIX" \
+	--disable-nls \
+	--without-headers \
+	--enable-languages=c,c++ \
+	--disable-werror
 make -j4 all-gcc
 make -j4 all-target-libgcc
-make -j4 install-gcc
-make -j4 install-target-libgcc
+make install-gcc
+make install-target-libgcc

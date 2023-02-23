@@ -1,16 +1,17 @@
-PATH   := $(shell pwd)/toolchain/bin/:$(PATH)
+PATH   := $(shell pwd)/toolchain/prefix/bin/:$(PATH)
 
-AR      = x86_64-elf-ar
-AS      = x86_64-elf-as
-CC      = x86_64-elf-gcc
+AR      = x86_64-camellia-ar
+AS      = x86_64-camellia-as
+CC      = x86_64-camellia-gcc
 CHECK   = sparse
 
-CFLAGS += -g -std=gnu99 -ffreestanding -O2 -ftrack-macro-expansion=0
+CFLAGS += -g -std=gnu99 -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
 CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
 CFLAGS += -Isrc/ -Isrc/shared/include/
 
-KERNEL_CFLAGS  = $(CFLAGS) -mno-sse -mgeneral-regs-only
+KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only
+LIBC_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/ -ffreestanding
 USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
 
 SPARSEFLAGS = -Wno-non-pointer-null
@@ -149,9 +150,13 @@ out/obj/user/%.c.o: src/user/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(USER_CFLAGS) -fPIC -c $^ -o $@
 
+out/obj/user/lib/%.c.o: src/user/lib/%.c
+	@mkdir -p $(@D)
+	@$(CC) $(LIBC_CFLAGS) -fPIC -c $^ -o $@
+
 out/obj/user/lib/vendor/%.c.o: src/user/lib/vendor/%.c
 	@mkdir -p $(@D)
-	@$(CC) $(USER_CFLAGS) -fPIC -c $^ -o $@ \
+	@$(CC) $(LIBC_CFLAGS) -fPIC -c $^ -o $@ \
 		-DLACKS_TIME_H -DLACKS_FCNTL_H -DLACKS_SYS_PARAM_H \
 		-DMAP_ANONYMOUS -DHAVE_MORECORE=0 -DNO_MALLOC_H \
 		-Wno-expansion-to-defined -Wno-old-style-definition

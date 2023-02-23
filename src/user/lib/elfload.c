@@ -160,7 +160,7 @@ void elf_exec(void *base, char **argv, char **envp) {
 	void *exebase = elf_loadmem(ehdr);
 	if (!exebase) return;
 
-	void *newstack = _sys_memflag((void*)0x11000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT);
+	void *newstack = _sys_memflag((void*)0x11000, 0x1000, MEMFLAG_FINDFREE | MEMFLAG_PRESENT) + 0x1000 - 8;
 	if (!newstack) return;
 
 	_freejmp_chstack(exebase + ehdr->e_entry, exebase, elf_spread(ehdr) + 0x1000, (const char**)argv, envp, newstack);

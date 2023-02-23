@@ -319,6 +319,7 @@ void __user *_sys_memflag(void __user *addr, size_t len, int flags) {
 	addr = (userptr_t)((uintptr_t __force)addr & ~PAGE_MASK); // align to page boundary
 
 	if (flags & MEMFLAG_FINDFREE) {
+		// TODO space out page allocations to catch stupid bugs
 		addr = pagedir_findfree(pages, addr, len);
 		if (!(flags & MEMFLAG_PRESENT))
 			SYSCALL_RETURN((uintptr_t)addr);
