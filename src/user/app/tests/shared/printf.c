@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+
 static void test_printf(void) {
 	char buf[64];
 	memset(buf, '?', 64);

@@ -35,9 +35,9 @@ int main(int argc, char **argv) {
 	for (long i = 0; i < num_runs; i++) {
 		uint64_t scaled = results[i] / 3000;
 		total += scaled;
-		fprintf(stderr, "run %u: %u\n", i, scaled);
+		fprintf(stderr, "run %ld: %lu\n", i, scaled);
 	}
-	fprintf(stderr, "%u calls, %u bytes. avg %u\n", num_calls, num_bytes, total / num_runs);
+	fprintf(stderr, "%lu calls, %lu bytes. avg %lu\n", num_calls, num_bytes, total / num_runs);
 
 	return 0;
 }

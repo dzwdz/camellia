@@ -8,6 +8,7 @@ enum lenmod {
 	LM_int,
 	LM_long,
 	LM_longlong,
+	LM_size,
 };
 
 struct out_state {
@@ -165,6 +166,10 @@ int __printf_internal(const char *fmt, va_list argp,
 					c = *fmt++;
 				}
 				break;
+			case 'z':
+				lm = LM_size;
+				c = *fmt++;
+				break;
 			default:
 				lm = LM_int;
 				break;
@@ -198,6 +203,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
 				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
 				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
+				else if (lm == LM_size)     n = va_arg(argp, size_t);
 				output_uint16(&os, &m, n);
 				break;
 
@@ -205,6 +211,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
 				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
 				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
+				else if (lm == LM_size)     n = va_arg(argp, size_t);
 				output_uint(&os, &m, n, '\0');
 				break;
 
@@ -213,6 +220,7 @@ int __printf_internal(const char *fmt, va_list argp,
 				     if (lm == LM_int)      ns = va_arg(argp, int);
 				else if (lm == LM_long)     ns = va_arg(argp, long);
 				else if (lm == LM_longlong) ns = va_arg(argp, long long);
+				else if (lm == LM_size)     ns = va_arg(argp, size_t);
 				sign = '\0';
 				if (ns < 0) {
 					ns = -ns;

@@ -72,7 +72,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		uint64_t div = 3000;
 		run_args(argc - 1, argv + 1, redir);
 		time = __rdtsc() - time;
-		printf("%u ns (assuming 3GHz)\n", time / div);
+		printf("%lu ns (assuming 3GHz)\n", time / div);
 		return;
 	} else if (!strcmp(argv[0], "exit")) {
 		exit(0);

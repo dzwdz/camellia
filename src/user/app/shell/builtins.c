@@ -125,7 +125,7 @@ void cmd_hexdump(int argc, char **argv) {
 					}
 					continue;
 				} else skipped = false;
-				printf("%08x  ", pos + i);
+				printf("%08zx  ", pos + i);
 
 				for (size_t j = i; j < i + 8 && j < len; j++)
 					printf("%02x ", buf[j]);
@@ -148,7 +148,7 @@ void cmd_hexdump(int argc, char **argv) {
 			}
 			pos += len;
 		}
-		printf("%08x\n", pos);
+		printf("%08zx\n", pos);
 		fclose(file);
 	}
 }

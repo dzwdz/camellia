@@ -30,7 +30,7 @@ void check(hid_t h) {
 	long offlast = 0;
 	long retlast = _sys_read(h, buflast, buflen, offlast);
 	if (retlast < 0) {
-		eprintf("error %d when reading at offset %d", retlast, offlast);
+		eprintf("error %ld when reading at offset %ld", retlast, offlast);
 		goto end;
 	}
 
@@ -43,14 +43,14 @@ void check(hid_t h) {
 
 		long retcur = _sys_read(h, bufcur, buflen, offcur);
 		if (retcur < 0) {
-			eprintf("error %d when reading at offset %d", retlast, offcur);
+			eprintf("error %ld when reading at offset %ld", retlast, offcur);
 			break;
 		}
 		if (retcur < retlast + offlast - offcur) {
-			verbosef("warn: unexpected ret %d < %d + %d - %d\n", retcur, retlast, offlast, offcur);
+			verbosef("warn: unexpected ret %ld < %ld + %ld - %ld\n", retcur, retlast, offlast, offcur);
 		}
 		if (memcmp(buflast + diff, bufcur, retlast - diff)) {
-			eprintf("unconsistent read from offsets %d and %d", offlast, offcur);
+			eprintf("inconsistent read from offsets %ld and %ld", offlast, offcur);
 		}
 
 		offlast = offcur;
