@@ -11,7 +11,7 @@ fetch() {
 	rm doomgeneric # a leftover OS X binary
 	sed s/xlib/camellia/ -i Makefile
 	sed s/-lX11// -i Makefile
-	curl -A "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0" -LO https://assets.wad-archive.com/wadarchive/files/1437fc1ac25a17d5b3cef4c9d2f74e40cae3d231/DOOM1.WAD
+	echo note: you need to supply your own WADs
 
 	cat <<\EOF > doomgeneric_camellia.c
 #include <camellia/syscalls.h>
@@ -28,7 +28,7 @@ fetch() {
 #include "doomkeys.h"
 
 static struct framebuf fb;
-static handle_t kb;
+static hid_t kb;
 
 static const char keymap_lower[] = {
 	'\0', '\0', '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',
@@ -48,7 +48,7 @@ static void kb_thread(void *arg) {
 	(void)arg;
 	char buf[sizeof kb_backbuf];
 	for (;;) {
-		int ret = _syscall_read(kb, buf, sizeof buf, 0);
+		int ret = _sys_read(kb, buf, sizeof buf, 0);
 		if (ret <= 0) break;
 		ring_put(&kb_backlog, buf, ret);
 	}
@@ -59,7 +59,7 @@ void DG_Init(void) {
 		puts("DG_Init: fb_setup error");
 		abort();
 	}
-	kb = _syscall_open("/kdev/ps2/kb", 12, 0);
+	kb = _sys_open("/kdev/ps2/kb", 12, 0);
 	if (kb < 0) {
 		puts("DG_Init: can't open keyboard");
 		abort();
@@ -84,7 +84,7 @@ void DG_DrawFrame(void) {
 static uint32_t timer = 0;
 void DG_SleepMs(uint32_t ms) {
 	timer += ms;
-	_syscall_sleep(ms);
+	_sys_sleep(ms);
 }
 
 uint32_t DG_GetTicksMs(void) {
@@ -144,7 +144,8 @@ prep() {
 }
 
 case $1 in
-	install) (prep; make "CC=cc" && cp doomgeneric $PREFIX/bin/doom && cp DOOM1.WAD $PREFIX/) ;;
+	install) (prep; make "CC=cc" && cp doomgeneric $PREFIX/bin/doom && cp *.WAD $PREFIX/) ;;
 	clean)   (prep; make clean) ;;
+	deepclean) (rm -rf doomgeneric) ;;
 	*)       echo "usage: $0 install|clean"; false ;;
 esac
