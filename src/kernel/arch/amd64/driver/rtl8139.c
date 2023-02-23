@@ -118,6 +118,7 @@ static int try_rx(Proc *proc, void __user *dest, size_t dlen) {
 	 *  0 - Receive OK
 	 * 14 - Physical Address Matched */
 	flags = *(uint16_t*)(rxbuf + rxpos);
+	(void)flags; // TODO check rtl8139 rx flags
 	rxpos += 2;
 	/* doesn't include the header, includes a 4 byte crc */
 	size = *(uint16_t*)(rxbuf + rxpos);

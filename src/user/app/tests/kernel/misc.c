@@ -21,6 +21,7 @@ static void test_fault_kill(void) {
 }
 
 static void test_efault(void) {
+#if 0
 	const char *str = "o, 16 characters";
 	char str2[16];
 	char *invalid = (void*)0x1000;
@@ -51,6 +52,7 @@ static void test_efault(void) {
 
 	test(_sys_write(h, str, 16, 0, 0) == 16);
 	close(h);
+#endif
 }
 
 static void test_invalid_syscall(void) {
@@ -59,6 +61,6 @@ static void test_invalid_syscall(void) {
 
 void r_k_misc(void) {
 	run_test(test_fault_kill);
-	// run_test(test_efault);
+	run_test(test_efault);
 	run_test(test_invalid_syscall);
 }

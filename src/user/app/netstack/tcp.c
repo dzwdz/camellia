@@ -175,8 +175,8 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 	uint32_t seq     = nget32(buf + Seq);
 	uint32_t acknum  = nget32(buf + AckNum);
 	uint16_t flags   = nget16(buf + Flags);
-	uint16_t winsize = nget16(buf + WinSize);
-	uint16_t chksum  = nget16(buf + Checksum);
+	// uint16_t winsize = nget16(buf + WinSize);
+	// uint16_t chksum  = nget16(buf + Checksum);
 	uint16_t hdrlen = ((flags & FlagSize) >> 12) * 4;
 	if (hdrlen > len) return;
 	uint16_t payloadlen = len - hdrlen;

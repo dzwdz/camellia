@@ -22,23 +22,25 @@ static void try_fetch(Proc *proc, uint64_t *buf, size_t amt) {
 _Noreturn void execbuf_run(Proc *proc) {
 	uint64_t buf[6];
 
-	assert(proc == proc_cur); // idiotic, but needed because of _syscall.
-	assert(proc->state == PS_RUNNING);
-	assert(proc->execbuf.buf);
+	for (;;) {
+		assert(proc == proc_cur); /* idiotic, but needed because of _syscall. */
+		assert(proc->state == PS_RUNNING);
+		assert(proc->execbuf.buf);
 
-	try_fetch(proc, buf, 1);
-	switch (buf[0]) {
-		case EXECBUF_SYSCALL:
-			try_fetch(proc, buf, 6);
-			_syscall(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-			proc_switch_any();
+		try_fetch(proc, buf, 1);
+		switch (buf[0]) {
+			case EXECBUF_SYSCALL:
+				try_fetch(proc, buf, 6);
+				_syscall(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+				proc_switch_any();
 
-		case EXECBUF_JMP:
-			try_fetch(proc, buf, 1);
-			proc->regs.rcx = buf[0];
-			execbuf_run(proc);
+			case EXECBUF_JMP:
+				try_fetch(proc, buf, 1);
+				proc->regs.rcx = buf[0];
+				break;
 
-		default:
-			halt(proc);
+			default:
+				halt(proc);
+		}
 	}
 }

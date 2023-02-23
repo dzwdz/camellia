@@ -13,7 +13,7 @@ extern char _bss_end;
 extern char _initrd;
 
 __attribute__((section(".text")))
-_Noreturn void main(void) {
+int main(void) {
 	_sys_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
 	setprogname("bootstrap");
 	setproctitle(NULL);
