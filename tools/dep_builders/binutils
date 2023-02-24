@@ -19,8 +19,9 @@ cd $BUILDDIR
 ../binutils/configure \
 	--target=x86_64-camellia \
 	--prefix="$PREFIX" \
-	--with-sysroot \
+	--with-sysroot="$SYSROOT" \
 	--disable-nls \
 	--disable-werror
+mkdir -p gas/doc/ # stupid workaround for the broken build
 make -j4
 make install

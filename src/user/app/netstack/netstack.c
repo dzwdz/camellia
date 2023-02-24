@@ -26,8 +26,6 @@ void network_thread(void *arg) { (void)arg;
 
 void fs_thread(void *arg);
 
-__attribute__((visibility("hidden")))
-extern char _image_base[];
 int main(int argc, char **argv) {
 	if (argc < 4) {
 		eprintf("usage: netstack iface ip gateway");

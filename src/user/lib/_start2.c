@@ -10,7 +10,7 @@
 int main(int argc, char **argv, char **envp);
 
 __attribute__((visibility("hidden")))
-extern char _image_base[];
+extern char __executable_start[];
 
 const char *shortname(const char *path) {
 	if (!path) return "unknown program";
@@ -39,7 +39,7 @@ _Noreturn void _start2(struct execdata *ed) {
 
 	progname = shortname(ed->argv[0]);
 	setprogname(progname);
-	_klogf("_start2 %s %p", progname, _image_base);
+	_klogf("_start2 %s %p", progname, __executable_start);
 
 	exit(main(ed->argc, ed->argv, ed->envp));
 }

@@ -8,15 +8,14 @@ CHECK   = sparse
 CFLAGS += -g -std=gnu99 -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
 CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
-CFLAGS += -Isrc/shared/include/
 
-KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only -Isrc/
-LIBC_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/ -ffreestanding -Isrc/
-USER_CFLAGS    = $(CFLAGS) -Isrc/user/lib/include/
+KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only \
+	--sysroot=$(shell pwd)/sysroot_alt/ -Isrc/ -Isrc/shared/include/
+LIBC_CFLAGS    = $(CFLAGS) -ffreestanding -Isrc/
+USER_CFLAGS    = $(CFLAGS)
 
 SPARSEFLAGS = -$(KERNEL_CFLAGS) -Wno-non-pointer-null
-LFLAGS  = -ffreestanding -O2 -nostdlib -lgcc -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch
-# TODO optimize memory use
+
 QFLAGS  = -no-reboot -m 1g -gdb tcp::12366
 ifdef NET_DIRECT
 QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a,id=n1
@@ -76,7 +75,10 @@ out/fs/boot/kernel: src/kernel/arch/amd64/linker.ld \
                     $(call from_sources, src/kernel/) \
                     $(call from_sources, src/shared/)
 	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -T $^ -o $@
+	@$(CC) \
+		-nostdlib \
+		-Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch -Wl,-no-pie \
+		-T $^ -o $@
 	@grub-file --is-x86-multiboot2 $@ || echo "$@ has an invalid multiboot2 header"
 	@grub-file --is-x86-multiboot2 $@ || rm $@; test -e $@
 
@@ -91,7 +93,7 @@ out/libm.a:
 
 out/bootstrap: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
 	@mkdir -p $(@D)
-	@$(CC) $(LFLAGS) -Wl,-Map=% -T $^ -o $@
+	@$(CC) -nostdlib -Wl,-Map=% -T $^ -o $@
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
@@ -105,9 +107,9 @@ out/fs.e2:
 	@mkfs.ext2 $@ 1024 > /dev/null
 
 define userbin_template =
-out/initrd/bin/amd64/$(1): src/user/linker.ld $(call from_sources, src/user/app/$(1)) out/libc.a
+out/initrd/bin/amd64/$(1): $(call from_sources, src/user/app/$(1)) out/libc.a
 	@mkdir -p $$(@D)
-	@$(CC) $(LFLAGS) -Wl,-pie -Wl,-no-dynamic-linker -T $$^ -o $$@
+	@$(CC) -nostdlib $$^ -o $$@
 endef
 USERBINS := $(shell ls src/user/app)
 $(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))

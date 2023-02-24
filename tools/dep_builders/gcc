@@ -19,9 +19,10 @@ cd $BUILDDIR
 ../gcc/configure \
 	--target=x86_64-camellia \
 	--prefix="$PREFIX" \
-	--disable-nls \
-	--without-headers \
+	--with-sysroot="$SYSROOT" \
 	--enable-languages=c,c++ \
+	--disable-nls \
+	--disable-gcov \
 	--disable-werror
 make -j4 all-gcc
 make -j4 all-target-libgcc

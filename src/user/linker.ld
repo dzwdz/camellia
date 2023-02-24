@@ -2,7 +2,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-	_image_base = .;
+	__executable_start = .;
 	.text BLOCK(4K) : ALIGN(4K)
 	{
 		*(.text)
