@@ -1,0 +1,10 @@
+#!/bin/lua
+
+function fib(n)
+    if n <= 1 then return 1 end
+    return fib(n-1) + fib(n-2)
+end
+
+for i=1,13 do
+    print("fib("..i..")\t= " .. fib(i))
+end
