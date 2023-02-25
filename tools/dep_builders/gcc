@@ -21,6 +21,7 @@ cd $BUILDDIR
 	--prefix="$PREFIX" \
 	--with-sysroot="$SYSROOT" \
 	--enable-languages=c,c++ \
+	--enable-default-pie \
 	--disable-nls \
 	--disable-gcov \
 	--disable-werror

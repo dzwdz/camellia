@@ -26,11 +26,7 @@ SECTIONS
 	}
 	.data BLOCK(4K) : ALIGN(4K)
 	{
-		*(.data)
+		*(.data*)
 	}
 	_initrd = .; /* is just appended onto the end of the binary */
-
-	/DISCARD/ : {
-		*(*.rel.*)
-	}
 }

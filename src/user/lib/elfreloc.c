@@ -15,10 +15,7 @@ static struct Elf64_Dyn *dyn_gettag(Elf64_Xword tag) {
 }
 
 void elf_selfreloc(void) {
-	// TODO DT_REL
-	if (dyn_gettag(DT_PLTGOT) || dyn_gettag(DT_JMPREL)) {
-		_klogf("elf: unimplemented tag in _DYNAMIC\n");
-	}
+	// TODO DT_REL, DT_JMPREL
 
 	struct Elf64_Dyn *rela_tag = dyn_gettag(DT_RELA);
 	if (rela_tag) {

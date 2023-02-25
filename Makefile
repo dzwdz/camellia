@@ -10,7 +10,7 @@ CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declara
 CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
 
 KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only \
-	--sysroot=$(shell pwd)/sysroot_alt/ -Isrc/ -Isrc/shared/include/
+	--sysroot=$(shell pwd)/sysroot_alt/ -Isrc/ -Isrc/shared/include/ -fno-pie
 LIBC_CFLAGS    = $(CFLAGS) -ffreestanding -Isrc/
 USER_CFLAGS    = $(CFLAGS)
 
@@ -93,7 +93,7 @@ out/libm.a:
 
 out/bootstrap: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
 	@mkdir -p $(@D)
-	@$(CC) -nostdlib -Wl,-Map=% -T $^ -o $@
+	@$(CC) -nostdlib -Wl,-no-pie -Wl,-Map=% -T $^ -o $@
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
@@ -109,7 +109,7 @@ out/fs.e2:
 define userbin_template =
 out/initrd/bin/amd64/$(1): $(call from_sources, src/user/app/$(1)) out/libc.a
 	@mkdir -p $$(@D)
-	@$(CC) -nostdlib $$^ -o $$@
+	@$(CC) $$^ -o $$@
 endef
 USERBINS := $(shell ls src/user/app)
 $(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))
@@ -165,7 +165,7 @@ out/obj/user/lib/vendor/%.c.o: src/user/lib/vendor/%.c
 
 out/obj/user/bootstrap/%.c.o: src/user/bootstrap/%.c
 	@mkdir -p $(@D)
-	@$(CC) $(USER_CFLAGS) -c $^ -o $@
+	@$(CC) $(USER_CFLAGS) -fno-pic -c $^ -o $@
 
 out/obj/kernel/arch/amd64/32/%.c.o: src/kernel/arch/amd64/32/%.c
 	@mkdir -p $(@D)
