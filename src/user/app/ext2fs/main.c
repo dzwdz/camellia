@@ -115,9 +115,13 @@ do_read(struct ext2 *fs, hid_t reqh, struct ufs_request *req, char *buf, size_t 
 		ext2_dropreq(fs, inode, false);
 
 		void *b = ext2_req_file(fs, h->n, &req->capacity, req->offset);
-		if (!b) goto err;
-		_sys_fs_respond(reqh, b, req->capacity, 0);
-		ext2_dropreq(fs, b, false);
+		if (b) {
+			_sys_fs_respond(reqh, b, req->capacity, 0);
+			ext2_dropreq(fs, b, false);
+		} else if (req->capacity == 0) {
+			/* set by ext2_req_file on EOF */
+			_sys_fs_respond(reqh, b, 0, 0);
+		} else goto err;
 	} else {
 		struct dirbuild db;
 		char namebuf[257];
