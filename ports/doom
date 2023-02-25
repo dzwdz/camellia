@@ -15,14 +15,14 @@ fetch() {
 
 	cat <<\EOF > doomgeneric_camellia.c
 #include <camellia/syscalls.h>
-#include <shared/container/ring.h>
+#include <shared/ring.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <user/lib/draw/draw.h>
-#include <user/lib/thread.h>
+#include <draw.h>
+#include <thread.h>
 
 #include "doomgeneric.h"
 #include "doomkeys.h"
@@ -144,7 +144,7 @@ prep() {
 }
 
 case $1 in
-	install) (prep; make "CC=cc" && cp doomgeneric $PREFIX/bin/doom && cp *.WAD $PREFIX/) ;;
+	install) (prep; make "CC=x86_64-camellia-gcc" && cp doomgeneric $PREFIX/bin/doom && cp *.WAD $PREFIX/) ;;
 	clean)   (prep; make clean) ;;
 	deepclean) (rm -rf doomgeneric) ;;
 	*)       echo "usage: $0 install|clean"; false ;;

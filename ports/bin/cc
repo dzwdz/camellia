@@ -1,6 +1,0 @@
-#!/bin/sh
-exec x86_64-camellia-gcc -fPIE \
-	-nostdlib -Wl,-pie -Wl,-no-dynamic-linker -T $REPO/src/user/linker.ld \
-	-I$REPO/src/ -I$REPO/src/shared/include/ -I$REPO/src/user/lib/include/ \
-	$* \
-	-L$REPO/out/ -lc -lgcc
