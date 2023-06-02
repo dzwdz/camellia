@@ -23,12 +23,30 @@ _Noreturn void exit(int c) {
 }
 _Noreturn void _exit(int c) { exit(c); };
 
+ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize) {
+	(void)path; (void)buf; (void)bufsize;
+	errno = ENOSYS;
+	return -1;
+}
+
+int link(const char *path1, const char *path2) {
+	(void)path1; (void)path2;
+	errno = ENOSYS;
+	return -1;
+}
+
 int unlink(const char *path) {
 	hid_t h = camellia_open(path, OPEN_WRITE);
 	if (h < 0) return errno = -h, -1;
 	long ret = _sys_remove(h);
 	if (ret < 0) return errno = -ret, -1;
 	return 0;
+}
+
+int symlink(const char *path1, const char *path2) {
+	(void)path1; (void)path2;
+	errno = ENOSYS;
+	return -1;
 }
 
 // TODO isatty
@@ -124,6 +142,17 @@ char *getcwd(char *buf, size_t capacity) {
 	memcpy(buf, realcwd, len);
 	return buf;
 }
+
+uid_t getuid(void) {
+	return 42;
+}
+
+int chown(const char *path, uid_t owner, gid_t group) {
+	(void)path; (void)owner; (void)group;
+	errno = ENOSYS;
+	return -1;
+}
+
 
 size_t absolutepath(char *out, const char *in, size_t size) {
 	const char *realcwd = getrealcwd();

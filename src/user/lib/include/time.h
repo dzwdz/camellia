@@ -15,6 +15,11 @@ struct tm {
 	int tm_isdst;  /* Daylight Savings flag. */
 };
 
+struct timespec {
+	time_t tv_sec;
+	long long tv_nsec;
+};
+
 time_t time(time_t *tloc);
 clock_t clock(void);
 

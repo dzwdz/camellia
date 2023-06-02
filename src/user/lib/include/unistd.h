@@ -1,18 +1,30 @@
 #pragma once
 #include <camellia/types.h> // TODO only needed because of hid_t
+#include <sys/types.h>
 #include <getopt.h>
+
+// TODO custom stdint.h, ssize_t doesn't belong here
+typedef long long ssize_t;
 
 int fork(void);
 int close(hid_t h);
 _Noreturn void _exit(int);
 
+ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
+int link(const char *path1, const char *path2);
 int unlink(const char *path);
+int symlink(const char *path1, const char *path2);
 int isatty(int fd);
 
 int execv(const char *path, char *const argv[]);
 
 int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
+
+uid_t getuid(void);
+int chown(const char *path, uid_t owner, gid_t group);
+
+
 /* Converts a relative path to an absolute one, simplifying it if possible.
  * If in == NULL - return the length of cwd. Doesn't include the trailing slash,
  *                 except for the root dir. Includes the null byte.

@@ -3,17 +3,19 @@
 #include <string.h>
 #include <strings.h>
 
-long strtol(const char *restrict s, char **restrict end, int base) {
+static unsigned long long
+strton(const char *restrict s, char **restrict end, int base, int *sign)
+{
 	long res = 0;
-	int sign = 1;
 
 	while (isspace(*s)) s++;
 
+	if (sign) *sign = 1;
 	if (*s == '+') {
 		s++;
 	} else if (*s == '-') {
 		s++;
-		sign = -1;
+		if (sign) *sign = -1;
 	}
 
 	if (base == 0) {
@@ -45,7 +47,21 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 		s++;
 	}
 	if (end) *end = (void*)s;
-	return res * sign;
+	return res;
+}
+
+long strtol(const char *restrict s, char **restrict end, int base) {
+	int sign;
+	long n = strton(s, end, base, &sign);
+	return n * sign;
+}
+
+unsigned long strtoul(const char *restrict s, char **restrict end, int base) {
+	return strton(s, end, base, NULL);
+}
+
+unsigned long long strtoull(const char *restrict s, char **restrict end, int base) {
+	return strton(s, end, base, NULL);
 }
 
 #include <bits/panic.h>

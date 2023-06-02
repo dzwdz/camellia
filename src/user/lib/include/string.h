@@ -1,7 +1,10 @@
 #pragma once
 #include <shared/mem.h>
 
+// TODO move strto* to stdlib.h
 long strtol(const char *restrict s, char **restrict end, int base);
+unsigned long strtoul(const char *restrict s, char **restrict end, int base);
+unsigned long long strtoull(const char *restrict s, char **restrict end, int base);
 double strtod(const char *restrict s, char **restrict end);
 char *strchr(const char *s, int c);
 char *strrchr(const char *s, int c);
