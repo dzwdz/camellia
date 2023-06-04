@@ -7,7 +7,12 @@
 #define eprintf(fmt, ...) fprintf(stderr, "vterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 
-struct psf {
+struct psf1 {
+    uint16_t magic;
+	uint8_t mode;
+	uint8_t h;
+} __attribute__((packed));
+struct psf2 {
     uint32_t magic;
     uint32_t version;
     uint32_t glyph_offset;
@@ -17,7 +22,7 @@ struct psf {
     uint32_t h;
     uint32_t w;
 } __attribute__((packed));
-extern struct psf font;
+extern struct psf2 font;
 extern void *font_data;
 void font_load(const char *path);
 void font_blit(uint32_t glyph, int x, int y);

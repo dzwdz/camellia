@@ -122,13 +122,9 @@ out/initrd/%: sysroot/%
 	@mkdir -p $(@D)
 	@cp $< $@
 
-out/initrd/font.psf:
-	curl -L https://github.com/legionus/kbd/raw/master/data/consolefonts/default8x16.psfu > $@
-
 out/initrd.tar: $(patsubst sysroot/%,out/initrd/%,$(shell find sysroot/ -type f)) \
                 $(patsubst %,out/initrd/bin/amd64/%,$(USERBINS)) \
-                $(shell find out/initrd/) \
-                out/initrd/font.psf
+                $(shell find out/initrd/)
 	@cd out/initrd; tar chf ../initrd.tar *
 
 

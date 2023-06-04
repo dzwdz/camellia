@@ -1,16 +1,16 @@
 #include "vterm.h"
+#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-struct psf font;
+struct psf2 font;
 void *font_data;
 
 void font_load(const char *path) {
 	FILE *f = fopen(path, "r");
 	if (!f) {
-		eprintf("couldn't open font \"%s\"", path);
-		exit(1);
+		err(1, "couldn't open font \"%s\"", path);
 	}
 
 	void *buf;
@@ -19,30 +19,36 @@ void font_load(const char *path) {
 	fseek(f, 0, SEEK_END);
 	buflen = ftell(f);
 	if (buflen < 0) {
-		eprintf("can't get the size of \"%s\"", path);
-		exit(1);
+		errx(1, "can't get the size of \"%s\"", path);
 	}
 
 	buf = malloc(buflen);
 	if (!buf) {
-		eprintf("out of memory");
-		exit(1);
+		err(1, "out of memory");
 	}
 
 	fseek(f, 0, SEEK_SET);
 	fread(buf, 1, buflen, f);
 	if (ferror(f)) {
-		eprintf("error reading file");
-		exit(1);
+		err(1, "error reading font");
 	}
 	fclose(f);
 
-	if (memcmp(buf, "\x72\xb5\x4a\x86", 4)) {
-		eprintf("invalid psf header");
-		exit(1);
+	if (!memcmp(buf, "\x72\xb5\x4a\x86", 4)) {
+		memcpy(&font, buf, sizeof font);
+		font_data = buf + font.glyph_offset;
+	} else if (!memcmp(buf, "\x36\x04", 2)) {
+		struct psf1 *hdr = buf;
+		font = (struct psf2){
+			.glyph_amt = 256,
+			.glyph_size = hdr->h,
+			.h = hdr->h,
+			.w = 8,
+		};
+		font_data = buf + 4;
+	} else {
+		errx(1, "invalid psf header");
 	}
-	memcpy(&font, buf, sizeof font);
-	font_data = buf + font.glyph_offset;
 }
 
 void font_blit(uint32_t glyph, int x, int y) {

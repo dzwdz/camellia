@@ -35,7 +35,7 @@ int main(void) {
 		eprintf("fb_setup error");
 		return 1;
 	}
-	font_load("/init/font.psf");
+	font_load("/init/usr/share/fonts/spleen/spleen-8x16.psfu");
 
 	static char buf[512];
 	struct ufs_request res;

@@ -74,7 +74,7 @@ int main(void) {
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/vtty") {
-		const char *allow[] = {"/bin/vterm", "/kdev/video/", "/keyboard", "/init/font.psf", NULL};
+		const char *allow[] = {"/bin/vterm", "/kdev/video/", "/keyboard", "/init/usr/share/fonts/", NULL};
 		const char *argv[] = {"/bin/vterm", NULL};
 		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
