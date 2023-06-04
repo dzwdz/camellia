@@ -5,69 +5,50 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* returns a pointer that can be set to NUL to undo the strcat */
-static char *
-strtcat(char *dst, const char *src)
+int
+main(void)
 {
-	char *s = dst + strlen(dst);
-	strcpy(s, src);
-	return s;
-}
-
-static void
-do_proc(char *path)
-{
-	const int bufl = 4096;
-	char *buf = malloc(bufl);
-	FILE *f;
-
-	{ /* read the psdata into buf */
-		char *s = strtcat(path, "mem");
-		f = fopen(path, "r");
-		*s = '\0';
-		if (!f) errx(1, "couldn't open '%s'", path);
-		fseek(f, (long)_libc_psdata, SEEK_SET);
-		if (fread(buf, 1, 128, f) <= 0) {
-			strcpy(buf, "(no psdata)");
-		}
-		buf[128] = '\0';
-		fclose(f);
+	char *readbuf = malloc(4096);
+	char *procbuf = malloc(4096);
+	FILE *f = fopen("/proc/", "r");
+	if (!f) {
+		err(1, "couldn't open /proc/");
 	}
-
-	printf("%20s %s\n", path, buf);
-
-	f = fopen(path, "r");
-	if (!f) errx(1, "couldn't open '%s'", path);
 
 	// TODO library for iterating over directories
 	for (;;) {
-		int len = fread(buf, 1, bufl, f);
+		int len = fread(readbuf, 1, 4096, f);
 		if (len <= 0) break;
 		for (int pos = 0; pos < len; ) {
-			const char *end = memchr(buf + pos, 0, len - pos);
+			char *end = memchr(readbuf + pos, 0, len - pos);
 			if (!end) {
 				errx(1, "unimplemented: buffer overflow");
 			}
-			size_t entryl = end - (buf + pos) + 1;
-			if (isdigit(buf[pos])) {
-				/* yup, no overflow check */
-				char *s = strtcat(path, buf + pos);
-				do_proc(path);
-				*s = '\0';
+			size_t entryl = end - (readbuf+pos) + 1;
+			if (isdigit(readbuf[pos])) {
+				FILE *g;
+				sprintf(procbuf, "/proc/%smem", readbuf+pos);
+				g = fopen(procbuf, "r");
+				if (!g) {
+					warn("couldn't open \"%s\"", procbuf);
+					strcpy(procbuf, "(can't peek)");
+				} else {
+					fseek(g, (long)_libc_psdata, SEEK_SET);
+					if (fread(procbuf, 1, 128, g) <= 0) {
+						strcpy(procbuf, "(no psdata)");
+					}
+					procbuf[128] = '\0';
+					fclose(g);
+				}
+				end[-1] = '\0'; /* remove trailing slash */
+				printf("%s\t%s\n", readbuf+pos, procbuf);
 			}
 			pos += entryl;
 		}
 	}
 
-	free(buf);
+	free(readbuf);
+	free(procbuf);
 	fclose(f);
-}
-
-int
-main(void)
-{
-	char *buf = malloc(4096);
-	strcpy(buf, "/proc/");
-	do_proc(buf);
 	return 0;
 }

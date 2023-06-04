@@ -69,11 +69,18 @@ struct Proc {
 		Handle *procfs;
 	} specialh;
 
-	uint32_t cid; /* child id. unique amongst all of this process' siblings */
-	uint32_t nextcid; /* the child id to assign to the next spawned child */
 	uint32_t globalid; /* only for internal use, don't expose to userland */
 	uint32_t refcount; /* non-owning. should always be 0 on kill */
 	bool noreap;
+
+	/* localid is unique in a process namespace.
+	 * if pns == self: the process owns a namespace
+	 *                 the lid it sees is 1
+	 *                 the lid its parent sees is localid
+	 * otheriwse: nextlid is unused */
+	Proc *pns;
+	uint32_t localid;
+	uint32_t nextlid;
 
 	/* allocated once, the requests from WAITS4FS get stored here */
 	VfsReq *reqslot;
@@ -96,6 +103,13 @@ extern Proc *proc_cur;
 /** Creates the root process. */
 Proc *proc_seed(void *data, size_t datalen);
 Proc *proc_fork(Proc *parent, int flags);
+
+bool proc_ns_contains(Proc *ns, Proc *proc);
+uint32_t proc_ns_id(Proc *ns, Proc *proc);
+Proc *proc_ns_byid(Proc *ns, uint32_t id);
+/** Like proc_next, but stays in *ns */
+Proc *proc_ns_next(Proc *ns, Proc *p);
+void proc_ns_create(Proc *proc);
 
 void proc_kill(Proc *proc, int ret);
 /** Kills all descendants. */

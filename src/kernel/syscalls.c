@@ -74,7 +74,7 @@ long _sys_fork(int flags, hid_t __user *fs_front) {
 			pcpy_to(proc_cur, fs_front, &hid, sizeof hid);
 		}
 	}
-	SYSCALL_RETURN(child->cid);
+	SYSCALL_RETURN(proc_ns_id(proc_cur->pns, child));
 }
 
 hid_t _sys_open(const char __user *path, long len, int flags) {

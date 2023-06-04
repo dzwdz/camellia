@@ -58,10 +58,14 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			return;
 		}
 		_sys_mount(HANDLE_PROCFS, argv[1], strlen(argv[1]));
-		if (!fork2_n_mount("/")) {
-			fs_dir_inject(argv[1]);
-			exit(1);
+		/*
+		if (!(3 <= argc && !strcmp(argv[2], "raw"))) {
+			if (!fork2_n_mount("/")) {
+				fs_dir_inject(argv[1]);
+				exit(1);
+			}
 		}
+		*/
 		return;
 	} else if (!strcmp(argv[0], "cd")) {
 		if (chdir(argc > 1 ? argv[1] : "/") < 0)

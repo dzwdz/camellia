@@ -30,9 +30,11 @@ Proc *proc_seed(void *data, size_t datalen) {
 	proc_first->pages = pagedir_new();
 	proc_first->mount = vfs_mount_seed();
 	proc_first->globalid = next_pid++;
-	proc_first->cid = 1;
-	proc_first->nextcid = 1;
 	proc_first->_handles = kzalloc(sizeof(Handle) * HANDLE_MAX);
+
+	proc_first->pns = proc_first;
+	proc_first->localid = 1;
+	proc_first->nextlid = 2;
 
 	// map .shared
 	extern char _shared_len;
@@ -74,11 +76,17 @@ Proc *proc_fork(Proc *parent, int flags) {
 	child->parent  = parent;
 	parent->child  = child;
 
-	if (parent->nextcid == 0)
+	if (next_pid == 0) {
 		panic_unimplemented();
-	child->cid = parent->nextcid++;
-	child->nextcid = 1;
+	}
 	child->globalid = next_pid++;
+
+	child->pns = parent->pns;
+	if (child->pns->nextlid == 0) {
+		panic_unimplemented();
+	}
+	child->localid = child->pns->nextlid++;
+
 
 	if ((flags & FORK_NEWFS) == 0 && parent->controlled) {
 		child->controlled = parent->controlled;
@@ -108,6 +116,106 @@ Proc *proc_fork(Proc *parent, int flags) {
 	}
 
 	return child;
+}
+
+bool proc_ns_contains(Proc *ns, Proc *proc) {
+	/* a namespace contains all the processes with ->ns == ns and all their
+	 * direct children */
+	if (ns == proc) return true;
+	if (proc->parent == NULL) return false;
+	return proc->parent->pns == ns;
+}
+
+uint32_t proc_ns_id(Proc *ns, Proc *proc) {
+	if (proc == ns) {
+		return 1;
+	} else {
+		if (proc->pns == proc) {
+			assert(proc->parent->pns == ns);
+		} else {
+			assert(proc->pns == ns);
+		}
+		return proc->localid;
+	}
+}
+
+Proc *proc_ns_byid(Proc *ns, uint32_t id) {
+	assert(ns->pns == ns);
+	for (Proc *it = ns; it; it = proc_ns_next(ns, it)) {
+		if (proc_ns_id(ns, it) == id) {
+			return it;
+		}
+	}
+	return NULL;
+}
+
+Proc *proc_ns_next(Proc *ns, Proc *p) {
+	Proc *ret = NULL;
+	/* see comments in proc_next */
+
+	if (!p) goto end;
+	/* descend into children who own their own namespace, but no further */
+	if (p->child && proc_ns_contains(ns, p->child)) {
+		ret = p->child;
+		goto end;
+	}
+	// TODO diverged from proc_next, integrate this fix into it
+	// also once you do that do regression tests - this behaviour is buggy
+	if (p == ns) {
+		/* don't escape the root */
+		goto end;
+	}
+	while (!p->sibling) {
+		p = p->parent;
+		assert(p);
+		if (p == ns) goto end;
+	}
+	ret = p->sibling;
+
+end:
+	if (ret != NULL) {
+		assert(proc_ns_contains(ns, ret));
+	}
+	return ret;
+}
+
+void proc_ns_create(Proc *proc) {
+	// TODO test this. lots of fucky behaviour can happen here
+	// TODO document process namespaces
+	Proc *old = proc->pns;
+	if (old == proc) return;
+	proc->pns = proc;
+	proc->nextlid = 2;
+	for (Proc *it = proc; it; ) {
+		if (it != proc) {
+			if (proc->nextlid < it->localid + 1) {
+				proc->nextlid = it->localid + 1;
+			}
+			if (it->pns == old) {
+				it->pns = proc;
+			} else {
+				assert(it->pns == it);
+			}
+		}
+
+		/* analogous to proc_ns_next - which can't be used directly as it gets
+		 * confused by changing namespaces */
+
+		/* descend into children who own their own namespace, but no further */
+		if (it->child && (proc_ns_contains(proc, it->child) || proc_ns_contains(old, it->child))) {
+			it = it->child;
+			continue;
+		}
+		if (it == proc) {
+			break;
+		}
+		while (!it->sibling) {
+			it = it->parent;
+			if (it == proc) break;
+			assert(it);
+		}
+		it = it->sibling;
+	}
 }
 
 /* meant to be used with p->*_refcount */
@@ -394,6 +502,7 @@ Handle *proc_handle_get(Proc *p, hid_t id) {
 	} else if (id == HANDLE_PROCFS) {
 		if (!p->specialh.procfs) {
 			Handle *h = kmalloc(sizeof *h);
+			proc_ns_create(p);
 			*h = (Handle){
 				.type = HANDLE_FS_FRONT,
 				.backend = procfs_backend(p),

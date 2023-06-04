@@ -187,6 +187,7 @@ int __printf_internal(const char *fmt, va_list argp,
 			case 's':
 				const char *s = va_arg(argp, char*);
 				if (s == NULL) s = "(null)";
+				// TODO can segfault even if precision caps the string
 				len = strlen(s);
 				if (len > m.precision && m.precision != 0)
 					len = m.precision;

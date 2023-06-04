@@ -7,6 +7,7 @@
 #include <shared/mem.h>
 
 enum phandle_type {
+	PhRoot,
 	PhDir,
 	PhIntr,
 	PhMem,
@@ -24,48 +25,52 @@ static void procfs_cleanup(VfsBackend *be);
 static int isdigit(int c);
 
 static struct phandle *
-openpath(const char *path, size_t len, Proc *p)
+openpath(const char *path, size_t len, Proc *root)
 {
 	struct phandle *h;
 	enum phandle_type type;
+	uint32_t gid = 0;
 	if (len == 0) return NULL;
 	path++, len--;
 
-	while (len && isdigit(*path)) {
-		/* parse numerical segment / "directory" name */
-		uint32_t cid = 0;
+	if (len == 0) {
+		type = PhRoot;
+	} else if (isdigit(*path)) {
+		Proc *p;
+		uint32_t lid = 0;
 		for (; 0 < len && *path != '/'; path++, len--) {
-			char c = *path;
-			if (!isdigit(c)) {
+			if (!isdigit(*path)) {
 				return NULL;
 			}
-			cid = cid * 10 + *path - '0';
+			lid = lid * 10 + *path - '0';
 		}
-		if (len == 0) return NULL;
+		if (len == 0) {
+			return NULL;
+		}
 		assert(*path == '/');
 		path++, len--;
 
-		p = p->child;
-		if (!p) return NULL;
-		while (p->cid != cid) {
-			p = p->sibling;
-			if (!p) return NULL;
+		if (len == 0) {
+			type = PhDir;
+		} else if (len == 4 && memcmp(path, "intr", 4) == 0) {
+			type = PhIntr;
+		} else if (len == 3 && memcmp(path, "mem", 3) == 0) {
+			type = PhMem;
+		} else {
+			return NULL;
 		}
-	}
 
-	/* parse the per-process part */
-	if (len == 0) {
-		type = PhDir;
-	} else if (len == 4 && memcmp(path, "intr", 4) == 0) {
-		type = PhIntr;
-	} else if (len == 3 && memcmp(path, "mem", 3) == 0) {
-		type = PhMem;
+		p = proc_ns_byid(root, lid);
+		if (!p) {
+			return NULL;
+		}
+		gid = p->globalid;
 	} else {
 		return NULL;
 	}
 
 	h = kmalloc(sizeof *h);
-	h->gid = p->globalid;
+	h->gid = gid;
 	h->type = type;
 	return h;
 }
@@ -87,36 +92,47 @@ procfs_accept(VfsReq *req)
 	Proc *p;
 	char buf[512];
 	assert(root);
+	assert(root->pns == root);
+
 	if (req->type == VFSOP_OPEN) {
 		assert(req->input.kern);
 		h = openpath(req->input.buf_kern, req->input.len, root);
 		vfsreq_finish_short(req, h ? (long)h : -ENOENT);
 		return;
-	}
-	assert(h);
-	p = findgid(h->gid, root);
-	if (!p) {
-		vfsreq_finish_short(req, -EGENERIC);
+	} else if (req->type == VFSOP_CLOSE) {
+		assert(h);
+		kfree(h);
+		vfsreq_finish_short(req, 0);
 		return;
+	} else {
+		assert(h);
 	}
 
-	if (req->type == VFSOP_READ && h->type == PhDir) {
+	if (h->type != PhRoot) {
+		p = findgid(h->gid, root);
+		if (!p) {
+			vfsreq_finish_short(req, -ENOENT);
+			return;
+		}
+	}
+
+	if (req->type == VFSOP_READ && (h->type == PhDir || h->type == PhRoot)) {
 		// TODO port dirbuild to kernel
 		int pos = 0;
 		if (req->offset != 0) {
 			vfsreq_finish_short(req, -ENOSYS);
 			return;
 		}
-		pos += snprintf(buf + pos, 512 - pos, "intr")+1;
-		pos += snprintf(buf + pos, 512 - pos, "mem")+1;
-		for (Proc *iter = p->child; iter; iter = iter->sibling) {
-			assert(pos < 512);
-			// processes could possibly be identified by unique identifiers instead
-			// e.g. an encrypted gid, or just a randomly generated one
-			// con: would require bringing in a crypto library
-			pos += snprintf(buf + pos, 512 - pos, "%d/", iter->cid) + 1;
-			if (512 <= pos) {
-				vfsreq_finish_short(req, -1);
+		if (h->type == PhDir) {
+			pos += snprintf(buf + pos, 512 - pos, "intr")+1;
+			pos += snprintf(buf + pos, 512 - pos, "mem")+1;
+		} else {
+			for (Proc *it = root; it; it = proc_ns_next(root, it)) {
+				assert(pos < 512);
+				pos += snprintf(buf + pos, 512 - pos, "%d/", proc_ns_id(root, it)) + 1;
+				if (512 <= pos) {
+					vfsreq_finish_short(req, -EGENERIC);
+				}
 			}
 		}
 		assert(0 <= pos && (size_t)pos <= sizeof buf);
@@ -136,9 +152,6 @@ procfs_accept(VfsReq *req)
 	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
 		proc_intr(p);
 		vfsreq_finish_short(req, req->input.len);
-	} else if (req->type == VFSOP_CLOSE) {
-		kfree(h);
-		vfsreq_finish_short(req, 0);
 	} else {
 		vfsreq_finish_short(req, -ENOSYS);
 	}
