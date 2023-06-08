@@ -10,6 +10,7 @@
 #include <elfload.h>
 
 void elf_execf(FILE *f, char **argv, char **envp) {
+	size_t ret;
 	void *buf;
 	long buflen;
 
@@ -20,8 +21,12 @@ void elf_execf(FILE *f, char **argv, char **envp) {
 
 	// TODO don't read the entire file into memory
 	fseek(f, 0, SEEK_SET);
-	if (buf && fread(buf, 1, buflen, f))
+	if (!buf) return;
+	ret = fread(buf, buflen, 1, f);
+	fclose(f);
+	if (ret == 1) {
 		elf_exec(buf, argv, envp);
+	}
 	free(buf);
 }
 
