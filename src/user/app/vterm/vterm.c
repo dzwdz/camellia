@@ -18,6 +18,11 @@ void in_char(char c) {
 		case '\b':
 			if (cursor.x > 0) cursor.x--;
 			break;
+		case '\t':
+			/* rounds down to nearest multiple of 8 and adds 8
+			   = adding 1 and rounding up to the nearest multiple of 8 */
+			cursor.x = (cursor.x & ~7) + 8;
+			break;
 		default:
 			font_blit(c, cursor.x, cursor.y);
 			cursor.x++;
