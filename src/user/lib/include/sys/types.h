@@ -15,3 +15,4 @@ typedef int uid_t;
 typedef int gid_t;
 typedef int blksize_t;
 typedef int blkcnt_t;
+typedef int pid_t;

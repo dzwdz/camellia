@@ -26,6 +26,9 @@ int atoi(const char *s);
 double atof(const char *s);
 
 long strtol(const char *restrict s, char **restrict end, int base);
+long long strtoll(const char *restrict s, char **restrict end, int base);
 unsigned long strtoul(const char *restrict s, char **restrict end, int base);
 unsigned long long strtoull(const char *restrict s, char **restrict end, int base);
 double strtod(const char *restrict s, char **restrict end);
+
+void qsort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *a, const void *b));

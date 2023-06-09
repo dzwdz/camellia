@@ -6,7 +6,10 @@
 // TODO custom stdint.h, ssize_t doesn't belong here
 typedef long long ssize_t;
 
+extern char **environ;
+
 int fork(void);
+pid_t vfork(void);
 int close(hid_t h);
 _Noreturn void _exit(int);
 
@@ -17,13 +20,31 @@ int symlink(const char *path1, const char *path2);
 int isatty(int fd);
 
 int execv(const char *path, char *const argv[]);
+int execve(const char *path, char *const argv[], char *const envp[]);
 
 int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 
 uid_t getuid(void);
+uid_t geteuid(void);
+gid_t getgid(void);
+gid_t getegid(void);
+
 int chown(const char *path, uid_t owner, gid_t group);
 
+int setpgid(pid_t pid, pid_t pgid);
+pid_t tcgetpgrp(int fd);
+int tcsetpgrp(int fd, pid_t pgrp);
+pid_t getpgrp(void);
+pid_t getpid(void);
+pid_t getppid(void);
+
+int getgroups(int size, gid_t list[]);
+
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
+int pipe(int pipefd[2]);
+int dup2(int oldfd, int newfd);
 
 /* Converts a relative path to an absolute one, simplifying it if possible.
  * If in == NULL - return the length of cwd. Doesn't include the trailing slash,

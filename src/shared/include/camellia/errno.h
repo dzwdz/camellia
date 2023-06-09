@@ -18,3 +18,9 @@
 
 #define EISDIR 200
 #define ENAMETOOLONG 201
+#define ENOTDIR 202
+#define ELOOP 203
+#define ENOEXEC 204
+#define EINTR 205
+#define EWOULDBLOCK 206
+#define EEXIST 207

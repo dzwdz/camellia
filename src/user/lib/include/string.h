@@ -1,5 +1,6 @@
 #pragma once
 #include <shared/mem.h>
+#include <strings.h> /* work around bad include in dash */
 
 char *strchr(const char *s, int c);
 char *strrchr(const char *s, int c);
@@ -18,6 +19,7 @@ char *strstr(const char *s1, const char *s2);
 
 char *strcpy(char *restrict s1, const char *restrict s2);
 char *strncpy(char *restrict s1, const char *restrict s2, size_t n);
+char *stpncpy(char *restrict dst, const char *restrict src, size_t n);
 char *strdup(const char *s);
 
 char *strerror(int errnum);

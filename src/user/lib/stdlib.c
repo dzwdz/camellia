@@ -121,6 +121,12 @@ long strtol(const char *restrict s, char **restrict end, int base) {
 	return n * sign;
 }
 
+long long strtoll(const char *restrict s, char **restrict end, int base) {
+	int sign;
+	long long n = strton(s, end, base, &sign);
+	return n * sign;
+}
+
 unsigned long strtoul(const char *restrict s, char **restrict end, int base) {
 	return strton(s, end, base, NULL);
 }
@@ -131,5 +137,10 @@ unsigned long long strtoull(const char *restrict s, char **restrict end, int bas
 
 double strtod(const char *restrict s, char **restrict end) {
 	(void)s; (void)end;
+	__libc_panic("unimplemented");
+}
+
+void qsort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *a, const void *b)) {
+	(void)base; (void)nmemb; (void)size; (void)cmp;
 	__libc_panic("unimplemented");
 }

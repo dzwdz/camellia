@@ -85,12 +85,16 @@ char *strcpy(char *restrict s1, const char *restrict s2) {
 	return s1;
 }
 
-char *strncpy(char *restrict s1, const char *restrict s2, size_t n) {
+char *strncpy(char *restrict dst, const char *restrict src, size_t n) {
 	for (size_t i = 0; i < n; i++) {
-		s1[i] = s2[i];
-		if (s1[i] == '\0') return s1 + i; // TODO fill with null bytes
+		dst[i] = src[i];
+		if (dst[i] == '\0') return dst + i; // TODO fill with null bytes
 	}
-	return s1 + n;
+	return dst;
+}
+
+char *stpncpy(char *restrict dst, const char *restrict src, size_t n) {
+	return stpncpy(dst, src, n) + n;
 }
 
 char *strdup(const char *s) {

@@ -1,3 +1,4 @@
+#include <bits/panic.h>
 #include <camellia.h>
 #include <camellia/path.h>
 #include <camellia/syscalls.h>
@@ -9,8 +10,14 @@
 #include <elfload.h>
 
 int errno = 0;
+char **environ = {NULL};
 
 int fork(void) {
+	return _sys_fork(0, NULL);
+}
+
+pid_t vfork(void) {
+	// TODO vfork is implemented improperly and will break stuff
 	return _sys_fork(0, NULL);
 }
 
@@ -56,6 +63,10 @@ int isatty(int fd) {
 
 
 int execv(const char *path, char *const argv[]) {
+	return execve(path, argv, NULL);
+}
+
+int execve(const char *path, char *const argv[], char *const envp[]) {
 	FILE *file = fopen(path, "e");
 	char hdr[4] = {0};
 	if (!file)
@@ -65,7 +76,7 @@ int execv(const char *path, char *const argv[]) {
 	fseek(file, 0, SEEK_SET);
 
 	if (!memcmp("\x7f""ELF", hdr, 4)) {
-		elf_execf(file, (void*)argv, NULL);
+		elf_execf(file, (void*)argv, (void*)envp);
 		fclose(file);
 	} else if (!memcmp("#!", hdr, 2)) {
 		char buf[256];
@@ -74,7 +85,7 @@ int execv(const char *path, char *const argv[]) {
 			const char *argv [] = {buf, path, NULL};
 			char *endl = strchr(buf, '\n');
 			if (endl) *endl = '\0';
-			execv(buf, (void*)argv);
+			execve(buf, (void*)argv, envp);
 		}
 	}
 
@@ -143,9 +154,10 @@ char *getcwd(char *buf, size_t capacity) {
 	return buf;
 }
 
-uid_t getuid(void) {
-	return 42;
-}
+uid_t getuid(void) { return 0; }
+uid_t geteuid(void) { return 0; }
+gid_t getgid(void) { return 0; }
+gid_t getegid(void) { return 0; }
 
 int chown(const char *path, uid_t owner, gid_t group) {
 	(void)path; (void)owner; (void)group;
@@ -153,6 +165,57 @@ int chown(const char *path, uid_t owner, gid_t group) {
 	return -1;
 }
 
+int setpgid(pid_t pid, pid_t pgid) {
+	(void)pid; (void)pgid;
+	__libc_panic("unimplemented");
+}
+
+pid_t tcgetpgrp(int fd) {
+	(void)fd;
+	__libc_panic("unimplemented");
+}
+
+int tcsetpgrp(int fd, pid_t pgrp) {
+	(void)fd; (void)pgrp;
+	__libc_panic("unimplemented");
+}
+
+pid_t getpgrp(void) {
+	__libc_panic("unimplemented");
+}
+
+pid_t getpid(void) {
+	__libc_panic("unimplemented");
+}
+
+pid_t getppid(void) {
+	__libc_panic("unimplemented");
+}
+
+int getgroups(int size, gid_t list[]) {
+	(void)size; (void)list;
+	__libc_panic("unimplemented");
+}
+
+ssize_t read(int fd, void *buf, size_t count) {
+	(void)fd; (void)buf; (void)count;
+	__libc_panic("unimplemented");
+}
+
+ssize_t write(int fd, const void *buf, size_t count) {
+	(void)fd; (void)buf; (void)count;
+	__libc_panic("unimplemented");
+}
+
+int pipe(int pipefd[2]) {
+	(void)pipefd;
+	__libc_panic("unimplemented");
+}
+
+int dup2(int oldfd, int newfd) {
+	(void)oldfd; (void)newfd;
+	__libc_panic("unimplemented");
+}
 
 size_t absolutepath(char *out, const char *in, size_t size) {
 	const char *realcwd = getrealcwd();

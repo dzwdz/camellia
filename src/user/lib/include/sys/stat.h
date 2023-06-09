@@ -1,4 +1,5 @@
 #pragma once
+#include <bits/panic.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h> // struct timespec
@@ -33,6 +34,9 @@ struct stat {
 #define S_IFDIR 0040000
 #define S_IFCHR 0020000
 #define S_IFIFO 0010000
+#define S_ISUID 04000
+#define S_ISGID 02000
+#define S_ISVTX 01000
 
 /* inode(7) */
 #define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
@@ -49,6 +53,12 @@ static inline int fstat(int fd, struct stat *sb) {
 	return -1;
 }
 
+static inline int stat(const char *restrict path, struct stat *restrict sb) {
+	(void)path; (void)sb;
+	errno = ENOSYS;
+	return -1;
+}
+
 static inline int lstat(const char *restrict path, struct stat *restrict sb) {
 	(void)path; (void)sb;
 	errno = ENOSYS;
@@ -56,6 +66,12 @@ static inline int lstat(const char *restrict path, struct stat *restrict sb) {
 }
 
 int mkdir(const char *path, mode_t mode);
+
+static inline mode_t umask(mode_t mask) {
+	(void)mask;
+	__libc_panic("unimplemented");
+}
+
 static inline int chmod(const char *path, mode_t mode) {
 	(void)path; (void)mode;
 	errno = ENOSYS;
