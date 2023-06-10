@@ -168,17 +168,17 @@ int chown(const char *path, uid_t owner, gid_t group) {
 
 int setpgid(pid_t pid, pid_t pgid) {
 	(void)pid; (void)pgid;
-	__libc_panic("unimplemented");
+	return errno = ENOSYS, -1;
 }
 
 pid_t tcgetpgrp(int fd) {
 	(void)fd;
-	__libc_panic("unimplemented");
+	return errno = ENOSYS, -1;
 }
 
 int tcsetpgrp(int fd, pid_t pgrp) {
 	(void)fd; (void)pgrp;
-	__libc_panic("unimplemented");
+	return errno = ENOSYS, -1;
 }
 
 pid_t getpgrp(void) {
@@ -199,8 +199,8 @@ int getgroups(int size, gid_t list[]) {
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-	(void)fd; (void)buf; (void)count;
-	__libc_panic("unimplemented");
+	// TODO real file descriptor emulation - store offsets
+	return _sys_read(fd, buf, count, -1);
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
