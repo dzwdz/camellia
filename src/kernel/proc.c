@@ -484,6 +484,9 @@ Proc *proc_next(Proc *p, Proc *root) {
 }
 
 hid_t proc_find_free_handle(Proc *proc, hid_t start_at) {
+	if (start_at < 0) {
+		start_at = 0;
+	}
 	for (hid_t hid = start_at; hid < HANDLE_MAX; hid++) {
 		if (proc->_handles[hid] == NULL)
 			return hid;
@@ -526,11 +529,11 @@ hid_t proc_handle_init(Proc *p, enum handle_type type, Handle **hs) {
 	return hid;
 }
 
-hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to) {
+hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to, int flags) {
 	Handle *fromh, **toh;
 
-	if (to < 0) {
-		to = proc_find_free_handle(p, 0);
+	if (to < 0 || (flags & DUP_SEARCH)) {
+		to = proc_find_free_handle(p, to);
 		if (to < 0) return -EMFILE;
 	} else if (to >= HANDLE_MAX) {
 		return -EBADF;

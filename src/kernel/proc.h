@@ -129,10 +129,9 @@ Proc *proc_next(Proc *p, Proc *root);
 hid_t proc_find_free_handle(Proc *proc, hid_t start_at);
 Handle *proc_handle_get(Proc *, hid_t);
 hid_t proc_handle_init(Proc *, enum handle_type, Handle **);
-hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to);
+hid_t proc_handle_dup(Proc *p, hid_t from, hid_t to, int flags);
 static inline void proc_handle_close(Proc *p, hid_t hid) {
-	// TODO test
-	proc_handle_dup(p, -1, hid);
+	proc_handle_dup(p, -1, hid, 0);
 }
 
 /* Gets a handle and removes the process' reference to it, without decreasing the refcount.

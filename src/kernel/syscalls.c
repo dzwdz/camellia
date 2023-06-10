@@ -177,8 +177,7 @@ fail:
 }
 
 hid_t _sys_dup(hid_t from, hid_t to, int flags) {
-	if (flags != 0) SYSCALL_RETURN(-ENOSYS);
-	SYSCALL_RETURN(proc_handle_dup(proc_cur, from, to));
+	SYSCALL_RETURN(proc_handle_dup(proc_cur, from, to, flags));
 }
 
 static long simple_vfsop(

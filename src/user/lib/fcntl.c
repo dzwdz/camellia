@@ -1,6 +1,9 @@
 #include <bits/panic.h>
+#include <camellia.h>
+#include <camellia/syscalls.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 
 #include <stdio.h>
 
@@ -11,7 +14,15 @@ int open(const char *path, int flags, ...) {
 }
 
 int fcntl(int fd, int cmd, ...) {
-	(void)fd; (void)cmd;
-	_klogf("failing fcntl(%d)", cmd);
-	return errno = ENOSYS, -1;
+	va_list argp;
+	va_start(argp, cmd);
+	if (cmd == F_DUPFD) {
+		int to = va_arg(argp, int);
+		va_end(argp);
+		return _sys_dup(fd, to, DUP_SEARCH);
+	} else {
+		va_end(argp);
+		_klogf("failing fcntl(%d)", cmd);
+		return errno = ENOSYS, -1;
+	}
 }

@@ -12,6 +12,7 @@
 
 #define FSR_DELEGATE 1
 
+#define DUP_SEARCH 1
 
 #define OPEN_READ 1
 #define OPEN_WRITE 2
