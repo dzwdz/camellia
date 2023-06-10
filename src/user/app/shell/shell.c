@@ -80,6 +80,9 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		return;
 	} else if (!strcmp(argv[0], "exit")) {
 		exit(0);
+	} else if (!strcmp(argv[0], "getpid")) {
+		printf("my\t%d\nparent\t%d\n", getpid(), getppid());
+		return;
 	}
 
 	if (fork()) {

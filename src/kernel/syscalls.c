@@ -388,6 +388,20 @@ void _sys_intr_set(void __user *ip) {
 	proc_cur->intr_fn = ip;
 }
 
+uint32_t _sys_getpid(void) {
+	SYSCALL_RETURN(proc_ns_id(proc_cur->pns, proc_cur));
+}
+
+uint32_t _sys_getppid(void) {
+	if (proc_cur->pns == proc_cur) {
+		SYSCALL_RETURN(0);
+	} else {
+		assert(proc_cur->parent);
+		assert(proc_cur->parent->pns == proc_cur->pns);
+		SYSCALL_RETURN(proc_ns_id(proc_cur->pns, proc_cur->parent));
+	}
+}
+
 long _sys_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
@@ -440,6 +454,8 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_FILICIDE:	_sys_filicide();
 		break; case _SYS_INTR:	_sys_intr();
 		break; case _SYS_INTR_SET:	_sys_intr_set((userptr_t)a);
+		break; case _SYS_GETPID:	_sys_getpid();
+		break; case _SYS_GETPPID:	_sys_getppid();
 		break; case _SYS_EXECBUF:	_sys_execbuf((userptr_t)a, b);
 		break; case _SYS_DEBUG_KLOG:	_sys_debug_klog((userptr_t)a, b);
 		break;

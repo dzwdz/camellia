@@ -69,6 +69,7 @@ struct Proc {
 		Handle *procfs;
 	} specialh;
 
+	// TODO pids should be 64bit. also typedef pid_t
 	uint32_t globalid; /* only for internal use, don't expose to userland */
 	uint32_t refcount; /* non-owning. should always be 0 on kill */
 	bool noreap;

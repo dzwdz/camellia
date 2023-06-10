@@ -185,11 +185,11 @@ pid_t getpgrp(void) {
 }
 
 pid_t getpid(void) {
-	__libc_panic("unimplemented");
+	return _sys_getpid();
 }
 
 pid_t getppid(void) {
-	__libc_panic("unimplemented");
+	return _sys_getppid();
 }
 
 int getgroups(int size, gid_t list[]) {

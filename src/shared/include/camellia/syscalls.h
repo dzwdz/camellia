@@ -19,6 +19,8 @@
 #define _SYS_FILICIDE 16
 #define _SYS_INTR 17
 #define _SYS_INTR_SET 18
+#define _SYS_GETPID 19
+#define _SYS_GETPPID 20
 
 #define _SYS_EXECBUF 100
 #define _SYS_DEBUG_KLOG 101
@@ -78,6 +80,9 @@ void _sys_sleep(long ms);
 void _sys_filicide(void);
 void _sys_intr(void);
 void _sys_intr_set(void __user *ip);
+
+uint32_t _sys_getpid(void);
+uint32_t _sys_getppid(void);
 
 /* see shared/execbuf.h */
 long _sys_execbuf(void __user *buf, size_t len);

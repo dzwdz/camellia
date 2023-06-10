@@ -82,6 +82,14 @@ void _sys_intr_set(void __user *ip) {
 	return (void)_syscall(_SYS_INTR_SET, (long)ip, 0, 0, 0, 0);
 }
 
+uint32_t _sys_getpid(void) {
+	return (uint32_t)_syscall(_SYS_GETPID, 0, 0, 0, 0, 0);
+}
+
+uint32_t _sys_getppid(void) {
+	return (uint32_t)_syscall(_SYS_GETPPID, 0, 0, 0, 0, 0);
+}
+
 long _sys_execbuf(void __user *buf, size_t len) {
 	return _syscall(_SYS_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }
