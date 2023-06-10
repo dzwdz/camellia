@@ -24,8 +24,7 @@
 #define SIGWINCH 21
 #define SIGCHLD 22
 
-// idk
-#define NSIG 64
+#define NSIG 32
 
 #define SIG_DFL 0
 #define SIG_ERR 0
@@ -45,42 +44,11 @@ struct sigaction {
 	void (*sa_restorer)(void);
 };
 
-static inline int sigaction(int sig, const struct sigaction *act, struct sigaction *oldact) {
-	(void)sig; (void)act; (void)oldact;
-	__libc_panic("unimplemented");
-}
-
-static inline int sigemptyset(sigset_t *set) {
-	(void)set;
-	__libc_panic("unimplemented");
-}
-
-static inline int sigfillset(sigset_t *set) {
-	(void)set;
-	__libc_panic("unimplemented");
-}
-
-static inline int sigprocmask(int how, const sigset_t *set, const sigset_t *oldset) {
-	(void)how; (void)set; (void)oldset;
-	__libc_panic("unimplemented");
-}
-
-static inline int sigsuspend(const sigset_t *mask) {
-	(void)mask;
-	__libc_panic("unimplemented");
-}
-
-static inline int signal(int sig, void (*func)(int)) {
-	(void)sig; (void)func;
-	__libc_panic("unimplemented");
-}
-
-static inline int kill(pid_t pid, int sig) {
-	(void)pid; (void)sig;
-	__libc_panic("unimplemented");
-}
-
-static inline int raise(int sig) {
-	(void)sig;
-	__libc_panic("unimplemented");
-}
+int sigaction(int sig, const struct sigaction *act, struct sigaction *oldact);
+int sigemptyset(sigset_t *set);
+int sigfillset(sigset_t *set);
+int sigprocmask(int how, const sigset_t *set, const sigset_t *oldset);
+int sigsuspend(const sigset_t *mask);
+int signal(int sig, void (*func)(int));
+int kill(pid_t pid, int sig);
+int raise(int sig);

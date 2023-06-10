@@ -10,7 +10,8 @@
 #include <elfload.h>
 
 int errno = 0;
-char **environ = {NULL};
+static char *_environ[] = {NULL};
+char **environ = _environ;
 
 int fork(void) {
 	return _sys_fork(0, NULL);
@@ -203,8 +204,8 @@ ssize_t read(int fd, void *buf, size_t count) {
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-	(void)fd; (void)buf; (void)count;
-	__libc_panic("unimplemented");
+	// TODO real file descriptor emulation - store offsets
+	return _sys_write(fd, buf, count, -1, 0);
 }
 
 int pipe(int pipefd[2]) {
