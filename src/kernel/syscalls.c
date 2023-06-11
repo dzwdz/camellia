@@ -25,6 +25,7 @@ _Noreturn void _sys_exit(long ret) {
 long _sys_await(void) {
 	bool has_children = false;
 	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
+	proc_cur->awaited_death.legacy = true;
 
 	for (Proc *iter = proc_cur->child;
 			iter; iter = iter->sibling)
@@ -401,6 +402,32 @@ uint32_t _sys_getppid(void) {
 	}
 }
 
+int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
+	if (pid != -1 || flags != 0) {
+		SYSCALL_RETURN(-ENOSYS);
+	}
+
+	bool has_children = false;
+	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
+	proc_cur->awaited_death.legacy = false;
+	proc_cur->awaited_death.out = out;
+
+	for (Proc *iter = proc_cur->child; iter; iter = iter->sibling) {
+		if (iter->noreap) continue;
+		has_children = true;
+		if (iter->state == PS_TOREAP) {
+			proc_tryreap(iter);
+			return 0; // dummy
+		}
+	}
+
+	if (!has_children) {
+		proc_setstate(proc_cur, PS_RUNNING);
+		SYSCALL_RETURN(-ECHILD);
+	}
+	return 0; // dummy
+}
+
 long _sys_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
@@ -455,6 +482,7 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_INTR_SET:	_sys_intr_set((userptr_t)a);
 		break; case _SYS_GETPID:	_sys_getpid();
 		break; case _SYS_GETPPID:	_sys_getppid();
+		break; case _SYS_WAIT2:	_sys_wait2(a, b, (userptr_t)c);
 		break; case _SYS_EXECBUF:	_sys_execbuf((userptr_t)a, b);
 		break; case _SYS_DEBUG_KLOG:	_sys_debug_klog((userptr_t)a, b);
 		break;

@@ -45,6 +45,10 @@ struct Proc {
 	union { /* saved value, meaning depends on .state */
 		int death_msg; // PS_DEAD
 		struct {
+			bool legacy; /* false = wait2, true = await */
+			struct sys_wait2 __user *out;
+		} awaited_death;
+		struct {
 			char __user *buf;
 			size_t max_len;
 			struct ufs_request __user *res;

@@ -76,8 +76,7 @@ int sigfillset(sigset_t *set) {
 }
 
 int sigprocmask(int how, const sigset_t *set, const sigset_t *oldset) {
-	(void)how; (void)set; (void)oldset;
-	__libc_panic("unimplemented");
+	return 0;
 }
 
 int sigsuspend(const sigset_t *mask) {

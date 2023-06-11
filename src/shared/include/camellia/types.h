@@ -35,3 +35,7 @@ struct intr_data {
 	void __user *ip;
 	void __user *sp; /* last for pop %rsp */
 };
+
+struct sys_wait2 {
+	long status;
+};

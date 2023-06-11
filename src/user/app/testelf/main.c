@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 	printf("argc == %u\n", argc);
 	for (int i = 0; i < argc; i++)
 		printf("argv[%u] == %p == \"%s\"\n", i, argv[i], argv[i]);
-	if (strcmp(argv[1], "stackexec") == 0) {
+	if (argv[1] && strcmp(argv[1], "stackexec") == 0) {
 		/* exec something with arguments on the stack */
 		const char s_d[] = "I am a pretty long string on the stack. Oh my. " \
 			"I hope I won't get corrupted.\0";

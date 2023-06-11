@@ -90,6 +90,10 @@ uint32_t _sys_getppid(void) {
 	return (uint32_t)_syscall(_SYS_GETPPID, 0, 0, 0, 0, 0);
 }
 
+int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
+	return (int)_syscall(_SYS_WAIT2, (long)pid, (long)flags, (long)out, 0, 0);
+}
+
 long _sys_execbuf(void __user *buf, size_t len) {
 	return _syscall(_SYS_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }

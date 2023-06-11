@@ -40,6 +40,18 @@ static void test_await2(void) {
 	_sys_filicide();
 }
 
+static void test_wait2_basic(void) {
+	struct sys_wait2 data = {0};
+	int pid;
+	pid = fork();
+	if (pid == 0) {
+		exit(420);
+	}
+	test(_sys_wait2(-1, 0, &data) == pid);
+	test(data.status == 420);
+	test(_sys_wait2(-1, 0, NULL) == -ECHILD);
+}
+
 static void test_pipe(void) {
 	const char *pipe_msgs[2] = {"hello", "world"};
 	hid_t ends[2];
@@ -293,6 +305,7 @@ static void test_badopen(void) {
 void r_k_miscsyscall(void) {
 	run_test(test_await);
 	run_test(test_await2);
+	run_test(test_wait2_basic);
 	run_test(test_pipe);
 	run_test(test_memflag);
 	run_test(test_dup);

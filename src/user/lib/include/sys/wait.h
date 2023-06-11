@@ -2,8 +2,8 @@
 #include <sys/types.h>
 
 #define WIFSTOPPED(x) 0
-#define WEXITSTATUS(x) 0
-#define WIFEXITED(x) 0
+#define WEXITSTATUS(x) ((x)&0xFF)
+#define WIFEXITED(x) 1
 #define WSTOPSIG(x) 0
 #define WTERMSIG(x) 0
 

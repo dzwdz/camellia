@@ -21,6 +21,7 @@
 #define _SYS_INTR_SET 18
 #define _SYS_GETPID 19
 #define _SYS_GETPPID 20
+#define _SYS_WAIT2 21
 
 #define _SYS_EXECBUF 100
 #define _SYS_DEBUG_KLOG 101
@@ -83,6 +84,9 @@ void _sys_intr_set(void __user *ip);
 
 uint32_t _sys_getpid(void);
 uint32_t _sys_getppid(void);
+
+// TODO deprecate await
+int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out);
 
 /* see shared/execbuf.h */
 long _sys_execbuf(void __user *buf, size_t len);
