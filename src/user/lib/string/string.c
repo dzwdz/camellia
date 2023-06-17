@@ -5,7 +5,7 @@
 #include <strings.h>
 
 char *strchr(const char *s, int c) {
-	for (; *s; s++) {
+	for (; *s || c == 0; s++) {
 		if (*s == c) return (char *)s;
 	}
 	return NULL;

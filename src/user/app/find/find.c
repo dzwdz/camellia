@@ -1,55 +1,43 @@
 #include <camellia/path.h>
+#include <dirent.h>
+#include <err.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define eprintf(fmt, ...) fprintf(stderr, "find: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
-
 void recurse(char *path) {
-	FILE *f = fopen(path, "r");
-	const int buf_len = 4096;
-	char *buf;
-
-	if (!f) {
-		eprintf("couldn't open %s", path);
+	DIR *d = opendir(path);
+	if (!d) {
+		warn("couldn't open %s", path);
 		return;
 	}
-
-	buf = malloc(buf_len);
 	for (;;) {
-		int len = fread(buf, 1, buf_len, f);
-		int pos = 0;
-		if (len <= 0) break;
-		while (pos < len) {
-			if (buf[pos] == '\0') {
-				eprintf("%s has an empty entry, bailing", path);
-				break;
+		struct dirent *dent;
+		errno = 0;
+		dent = readdir(d);
+		if (!dent) {
+			if (errno) {
+				warn("when reading %s", path);
 			}
-			const char *end = memchr(buf + pos, 0, len - pos);
-			if (!end) {
-				eprintf("buf overflowed, unimplemented"); // TODO
-				break;
-			}
-			printf("%s%s\n", path, buf + pos);
-
-			size_t entrylen = end - (buf + pos) + 1;
-			if (end[-1] == '/') {
-				// append onto end of the current path
-				// TODO no overflow check
-				char *pend = path + strlen(path);
-				memcpy(pend, buf + pos, entrylen);
-				recurse(path);
-				*pend = '\0';
-			}
-			pos += entrylen;
+			break;
+		}
+		printf("%s%s\n", path, dent->d_name);
+		/* if the string ends with '/' */
+		if (strchr(dent->d_name, '\0')[-1] == '/') {
+			// TODO no overflow check
+			char *pend = strchr(path, '\0');
+			strcpy(pend, dent->d_name);
+			recurse(path);
+			*pend = '\0';
 		}
 	}
-	fclose(f);
-	free(buf);
+	closedir(d);
 }
 
 void find(const char *path) {
 	// TODO bound checking
+	// TODO or just implement asprintf()
 	char *buf = malloc(PATH_MAX);
 	memcpy(buf, path, strlen(path)+1);
 	recurse(buf);

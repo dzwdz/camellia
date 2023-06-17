@@ -155,8 +155,9 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 		errno = EBADF;
 		return 0;
 	}
-	if (size == 0)
+	if (size == 0) {
 		return 0;
+	}
 
 	while (pos < total) {
 		long res = _sys_read(f->fd, buf + pos, total - pos, f->pos);
@@ -207,6 +208,7 @@ int fputs(const char *s, FILE *f) {
 	return fprintf(f, "%s\n", s);
 }
 
+// TODO! c file buffering
 char *fgets(char *buf, int size, FILE *f) {
 	char c = '\0';
 	long pos = 0;
@@ -221,7 +223,8 @@ char *fgets(char *buf, int size, FILE *f) {
 
 int fgetc(FILE *f) {
 	char c;
-	return fread(&c, 1, 1, f) ? c : EOF;
+	size_t ret = fread(&c, 1, 1, f);
+	return ret ? c : EOF;
 }
 int getc(FILE *f) { return fgetc(f); }
 
