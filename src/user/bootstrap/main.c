@@ -14,9 +14,8 @@ extern char _initrd;
 
 __attribute__((section(".text")))
 int main(void) {
-	_sys_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
+	_sys_memflag(_psdata_loc, 1, MEMFLAG_PRESENT);
 	setprogname("bootstrap");
-	setproctitle(NULL);
 
 	/* move everything provided by the kernel to /kdev */
 	MOUNT_AT("/kdev/") { fs_passthru(NULL); }

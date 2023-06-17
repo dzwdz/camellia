@@ -26,20 +26,17 @@ _Noreturn void _start2(struct execdata *ed) {
 	elf_selfreloc();
 
 	/* done first so it isn't allocated elsewhere by accident */
-	_sys_memflag(_libc_psdata, 1, MEMFLAG_PRESENT);
-	if (ed->argv[0]) {
-		strcpy(_libc_psdata, ed->argv[0]);
-	} else {
-		strcpy(_libc_psdata, "?");
-	}
+	_sys_memflag(_psdata_loc, 1, MEMFLAG_PRESENT);
+	_psdata_loc->base = __executable_start;
+	/* sets ->desc */
+	progname = shortname(ed->argv[0]);
+	setprogname(progname);
+
+	_klogf("_start2 %s %p", progname, __executable_start);
 
 	_sys_intr_set(intr_trampoline);
 	intr_set(intr_default);
 	__setinitialcwd(ed->cwd);
-
-	progname = shortname(ed->argv[0]);
-	setprogname(progname);
-	_klogf("_start2 %s %p", progname, __executable_start);
 
 	exit(main(ed->argc, ed->argv, ed->envp));
 }

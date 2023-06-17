@@ -1,7 +1,14 @@
 #pragma once
 
-/* That page contains a null-terminated string that describes the process
- * for tools such as ps. It's first allocated in the bootstrap process, and
- * then it's freed on every exec() - just to be immediately reallocated by
- * _start2(). */
-static char *const _libc_psdata = (void*)0x10000;
+struct _psdata {
+	/* Description of the process, see setprogname.
+	 * Assumed to be null terminated. */
+	char desc[1024];
+
+	/* Base offset where the executable was loaded. */
+	void *base;
+};
+
+/* First allocated in bootstrap.
+ * Freed on every exec(), just to be immediately reallocated by _start2(). */
+static struct _psdata *const _psdata_loc = (void*)0x10000;

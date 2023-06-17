@@ -33,7 +33,7 @@ main(void)
 					warn("couldn't open \"%s\"", procbuf);
 					strcpy(procbuf, "(can't peek)");
 				} else {
-					fseek(g, (long)_libc_psdata, SEEK_SET);
+					fseek(g, (long)&_psdata_loc->desc, SEEK_SET);
 					if (fread(procbuf, 1, 128, g) <= 0) {
 						strcpy(procbuf, "(no psdata)");
 					}

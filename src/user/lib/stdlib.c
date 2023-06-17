@@ -16,18 +16,20 @@ const char *getprogname(void) {
 }
 void setprogname(const char *pg) {
 	progname = pg;
+	setproctitle(NULL);
 }
 
 void setproctitle(const char *fmt, ...) {
+	// TODO bounds checking
 	if (!fmt) {
-		strcpy(_libc_psdata, progname);
+		strcpy(_psdata_loc->desc, progname);
 		return;
 	}
-	sprintf(_libc_psdata, "%s: ", progname);
+	sprintf(_psdata_loc->desc, "%s: ", progname);
 
 	va_list argp;
 	va_start(argp, fmt);
-	vsnprintf(_libc_psdata + strlen(_libc_psdata), 128, fmt, argp);
+	vsnprintf(_psdata_loc->desc + strlen(_psdata_loc->desc), 128, fmt, argp);
 	va_end(argp);
 }
 
