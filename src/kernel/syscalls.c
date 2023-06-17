@@ -295,7 +295,7 @@ long _sys_fs_respond(hid_t hid, const void __user *buf, long ret, int flags) {
 	if (!h || h->type != HANDLE_FS_REQ) SYSCALL_RETURN(-EBADF);
 	VfsReq *req = h->req;
 	if (req) {
-		if (req->output.len > 0 && ret > 0) {
+		if (ret > 0 && req->type == VFSOP_READ) {
 			// if this vfsop outputs data and ret is positive, it's the length of the buffer
 			// TODO document
 			// TODO move to vfsreq_finish

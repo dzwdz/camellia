@@ -1,4 +1,5 @@
 #include <camellia/errno.h>
+#include <kernel/arch/amd64/driver/util.h> // portable despite the name
 #include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
@@ -119,10 +120,6 @@ procfs_accept(VfsReq *req)
 	if (req->type == VFSOP_READ && (h->type == PhDir || h->type == PhRoot)) {
 		// TODO port dirbuild to kernel
 		int pos = 0;
-		if (req->offset != 0) {
-			vfsreq_finish_short(req, -ENOSYS);
-			return;
-		}
 		if (h->type == PhDir) {
 			pos += snprintf(buf + pos, 512 - pos, "intr")+1;
 			pos += snprintf(buf + pos, 512 - pos, "mem")+1;
@@ -136,8 +133,7 @@ procfs_accept(VfsReq *req)
 			}
 		}
 		assert(0 <= pos && (size_t)pos <= sizeof buf);
-		pcpy_to(req->caller, req->output.buf, buf, pos);
-		vfsreq_finish_short(req, pos);
+		vfsreq_finish_short(req, req_readcopy(req, buf, pos));
 	} else if (req->type == VFSOP_READ && h->type == PhMem) {
 		if (p->pages == NULL || req->caller->pages == NULL) {
 			vfsreq_finish_short(req, 0);

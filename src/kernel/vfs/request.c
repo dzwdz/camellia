@@ -73,6 +73,10 @@ void vfsreq_finish(VfsReq *req, char __user *stored, long ret,
 		}
 	}
 
+	if (req->type == VFSOP_READ && ret >= 0) {
+		assert((size_t)ret <= req->output.len);
+	}
+
 	if (req->input.kern)
 		kfree(req->input.buf_kern);
 

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// TODO put req_readcopy in a global header
 int req_readcopy(VfsReq *req, const void *buf, size_t len);
 
 /* compare request path. path MUST be a static string */
