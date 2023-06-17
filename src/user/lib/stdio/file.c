@@ -1,12 +1,13 @@
 #include "file.h"
+#include <bits/panic.h>
 #include <camellia.h>
 #include <camellia/syscalls.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <unistd.h>
-#include <bits/panic.h>
 
 static FILE _stdin_null  = { .fd = STDIN_FILENO };
 static FILE _stdout_null = { .fd = STDOUT_FILENO };
@@ -52,6 +53,7 @@ FILE *fopen(const char *path, const char *mode) {
 
 	f = fdopen(h, mode);
 	if (!f) close(h);
+	setvbuf(f, NULL, _IOFBF, 0);
 	return f;
 }
 
@@ -81,13 +83,11 @@ fail:
 
 FILE *fdopen(int fd, const char *mode) {
 	FILE *f;
-	f = malloc(sizeof *f);
-	if (!f) return NULL;
-	f->fd = fd;
-	f->pos = mode[0] == 'a' ? -1 : 0;
-	f->eof = false;
-	f->error = false;
-	f->extflags = 0;
+	f = calloc(1, sizeof *f);
+	if (f) {
+		f->fd = fd;
+		f->pos = mode[0] == 'a' ? -1 : 0;
+	}
 	return f;
 }
 
@@ -134,10 +134,19 @@ int fextflags(FILE *f, int extflags) {
 }
 
 int setvbuf(FILE *restrict f, char *restrict buf, int type, size_t size) {
-	(void)f; (void)buf; (void)size;
-	if (type == _IONBF) return 0;
-	errno = ENOSYS;
-	return -1;
+	if (type == _IONBF) {
+		free(f->readbuf);
+		f->readbuf = NULL;
+		return 0;
+	} else if (type == _IOFBF && buf == NULL) {
+		(void) size;
+		f->rblen = 0;
+		f->rbcap = BUFSIZ;
+		f->readbuf = malloc(f->rbcap);
+		return f->readbuf ? 0 : -1;
+	} else {
+		return errno = ENOSYS, -1;
+	}
 }
 
 static void fadvance(long amt, FILE *f) {
@@ -160,14 +169,39 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 	}
 
 	while (pos < total) {
-		long res = _sys_read(f->fd, buf + pos, total - pos, f->pos);
-		if (res < 0) {
-			f->error = true;
-			errno = -res;
-			break;
-		} else if (res == 0) {
-			f->eof = true;
-			break;
+		long res = 0;
+		if (f->readbuf) {
+			if (0 == f->rblen && total - pos < (f->rbcap >> 1)) {
+				res = _sys_read(f->fd, f->readbuf, f->rbcap, f->pos);
+				if (res < 0) {
+					f->error = true;
+					errno = -res;
+					break;
+				} else if (res == 0) {
+					f->eof = true;
+					break;
+				} else {
+					f->rblen = res;
+				}
+			}
+			if (0 < f->rblen) {
+				res = MIN(total - pos, f->rblen);
+				memcpy(buf + pos, f->readbuf, res);
+				f->rblen -= res;
+				memmove(f->readbuf, f->readbuf + res, f->rblen);
+			}
+		}
+		if (res == 0) {
+			/* no cache hit */
+			res = _sys_read(f->fd, buf + pos, total - pos, f->pos);
+			if (res < 0) {
+				f->error = true;
+				errno = -res;
+				break;
+			} else if (res == 0) {
+				f->eof = true;
+				break;
+			}
 		}
 		pos += res;
 		fadvance(res, f);
@@ -210,15 +244,19 @@ int fputs(const char *s, FILE *f) {
 
 // TODO! c file buffering
 char *fgets(char *buf, int size, FILE *f) {
-	char c = '\0';
-	long pos = 0;
-	while (pos < (size-1) && c != '\n' && fread(&c, 1, 1, f))
-		buf[pos++] = c;
-	buf[pos++] = '\0';
-
-	if (f->eof && pos == 1) return NULL;
-	if (f->error) return NULL;
-	return buf;
+	int pos, c;
+	for (pos = 0; pos < size-1; pos++) {
+		c = fgetc(f);
+		if (c == EOF) break;
+		buf[pos] = c;
+		if (c == '\n') break;
+	}
+	if (pos == 0 || f->error) {
+		return NULL;
+	} else {
+		buf[pos] = '\0';
+		return buf;
+	}
 }
 
 int fgetc(FILE *f) {
@@ -254,6 +292,10 @@ int fseeko(FILE *f, off_t offset, int whence) {
 			break;
 		case SEEK_CUR:
 			base = f->pos;
+			// TODO untested
+			if (f->readbuf) {
+				base -= f->rblen;
+			}
 			break;
 		case SEEK_END:
 			base = _sys_getsize(f->fd);
@@ -264,6 +306,7 @@ int fseeko(FILE *f, off_t offset, int whence) {
 			errno = EINVAL;
 			return -1;
 	}
+	f->rblen = 0;
 
 	if (base >= 0 && base + offset < 0) {
 		/* underflow */
@@ -292,6 +335,7 @@ off_t ftello(FILE *f) {
 int fclose(FILE *f) {
 	fflush(f);
 	if (f->fd > 0) close(f->fd);
+	free(f->readbuf);
 	if (f != &_stdin_null && f != &_stdout_null && f != &_stderr_null)
 		free(f);
 	return 0;

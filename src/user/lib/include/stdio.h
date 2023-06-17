@@ -14,11 +14,10 @@
 #define SEEK_END 3
 
 #define _IONBF 0
-#define _IOFBF 0
-#define _IOLBF 1
+#define _IOFBF 1
+#define _IOLBF 2
 
-/* size of file buffers. not that we have any */
-#define BUFSIZ 1024
+#define BUFSIZ 4096
 
 /* stop fread() from trying to fill the entire buffer before returning
  * i.e. it will call _sys_read() exactly once */

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stdio.h>
 
 struct _LIBC_FILE {
 	int fd;
@@ -7,4 +8,7 @@ struct _LIBC_FILE {
 	bool eof;
 	bool error;
 	int extflags;
+
+	char *readbuf;
+	size_t rblen, rbcap;
 };
