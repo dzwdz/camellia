@@ -47,24 +47,9 @@ struct stat {
 #define S_ISLNK(m) ((m & S_IFMT) == S_IFLNK)
 #define S_ISSOCK(m) ((m & S_IFMT) == S_IFSOCK)
 
-static inline int fstat(int fd, struct stat *sb) {
-	(void)fd; (void)sb;
-	errno = ENOSYS;
-	return -1;
-}
-
-static inline int stat(const char *restrict path, struct stat *restrict sb) {
-	(void)path; (void)sb;
-	errno = ENOSYS;
-	return -1;
-}
-
-static inline int lstat(const char *restrict path, struct stat *restrict sb) {
-	(void)path; (void)sb;
-	errno = ENOSYS;
-	return -1;
-}
-
+int fstat(int fd, struct stat *sb);
+int stat(const char *restrict path, struct stat *restrict sb);
+int lstat(const char *restrict path, struct stat *restrict sb);
 int mkdir(const char *path, mode_t mode);
 
 static inline mode_t umask(mode_t mask) {
