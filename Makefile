@@ -3,7 +3,6 @@ PATH   := $(shell pwd)/toolchain/prefix/bin/:$(PATH)
 AR      = x86_64-camellia-ar
 AS      = x86_64-camellia-as
 CC      = x86_64-camellia-gcc
-CHECK   = sparse
 
 CFLAGS += -g -std=gnu99 -O2 -ftrack-macro-expansion=0
 CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declaration
@@ -38,7 +37,7 @@ define from_sources
 endef
 
 
-.PHONY: all portdeps boot lint check clean
+.PHONY: all portdeps boot check clean
 all: portdeps out/boot.iso check
 portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
 
@@ -62,7 +61,6 @@ test: all
 
 check: $(shell find src/kernel/ -type f -name *.c)
 	@echo $^ | xargs -n 1 sparse $(SPARSEFLAGS)
-	@tools/linter/main.rb
 
 clean:
 	rm -rf out/
