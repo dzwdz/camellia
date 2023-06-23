@@ -1,0 +1,18 @@
+#!/bin/sh
+. ports/pre
+
+pkg=dash
+tarball=dash-0.5.12.tar.gz
+tarball_dir=dash-0.5.12
+url=http://gondor.apana.org.au/~herbert/dash/files/${tarball}
+
+relink() {
+	rm $tarball_dir/dash
+}
+
+configure() {
+	test -e $tarball_dir/Makefile && return
+	(cd $tarball_dir && ./configure --host=x86_64-camellia)
+}
+
+. ports/post

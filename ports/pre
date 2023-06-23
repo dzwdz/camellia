@@ -1,0 +1,58 @@
+#!/bin/sh
+set -eu
+repodir=$(pwd)
+PATH="$repodir/toolchain/prefix/bin/:$PATH"
+CC=x86_64-camellia-gcc
+DESTDIR="$repodir/out/initrd/"
+MAKEFLAGS="CC=$CC DESTDIR=$DESTDIR"
+
+ensure_pre_was_loaded() {
+	true
+}
+
+
+# default functions
+fetch() {
+	test -e $downdir/$tarball || curl -L $url > $downdir/$tarball
+	checksum
+}
+
+checksum() {
+	(cd $downdir; sha256sum --check $portdir/sha256sums)
+}
+
+unpack() {
+	test -d $tarball_dir && return
+	fetch
+	tar xf $downdir/$tarball
+	patch
+}
+
+patch() {
+	if test -d $portdir/files/; then
+		cp $portdir/files/* $tarball_dir/
+	fi
+}
+
+configure() {
+	true
+}
+
+_make() {
+	configure
+	(cd $tarball_dir && make $MAKEFLAGS $*)
+}
+
+build() {
+	unpack
+	_make
+}
+
+clean() {
+	_make clean
+}
+
+install() {
+	unpack
+	_make && _make install
+}

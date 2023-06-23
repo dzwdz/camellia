@@ -1,0 +1,13 @@
+#!/bin/sh
+. ports/pre
+
+pkg=oed
+tarball=oed-7.1.tar.gz
+tarball_dir=oed-oed-7.1
+url=https://github.com/ibara/oed/archive/refs/tags/$tarball
+
+relink() {
+	rm $tarball_dir/ed
+}
+
+. ports/post

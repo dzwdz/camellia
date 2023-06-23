@@ -52,6 +52,7 @@ int main(void) {
 			"/init/bin/amd64/",
 			"/init/bin/sh/",
 			"/init/usr/bin/",
+			"/init/usr/local/bin/",
 			NULL
 		});
 	}
