@@ -1,3 +1,4 @@
+#include <err.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,10 +17,10 @@ int main(int argc, char **argv) {
 			"I hope I won't get corrupted.\0";
 		char s[sizeof(s_d)];
 		memcpy(s, s_d, sizeof(s_d));
-		const char *argv2[] = {argv[0], s, s, "hello", s, s, s, "lol", NULL};
+		const char *argv2[] = {"/bin/testelf", s, s, "hello", s, s, s, "lol", NULL};
 		printf("argv2 == %p, s == %p\n== exec ==\n", argv2, s);
-		execv(argv[0], (void*)argv2);
-		puts("stackexec failed");
+		execv((void*)argv2[0], (void*)argv2);
+		err(1, "execv");
 	}
 	return 0;
 }
