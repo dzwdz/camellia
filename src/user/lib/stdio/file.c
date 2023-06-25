@@ -242,13 +242,12 @@ int fputs(const char *s, FILE *f) {
 	return fprintf(f, "%s\n", s);
 }
 
-// TODO! c file buffering
 char *fgets(char *buf, int size, FILE *f) {
 	int pos, c;
-	for (pos = 0; pos < size-1; pos++) {
+	for (pos = 0; pos < size-1; ) {
 		c = fgetc(f);
 		if (c == EOF) break;
-		buf[pos] = c;
+		buf[pos++] = c;
 		if (c == '\n') break;
 	}
 	if (pos == 0 || f->error) {
