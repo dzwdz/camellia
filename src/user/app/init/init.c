@@ -47,11 +47,18 @@ int main(void) {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
 		ps2_drv();
 	}
+	MOUNT_AT("/usr/") {
+		fs_union((const char*[]){
+			"/init/usr/",
+			NULL
+		});
+	}
 	MOUNT_AT("/bin/") {
 		fs_union((const char*[]){
 			"/init/bin/amd64/",
 			"/init/bin/sh/",
 			"/init/usr/bin/",
+			"/init/usr/local/bin/",
 			NULL
 		});
 	}

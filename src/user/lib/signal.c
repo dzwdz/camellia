@@ -86,7 +86,7 @@ int sigsuspend(const sigset_t *mask) {
 
 int signal(int sig, void (*func)(int)) {
 	(void)sig; (void)func;
-	__libc_panic("unimplemented");
+	return errno = ENOSYS, SIG_ERR;
 }
 
 int kill(pid_t pid, int sig) {

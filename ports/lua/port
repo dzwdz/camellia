@@ -1,0 +1,15 @@
+#!/bin/sh
+. ports/pre
+
+pkg=lua
+tarball=lua-5.4.4.tar.gz
+tarball_dir=lua-5.4.4
+url=https://www.lua.org/ftp/${tarball}
+
+MAKEFLAGS="$MAKEFLAGS INSTALL_TOP=$DESTDIR/usr/ PLAT=generic"
+
+relink() {
+	rm $tarball_dir/lua
+}
+
+. ports/post

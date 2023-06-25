@@ -1,0 +1,8 @@
+--- config.h.orig               2023-06-24 22:10:06.945656877 +0200
++++ config.h                    2023-06-24 22:11:54.456841542 +0200
+@@ -97,4 +97,4 @@
+ #undef ORIGCODE
+ 
+ /* Define to the directory where all game files are located */
+-#define FILES_DIR "."
++#define FILES_DIR "/usr/share/games/doom/"

@@ -31,13 +31,14 @@ ifndef QEMU_DISPLAY
 QFLAGS += -display none
 endif
 
+PORTS =
 
 define from_sources
   $(patsubst src/%,out/obj/%.o,$(shell find $(1) -type f,l -name '*.[csS]'))
 endef
 
 
-.PHONY: all portdeps boot check clean
+.PHONY: all portdeps boot check clean ports
 all: portdeps out/boot.iso check
 portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
 
@@ -116,13 +117,19 @@ $(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))
 out/obj/user/app/ext2fs/ext2/example.c.o:
 	@touch $@
 
+# portdeps is phony, so ports/% is automatically "phony" too
+ports: $(patsubst %,ports/%,$(PORTS))
+ports/%: portdeps
+	+$@/port install
+
 out/initrd/%: sysroot/%
 	@mkdir -p $(@D)
 	@cp $< $@
 
 out/initrd.tar: $(patsubst sysroot/%,out/initrd/%,$(shell find sysroot/ -type f)) \
                 $(patsubst %,out/initrd/bin/amd64/%,$(USERBINS)) \
-                $(shell find out/initrd/)
+                $(shell find out/initrd/) \
+				ports
 	@cd out/initrd; tar chf ../initrd.tar *
 
 

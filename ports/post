@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+ensure_pre_was_loaded
+
+portdir=$repodir/ports/$pkg/
+workdir=$repodir/ports/out/$pkg/
+downdir=$repodir/ports/out/downloads/
+
+mkdir -p $workdir $downdir
+cd $workdir
+
+case ${1:-help} in
+	fetch) fetch ;;
+	build) build ;;
+	clean) clean ;;
+	install) install ;;
+
+	relink) relink ;;
+
+	*) echo "bad usage, see ports/post"; false ;;
+esac

@@ -1,19 +1,3 @@
-set -eu
-camellia_path_check
-
-fetch() {
-	git clone https://github.com/ozkl/doomgeneric
-	cd doomgeneric
-	# TODO use a newer commit
-	git -c advice.detachedHead=false checkout ee3ee581912dacd38af06e81da2374c1267453e8
-
-	cd doomgeneric
-	rm doomgeneric # a leftover OS X binary
-	sed s/xlib/camellia/ -i Makefile
-	sed s/-lX11// -i Makefile
-	echo note: you need to supply your own WADs
-
-	cat <<\EOF > doomgeneric_camellia.c
 #include <camellia/syscalls.h>
 #include <shared/ring.h>
 #include <stdbool.h>
@@ -135,17 +119,10 @@ int DG_GetKey(int *pressed, unsigned char *key) {
 void DG_SetWindowTitle(const char *title) {
 	(void)title;
 }
-EOF
-}
 
-prep() {
-	[ -d doomgeneric ] || (fetch)
-	cd doomgeneric/doomgeneric
+int main(int argc, char **argv) {
+	doomgeneric_Create(argc, argv);
+	for (;;) {
+		doomgeneric_Tick();
+	}
 }
-
-case $1 in
-	install) (prep; make "CC=x86_64-camellia-gcc" && cp doomgeneric $PREFIX/bin/doom && cp *.WAD $PREFIX/) ;;
-	clean)   (prep; make clean) ;;
-	deepclean) (rm -rf doomgeneric) ;;
-	*)       echo "usage: $0 install|clean"; false ;;
-esac

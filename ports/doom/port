@@ -1,0 +1,32 @@
+#!/bin/sh
+. ports/pre
+
+pkg=doom
+tarball=ozkl-doomgeneric-613f870.tar.gz
+tarball_dir=ozkl-doomgeneric-613f870/doomgeneric
+url=https://github.com/ozkl/doomgeneric/tarball/613f870b6fa83ede448a247de5a2571092fa729d
+
+extra_files=https://github.com/freedoom/freedoom/releases/download/v0.12.1/freedoom-0.12.1.zip
+
+post_patch() {
+	sed s/xlib/camellia/ -i $tarball_dir/Makefile
+	sed s/-lX11// -i $tarball_dir/Makefile
+}
+
+post_unpack() {
+	unzip $downdir/freedoom-0.12.1.zip
+}
+
+install() {
+	# no make install target
+	build
+	mkdir -p $DESTDIR/usr/bin/ $DESTDIR/usr/share/games/doom/
+	cp $tarball_dir/doomgeneric $DESTDIR/usr/bin/doom
+	cp freedoom-0.12.1/freedoom1.wad $DESTDIR/usr/share/games/doom/
+}
+
+relink() {
+	rm $tarball_dir/doomgeneric
+}
+
+. ports/post
