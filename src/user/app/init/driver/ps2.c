@@ -1,9 +1,10 @@
 #include "driver.h"
+#include <camellia/compat.h>
 #include <camellia/syscalls.h>
+#include <errno.h>
 #include <shared/ring.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <camellia/compat.h>
 
 
 static const char keymap_lower[] = {
@@ -55,9 +56,15 @@ static void main_loop(void) {
 	struct ufs_request res;
 	int ret;
 	while (!c0_fs_wait(buf, sizeof buf, &res)) {
+		// TODO don't hang on ps2 reads
+
 		switch (res.op) {
 			case VFSOP_OPEN:
-				c0_fs_respond(NULL, 1, 0);
+				if (res.len == 0) {
+					c0_fs_respond(NULL, 1, 0);
+				} else {
+					c0_fs_respond(NULL, -ENOENT, 0);
+				}
 				break;
 
 			case VFSOP_READ:
