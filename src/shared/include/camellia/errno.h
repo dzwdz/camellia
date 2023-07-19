@@ -25,3 +25,4 @@
 #define EINTR 205
 #define EWOULDBLOCK 206
 #define EEXIST 207
+#define EAGAIN 208

@@ -35,6 +35,10 @@ static void cmd_cat(int argc, char **argv) {
 			if (len <= 0) break;
 			fwrite(buf, 1, len, stdout);
 		}
+		if (ferror(file)) {
+			perror(argv[i]);
+			return;
+		}
 		fclose(file);
 	}
 }
