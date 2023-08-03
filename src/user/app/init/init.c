@@ -43,6 +43,15 @@ int main(void) {
 	freopen("/kdev/com1", "a+", stderr);
 	printf("[init] stage 2, main at %p, teststr at %p\n", &main, teststr);
 
+	MOUNT_AT("/") {
+		fs_dirinject2((const char*[]){
+			"/fake/b/c",
+			"/fake/c",
+			"/faker",
+			NULL
+		});
+	}
+
 	MOUNT_AT("/keyboard") {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
 		ps2_drv();

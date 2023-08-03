@@ -10,7 +10,8 @@ void fs_passthru(const char *prefix);
 void fs_whitelist(const char **list);
 void fs_union(const char **list);
 
-void fs_dir_inject(const char *path);
+void fs_dirinject(const char *path);
+void fs_dirinject2(const char *injects[]);
 
 bool mount_at_pred(const char *path);
 

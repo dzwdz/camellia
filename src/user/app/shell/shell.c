@@ -61,7 +61,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		/*
 		if (!(3 <= argc && !strcmp(argv[2], "raw"))) {
 			if (!fork2_n_mount("/")) {
-				fs_dir_inject(argv[1]);
+				fs_dirinject(argv[1]);
 				exit(1);
 			}
 		}

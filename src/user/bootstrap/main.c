@@ -25,7 +25,7 @@ int main(void) {
 	}
 
 	_sys_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
-	MOUNT_AT("/") { fs_dir_inject("/proc/"); }
+	MOUNT_AT("/") { fs_dirinject("/proc/"); }
 
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
