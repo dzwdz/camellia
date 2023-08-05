@@ -40,6 +40,7 @@ void isr_stage3(uint8_t interrupt, uint64_t *stackframe) {
 		log_interrupt(interrupt, stackframe);
 		cpu_halt();
 	} else { /* in user */
+		log_interrupt(interrupt, stackframe);
 		proc_kill(proc_cur, interrupt);
 		proc_switch_any();
 	}

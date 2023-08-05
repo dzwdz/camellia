@@ -83,7 +83,7 @@ void rtl8139_init(uint32_t bdf) {
 	uint64_t mac = (((uint64_t)port_in32(iobase + MAC + 4) & 0xFFFF) << 32) + port_in32(iobase + MAC);
 	kprintf("rtl8139 mac %012x\n", mac);
 
-	vfs_root_register("/eth", accept);
+	vfs_root_register("/kdev/eth", accept);
 }
 
 static void rtl8139_irq(void) {

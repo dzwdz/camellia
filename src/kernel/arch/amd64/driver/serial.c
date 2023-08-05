@@ -15,7 +15,7 @@ static const int COM1 = 0x3f8;
 static void accept(VfsReq *req);
 static void serial_irq(void);
 static VfsReq *hung_reads = NULL;
-void serial_init(void) { vfs_root_register("/com1", accept); }
+void serial_init(void) { vfs_root_register("/kdev/com1", accept); }
 
 
 static void serial_selftest(void) {

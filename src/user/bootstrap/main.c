@@ -17,16 +17,8 @@ int main(void) {
 	_sys_memflag(_psdata_loc, 1, MEMFLAG_PRESENT);
 	setprogname("bootstrap");
 
-	/* move everything provided by the kernel to /kdev */
-	MOUNT_AT("/kdev/") { fs_passthru(NULL); }
-	MOUNT_AT("/") {
-		const char *l[] = {"/kdev/", NULL};
-		fs_whitelist(l);
-	}
-
 	_sys_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
 	MOUNT_AT("/") { fs_dirinject("/proc/"); }
-
 	MOUNT_AT("/init/") { tar_driver(&_initrd); }
 
 	const char *initpath = "bin/amd64/init";

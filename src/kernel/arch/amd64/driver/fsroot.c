@@ -8,26 +8,48 @@
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-static int handle(VfsReq *req) {
+static long handle(VfsReq *req) {
 	// TODO document directory read format
 	// TODO don't hardcode
-	const char dir[] =
+	static const char base[] = "kdev/";
+	static const char dir[] =
 		"com1\0"
 		"ps2/\0"
 		"ata/\0"
 		"eth/\0"
 		"video/";
+	const char *id;
+	int len;
+
 	if (!req->caller) return -1;
+	if (req->type != VFSOP_OPEN) {
+		/* otherwise, uninitialized, to cause compiler warnings if used */
+		/* this operates under the assumption that base and dir never change
+		 * but even if they do, that will just result in a crash. */
+		id = (void *__force)req->id;
+		if (id == base) {
+			len = sizeof base;
+		} else if (id == dir) {
+			len = sizeof dir;
+		} else {
+			kprintf("%p %p %p\n", base, dir, id);
+			assert(false);
+		}
+	}
+
 	switch (req->type) {
 		case VFSOP_OPEN:
-			return req->input.len == 1 ? 0 : -1;
+			if (reqpathcmp(req, "/")) return (long)base;
+			if (reqpathcmp(req, "/kdev/")) return (long)dir;
+			return -ENOENT;
 
 		case VFSOP_READ:
-			return req_readcopy(req, dir, sizeof dir);
-
+			return req_readcopy(req, id, len);
 		// TODO getsize for the other kernel provided directories
-		case VFSOP_GETSIZE: return sizeof dir;
-		default: return -ENOSYS;
+		case VFSOP_GETSIZE:
+			return len;
+		default:
+			return -ENOSYS;
 	}
 }
 

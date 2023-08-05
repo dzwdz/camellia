@@ -65,5 +65,5 @@ void video_init(GfxInfo fb_) {
 	fb = fb_;
 	snprintf(namebuf, sizeof namebuf, "%ux%ux%u", fb.width, fb.height, fb.bpp);
 	namelen = strlen(namebuf);
-	vfs_root_register("/video", accept);
+	vfs_root_register("/kdev/video", accept);
 }
