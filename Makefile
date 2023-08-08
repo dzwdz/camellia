@@ -90,9 +90,12 @@ out/libm.a:
 	@mkdir -p $(@D)
 	@$(AR) rcs $@ $^
 
-out/bootstrap: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
+out/bootstrap: out/bootstrap.elf
+	@objcopy -O binary $^ $@
+
+out/bootstrap.elf: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
 	@mkdir -p $(@D)
-	@$(CC) -nostdlib -Wl,-no-pie -Wl,-Map=% -T $^ -o $@
+	@$(CC) -nostdlib -Wl,-no-pie -T $^ -o $@
 
 out/fs/boot/init: out/bootstrap out/initrd.tar
 	@mkdir -p $(@D)
