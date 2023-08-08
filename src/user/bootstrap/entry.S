@@ -14,7 +14,6 @@ _start:
 	mov $(STACK_PAGES * 0x1000), %rdx
 	mov $MEMFLAG_PRESENT, %r10
 	syscall
-	mov $(STACK_TOP & ~0xF), %rsp
 
 	mov $_SYS_MEMFLAG, %rdi
 	mov $_bss_start, %rsi
@@ -24,4 +23,5 @@ _start:
 	mov %rsp, %r8
 	syscall
 
-	jmp main
+	mov $(STACK_TOP & ~0xF), %rsp
+	call main // and don't you dare return
