@@ -13,7 +13,7 @@ void fs_union(const char **list);
 void fs_dirinject(const char *path);
 void fs_dirinject2(const char *injects[]);
 
-bool mount_at_pred(const char *path);
+bool mount_at(const char *path);
 
 // TODO separate fs drivers and wrappers around syscalls
 
@@ -21,4 +21,4 @@ bool mount_at_pred(const char *path);
 hid_t ufs_wait(char *buf, size_t len, struct ufs_request *req);
 
 /** Mounts something and injects its path into the fs */
-#define MOUNT_AT(path) for (; mount_at_pred(path); exit(1))
+#define MOUNT_AT(path) for (; mount_at(path); exit(1))

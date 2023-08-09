@@ -154,20 +154,13 @@ hid_t ufs_wait(char *buf, size_t len, struct ufs_request *req) {
 	return reqh;
 }
 
-bool mount_at_pred(const char *path) {
+bool mount_at(const char *path) {
 	// TODO preprocess path - simplify & ensure trailing slash
 	if (!fork2_n_mount(path)) {
 		/* child -> go into the for body */
 		_klogf("%s: impl", path);
-		setproctitle("i'%s'", path);
+		setproctitle("%s", path);
 		return true;
-	}
-
-	if (strcmp("/", path) && !fork2_n_mount("/")) {
-		_klogf("%s: dir", path);
-		setproctitle("d'%s'", path);
-		fs_dirinject(path);
-		exit(1);
 	}
 	return false; /* continue after the for loop */
 }

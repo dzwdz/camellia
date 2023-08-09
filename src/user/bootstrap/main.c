@@ -18,8 +18,16 @@ int main(void) {
 	setprogname("bootstrap");
 
 	_sys_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
-	MOUNT_AT("/") { fs_dirinject("/proc/"); }
-	MOUNT_AT("/init/") { tar_driver(&_initrd); }
+	MOUNT_AT("/") {
+		fs_dirinject2((const char*[]) {
+			"/proc/",
+			"/init/",
+			NULL
+		});
+	}
+	MOUNT_AT("/init/") {
+		tar_driver(&_initrd);
+	}
 
 	const char *initpath = "bin/amd64/init";
 	char *initargv[] = {"init", NULL};

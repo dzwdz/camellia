@@ -45,9 +45,14 @@ int main(void) {
 
 	MOUNT_AT("/") {
 		fs_dirinject2((const char*[]){
-			"/fake/b/c",
-			"/fake/c",
-			"/faker",
+			"/keyboard/",
+			"/usr/",
+			"/bin/",
+			"/Users/",
+			"/tmp/",
+			"/vtty",
+			"/net/",
+			"/initctl",
 			NULL
 		});
 	}

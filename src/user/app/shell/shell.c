@@ -41,6 +41,9 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			fprintf(stderr, "mount: not enough arguments\n");
 			return;
 		}
+		MOUNT_AT("/") {
+			fs_dirinject(argv[1]);
+		}
 		MOUNT_AT(argv[1]) {
 			run_args(argc - 2, argv + 2, redir);
 			exit(1);
