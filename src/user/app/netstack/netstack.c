@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
 		eprintf("invalid gateway");
 		return -1;
 	}
+	setproctitle(argv[2]);
 	arp_request(state.gateway);
 	thread_create(0, network_thread, NULL);
 	thread_create(0, fs_thread, NULL);

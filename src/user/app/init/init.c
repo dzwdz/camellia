@@ -9,8 +9,13 @@
 
 #define die(fmt, ...) do { fprintf(stderr, "init: " fmt, __VA_ARGS__); exit(1); } while (0)
 
+static char title[128];
+
 void redirect(const char *exe, const char *out, const char *in) {
 	if (!fork()) {
+		snprintf(title, sizeof title, "sh >%s", out);
+		setproctitle(title);
+
 		if (!freopen(out, "a+", stderr)) {
 			fprintf(stdout, "couldn't open %s\n", out);
 			exit(1);
