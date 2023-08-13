@@ -10,16 +10,6 @@
 #include <camellia/fs/dir.h>
 #include <camellia/fs/misc.h>
 
-bool fork2_n_mount(const char *path) {
-	hid_t h;
-	if (_sys_fork(FORK_NEWFS, &h) > 0) { /* parent */
-		_sys_mount(h, path, strlen(path));
-		close(h);
-		return true;
-	}
-	return false;
-}
-
 void forward_open(hid_t reqh, const char *path, long len, int flags) {
 	// TODO use threads
 	// TODO solve for more complex cases, e.g. fs_union
@@ -154,13 +144,17 @@ hid_t ufs_wait(char *buf, size_t len, struct ufs_request *req) {
 	return reqh;
 }
 
-bool mount_at(const char *path) {
-	// TODO preprocess path - simplify & ensure trailing slash
-	if (!fork2_n_mount(path)) {
-		/* child -> go into the for body */
+int mount_at(const char *path) {
+	hid_t h;
+	int ret = _sys_fork(FORK_NEWFS, &h);
+	if (ret == 0) {
 		_klogf("%s: impl", path);
 		setproctitle("%s", path);
-		return true;
+	} else if (ret > 0) {
+		_sys_mount(h, path, strlen(path));
+		close(h);
+	} else {
+		_sys_mount(HANDLE_NULLFS, path, strlen(path));
 	}
-	return false; /* continue after the for loop */
+	return ret;
 }

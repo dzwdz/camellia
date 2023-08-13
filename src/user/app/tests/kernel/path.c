@@ -64,7 +64,7 @@ static void test_path_simplify(void) {
 }
 
 static void mount_resolve_drv(const char *path) {
-	if (fork2_n_mount(path)) return;
+	if (mount_at(path) != 0) return;
 
 	struct ufs_request res;
 	while (!c0_fs_wait(NULL, 0, &res)) {
