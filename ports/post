@@ -3,8 +3,8 @@ set -eu
 ensure_pre_was_loaded
 
 portdir=$repodir/ports/$pkg/
-workdir=$repodir/ports/out/$pkg/
-downdir=$repodir/ports/out/downloads/
+workdir=$repodir/out/ports/$pkg/
+downdir=$repodir/cache/ports/
 
 mkdir -p $workdir $downdir
 cd $workdir

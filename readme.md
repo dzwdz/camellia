@@ -16,3 +16,17 @@ apt-get install grub-pc-bin xorriso mtools # for the .iso
 apt-get install g++ libgmp-dev lbmpfr-dev libmpc-dev # for the toolchain
 apt-get install qemu-system-x86
 ```
+
+## repo organization
+```
+src/
+	bootstrap/	first userland program ran by the kernel; embeds the initrd
+	cmd/	userland programs
+	kernel/
+		arch/amd64/
+		sysroot/
+			dummy sysroot to get gcc to behave
+	libc/
+	libk/	libc functions used by the kernel
+cache/	download cache
+```

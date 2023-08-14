@@ -9,7 +9,7 @@ CFLAGS += -Wall -Wextra -Wold-style-definition -Werror=implicit-function-declara
 CFLAGS += -Wno-address-of-packed-member -Werror=incompatible-pointer-types
 
 KERNEL_CFLAGS  = $(CFLAGS) -ffreestanding -mno-sse -mgeneral-regs-only \
-	--sysroot=$(shell pwd)/sysroot_alt/ -Isrc/ -Isrc/shared/include/ -fno-pie
+	--sysroot=src/kernel/sysroot/ -Isrc/ -Isrc/libk/include/ -fno-pie
 LIBC_CFLAGS    = $(CFLAGS) -ffreestanding -Isrc/
 USER_CFLAGS    = $(CFLAGS)
 
@@ -40,7 +40,7 @@ endef
 
 .PHONY: all portdeps boot check clean ports
 all: portdeps out/boot.iso check
-portdeps: out/libc.a out/libm.a src/user/lib/include/__errno.h
+portdeps: out/libc.a out/libm.a src/libc/include/__errno.h
 
 boot: all out/fs.e2
 	qemu-system-x86_64 \
@@ -72,7 +72,7 @@ out/boot.iso: out/fs/boot/kernel out/fs/boot/grub/grub.cfg out/fs/boot/init
 
 out/fs/boot/kernel: src/kernel/arch/amd64/linker.ld \
                     $(call from_sources, src/kernel/) \
-                    $(call from_sources, src/shared/)
+                    $(call from_sources, src/libk/)
 	@mkdir -p $(@D)
 	@$(CC) \
 		-nostdlib \
@@ -81,8 +81,7 @@ out/fs/boot/kernel: src/kernel/arch/amd64/linker.ld \
 	@grub-file --is-x86-multiboot2 $@ || echo "$@ has an invalid multiboot2 header"
 	@grub-file --is-x86-multiboot2 $@ || rm $@; test -e $@
 
-out/libc.a: $(call from_sources, src/user/lib/) \
-            $(call from_sources, src/shared/)
+out/libc.a: $(call from_sources, src/libc/) $(call from_sources, src/libk/)
 	@mkdir -p $(@D)
 	@$(AR) rcs $@ $^
 
@@ -93,7 +92,7 @@ out/libm.a:
 out/bootstrap: out/bootstrap.elf
 	@objcopy -O binary $^ $@
 
-out/bootstrap.elf: src/user/bootstrap/linker.ld $(call from_sources, src/user/bootstrap/) out/libc.a
+out/bootstrap.elf: src/bootstrap/linker.ld $(call from_sources, src/bootstrap/) out/libc.a
 	@mkdir -p $(@D)
 	@$(CC) -nostdlib -Wl,-no-pie -T $^ -o $@
 
@@ -109,15 +108,15 @@ out/fs.e2:
 	@mkfs.ext2 $@ 1024 > /dev/null
 
 define userbin_template =
-out/initrd/bin/amd64/$(1): $(call from_sources, src/user/app/$(1)) out/libc.a
+out/initrd/bin/amd64/$(1): $(call from_sources, src/cmd/$(1)) out/libc.a
 	@mkdir -p $$(@D)
 	@$(CC) $$^ -o $$@
 endef
-USERBINS := $(shell ls src/user/app)
+USERBINS := $(shell ls src/cmd)
 $(foreach bin,$(USERBINS),$(eval $(call userbin_template,$(bin))))
 
 # don't build the example implementation from libext2
-out/obj/user/app/ext2fs/ext2/example.c.o:
+out/obj/cmd/ext2fs/ext2/example.c.o:
 	@touch $@
 
 # portdeps is phony, so ports/% is automatically "phony" too
@@ -144,7 +143,7 @@ out/obj/%.S.o: src/%.S
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) -c $^ -o $@
 
-out/obj/shared/%.c.o: src/shared/%.c
+out/obj/libk/%.c.o: src/libk/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(KERNEL_CFLAGS) -fPIC -c $^ -o $@
 
@@ -152,22 +151,22 @@ out/obj/kernel/%.c.o: src/kernel/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(KERNEL_CFLAGS) -fPIC -c $^ -o $@
 
-out/obj/user/%.c.o: src/user/%.c
+out/obj/%.c.o: src/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(USER_CFLAGS) -fPIC -c $^ -o $@
 
-out/obj/user/lib/%.c.o: src/user/lib/%.c
+out/obj/libc/%.c.o: src/libc/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(LIBC_CFLAGS) -fPIC -c $^ -o $@
 
-out/obj/user/lib/vendor/%.c.o: src/user/lib/vendor/%.c
+out/obj/libc/vendor/%.c.o: src/libc/vendor/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(LIBC_CFLAGS) -fPIC -c $^ -o $@ \
 		-DLACKS_TIME_H -DLACKS_FCNTL_H -DLACKS_SYS_PARAM_H \
 		-DMAP_ANONYMOUS -DHAVE_MORECORE=0 -DNO_MALLOC_H \
 		-Wno-expansion-to-defined -Wno-old-style-definition
 
-out/obj/user/bootstrap/%.c.o: src/user/bootstrap/%.c
+out/obj/bootstrap/%.c.o: src/bootstrap/%.c
 	@mkdir -p $(@D)
 	@$(CC) $(USER_CFLAGS) -fno-pic -c $^ -o $@
 
@@ -179,8 +178,8 @@ out/obj/kernel/arch/amd64/32/%.s.o: src/kernel/arch/amd64/32/%.s
 	@mkdir -p $(@D)
 	@$(CC) -m32 -c $^ -o $@
 
-src/user/lib/include/__errno.h: src/user/lib/include/__errno.h.awk src/shared/include/camellia/errno.h
+src/libc/include/__errno.h: src/libc/include/__errno.h.awk src/libk/include/camellia/errno.h
 	@awk -f $^ > $@
 
-src/user/lib/syscall.c: src/user/lib/syscall.c.awk src/shared/include/camellia/syscalls.h
+src/libc/syscall.c: src/libc/syscall.c.awk src/libk/include/camellia/syscalls.h
 	@awk -f $^ > $@
