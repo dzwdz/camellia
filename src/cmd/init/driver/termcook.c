@@ -1,5 +1,7 @@
 #include "driver.h"
 #include <camellia/syscalls.h>
+#include <err.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,7 +27,11 @@ static void line_editor(hid_t input, hid_t output) {
 	enum tstate state = Normal;
 	for (;;) {
 		int readlen = _sys_read(input, readbuf, sizeof readbuf, -1);
-		if (readlen < 0) return;
+		if (readlen < 0) {
+			errno = -readlen;
+			err(1, "read");
+			return;
+		}
 		for (int i = 0; i < readlen; i++) {
 			char c = readbuf[i];
 			switch (state) {

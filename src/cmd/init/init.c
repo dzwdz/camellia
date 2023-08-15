@@ -31,11 +31,11 @@ void redirect(const char *exe, const char *out, const char *in) {
 				termcook();
 				execv(exe, (void*)argv);
 				fprintf(stderr, "init: couldn't start %s\n", exe);
-				_sys_sleep(5000);
 				exit(1);
 			}
 			_sys_await();
 			_sys_intr();
+			_sys_sleep(1000);
 		}
 	}
 }

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <camellia/compat.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <errno.h>
 #include <shared/ring.h>
 #include <stdbool.h>
@@ -31,11 +32,8 @@ static const char keymap_upper[] = {
 	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
 };
 
-
 static volatile uint8_t backlog_buf[16];
 static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
-
-static hid_t fd;
 
 static bool keys[0x80] = {0};
 
@@ -54,76 +52,93 @@ static void parse_scancode(uint8_t s) {
 }
 
 
-/** Is a thread waiting for /kdev/ps2/kb? */
-static volatile bool blocked = false;
-/* for use in read_thread */
-static hid_t rt_reqh;
-static size_t rt_cap;
+#define QSIZE 16
+static hid_t queue[QSIZE] = {0};
 
-static void read_thread(void *unused) {
-	char buf[512];
-	(void)unused;
-
-	assert(blocked);
-	while (ring_used((void*)&backlog) == 0) {
-		/* read raw input until we have something to output */
-		int len = _sys_read(fd, buf, sizeof buf, 0);
-		if (len == 0) break;
-		for (int i = 0; i < len; i++)
-			parse_scancode(buf[i]);
+static void enqueue(hid_t h) {
+	for (int i = 0; i < QSIZE; i++) {
+		if (queue[i] == 0) {
+			queue[i] = h;
+			return;
+		}
 	}
-	if (ring_used((void*)&backlog) > 0) {
-		int ret = ring_get((void*)&backlog, buf, rt_cap);
-		_sys_fs_respond(rt_reqh, buf, ret, 0);
-	} else {
-		_sys_fs_respond(rt_reqh, 0, -EGENERIC, 0);
-	}
-	blocked = false;
+	_sys_fs_respond(h, NULL, -EAGAIN, 0);
 }
 
-static void fs_loop(void) {
-	static char buf[512];
+static void fulfill(void) {
 	int ret;
+	char c;
+	bool queued = false;
+	for (int i = 0; i < QSIZE; i++) {
+		if (queue[i] != 0) {
+			queued = true;
+			break;
+		}
+	}
+	if (!queued) return;
+
+	// only reading a single char at a time because that's easier
+	ret = ring_get((void*)&backlog, &c, 1);
+	if (ret == 0) return;
+	for (int i = 0; i < QSIZE; i++) {
+		if (queue[i] != 0) {
+			_sys_fs_respond(queue[i], &c, 1, 0);
+			queue[i] = 0;
+			break;
+		}
+	}
+}
+
+static void kb_thread(void *unused) {
+	static char buf[512];
+	int fd;
+	(void)unused;
+
+	fd = _sys_open("/kdev/ps2/kb", 12, 0);
+	if (fd < 0) err(1, "open");
+
+	while (true) {
+		int ret = _sys_read(fd, buf, sizeof buf, -1);
+		if (ret < 0) break;
+		for (int i = 0; i < ret; i++) {
+			parse_scancode(buf[i]);
+		}
+		fulfill();
+	}
+}
+
+static void fs_thread(void *unused) {
+	static char buf[512];
+	(void)unused;
 	for (;;) {
 		struct ufs_request res;
 		hid_t reqh = _sys_fs_wait(buf, sizeof buf, &res);
 		if (reqh < 0) return;
 
 		switch (res.op) {
-			case VFSOP_OPEN:
-				if (res.len == 0) {
-					_sys_fs_respond(reqh, NULL, 1, 0);
-				} else {
-					_sys_fs_respond(reqh, NULL, -ENOENT, 0);
-				}
-				break;
+		case VFSOP_OPEN:
+			if (res.len == 0) {
+				_sys_fs_respond(reqh, NULL, 1, 0);
+			} else {
+				_sys_fs_respond(reqh, NULL, -ENOENT, 0);
+			}
+			break;
 
-			case VFSOP_READ:
-				if (blocked) {
-					_sys_fs_respond(reqh, NULL, -EAGAIN, 0);
-					break;
-				} else if (ring_used((void*)&backlog) > 0) {
-					ret = ring_get((void*)&backlog, buf, res.capacity);
-					_sys_fs_respond(reqh, buf, ret, 0);
-				} else {
-					blocked = true;
-					rt_reqh = reqh;
-					rt_cap = res.capacity;
-					thread_create(0, read_thread, 0);
-				}
-				break;
+		case VFSOP_READ:
+			enqueue(reqh);
+			fulfill();
+			break;
 
-			default:
-				_sys_fs_respond(reqh, NULL, -1, 0);
-				break;
+		default:
+			_sys_fs_respond(reqh, NULL, -1, 0);
+			break;
 		}
 	}
 }
 
 void ps2_drv(void) {
-	fd = _sys_open("/kdev/ps2/kb", 12, 0);
-	if (fd < 0) exit(1);
-
-	fs_loop();
+	thread_create(0, kb_thread, NULL);
+	thread_create(0, fs_thread, NULL);
+	_sys_await();
 	exit(0);
 }
