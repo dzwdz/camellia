@@ -15,22 +15,6 @@ USER_CFLAGS    = $(CFLAGS)
 
 SPARSEFLAGS = -$(KERNEL_CFLAGS) -Wno-non-pointer-null
 
-QFLAGS  = -no-reboot -m 1g -gdb tcp::12366
-ifdef NET_DIRECT
-QFLAGS += -nic socket,model=rtl8139,connect=:1234,mac=52:54:00:ca:77:1a,id=n1
-else
-QFLAGS += -nic user,model=rtl8139,mac=52:54:00:ca:77:1a,net=192.168.0.0/24,hostfwd=tcp::12380-192.168.0.11:80,id=n1
-endif
-ifdef NET_PCAP
-QFLAGS += -object filter-dump,id=f1,netdev=n1,file=$(NET_PCAP)
-endif
-ifndef NO_KVM
-QFLAGS += -enable-kvm
-endif
-ifndef QEMU_DISPLAY
-QFLAGS += -display none
-endif
-
 PORTS =
 
 define from_sources
@@ -38,27 +22,9 @@ define from_sources
 endef
 
 
-.PHONY: all portdeps boot check clean ports
-all: portdeps out/boot.iso check
+.PHONY: all portdeps check clean ports
+all: portdeps out/boot.iso check out/fs.e2
 portdeps: out/libc.a out/libm.a src/libc/include/__errno.h
-
-boot: all out/fs.e2
-	qemu-system-x86_64 \
-		-drive file=out/boot.iso,format=raw,media=disk \
-		-drive file=out/fs.e2,format=raw,media=disk \
-		$(QFLAGS) -serial stdio
-
-test: all
-	@# pipes for the serial
-	@mkfifo out/qemu.in out/qemu.out 2> /dev/null || true
-	qemu-system-x86_64 -drive file=out/boot.iso,format=raw,media=disk $(QFLAGS) -serial pipe:out/qemu &
-	@# for some reason the first sent character doesn't go through to the shell
-	@# the empty echo takes care of that, so the next echos will work just fine
-	@echo > out/qemu.in
-	echo tests > out/qemu.in
-	echo halt > out/qemu.in
-	@echo
-	@cat out/qemu.out
 
 check: $(shell find src/kernel/ -type f -name *.c)
 	@echo $^ | xargs -n 1 sparse $(SPARSEFLAGS)
