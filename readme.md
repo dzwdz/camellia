@@ -13,7 +13,7 @@ an experimental, work-in-progress, microkernel based on some of my ideas for pri
 # TODO not yet verified on a clean install
 apt-get install gcc git sparse # basics
 apt-get install grub-pc-bin xorriso mtools # for the .iso
-apt-get install g++ libgmp-dev lbmpfr-dev libmpc-dev # for the toolchain
+apt-get install g++ libgmp-dev libmpfr-dev libmpc-dev # for the toolchain
 apt-get install qemu-system-x86
 ```
 
