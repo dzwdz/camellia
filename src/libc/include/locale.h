@@ -1,5 +1,6 @@
 #pragma once
 #include <limits.h>
+#include <stddef.h>
 
 #define LC_ALL 0
 #define LC_COLLATE 1

@@ -10,9 +10,10 @@ fi
 export PREFIX="$(pwd)/toolchain/prefix/"
 export PATH="$(pwd)/toolchain/prefix/bin/:$PATH"
 BUILDDIR="$(pwd)/toolchain/gcc-build/"
-SYSROOT="$(pwd)/sysroot/"
+SYSROOT="$(pwd)/out/sysrootu/"
 mkdir -p $PREFIX
 mkdir -p $BUILDDIR
+make out/sysrootu/usr/include/
 
 cd $BUILDDIR
 
@@ -25,7 +26,7 @@ cd $BUILDDIR
 	--disable-nls \
 	--disable-gcov \
 	--disable-werror
-make -j4 all-gcc
-make -j4 all-target-libgcc
+make all-gcc
+make all-target-libgcc
 make install-gcc
 make install-target-libgcc

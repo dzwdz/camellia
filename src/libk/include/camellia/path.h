@@ -1,7 +1,6 @@
 #pragma once
+#include <limits.h> /* for PATH_MAX */
 #include <stddef.h>
-
-#define PATH_MAX 512
 
 /** Reduce a path to its simplest form.
  * Kinds of invalid paths:

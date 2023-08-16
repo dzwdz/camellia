@@ -16,7 +16,7 @@ def t(out, deps='', cmds=[], phony=False, verbose=False):
 	else:
 		cmds = ["mkdir -p $(@D)"] + cmds
 	raw(f"{out}: {deps}")
-	v = '' if verbose else '@'
+	v = '' if verbose else '$(V)'
 	for cmd in cmds:
 		raw(f"\t{v}{cmd}")
 
@@ -30,20 +30,24 @@ AR = x86_64-camellia-ar
 AS = x86_64-camellia-as
 CC = x86_64-camellia-gcc
 
+V=@
+
 CFLAGS = -g -std=gnu99 -O2 -fPIC -ftrack-macro-expansion=0 \
  -Wall -Wextra -Wold-style-definition -Wno-address-of-packed-member \
  -Werror=incompatible-pointer-types -Werror=implicit-function-declaration
 
 CFLAGS_KERNEL  = $(CFLAGS) \
 	-ffreestanding -mno-sse -mgeneral-regs-only \
-	--sysroot=src/kernel/sysroot/ -Isrc/ -Isrc/libk/include/
+	--sysroot=out/sysrootk/ -Isrc/
 CFLAGS_LIBC    = $(CFLAGS) -ffreestanding -Isrc/
 
-SPARSEFLAGS = $(CFLAGS_KERNEL) -Wno-non-pointer-null
+SPARSEFLAGS = $(CFLAGS_KERNEL) -Wno-non-pointer-null -Iout/sysrootk/usr/include/
+
+LIB = out/sysrootu/lib/libc.a out/sysrootu/lib/libm.a out/sysrootu/lib/crt0.o
 """)
 
 t('all', 'out/boot.iso out/fs.e2 check', phony=True)
-t('portdeps', 'out/libc.a out/libm.a src/libc/include/__errno.h', phony=True)
+t('portdeps', 'out/sysrootu/usr/include/ $(LIB)', phony=True)
 
 # TODO check userland sources too
 t('check', '', [
@@ -73,15 +77,15 @@ t('out/fs/boot/kernel', 'src/kernel/arch/amd64/linker.ld' + srcobj('src/kernel/'
 	'grub-file --is-x86-multiboot2 $@ || rm $@; test -e $@'
 ])
 
-t('out/libc.a', srcobj('src/libc/') + srcobj('src/libk/'), [
+t('out/sysrootu/lib/libc.a', srcobj('src/libc/') + srcobj('src/libk/'), [
 	'$(AR) rcs $@ $^'
 ])
-t('out/libm.a', '', [
+t('out/sysrootu/lib/libm.a', '', [
 	'$(AR) rcs $@ $^'
 ])
 
 t('out/bootstrap', 'out/bootstrap.elf', ['objcopy -O binary $^ $@'])
-t('out/bootstrap.elf', 'src/bootstrap/linker.ld' + srcobj('src/bootstrap/') + 'out/libc.a', [
+t('out/bootstrap.elf', 'src/bootstrap/linker.ld' + srcobj('src/bootstrap/') + 'out/sysrootu/lib/libc.a', [
 	'$(CC) -nostdlib -Wl,-no-pie -T $^ -o $@'
 ])
 
@@ -95,7 +99,7 @@ userbins = glob('*', root_dir='src/cmd/')
 raw("USERBINS = " + " ".join(userbins))
 
 for cmd in userbins:
-	t(f'out/initrd/bin/amd64/{cmd}', 'out/libc.a' + srcobj(f'src/cmd/{cmd}'), [
+	t(f'out/initrd/bin/amd64/{cmd}', '$(LIB) ' + srcobj(f'src/cmd/{cmd}'), [
 		'$(CC) $^ -o $@'
 	])
 
@@ -119,18 +123,48 @@ t('src/libc/syscall.c',
 	'src/libc/syscall.c.awk src/libk/include/camellia/syscalls.h',
 	['awk -f $^ > $@'])
 
-def cc(rule, args):
-	t(f'out/obj/{rule}.o', f'src/{rule}', [f'$(CC) -c $^ -o $@ {args}'])
+def includes(target, modules, deps='', cmds=[]):
+	dirs = " ".join([f"src/{mod}/include/" for mod in modules])
+	t(target, deps, [
+		"set -eu;"
+		f"for file in $$(find {dirs} -type f,l -name '*.h'); do "
+		"    out=$@$${file#src/*/include/};"
+		"    mkdir -p $$(dirname $$out);"
+		"    ln -rfs $$file $$out;"
+		"done"
+	] + cmds, phony=True)
 
-cc("%.c",           "$(CFLAGS)")
-cc("%.s",           "$(CFLAGS)")
-cc("%.S",           "$(CFLAGS)")
-cc("bootstrap/%.c", "$(CFLAGS) -fno-pie")
-cc("kernel/%.c",    "$(CFLAGS_KERNEL)")
-cc("libc/%.c",      "$(CFLAGS_LIBC)")
-cc("libk/%.c",      "$(CFLAGS_KERNEL)")
+includes("out/sysrootk/usr/include/", ["libk"])
+# this must work without a toolchain available, as it's required to build
+# the toolchain
+includes("out/sysrootu/usr/include/", ["libc", "libk"], 'src/libc/include/__errno.h', [
+	'ln -rfs src/libc/include/__errno.h $@',
+])
+t('out/sysrootu/lib/crt0.o', 'out/obj/libc/_start.s.o', ['cp $^ $@'])
 
-cc("kernel/arch/amd64/32/%.c", "$(CFLAGS_KERNEL) -fno-pic -m32")
-cc("kernel/arch/amd64/32/%.s", "$(CFLAGS_KERNEL) -fno-pic -m32")
+def cc(rule, args, deps):
+	# The | marks an order-only dependency. This means that sysroot will be
+	# built every time the rule is ran, but without forcing a rebuild if the
+	# rule is fresh.
+	# https://www.gnu.org/software/make/manual/make.html#index-order_002donly-prerequisites
+	t(f'out/obj/{rule}.o', f'src/{rule} | {deps}', [
+		f'$(CC) {args} -c $< -o $@'
+	])
 
-cc("libc/vendor/dlmalloc/%.c", "$(CFLAGS_LIBC) -DMAP_ANONYMOUS -DHAVE_MORECORE=0 -DNO_MALLOC_H -Wno-expansion-to-defined -Wno-old-style-definition")
+cc("%.c",           "$(CFLAGS)",          "out/sysrootu/usr/include/")
+cc("%.s",           "$(CFLAGS)",          "out/sysrootu/usr/include/")
+cc("%.S",           "$(CFLAGS)",          "out/sysrootu/usr/include/")
+cc("bootstrap/%.c", "$(CFLAGS) -fno-pie", "out/sysrootu/usr/include/")
+cc("libc/%.c",      "$(CFLAGS_LIBC)",     "out/sysrootu/usr/include/")
+
+cc("libc/vendor/dlmalloc/%.c", "$(CFLAGS_LIBC) -DMAP_ANONYMOUS -DHAVE_MORECORE=0 -DNO_MALLOC_H -Wno-expansion-to-defined -Wno-old-style-definition", "out/sysrootu/usr/include/")
+
+cc("kernel/%.c",    "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+cc("kernel/%.s",    "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+cc("kernel/%.S",    "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+cc("libk/%.c",      "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+cc("libk/%.s",      "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+cc("libk/%.S",      "$(CFLAGS_KERNEL)", "out/sysrootk/usr/include/")
+
+cc("kernel/arch/amd64/32/%.c", "$(CFLAGS_KERNEL) -fno-pic -m32", "out/sysrootk/usr/include/")
+cc("kernel/arch/amd64/32/%.s", "$(CFLAGS_KERNEL) -fno-pic -m32", "out/sysrootk/usr/include/")
