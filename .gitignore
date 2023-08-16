@@ -1,4 +1,5 @@
 out
 cache
+Makefile
 toolchain/prefix/
 toolchain/*-build/
