@@ -90,6 +90,7 @@ void _freejmp(void *entry, void *low, size_t imglen, const char **argv, char **e
 	struct execdata ed;
 	size_t argv_len;
 	size_t cwd_len = absolutepath(NULL, NULL, 0);
+	(void)envp;
 
 	if (!argv) argv = default_argv;
 
