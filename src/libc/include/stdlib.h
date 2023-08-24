@@ -16,13 +16,15 @@ const char *getprogname(void);
 void setprogname(const char *progname);
 void setproctitle(const char *fmt, ...);
 
-int mkstemp(char *template);
+char *mktemp(char *tmpl);
+int mkstemp(char *tmpl);
 char *getenv(const char *name);
 int system(const char *cmd);
 
 int abs(int i);
 
 int atoi(const char *s);
+long atol(const char *s);
 double atof(const char *s);
 
 long strtol(const char *restrict s, char **restrict end, int base);
@@ -32,3 +34,5 @@ unsigned long long strtoull(const char *restrict s, char **restrict end, int bas
 double strtod(const char *restrict s, char **restrict end);
 
 void qsort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *a, const void *b));
+void qsort_r(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg);
+void* bsearch(const void* key, const void* base_ptr, size_t nmemb, size_t size, int (*compare)(const void*, const void*));

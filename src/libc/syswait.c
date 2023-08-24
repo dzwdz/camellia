@@ -5,6 +5,10 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
+pid_t wait(int *wstatus) {
+	return wait3(wstatus, 0, NULL);
+}
+
 pid_t wait3(int *wstatus, int opts, struct rusage *rusage) {
 	struct sys_wait2 res;
 	if (opts || rusage) {

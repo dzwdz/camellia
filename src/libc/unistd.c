@@ -51,6 +51,11 @@ int unlink(const char *path) {
 	return 0;
 }
 
+int rmdir(const char *path) {
+	(void)path;
+	__libc_panic("unimplemented");
+}
+
 int symlink(const char *path1, const char *path2) {
 	(void)path1; (void)path2;
 	errno = ENOSYS;
@@ -64,6 +69,11 @@ int isatty(int fd) {
 
 
 int execv(const char *path, char *const argv[]) {
+	return execve(path, argv, NULL);
+}
+
+int execvp(const char *path, char *const argv[]) {
+	// TODO execvp
 	return execve(path, argv, NULL);
 }
 
@@ -160,6 +170,12 @@ uid_t geteuid(void) { return 0; }
 gid_t getgid(void) { return 0; }
 gid_t getegid(void) { return 0; }
 
+int access(const char *path, int mode) {
+	// TODO impl access()
+	(void)path; (void)mode;
+	return 0;
+}
+
 int chown(const char *path, uid_t owner, gid_t group) {
 	(void)path; (void)owner; (void)group;
 	errno = ENOSYS;
@@ -213,9 +229,19 @@ int pipe(int pipefd[2]) {
 	__libc_panic("unimplemented");
 }
 
+int dup(int oldfd) {
+	(void)oldfd;
+	__libc_panic("unimplemented");
+}
+
 int dup2(int oldfd, int newfd) {
 	(void)oldfd; (void)newfd;
 	__libc_panic("unimplemented");
+}
+
+unsigned int sleep(unsigned int seconds) {
+	_sys_sleep(seconds * 1000);
+	return 0;
 }
 
 size_t absolutepath(char *out, const char *in, size_t size) {

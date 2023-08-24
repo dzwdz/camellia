@@ -1,3 +1,4 @@
+#include <bits/panic.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -79,10 +80,15 @@ char *strstr(const char *s1, const char *s2) {
 	return NULL;
 }
 
+char *strcat(char *restrict dst, const char *restrict src) {
+	return strcpy(dst + strlen(dst), src);
+}
+
 char *strcpy(char *restrict s1, const char *restrict s2) {
+	char *ret = s1;
 	while (*s2) *s1++ = *s2++;
 	*s1 = *s2;
-	return s1;
+	return ret;
 }
 
 char *strncpy(char *restrict dst, const char *restrict src, size_t n) {
@@ -91,6 +97,11 @@ char *strncpy(char *restrict dst, const char *restrict src, size_t n) {
 		if (dst[i] == '\0') return dst + i; // TODO fill with null bytes
 	}
 	return dst;
+}
+
+char *strncat(char *restrict dst, const char *restrict src, size_t n) {
+	(void)dst; (void)src; (void)n;
+	__libc_panic("unimplemented");
 }
 
 char *stpncpy(char *restrict dst, const char *restrict src, size_t n) {

@@ -11,10 +11,10 @@
 #define O_CREAT 0
 #define O_EXCL 0
 #define O_NONBLOCK 0
-#define O_RDONLY 0
-#define O_RDWR 0
 #define O_TRUNC 0
-#define O_WRONLY 0
+#define O_RDONLY 1
+#define O_WRONLY 2
+#define O_RDWR 3
 
 #define R_OK 1
 #define W_OK 2

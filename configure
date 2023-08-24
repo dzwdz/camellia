@@ -41,7 +41,7 @@ CFLAGS_KERNEL  = $(CFLAGS) \
 	--sysroot=out/sysrootk/ -Isrc/
 CFLAGS_LIBC    = $(CFLAGS) -ffreestanding -Isrc/
 
-SPARSEFLAGS = $(CFLAGS_KERNEL) -Wno-non-pointer-null -Iout/sysrootk/usr/include/
+SPARSEFLAGS = $(CFLAGS_KERNEL) -Wno-non-pointer-null -Iout/sysrootk/usr/include/ -D__SPARSE
 
 LIB = out/sysrootu/lib/libc.a out/sysrootu/lib/libm.a out/sysrootu/lib/crt0.o
 """)

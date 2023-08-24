@@ -44,6 +44,10 @@ int vprintf(const char *restrict fmt, va_list ap) {
 	return vfprintf(stdout, fmt, ap);
 }
 
+int vsprintf(char *restrict s, const char *restrict fmt, va_list ap) {
+	return vsnprintf(s, ~0, fmt, ap);
+}
+
 int _klogf(const char *fmt, ...) {
 	char buf[256];
 	int ret;

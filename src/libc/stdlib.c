@@ -33,9 +33,13 @@ void setproctitle(const char *fmt, ...) {
 	va_end(argp);
 }
 
-int mkstemp(char *template) {
-	// TODO randomize template
-	hid_t h = camellia_open(template, OPEN_CREATE | OPEN_RW);
+char *mktemp(char *tmpl) {
+	// TODO mktemp mkstemp
+	return tmpl;
+}
+
+int mkstemp(char *tmpl) {
+	hid_t h = camellia_open(tmpl, OPEN_CREATE | OPEN_RW);
 	if (h < 0) {
 		errno = -h;
 		return -1;
@@ -62,6 +66,10 @@ int abs(int i) {
 }
 
 int atoi(const char *s) {
+	return strtol(s, NULL, 10);
+}
+
+long atol(const char *s) {
 	return strtol(s, NULL, 10);
 }
 
@@ -139,10 +147,5 @@ unsigned long long strtoull(const char *restrict s, char **restrict end, int bas
 
 double strtod(const char *restrict s, char **restrict end) {
 	(void)s; (void)end;
-	__libc_panic("unimplemented");
-}
-
-void qsort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *a, const void *b)) {
-	(void)base; (void)nmemb; (void)size; (void)cmp;
 	__libc_panic("unimplemented");
 }

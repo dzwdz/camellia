@@ -17,8 +17,10 @@ int strcoll(const char *s1, const char *s2);
 
 char *strstr(const char *s1, const char *s2);
 
+char *strcat(char *restrict dst, const char *restrict src);
 char *strcpy(char *restrict s1, const char *restrict s2);
 char *strncpy(char *restrict s1, const char *restrict s2, size_t n);
+char *strncat(char *restrict dst, const char *restrict src, size_t n);
 char *stpncpy(char *restrict dst, const char *restrict src, size_t n);
 char *strdup(const char *s);
 

@@ -1,7 +1,12 @@
 #ifdef NDEBUG
-#define assert(stmt) do {} while (0)
+#define assert(stmt) ((void)0)
 #else
-#define assert(stmt) do { if (!(stmt)) __badassert(__func__, __FILE__, __LINE__); } while (0)
+#define assert(stmt) (void)((stmt) || (__badassert(__func__, __FILE__, __LINE__),0))
+#endif
+
+#ifdef __SPARSE
+#undef assert
+#define assert(stmt) (0)
 #endif
 
 _Noreturn void __badassert(const char *func, const char *file, int line);

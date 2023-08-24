@@ -23,4 +23,7 @@ E(205, "EINTR")
 E(206, "EWOULDBLOCK")
 E(207, "EEXIST")
 E(208, "EAGAIN")
+E(209, "EIO")
+E(210, "EDOM domain error")
+E(211, "EFBIG file too large")
 #endif

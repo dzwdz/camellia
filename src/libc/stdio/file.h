@@ -11,4 +11,7 @@ struct _LIBC_FILE {
 
 	char *readbuf;
 	size_t rblen, rbcap;
+
+	bool pushedback;
+	char pushback;
 };

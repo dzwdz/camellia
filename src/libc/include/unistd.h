@@ -16,10 +16,12 @@ _Noreturn void _exit(int);
 ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
 int link(const char *path1, const char *path2);
 int unlink(const char *path);
+int rmdir(const char *path);
 int symlink(const char *path1, const char *path2);
 int isatty(int fd);
 
 int execv(const char *path, char *const argv[]);
+int execvp(const char *path, char *const argv[]);
 int execve(const char *path, char *const argv[], char *const envp[]);
 
 int chdir(const char *path);
@@ -30,6 +32,7 @@ uid_t geteuid(void);
 gid_t getgid(void);
 gid_t getegid(void);
 
+int access(const char *path, int mode);
 int chown(const char *path, uid_t owner, gid_t group);
 
 int setpgid(pid_t pid, pid_t pgid);
@@ -44,7 +47,10 @@ int getgroups(int size, gid_t list[]);
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 int pipe(int pipefd[2]);
+int dup(int oldfd);
 int dup2(int oldfd, int newfd);
+
+unsigned int sleep(unsigned int seconds);
 
 /* Converts a relative path to an absolute one, simplifying it if possible.
  * If in == NULL - return the length of cwd. Doesn't include the trailing slash,

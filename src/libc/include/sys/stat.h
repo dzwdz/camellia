@@ -38,6 +38,8 @@ struct stat {
 #define S_ISGID 02000
 #define S_ISVTX 01000
 
+#define S_IRUSR 0x400
+
 /* inode(7) */
 #define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
 #define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
@@ -54,11 +56,17 @@ int mkdir(const char *path, mode_t mode);
 
 static inline mode_t umask(mode_t mask) {
 	(void)mask;
-	__libc_panic("unimplemented");
+	return 0;
 }
 
 static inline int chmod(const char *path, mode_t mode) {
 	(void)path; (void)mode;
+	errno = ENOSYS;
+	return -1;
+}
+
+static inline int fchmod(int fd, mode_t mode) {
+	(void)fd; (void)mode;
 	errno = ENOSYS;
 	return -1;
 }

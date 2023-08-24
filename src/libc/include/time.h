@@ -29,6 +29,8 @@ time_t mktime(struct tm *timeptr);
 
 double difftime(time_t time1, time_t time0);
 
+char *ctime(const time_t *timep);
+
 size_t strftime(
 	char *restrict s, size_t maxsize,
 	const char *restrict format, const struct tm *restrict timeptr);

@@ -107,6 +107,10 @@ FILE *file_clone(const FILE *f, const char *mode) {
 	return f2;
 }
 
+int fileno(FILE *f) {
+	return f->fd;
+}
+
 // TODO popen / pclose
 FILE *popen(const char *cmd, const char *mode) {
 	(void)cmd; (void)mode;
@@ -170,6 +174,11 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict f) {
 
 	while (pos < total) {
 		long res = 0;
+		if (f->pushedback) {
+			buf[pos++] = f->pushback;
+			f->pushedback = false;
+			continue;
+		}
 		if (f->readbuf) {
 			if (0 == f->rblen && total - pos < (f->rbcap >> 1)) {
 				res = _sys_read(f->fd, f->readbuf, f->rbcap, f->pos);
@@ -270,14 +279,19 @@ int fputc(int c, FILE *f) {
 }
 int putc(int c, FILE *f) { return fputc(c, f); }
 
-// TODO ungetc
 int ungetc(int c, FILE *f) {
-	(void)c; (void)f;
-	__libc_panic("unimplemented");
+	if (f->pushedback) return EOF;
+	f->pushedback = true;
+	f->pushback = c;
+	return c;
 }
 
 int fseek(FILE *f, long offset, int whence) {
 	return fseeko(f, offset, whence);
+}
+
+void rewind(FILE *f) {
+	fseek(f, 0, SEEK_SET);
 }
 
 int fseeko(FILE *f, off_t offset, int whence) {
@@ -306,6 +320,7 @@ int fseeko(FILE *f, off_t offset, int whence) {
 			return -1;
 	}
 	f->rblen = 0;
+	f->pushedback = false;
 
 	if (base >= 0 && base + offset < 0) {
 		/* underflow */

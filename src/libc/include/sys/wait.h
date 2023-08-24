@@ -10,4 +10,5 @@
 #define WNOHANG 0
 #define WUNTRACED 0
 
+pid_t wait(int *wstatus);
 pid_t wait3(int *wstatus, int opts, struct rusage *rusage);

@@ -29,6 +29,7 @@ int fprintf(FILE *restrict f, const char *restrict fmt, ...);
 int sprintf(char *restrict s, const char *restrict fmt, ...);
 
 int vprintf(const char *restrict fmt, va_list ap);
+int vsprintf(char *restrict s, const char *restrict fmt, va_list ap);
 int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap);
 
 int _klogf(const char *fmt, ...); // for kernel debugging only
@@ -40,6 +41,7 @@ FILE *fopen(const char *path, const char *mode);
 FILE *freopen(const char *path, const char *mode, FILE *);
 FILE *fdopen(int fd, const char *mode);
 FILE *file_clone(const FILE *, const char *mode);
+int fileno(FILE *f);
 FILE *popen(const char *cmd, const char *mode);
 int pclose(FILE *f);
 FILE *tmpfile(void);
@@ -60,6 +62,7 @@ int putc(int c, FILE *f);
 int ungetc(int c, FILE *f);
 
 int fseek(FILE *f, long offset, int whence);
+void rewind(FILE *f);
 int fseeko(FILE *f, off_t offset, int whence);
 long ftell(FILE *f);
 off_t ftello(FILE *f);

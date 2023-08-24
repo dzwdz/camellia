@@ -26,3 +26,6 @@
 #define EWOULDBLOCK 206
 #define EEXIST 207
 #define EAGAIN 208
+#define EIO 209
+#define EDOM 210 /* domain error */
+#define EFBIG 211 /* file too large */
