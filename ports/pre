@@ -63,7 +63,9 @@ clean() {
 	_make clean
 }
 
+post_install() { true; }
 install() {
 	build
 	_make install
+	post_install
 }

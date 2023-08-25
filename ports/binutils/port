@@ -1,0 +1,25 @@
+#!/bin/sh
+. ports/pre
+
+pkg=binutils
+tarball_dir=binutils
+
+# TODO more general ports system
+fetch() { true; }
+checksum() { true; }
+unpack() {
+	mkdir -p $tarball_dir
+}
+
+configure() {
+	mkdir -p $tarball_dir/gas/doc # otherwise the build errors out
+
+	test -e $tarball_dir/Makefile && return
+	(cd $tarball_dir && $repodir/toolchain/binutils/configure --with-build-sysroot=$repodir/toolchain/sysroot/ --host=x86_64-camellia --prefix=/usr --disable-gdb --disable-gprof --disable-readline --disable-libbacktrace --disable-libctf --disable-gnulib --disable-gdbserver --disable-sim)
+}
+
+post_install() {
+	ln -f $repodir/out/sysrootu/lib/* $DESTDIR/usr/lib/
+}
+
+. ports/post
