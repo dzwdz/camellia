@@ -60,18 +60,28 @@ static char tar_type(void *meta) {
 	return *(char*)(meta + 156);
 }
 
+#include <stdio.h>
 static void *tar_open(const char *path, int len, void *base, size_t base_len) {
+	void *res;
 	if (len <= 0) return NULL;
-	path += 1; // skip the leading slash
-	len  -= 1;
+	if (*path == '/') {
+		path += 1; // skip the leading slash
+		len -= 1;
+	}
 
 	/* TAR archives don't (seem to) contain an entry for the root dir, so i'm
 	 * returning a fake one. this isn't a full entry because i'm currently too
 	 * lazy to create a full one - thus, it has to be special cased in tar_read */
-	if (len == 0)
+	if (len == 0) {
 		return (void*)root_fakemeta;
+	}
 
-	return tar_find(path, len, base, base_len);
+	res = tar_find(path, len, base, base_len);
+	if (res && tar_type(res) == '1') { /* hard link */
+		_klogf("hard link to %s", res+157);
+		res = tar_find(res + 157, strnlen(res + 157, 100), base, base_len);
+	}
+	return res;
 }
 
 static void tar_dirbuild(struct dirbuild *db, const char *meta, void *base, size_t base_len) {

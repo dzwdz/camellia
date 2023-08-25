@@ -24,4 +24,6 @@ char *strncat(char *restrict dst, const char *restrict src, size_t n);
 char *stpncpy(char *restrict dst, const char *restrict src, size_t n);
 char *strdup(const char *s);
 
+size_t strnlen(const char *s, size_t len);
+
 char *strerror(int errnum);

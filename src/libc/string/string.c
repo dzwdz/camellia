@@ -115,6 +115,15 @@ char *strdup(const char *s) {
 	return buf;
 }
 
+size_t strnlen(const char *s, size_t len) {
+	for (size_t i = 0; i < len; i++) {
+		if (!s[i]) {
+			return i;
+		}
+	}
+	return len;
+}
+
 /* strings.h */
 int strcasecmp(const char *s1, const char *s2) {
 	return strncasecmp(s1, s2, ~0);
