@@ -44,9 +44,3 @@ char *tmpnam(char *s) {
 	strcpy(s, "/tmp/tmpnam");
 	return s;
 }
-
-// TODO sscanf
-int sscanf(const char *restrict s, const char *restrict format, ...) {
-	(void)s; (void)format;
-	return 0;
-}

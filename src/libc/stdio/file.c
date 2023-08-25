@@ -305,10 +305,6 @@ int fseeko(FILE *f, off_t offset, int whence) {
 			break;
 		case SEEK_CUR:
 			base = f->pos;
-			// TODO untested
-			if (f->readbuf) {
-				base -= f->rblen;
-			}
 			break;
 		case SEEK_END:
 			base = _sys_getsize(f->fd);

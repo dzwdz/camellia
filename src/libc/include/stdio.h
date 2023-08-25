@@ -85,3 +85,5 @@ int rename(const char *old, const char *new);
 char *tmpnam(char *s);
 
 int sscanf(const char *restrict s, const char *restrict format, ...);
+int vsscanf(const char* str, const char* format, va_list ap);
+int vcbscanf(void* fp, int (*fgetc)(void*), int (*ungetc)(int, void*), const char* restrict format, va_list ap);
