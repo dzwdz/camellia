@@ -1,4 +1,5 @@
 #pragma once
+
 #include <bits/file.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -27,6 +28,7 @@ int printf(const char *restrict fmt, ...);
 int fprintf(FILE *restrict f, const char *restrict fmt, ...);
 
 int sprintf(char *restrict s, const char *restrict fmt, ...);
+int snprintf(char *restrict str, size_t len, const char *restrict fmt, ...);
 
 int vprintf(const char *restrict fmt, va_list ap);
 int vsprintf(char *restrict s, const char *restrict fmt, va_list ap);
@@ -86,4 +88,6 @@ char *tmpnam(char *s);
 
 int sscanf(const char *restrict s, const char *restrict format, ...);
 int vsscanf(const char* str, const char* format, va_list ap);
+int fscanf(FILE* fp, const char* format, ...);
+int vfscanf(FILE* fp, const char* format, va_list ap);
 int vcbscanf(void* fp, int (*fgetc)(void*), int (*ungetc)(int, void*), const char* restrict format, va_list ap);

@@ -42,19 +42,22 @@ static bool valid_ehdr(const struct Elf64_Ehdr *h) {
 static bool load_phdr(const void *elf, void *exebase, size_t idx) {
 	const struct Elf64_Ehdr *ehdr = elf;
 	const struct Elf64_Phdr *phdr = elf + ehdr->e_phoff + idx * ehdr->e_phentsize;
-
-	if (phdr->p_type == PT_DYNAMIC) return true;
-
-	if (phdr->p_type != PT_LOAD) {
-		printf("unknown type %x\n", phdr->p_type);
+	
+	switch (phdr->p_type) {
+	case PT_DYNAMIC:
+	case 0x6474e551: /* GNU_STACK */
+		return true;
+	case PT_LOAD:
+		// TODO overlap check
+		// TODO don't ignore flags
+		_sys_memflag(exebase + phdr->p_vaddr, phdr->p_memsz, MEMFLAG_PRESENT);
+		// TODO check that filesz <= memsz
+		memcpy(exebase + phdr->p_vaddr, elf + phdr->p_offset, phdr->p_filesz);
+		return true;
+	default:
+		printf("unknown elf phdr %x\n", phdr->p_type);
 		return false;
 	}
-	// TODO overlap check
-	// TODO don't ignore flags
-	_sys_memflag(exebase + phdr->p_vaddr, phdr->p_memsz, MEMFLAG_PRESENT);
-	// TODO check that filesz <= memsz
-	memcpy(exebase + phdr->p_vaddr, elf + phdr->p_offset, phdr->p_filesz);
-	return true;
 }
 
 static size_t elf_spread(const void *elf) {

@@ -22,6 +22,7 @@ int isatty(int fd);
 
 int execv(const char *path, char *const argv[]);
 int execvp(const char *path, char *const argv[]);
+int execvpe(const char *path, char *const argv[], char *const envp[]);
 int execve(const char *path, char *const argv[], char *const envp[]);
 
 int chdir(const char *path);

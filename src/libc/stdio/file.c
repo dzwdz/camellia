@@ -248,7 +248,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 }
 
 int fputs(const char *s, FILE *f) {
-	return fprintf(f, "%s\n", s);
+	return fprintf(f, "%s", s);
 }
 
 char *fgets(char *buf, int size, FILE *f) {

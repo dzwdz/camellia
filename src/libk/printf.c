@@ -96,6 +96,22 @@ static void output_uint16(struct out_state *os, struct mods *m, unsigned long lo
 	}
 }
 
+static void output_octal(struct out_state *os, struct mods *m, unsigned long long n) {
+	char buf[sizeof(unsigned long long) * 3];
+	size_t pos = sizeof(buf);
+
+	if (!n) {
+		buf[--pos] = '0';
+	} else while (n) {
+		unsigned long long q = n / 8, r = n % 8;
+		buf[--pos] = r + '0';
+		n = q;
+	}
+	size_t len = sizeof(buf) - pos;
+	padnum(os, m, len, '\0');
+	output(os, buf + pos, len);
+}
+
 
 int __printf_internal(const char *fmt, va_list argp,
 		void (*back)(void*, const char*, size_t), void *backarg)
@@ -170,6 +186,10 @@ int __printf_internal(const char *fmt, va_list argp,
 				lm = LM_size;
 				c = *fmt++;
 				break;
+			case 'j':
+				lm = LM_longlong;
+				c = *fmt++;
+				break;
 			default:
 				lm = LM_int;
 				break;
@@ -201,19 +221,15 @@ int __printf_internal(const char *fmt, va_list argp,
 				break;
 
 			case 'x':
-				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
-				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
-				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
-				else if (lm == LM_size)     n = va_arg(argp, size_t);
-				output_uint16(&os, &m, n);
-				break;
-
 			case 'u':
+			case 'o':
 				     if (lm == LM_int)      n = va_arg(argp, unsigned int);
 				else if (lm == LM_long)     n = va_arg(argp, unsigned long);
 				else if (lm == LM_longlong) n = va_arg(argp, unsigned long long);
 				else if (lm == LM_size)     n = va_arg(argp, size_t);
-				output_uint(&os, &m, n, '\0');
+				if (c == 'x') output_uint16(&os, &m, n);
+				if (c == 'u') output_uint(&os, &m, n, '\0');
+				if (c == 'o') output_octal(&os, &m, n);
 				break;
 
 			case 'd':

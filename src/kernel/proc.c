@@ -349,10 +349,14 @@ void proc_tryreap(Proc *dead) {
 			if (parent->state != PS_WAITS4CHILDDEATH) {
 				return; /* don't reap yet */
 			}
+			uint32_t pid = proc_ns_id(parent->pns, dead);
+			if (parent->awaited_death.pid && parent->awaited_death.pid != pid) {
+				return; /* we're not The One */
+			}
 			if (parent->awaited_death.legacy) {
 				regs_savereturn(&parent->regs, dead->death_msg);
 			} else {
-				regs_savereturn(&parent->regs, proc_ns_id(parent->pns, dead));
+				regs_savereturn(&parent->regs, pid);
 				if (parent->awaited_death.out) {
 					struct sys_wait2 __user *out = parent->awaited_death.out;
 					struct sys_wait2 data;

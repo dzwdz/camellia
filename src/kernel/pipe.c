@@ -1,3 +1,4 @@
+#include <camellia/errno.h>
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/util.h>
@@ -8,7 +9,7 @@ void pipe_joinqueue(Handle *h, Proc *proc, void __user *pbuf, size_t pbuflen) {
 	assert(h && h->type == HANDLE_PIPE);
 	assert(h->readable ^ h->writeable);
 	if (!h->pipe.sister) {
-		regs_savereturn(&proc->regs, -1);
+		regs_savereturn(&proc->regs, h->readable ? 0 : -EPIPE);
 		return;
 	}
 

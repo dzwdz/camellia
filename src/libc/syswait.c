@@ -10,11 +10,18 @@ pid_t wait(int *wstatus) {
 }
 
 pid_t wait3(int *wstatus, int opts, struct rusage *rusage) {
-	struct sys_wait2 res;
-	if (opts || rusage) {
+	if (rusage) {
 		__libc_panic("unimplemented");
 	}
-	pid_t ret = _sys_wait2(-1, 0, &res);
+	return waitpid(-1, wstatus, opts);
+}
+
+pid_t waitpid(pid_t pid, int *wstatus, int opts) {
+	struct sys_wait2 res;
+	if (opts) {
+		__libc_panic("unimplemented");
+	}
+	pid_t ret = _sys_wait2(pid, 0, &res);
 	if (ret < 0) {
 		errno = -ret;
 		return -1;

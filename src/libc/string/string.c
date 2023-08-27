@@ -124,6 +124,12 @@ size_t strnlen(const char *s, size_t len) {
 	return len;
 }
 
+char *strsignal(int sig) {
+	static char buf[32];
+	snprintf(buf, sizeof(buf), "signal %d", sig);
+	return buf;
+}
+
 /* strings.h */
 int strcasecmp(const char *s1, const char *s2) {
 	return strncasecmp(s1, s2, ~0);

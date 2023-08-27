@@ -77,6 +77,19 @@ int execvp(const char *path, char *const argv[]) {
 	return execve(path, argv, NULL);
 }
 
+int execvpe(const char *path, char *const argv[], char *const envp[]) {
+	if (path[0] != '/') {
+		char *exp = malloc(strlen(path) + 6);
+		int ret;
+		strcpy(exp, "/bin/");
+		strcat(exp, path);
+		ret = execve(exp, argv, envp);
+		free(exp);
+		return ret;
+	}
+	return execve(path, argv, envp);
+}
+
 int execve(const char *path, char *const argv[], char *const envp[]) {
 	FILE *file = fopen(path, "e");
 	char hdr[4] = {0};
@@ -225,8 +238,13 @@ ssize_t write(int fd, const void *buf, size_t count) {
 }
 
 int pipe(int pipefd[2]) {
-	(void)pipefd;
-	__libc_panic("unimplemented");
+	// TODO pipe buffering
+	int ret = _sys_pipe(pipefd, 0);
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	return 0;
 }
 
 int dup(int oldfd) {
@@ -235,8 +253,12 @@ int dup(int oldfd) {
 }
 
 int dup2(int oldfd, int newfd) {
-	(void)oldfd; (void)newfd;
-	__libc_panic("unimplemented");
+	int ret = _sys_dup(oldfd, newfd, 0);
+	if (ret < 0) {
+		errno = -ret;
+		ret = -1;
+	}
+	return ret;
 }
 
 unsigned int sleep(unsigned int seconds) {

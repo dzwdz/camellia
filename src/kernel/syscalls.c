@@ -26,6 +26,7 @@ long _sys_await(void) {
 	bool has_children = false;
 	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
 	proc_cur->awaited_death.legacy = true;
+	proc_cur->awaited_death.pid = 0;
 
 	for (Proc *iter = proc_cur->child;
 			iter; iter = iter->sibling)
@@ -403,7 +404,7 @@ uint32_t _sys_getppid(void) {
 }
 
 int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
-	if (pid != -1 || flags != 0) {
+	if (flags != 0) {
 		SYSCALL_RETURN(-ENOSYS);
 	}
 
@@ -411,13 +412,13 @@ int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
 	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
 	proc_cur->awaited_death.legacy = false;
 	proc_cur->awaited_death.out = out;
+	proc_cur->awaited_death.pid = (0 < pid) ? pid : 0;
 
 	for (Proc *iter = proc_cur->child; iter; iter = iter->sibling) {
 		if (iter->noreap) continue;
 		has_children = true;
 		if (iter->state == PS_TOREAP) {
 			proc_tryreap(iter);
-			return 0; // dummy
 		}
 	}
 

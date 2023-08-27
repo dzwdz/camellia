@@ -27,3 +27,4 @@ char *strdup(const char *s);
 size_t strnlen(const char *s, size_t len);
 
 char *strerror(int errnum);
+char *strsignal(int sig);

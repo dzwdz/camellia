@@ -1,0 +1,13 @@
+#!/bin/sh
+. ports/pre
+
+pkg=qbe
+tarball=qbe-1.1.tar.xz
+tarball_dir=qbe-1.1
+url=https://c9x.me/compile/release/$tarball
+
+relink() {
+	rm $tarball_dir/qbe
+}
+
+. ports/post

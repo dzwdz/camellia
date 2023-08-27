@@ -8,6 +8,10 @@ int isalpha(int c) {
 	return islower(c) || isupper(c);
 }
 
+int isblank(int c) {
+	return c == ' ' || c == '\t';
+}
+
 int iscntrl(int c) {
 	return c <= 0x1f || c == 0x7f;
 }

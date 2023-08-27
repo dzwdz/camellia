@@ -1,0 +1,13 @@
+#!/bin/sh
+. ports/pre
+
+pkg=cproc
+tarball=michaelforney-cproc-0985a78.tar.gz
+tarball_dir=michaelforney-cproc-0985a78
+url=https://github.com/michaelforney/cproc/tarball/0985a7893a4b5de63a67ebab445892d9fffe275b
+
+relink() {
+	rm $tarball_dir/cproc
+}
+
+. ports/post
