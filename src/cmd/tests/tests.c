@@ -1,21 +1,26 @@
 #include "tests.h"
 #include <camellia/syscalls.h>
+#include <sys/wait.h>
 #include <unistd.h>
-
-__attribute__((visibility("hidden")))
-extern char __executable_start[];
 
 FILE *fail_trig;
 
-void run_test(void (*fn)()) {
-	if (!fork()) {
+void run_test_inner(void (*fn)(), const char *s) {
+	int pid = fork();
+	if (pid == 0) {
 		fn();
 		_sys_filicide();
 		exit(0);
+	} else if (pid < 0) {
+		/* working around macro stupidity */
+		test_failf("%s", "in fork");
 	} else {
 		/* successful tests must return 0 */
-		if (_sys_await() != 0) {
-			test_failf("%p, base %p", (void*)((void*)fn - (void*)__executable_start), __executable_start);
+		int status;
+		if (waitpid(pid, &status, 0) != pid) {
+			test_failf("%s", "waitpid returned something weird");
+		} else if (WEXITSTATUS(status) != 0) {
+			test_failf("%s exited with %d", s, WEXITSTATUS(status));
 		}
 	}
 }

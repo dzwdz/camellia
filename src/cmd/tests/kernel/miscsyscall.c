@@ -93,29 +93,13 @@ static void test_pipe(void) {
 
 	/* writing to pipes with one end closed */
 	test(_sys_pipe(ends, 0) >= 0);
-	for (int i = 0; i < 16; i++) {
-		if (!fork()) {
-			close(ends[1]);
-			test(_sys_read(ends[0], buf, 16, 0) < 0);
-			exit(0);
-		}
-	}
 	close(ends[1]);
-	for (int i = 0; i < 16; i++)
-		_sys_await();
+	test(_sys_read(ends[0], buf, 16, 0) == 0);
 	close(ends[0]);
 
 	test(_sys_pipe(ends, 0) >= 0);
-	for (int i = 0; i < 16; i++) {
-		if (!fork()) {
-			close(ends[0]);
-			test(_sys_write(ends[1], buf, 16, 0, 0) < 0);
-			exit(0);
-		}
-	}
 	close(ends[0]);
-	for (int i = 0; i < 16; i++)
-		_sys_await();
+	test(_sys_write(ends[1], buf, 16, 0, 0) == -EPIPE);
 	close(ends[1]);
 
 
@@ -132,7 +116,7 @@ static void test_pipe(void) {
 		test(_sys_read(ends[0], buf, sizeof buf, 0) == 5);
 		_sys_await();
 	}
-	test(_sys_read(ends[0], buf, sizeof buf, 0) < 0);
+	test(_sys_read(ends[0], buf, sizeof buf, 0) == 0);
 	close(ends[0]);
 
 	test(_sys_pipe(ends, 0) >= 0);
@@ -149,12 +133,8 @@ static void test_pipe(void) {
 		test(_sys_write(ends[1], pipe_msgs[1], 5, -1, 0) == 5);
 		_sys_await();
 	}
-	test(_sys_write(ends[1], pipe_msgs[1], 5, -1, 0) < 0);
+	test(_sys_write(ends[1], pipe_msgs[1], 5, -1, 0) == -EPIPE);
 	close(ends[1]);
-
-
-	// not a to.do detect when all processes that can read are stuck on writing to the pipe and vice versa
-	// it seems like linux just lets the process hang endlessly.
 }
 
 static void test_memflag(void) {
@@ -225,7 +205,7 @@ static void test_dup(void) {
 		char buf[16];
 		size_t count = 0;
 		close(pipe[1]);
-		while (_sys_read(pipe[0], buf, sizeof buf, 0) >= 0)
+		while (_sys_read(pipe[0], buf, sizeof buf, 0) > 0)
 			count++;
 		test(count == 7);
 		_sys_await();
@@ -288,7 +268,7 @@ static void test_sleep(void) {
 		for (;;) {
 			char buf[128];
 			long ret = _sys_read(reader, buf, sizeof buf, 0);
-			if (ret < 0) break;
+			if (ret == 0) break;
 			test(pos + ret <= target);
 			test(memcmp(buf, expected + pos, ret) == 0);
 			pos += ret;

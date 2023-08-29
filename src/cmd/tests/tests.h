@@ -5,7 +5,7 @@
 
 #define TMPFILEPATH "/tmp/.test_internal"
 
-void run_test(void (*fn)());
+void run_test_inner(void (*fn)(), const char *s);
 
 void r_k_fdlimit(void);
 void r_k_fs(void);
@@ -35,3 +35,5 @@ int forkpipe(FILE **f, hid_t *h);
 	exit(0); \
 } while (0)
 #define test(cond) if (!(cond)) test_fail();
+
+#define run_test(fn) run_test_inner(fn, #fn)
