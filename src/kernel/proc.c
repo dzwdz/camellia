@@ -353,17 +353,13 @@ void proc_tryreap(Proc *dead) {
 			if (parent->awaited_death.pid && parent->awaited_death.pid != pid) {
 				return; /* we're not The One */
 			}
-			if (parent->awaited_death.legacy) {
-				regs_savereturn(&parent->regs, dead->death_msg);
-			} else {
-				regs_savereturn(&parent->regs, pid);
-				if (parent->awaited_death.out) {
-					struct sys_wait2 __user *out = parent->awaited_death.out;
-					struct sys_wait2 data;
-					memset(&data, 0, sizeof data);
-					data.status = dead->death_msg;
-					pcpy_to(parent, out, &data, sizeof data);
-				}
+			regs_savereturn(&parent->regs, pid);
+			if (parent->awaited_death.out) {
+				struct sys_wait2 __user *out = parent->awaited_death.out;
+				struct sys_wait2 data;
+				memset(&data, 0, sizeof data);
+				data.status = dead->death_msg;
+				pcpy_to(parent, out, &data, sizeof data);
 			}
 			proc_setstate(parent, PS_RUNNING);
 		}

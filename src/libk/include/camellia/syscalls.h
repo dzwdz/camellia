@@ -1,7 +1,6 @@
 #pragma once
 
 #define _SYS_EXIT 0
-#define _SYS_AWAIT 1
 #define _SYS_FORK 2
 #define _SYS_OPEN 3
 #define _SYS_MOUNT 4
@@ -35,11 +34,6 @@ long _syscall(long, long, long, long, long, long);
 /** Kills the current process.
  */
 _Noreturn void _sys_exit(long ret);
-
-/** Waits for a child to exit.
- * @return the value the child passed to exit()
- */
-long _sys_await(void);
 
 /** Creates a copy of the current process, and executes it.
  * All user memory pages get copied too.
@@ -85,7 +79,6 @@ void _sys_intr_set(void __user *ip);
 uint32_t _sys_getpid(void);
 uint32_t _sys_getppid(void);
 
-// TODO deprecate await
 int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out);
 
 /* see shared/execbuf.h */

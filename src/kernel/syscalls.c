@@ -22,30 +22,6 @@ _Noreturn void _sys_exit(long ret) {
 	proc_switch_any();
 }
 
-long _sys_await(void) {
-	bool has_children = false;
-	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
-	proc_cur->awaited_death.legacy = true;
-	proc_cur->awaited_death.pid = 0;
-
-	for (Proc *iter = proc_cur->child;
-			iter; iter = iter->sibling)
-	{
-		if (iter->noreap) continue;
-		has_children = true;
-		if (iter->state == PS_TOREAP) {
-			proc_tryreap(iter);
-			return 0; // dummy
-		}
-	}
-
-	if (!has_children) {
-		proc_setstate(proc_cur, PS_RUNNING);
-		SYSCALL_RETURN(~0); // TODO errno
-	}
-	return 0; // dummy
-}
-
 long _sys_fork(int flags, hid_t __user *fs_front) {
 	Proc *child;
 
@@ -410,7 +386,6 @@ int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
 
 	bool has_children = false;
 	proc_setstate(proc_cur, PS_WAITS4CHILDDEATH);
-	proc_cur->awaited_death.legacy = false;
 	proc_cur->awaited_death.out = out;
 	proc_cur->awaited_death.pid = (0 < pid) ? pid : 0;
 
@@ -463,7 +438,6 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 	 *       see execbuf */
 	switch (num) {
 		break; case _SYS_EXIT:	_sys_exit(a);
-		break; case _SYS_AWAIT:	_sys_await();
 		break; case _SYS_FORK:	_sys_fork(a, (userptr_t)b);
 		break; case _SYS_OPEN:	_sys_open((userptr_t)a, b, c);
 		break; case _SYS_MOUNT:	_sys_mount(a, (userptr_t)b, c);

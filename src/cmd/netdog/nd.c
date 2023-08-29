@@ -1,4 +1,5 @@
 #include <camellia.h>
+#include <camellia/compat.h>
 #include <camellia/syscalls.h>
 #include <stdio.h>
 #include <string.h>

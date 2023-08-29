@@ -1,4 +1,5 @@
 #include "../tests.h"
+#include <camellia/compat.h>
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
 #include <string.h>

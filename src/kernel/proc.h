@@ -45,7 +45,6 @@ struct Proc {
 	union { /* saved value, meaning depends on .state */
 		int death_msg; // PS_DEAD
 		struct {
-			bool legacy; /* false = wait2, true = await */
 			uint32_t pid; /* valid if nonzero */
 			struct sys_wait2 __user *out;
 		} awaited_death;

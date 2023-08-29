@@ -1,4 +1,5 @@
 #include "driver.h"
+#include <camellia/compat.h>
 #include <camellia/syscalls.h>
 #include <err.h>
 #include <errno.h>

@@ -1,4 +1,5 @@
 #include "../tests.h"
+#include <camellia/compat.h>
 #include <camellia/errno.h>
 #include <camellia/execbuf.h>
 #include <camellia/flags.h>

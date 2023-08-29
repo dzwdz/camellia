@@ -1,6 +1,7 @@
 #include "proto.h"
 #include "util.h"
 #include <camellia.h>
+#include <camellia/compat.h>
 #include <camellia/syscalls.h>
 #include <stdbool.h>
 #include <stddef.h>

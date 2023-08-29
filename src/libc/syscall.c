@@ -10,10 +10,6 @@ _Noreturn void _sys_exit(long ret) {
 	__builtin_unreachable();
 }
 
-long _sys_await(void) {
-	return _syscall(_SYS_AWAIT, 0, 0, 0, 0, 0);
-}
-
 long _sys_fork(int flags, hid_t __user *fs_front) {
 	return _syscall(_SYS_FORK, (long)flags, (long)fs_front, 0, 0, 0);
 }
