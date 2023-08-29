@@ -5,6 +5,7 @@
 #include "proto.h"
 #include "util.h"
 #include <assert.h>
+#include <err.h>
 #include <shared/ring.h>
 
 enum {
@@ -123,7 +124,7 @@ struct tcp_conn *tcpc_new(
 		// TODO wait for ARP reply
 		arp_request(c->rip);
 		if (arpcache_get(state.gateway, &c->rmac) < 0) {
-			eprintf("neither target nor gateway not in ARP cache, dropping");
+			warnx("neither target nor gateway not in ARP cache, dropping");
 			free(c);
 			return NULL;
 		}
@@ -222,7 +223,7 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 				}
 			}
 			if (iter->lack != seq && iter->lack - 1 != seq) {
-				eprintf("remote seq jumped by %d", seq - iter->lack);
+				warnx("remote seq jumped by %d", seq - iter->lack);
 				tcpc_sendraw(iter, FlagACK, NULL, 0);
 				return;
 			}

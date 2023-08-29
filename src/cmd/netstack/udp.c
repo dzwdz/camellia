@@ -1,5 +1,6 @@
 #include "proto.h"
 #include "util.h"
+#include <err.h>
 
 enum {
 	SrcPort  = 0,
@@ -55,7 +56,7 @@ struct udp_conn *udpc_new(
 	c->rport = u.dst;
 	if (arpcache_get(c->rip, &c->rmac) < 0) {
 		// TODO make arp request, wait for reply
-		eprintf("not in ARP cache, unimplemented");
+		warnx("IP not in ARP cache, unimplemented");
 		free(c);
 		return NULL;
 	}

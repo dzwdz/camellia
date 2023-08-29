@@ -1,5 +1,6 @@
 #include <camellia.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <shared/ring.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -8,8 +9,6 @@
 #include <draw.h>
 
 #define MOUSE_SIZE 10
-
-#define eprintf(fmt, ...) fprintf(stderr, "drawmouse: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 struct framebuf fb, lastbehind;
 struct rect dirty;
@@ -52,12 +51,12 @@ int main(void) {
 	char buf[64];
 	hid_t fd = camellia_open("/kdev/ps2/mouse", OPEN_READ);
 	if (fd < 0) {
-		eprintf("couldn't open mouse");
+		err(1, "open");
 		return 1;
 	}
 
 	if (fb_setup(&fb, "/kdev/video/") < 0) {
-		eprintf("fb_setup error");
+		err(1, "fb_setup");
 		return 1;
 	}
 	fb_anon(&lastbehind, MOUSE_SIZE, MOUSE_SIZE);

@@ -3,6 +3,7 @@
 #include <camellia.h>
 #include <camellia/compat.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -29,20 +30,20 @@ void fs_thread(void *arg);
 
 int main(int argc, char **argv) {
 	if (argc < 4) {
-		eprintf("usage: netstack iface ip gateway");
+		fprintf(stderr, "usage: netstack iface ip gateway\n");
 		return 1;
 	}
 	state.raw_h = camellia_open(argv[1], OPEN_RW);
 	if (state.raw_h < 0) {
-		eprintf("couldn't open %s", argv[1]);
+		err(1, "open %s", argv[1]);
 		return 1;
 	}
 	if (ip_parse(argv[2], &state.ip) < 0) {
-		eprintf("invalid ip");
+		errx(1, "invalid ip: %s", argv[2]);
 		return -1;
 	}
 	if (ip_parse(argv[3], &state.gateway) < 0) {
-		eprintf("invalid gateway");
+		errx(1, "invalid gateway: %s", argv[2]);
 		return -1;
 	}
 	setproctitle(argv[2]);

@@ -1,11 +1,10 @@
 #include <camellia.h>
 #include <camellia/compat.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdio.h>
 #include <string.h>
 #include <thread.h>
-
-#define eprintf(fmt, ...) fprintf(stderr, "netdog: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
 
 hid_t conn;
 
@@ -32,13 +31,13 @@ void recv_stdout(void *arg) { (void)arg;
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
-		eprintf("no argument");
+		fprintf(stderr, "usage: netdog /net/connect/source/target/proto/port\n");
 		return 1;
 	}
 
 	conn = camellia_open(argv[1], OPEN_RW);
 	if (conn < 0) {
-		eprintf("couldn't open '%s', err %u", argv[1], -conn);
+		err(1, "open %s", argv[1]);
 		return -conn;
 	}
 

@@ -73,7 +73,7 @@ static void fragmented_tryinsert(const uint8_t *payload, size_t plen, struct ipv
 	struct fragmented *inc = fragmented_find(ip);
 	size_t off = (ip.fraginfo & FragOff) * 8;
 	bool last = !(ip.fraginfo & MoreFrags);
-	// eprintf("fragmented packet, %u + %u, part of 0x%x", off, plen, inc);
+	// warnx("fragmented packet, %u + %u, part of 0x%x", off, plen, inc);
 
 	/* find the first fragment at a bigger offset, and insert before it */
 	struct fragment **insert = &inc->first;

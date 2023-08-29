@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <draw.h>
 
-#define eprintf(fmt, ...) fprintf(stderr, "vterm: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
-
-
 struct psf1 {
     uint16_t magic;
 	uint8_t mode;

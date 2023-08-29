@@ -1,4 +1,5 @@
 #include <camellia/syscalls.h>
+#include <err.h>
 #include "proto.h"
 #include "util.h"
 
@@ -40,7 +41,7 @@ static const size_t fhoff = sizeof(size_t);
 uint8_t *ether_start(size_t len, struct ethernet ether) {
 	if (len < 60 - Payload) len = 60 - Payload;
 
-	if (!ether.dst) eprintf("NULL ether.dst!"); // TODO arp? i guess?
+	if (!ether.dst) warnx("null ether.dst");
 	if (!ether.src) ether.src = &state.mac;
 
 	uint8_t *buf = malloc(fhoff + Payload + len);

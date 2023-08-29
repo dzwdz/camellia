@@ -14,6 +14,7 @@
 #include "util.h"
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -157,7 +158,7 @@ static void fs_open(hid_t reqh, char *path, int flags) {
 	if (ip_parse(strtok_r(NULL, "/", &save), &srcip) < 0)
 		respond(NULL, -1);
 	if (srcip != 0) {
-		eprintf("unimplemented");
+		warnx("unimplemented");
 		respond(NULL, -1);
 	}
 

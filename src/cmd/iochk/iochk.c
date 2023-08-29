@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <camellia.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,8 +11,6 @@
 static bool verbose = false;
 
 #define verbosef(...) do { if (verbose) printf(__VA_ARGS__); } while (0)
-#define eprintf(fmt, ...) fprintf(stderr, "iochk: "fmt"\n" __VA_OPT__(,) __VA_ARGS__)
-
 
 void check(hid_t h) {
 	const size_t buflen = 4096;
@@ -23,14 +22,14 @@ void check(hid_t h) {
 	char *buflast = malloc(buflen);
 	char *bufcur = malloc(buflen);
 	if (!buflast || !bufcur) {
-		eprintf("out of memory");
+		err(1, "malloc");
 		goto end;
 	}
 
 	long offlast = 0;
 	long retlast = _sys_read(h, buflast, buflen, offlast);
 	if (retlast < 0) {
-		eprintf("error %ld when reading at offset %ld", retlast, offlast);
+		fprintf(stderr, "error %ld when reading at offset %ld", retlast, offlast);
 		goto end;
 	}
 
@@ -43,14 +42,14 @@ void check(hid_t h) {
 
 		long retcur = _sys_read(h, bufcur, buflen, offcur);
 		if (retcur < 0) {
-			eprintf("error %ld when reading at offset %ld", retlast, offcur);
+			fprintf(stderr, "error %ld when reading at offset %ld", retlast, offcur);
 			break;
 		}
 		if (retcur < retlast + offlast - offcur) {
 			verbosef("warn: unexpected ret %ld < %ld + %ld - %ld\n", retcur, retlast, offlast, offcur);
 		}
 		if (memcmp(buflast + diff, bufcur, retlast - diff)) {
-			eprintf("inconsistent read from offsets %ld and %ld", offlast, offcur);
+			fprintf(stderr, "inconsistent read from offsets %ld and %ld", offlast, offcur);
 		}
 
 		offlast = offcur;
@@ -79,7 +78,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	if (optind >= argc) {
-		eprintf("no files given");
+		fprintf(stderr, "usage: iochk [-v] file [files...]\n");
 		return 1;
 	}
 	for (; optind < argc; optind++) {
@@ -87,7 +86,7 @@ int main(int argc, char **argv) {
 		verbosef("checking %s...\n", path);
 		hid_t h = camellia_open(path, OPEN_READ);
 		if (h < 0) {
-			eprintf("couldn't open %s", path);
+			err(1, "open %s", path);
 			continue;
 		}
 		check(h);

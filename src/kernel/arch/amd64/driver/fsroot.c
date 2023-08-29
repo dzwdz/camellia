@@ -16,7 +16,7 @@ static long handle(VfsReq *req) {
 		"com1\0"
 		"ps2/\0"
 		"ata/\0"
-		"eth/\0"
+		"eth\0"
 		"video/";
 	const char *id;
 	int len;

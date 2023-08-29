@@ -1,5 +1,6 @@
 #include "vterm.h"
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +38,7 @@ void in_char(char c) {
 
 int main(void) {
 	if (fb_setup(&fb, "/kdev/video/") < 0) {
-		eprintf("fb_setup error");
+		err(1, "fb_setup");
 		return 1;
 	}
 	font_load("/init/usr/share/fonts/spleen/spleen-8x16.psfu");
