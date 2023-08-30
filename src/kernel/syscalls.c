@@ -8,6 +8,7 @@
 #include <kernel/panic.h>
 #include <kernel/pipe.h>
 #include <kernel/proc.h>
+#include <kernel/vfs/procfs.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
@@ -120,7 +121,6 @@ long _sys_mount(hid_t hid, const char __user *path, long len) {
 	// remove trailing slash
 	// mounting something under `/this` and `/this/` should be equalivent
 	if (path_buf[len - 1] == '/') {
-		if (len == 0) goto fail;
 		len--;
 	}
 
@@ -404,6 +404,21 @@ int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
 	return 0; // dummy
 }
 
+hid_t _sys_getprocfs(int flags) {
+	if (flags != 0) {
+		SYSCALL_RETURN(-ENOSYS);
+	}
+	proc_ns_create(proc_cur);
+
+	Handle *h;
+	hid_t hid = proc_handle_init(proc_cur, HANDLE_FS_FRONT, &h);
+	if (hid < 0) {
+		SYSCALL_RETURN(-EMFILE);
+	}
+	h->backend = procfs_backend(proc_cur);
+	SYSCALL_RETURN(hid);
+}
+
 long _sys_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
@@ -458,6 +473,7 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_GETPID:	_sys_getpid();
 		break; case _SYS_GETPPID:	_sys_getppid();
 		break; case _SYS_WAIT2:	_sys_wait2(a, b, (userptr_t)c);
+		break; case _SYS_GETPROCFS:	_sys_getprocfs(a);
 		break; case _SYS_EXECBUF:	_sys_execbuf((userptr_t)a, b);
 		break; case _SYS_DEBUG_KLOG:	_sys_debug_klog((userptr_t)a, b);
 		break;

@@ -69,9 +69,6 @@ struct Proc {
 	VfsMount *mount;
 	Handle **_handles; /* points to Handle *[HANDLE_MAX] */
 	uint64_t *handles_refcount; /* works just like pages_refcount */
-	struct {
-		Handle *procfs;
-	} specialh;
 
 	// TODO pids should be 64bit. also typedef pid_t
 	uint32_t globalid; /* only for internal use, don't expose to userland */

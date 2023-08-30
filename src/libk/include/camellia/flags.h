@@ -32,4 +32,3 @@
 
 /* special handles */
 #define HANDLE_NULLFS -2
-#define HANDLE_PROCFS -3

@@ -6,7 +6,6 @@
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/vfs/mount.h>
-#include <kernel/vfs/procfs.h>
 #include <shared/mem.h>
 #include <stdint.h>
 
@@ -384,7 +383,6 @@ void proc_tryreap(Proc *dead) {
 		return; /* keep the tombstone */
 	}
 
-	handle_close(dead->specialh.procfs);
 	assert(dead->refcount == 0);
 	if (parent) { /* not applicable to init */
 		proc_forget(dead);
@@ -513,18 +511,6 @@ Handle *proc_handle_get(Proc *p, hid_t id) {
 			.refcount = 2, /* never free */
 		};
 		return &h;
-	} else if (id == HANDLE_PROCFS) {
-		if (!p->specialh.procfs) {
-			Handle *h = kmalloc(sizeof *h);
-			proc_ns_create(p);
-			*h = (Handle){
-				.type = HANDLE_FS_FRONT,
-				.backend = procfs_backend(p),
-				.refcount = 1,
-			};
-			p->specialh.procfs = h;
-		}
-		return p->specialh.procfs;
 	} else if (0 <= id && id < HANDLE_MAX) {
 		return p->_handles[id];
 	} else {

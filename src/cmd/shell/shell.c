@@ -1,5 +1,6 @@
 #include "builtins.h"
 #include "shell.h"
+#include <camellia.h>
 #include <camellia/compat.h>
 #include <camellia/flags.h>
 #include <camellia/syscalls.h>
@@ -61,7 +62,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			fprintf(stderr, "procmnt: missing mountpoint\n");
 			return;
 		}
-		_sys_mount(HANDLE_PROCFS, argv[1], strlen(argv[1]));
+		camellia_procfs(argv[1]);
 		/*
 		if (!(3 <= argc && !strcmp(argv[2], "raw"))) {
 			if (!mount_at("/")) {

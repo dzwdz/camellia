@@ -1,10 +1,11 @@
 #include <_proc.h>
+#include <camellia.h>
 #include <camellia/flags.h>
+#include <camellia/fs/misc.h>
 #include <camellia/syscalls.h>
+#include <elfload.h>
 #include <stdio.h>
 #include <string.h>
-#include <elfload.h>
-#include <camellia/fs/misc.h>
 
 #include "tar.h"
 
@@ -17,7 +18,7 @@ int main(void) {
 	_sys_memflag(_psdata_loc, 1, MEMFLAG_PRESENT);
 	setprogname("bootstrap");
 
-	_sys_mount(HANDLE_PROCFS, "/proc/", strlen("/proc/"));
+	camellia_procfs("/proc/");
 	MOUNT_AT("/") {
 		fs_dirinject2((const char*[]) {
 			"/proc/",

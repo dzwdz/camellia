@@ -90,6 +90,10 @@ int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out) {
 	return (int)_syscall(_SYS_WAIT2, (long)pid, (long)flags, (long)out, 0, 0);
 }
 
+hid_t _sys_getprocfs(int flags) {
+	return (hid_t)_syscall(_SYS_GETPROCFS, (long)flags, 0, 0, 0, 0);
+}
+
 long _sys_execbuf(void __user *buf, size_t len) {
 	return _syscall(_SYS_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }

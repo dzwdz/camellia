@@ -5,14 +5,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-int
-main(void)
+void
+usage(void)
 {
+	fprintf(stderr, "usage: ps [path]\n");
+	exit(1);
+}
+
+int
+main(int argc, const char *argv[])
+{
+	const char *path = argc >= 2 ? argv[1] : "/proc/";
+	if (argc > 2) usage();
+
 	char *readbuf = malloc(4096);
 	char *procbuf = malloc(4096);
-	FILE *f = fopen("/proc/", "r");
+	FILE *f = fopen(path, "r");
 	if (!f) {
-		err(1, "couldn't open /proc/");
+		err(1, "couldn't open %s", path);
 	}
 
 	// TODO library for iterating over directories
@@ -27,7 +37,7 @@ main(void)
 			size_t entryl = end - (readbuf+pos) + 1;
 			if (isdigit(readbuf[pos])) {
 				FILE *g;
-				sprintf(procbuf, "/proc/%smem", readbuf+pos);
+				sprintf(procbuf, "%s%smem", path, readbuf+pos);
 				g = fopen(procbuf, "r");
 				if (!g) {
 					warn("couldn't open \"%s\"", procbuf);

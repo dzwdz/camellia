@@ -3,3 +3,5 @@
 #include <camellia/types.h>
 
 hid_t camellia_open(const char *path, int flags);
+
+int camellia_procfs(const char *path);

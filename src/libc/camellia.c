@@ -28,3 +28,14 @@ hid_t camellia_open(const char *path, int flags) {
 
 	return ret;
 }
+
+int camellia_procfs(const char *path) {
+	hid_t hid = _sys_getprocfs(0);
+	if (hid < 0) {
+		errno = -hid;
+		return -1;
+	}
+	_sys_mount(hid, path, strlen(path));
+	close(hid);
+	return 0;
+}
