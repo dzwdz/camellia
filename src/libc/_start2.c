@@ -36,7 +36,7 @@ _Noreturn void _start2(struct execdata *ed) {
 
 	_sys_intr_set(intr_trampoline);
 	intr_set(intr_default);
-	__setinitialcwd(ed->cwd);
+	__initialcwd = ed->cwd;
 
 	exit(main(ed->argc, ed->argv, ed->envp));
 }

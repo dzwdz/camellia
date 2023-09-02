@@ -1,5 +1,6 @@
 #pragma once
 #include <camellia/types.h> // TODO only needed because of hid_t
+#include <camellia/intr.h> // TODO only included for backwards compat
 #include <sys/types.h>
 #include <getopt.h>
 
@@ -64,8 +65,5 @@ unsigned int sleep(unsigned int seconds);
  * @return 0 on failure, length of the path otherwise */
 size_t absolutepath(char *out, const char *in, size_t size);
 
-// TODO put in an internal libc header
-void __setinitialcwd(const char *c);
-
-void intr_set(void (*fn)(void));
-void intr_default(void);
+/* used internally */
+extern const char *__initialcwd;
