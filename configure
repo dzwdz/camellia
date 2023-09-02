@@ -32,7 +32,7 @@ CC = x86_64-camellia-gcc
 
 V=@
 
-CFLAGS = -g -std=gnu99 -O2 -fPIC -ftrack-macro-expansion=0 \
+CFLAGS = -g -std=gnu99 -Os -fPIC -ftrack-macro-expansion=0 \
  -Wall -Wextra -Wold-style-definition -Wno-address-of-packed-member \
  -Werror=incompatible-pointer-types -Werror=implicit-function-declaration
 

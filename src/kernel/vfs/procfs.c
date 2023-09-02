@@ -90,7 +90,7 @@ procfs_accept(VfsReq *req)
 {
 	Proc *root = req->backend->kern.data;
 	struct phandle *h = (__force void*)req->id;
-	Proc *p;
+	Proc *p = NULL;
 	char buf[512];
 	assert(root);
 	assert(root->pns == root);
