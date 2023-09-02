@@ -4,22 +4,20 @@
 #include <stdlib.h>
 
 DIR *opendir(const char *name) {
-	FILE *fp = NULL;
-	DIR *dir = NULL;
-	fp = fopen(name, "r");
-	if (!fp) {
-		goto err;
-	}
+	return opendir_f(fopen(name, "r"));
+}
+
+DIR *opendir_f(FILE *fp) {
+	if (!fp) return NULL;
+
+	DIR *dir;
 	dir = calloc(1, sizeof *dir);
 	if (!dir) {
-		goto err;
+		fclose(fp);
+		return NULL;
 	}
 	dir->fp = fp;
 	return dir;
-err:
-	if (fp) fclose(fp);
-	free(dir);
-	return NULL;
 }
 
 int closedir(DIR *dir) {
