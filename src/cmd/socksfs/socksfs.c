@@ -70,7 +70,6 @@ fs_open(char *path, int flags) {
 	 * 0x01    one authentication method:
 	 *   0x00  no auth */
 	char buf[512];
-	sleep(1); // TODO fix the netstack
 	write(h->sock, "\x05\x01\x00", 3);
 
 	errno = EGENERIC;

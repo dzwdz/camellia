@@ -48,7 +48,7 @@ struct handle {
 };
 
 
-static void tcp_listen_callback(struct tcp_conn *c, void *arg) {
+static void tcp_conn_callback(struct tcp_conn *c, void *arg) {
 	struct handle *h = arg;
 	h->tcp.c = c;
 	_sys_fs_respond(h->reqh, h, 0, 0);
@@ -181,11 +181,10 @@ static void fs_open(hid_t reqh, char *path, int flags) {
 			port_s = strtok_r(NULL, "/", &save);
 			if (port_s) {
 				uint16_t port = strtol(port_s, NULL, 0);
-				h = malloc(sizeof *h);
-				memset(h, 0, sizeof *h);
+				h = calloc(1, sizeof *h);
 				h->type = H_TCP;
 				h->reqh = reqh;
-				tcp_listen(port, tcp_listen_callback, tcp_recv_callback, tcp_close_callback, h);
+				tcp_listen(port, tcp_conn_callback, tcp_recv_callback, tcp_close_callback, h);
 				return;
 			}
 		}
@@ -198,19 +197,14 @@ static void fs_open(hid_t reqh, char *path, int flags) {
 			port_s = strtok_r(NULL, "/", &save);
 			if (port_s) {
 				uint16_t port = strtol(port_s, NULL, 0);
-				h = malloc(sizeof *h);
-				memset(h, 0, sizeof *h);
+				h = calloc(1, sizeof *h);
 				h->type = H_TCP;
-				h->tcp.c = tcpc_new((struct tcp){
+				h->reqh = reqh;
+				tcp_connect((struct tcp){
 					.dst = port,
 					.ip.dst = dstip,
-				}, tcp_recv_callback, tcp_close_callback, h);
-				if (h->tcp.c) {
-					respond(h, 0);
-				} else {
-					free(h);
-					respond(NULL, -1);
-				}
+				}, tcp_conn_callback, tcp_recv_callback, tcp_close_callback, h);
+				return;
 			}
 		}
 		if (strcmp(proto, "udp") == 0) {

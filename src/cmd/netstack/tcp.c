@@ -108,8 +108,9 @@ void tcp_listen(
 	c->rx = (ring_t){malloc(4096), 4096, 0, 0};
 	conns_append(c);
 }
-struct tcp_conn *tcpc_new(
+void tcp_connect(
 	struct tcp t,
+	void (*on_conn)(struct tcp_conn *, void *carg),
 	void (*on_recv)(void *carg),
 	void (*on_close)(void *carg),
 	void *carg)
@@ -126,11 +127,13 @@ struct tcp_conn *tcpc_new(
 		if (arpcache_get(state.gateway, &c->rmac) < 0) {
 			warnx("neither target nor gateway not in ARP cache, dropping");
 			free(c);
-			return NULL;
+			on_close(carg);
+			return;
 		}
 	}
 
 	c->state = SYN_SENT;
+	c->on_conn = on_conn;
 	c->on_recv = on_recv;
 	c->on_close = on_close;
 	c->carg = carg;
@@ -139,7 +142,6 @@ struct tcp_conn *tcpc_new(
 
 	tcpc_sendraw(c, FlagSYN, NULL, 0);
 	c->lseq++;
-	return c;
 }
 size_t tcpc_tryread(struct tcp_conn *c, void *buf, size_t len) {
 	if (!buf) return ring_used(&c->rx);
@@ -198,52 +200,53 @@ void tcp_parse(const uint8_t *buf, size_t len, struct ipv4 ip) {
 			return;
 		}
 
-		if (iter->rip == ip.src && iter->rport == srcport) {
-			// TODO doesn't handle seq/ack overflows
-			if (iter->state == SYN_SENT) {
-				if (flags & FlagSYN) {
-					iter->state = ESTABILISHED;
-					iter->lack = seq + 1;
-					tcpc_sendraw(iter, FlagACK, NULL, 0);
-					return;
-				} else {
-					// TODO resend syn?
-					return;
-				}
-			}
-			if (flags & FlagACK) {
-				if (iter->rack < acknum)
-					iter->rack = acknum;
-				if (iter->state == LAST_ACK) {
-					// TODO check if ack has correct number
-					iter->state = CLOSED;
-					tcpc_tryfree(iter);
-					// TODO free (also after a timeout)
-					return;
-				}
-			}
-			if (iter->lack != seq && iter->lack - 1 != seq) {
-				warnx("remote seq jumped by %d", seq - iter->lack);
+		if (iter->rip != ip.src || iter->rport != srcport) continue;
+
+		// TODO doesn't handle seq/ack overflows
+		if (iter->state == SYN_SENT) {
+			if (flags & FlagSYN) {
+				iter->state = ESTABILISHED;
+				iter->lack = seq + 1;
 				tcpc_sendraw(iter, FlagACK, NULL, 0);
+				if (iter->on_conn) iter->on_conn(iter, iter->carg);
+				return;
+			} else {
+				// TODO resend syn?
 				return;
 			}
-			// TODO check if overflows window size
-			if (payloadlen) {
-				iter->lack = seq + payloadlen;
-				ring_put(&iter->rx, buf + hdrlen, payloadlen);
-				if (iter->on_recv) iter->on_recv(iter->carg);
-				tcpc_sendraw(iter, FlagACK, NULL, 0);
-			}
-			if (flags & FlagFIN) {
-				// TODO should resend the packet until an ACK is received
-				// TODO duplicated in tcpc_close
-				tcpc_sendraw(iter, FlagFIN | FlagACK, NULL, 0);
-				iter->state = LAST_ACK;
-				if (iter->on_close) iter->on_close(iter->carg);
+		}
+		if (flags & FlagACK) {
+			if (iter->rack < acknum)
+				iter->rack = acknum;
+			if (iter->state == LAST_ACK) {
+				// TODO check if ack has correct number
+				iter->state = CLOSED;
+				tcpc_tryfree(iter);
+				// TODO free (also after a timeout)
 				return;
 			}
+		}
+		if (iter->lack != seq && iter->lack - 1 != seq) {
+			warnx("remote seq jumped by %d", seq - iter->lack);
+			tcpc_sendraw(iter, FlagACK, NULL, 0);
 			return;
 		}
+		// TODO check if overflows window size
+		if (payloadlen) {
+			iter->lack = seq + payloadlen;
+			ring_put(&iter->rx, buf + hdrlen, payloadlen);
+			if (iter->on_recv) iter->on_recv(iter->carg);
+			tcpc_sendraw(iter, FlagACK, NULL, 0);
+		}
+		if (flags & FlagFIN) {
+			// TODO should resend the packet until an ACK is received
+			// TODO duplicated in tcpc_close
+			tcpc_sendraw(iter, FlagFIN | FlagACK, NULL, 0);
+			iter->state = LAST_ACK;
+			if (iter->on_close) iter->on_close(iter->carg);
+			return;
+		}
+		return;
 	}
 
 	if ((flags & FlagRST) == 0) {

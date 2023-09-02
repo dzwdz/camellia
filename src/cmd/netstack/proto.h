@@ -97,8 +97,9 @@ void tcp_listen(
 	void (*on_recv)(void *carg),
 	void (*on_close)(void *carg),
 	void *carg);
-struct tcp_conn *tcpc_new(
+void tcp_connect(
 	struct tcp t,
+	void (*on_conn)(struct tcp_conn *, void *carg),
 	void (*on_recv)(void *carg),
 	void (*on_close)(void *carg),
 	void *carg);
