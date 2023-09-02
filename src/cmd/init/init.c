@@ -42,12 +42,10 @@ void redirect(const char *exe, const char *out, const char *in) {
 }
 
 int main(void) {
-	const char *teststr = "I am teststr.\n";
 	hid_t killswitch_pipe[2];
 
 	freopen("/kdev/com1", "a+", stdout);
 	freopen("/kdev/com1", "a+", stderr);
-	printf("[init] stage 2, main at %p, teststr at %p\n", &main, teststr);
 
 	MOUNT_AT("/") {
 		fs_dirinject2((const char*[]){
