@@ -59,7 +59,8 @@ void mem_reserve(void *addr, size_t len) {
 	len += off;
 	size_t first = ((uintptr_t)addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
 	for (size_t i = 0; i * PAGE_SIZE < len; i++) {
-		if (first + i >= pbitmap_len) break;
+		if ((first + i) / 8 >= pbitmap_len)
+			break;
 		if (bitmap_get(first + i))
 			panic_invalid_state();
 		bitmap_set(first + i, true);
