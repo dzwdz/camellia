@@ -115,7 +115,7 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			close(p[1]);
 			for (;;) {
 				long len = _sys_read(p[0], buf, buflen, 0);
-				if (len < 0) exit(0);
+				if (len <= 0) exit(0);
 				fwrite(buf, 1, len, f);
 				if (ferror(f)) exit(0);
 			}
