@@ -101,30 +101,8 @@ void run_args(int argc, char **argv, struct redir *redir) {
 			if (!f) {
 				err(1, "couldn't open %s for redirection", redir->stdout);
 			}
-
-			/* a workaround for file offsets not being preserved across exec()s.
-			 * TODO document that weird behaviour of exec() */
-			hid_t p[2];
-			if (_sys_pipe(p, 0) < 0) {
-				errx(1, "couldn't create redirection pipe");
-			}
-			if (!_sys_fork(FORK_NOREAP, NULL)) {
-				/* the child forwards data from the pipe to the file */
-				const size_t buflen = 512;
-				char *buf = malloc(buflen);
-				if (!buf) err(1, "when redirecting");
-				close(p[1]);
-				for (;;) {
-					long len = _sys_read(p[0], buf, buflen, 0);
-					if (len <= 0) exit(0);
-					fwrite(buf, 1, len, f);
-					if (ferror(f)) exit(0);
-				}
-			}
-
-			fclose(f);
-			close(p[0]);
-			if (_sys_dup(p[1], 1, 0) < 0) {
+			// TODO fileno error checking
+			if (_sys_dup(fileno(f), 1, 0) < 0) {
 				errx(1, "dup() failed when redirecting");
 			}
 		}

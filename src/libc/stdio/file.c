@@ -10,8 +10,8 @@
 #include <unistd.h>
 
 static FILE _stdin_null  = { .fd = STDIN_FILENO };
-static FILE _stdout_null = { .fd = STDOUT_FILENO };
-static FILE _stderr_null = { .fd = STDERR_FILENO };
+static FILE _stdout_null = { .fd = STDOUT_FILENO, .pos = -1 };
+static FILE _stderr_null = { .fd = STDERR_FILENO, .pos = -1 };
 FILE *const stdin = &_stdin_null;
 FILE *const stdout = &_stdout_null;
 FILE *const stderr = &_stderr_null;
