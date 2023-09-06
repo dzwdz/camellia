@@ -14,7 +14,7 @@ QEMU=qemu-system-x86_64
 QDISPLAY="-display none"
 QNET="-nic user,model=rtl8139,mac=52:54:00:ca:77:1a,net=192.168.0.0/24,hostfwd=tcp::12380-192.168.0.11:80,id=n1"
 QKVM="-enable-kvm"
-QTTY="-serial stdio"
+QTTY="-serial mon:stdio"
 
 DRY_RUN=
 TEST_RUN=
