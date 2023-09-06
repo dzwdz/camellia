@@ -67,7 +67,7 @@ ports/%: portdeps
 	+$@/port install
 """)
 
-t('out/boot.iso', 'out/fs/boot/kernel out/fs/boot/grub/grub.cfg out/fs/boot/init', [
+t('out/boot.iso', 'out/fs/boot/kernel out/fs/boot/grub/grub.cfg out/fs/boot/init.gz', [
 	'grub-mkrescue -o $@ out/fs/ >/dev/null 2>&1'
 ])
 
@@ -89,7 +89,7 @@ t('out/bootstrap.elf', 'src/bootstrap/linker.ld' + srcobj('src/bootstrap/') + 'o
 	'$(CC) -nostdlib -Wl,-no-pie -T $^ -o $@'
 ])
 
-t('out/fs/boot/init', 'out/bootstrap out/initrd.tar', ['cat $^ > $@'])
+t('out/fs/boot/init.gz', 'out/bootstrap out/initrd.tar', ['cat $^ | gzip > $@'])
 
 t('out/fs/boot/grub/grub.cfg', 'src/kernel/arch/amd64/grub.cfg', ['cp $< $@'])
 
