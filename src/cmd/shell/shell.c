@@ -3,6 +3,7 @@
 #include <camellia.h>
 #include <camellia/compat.h>
 #include <camellia/flags.h>
+#include <camellia/fs/misc.h>
 #include <camellia/syscalls.h>
 #include <err.h>
 #include <errno.h>
@@ -10,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <camellia/fs/misc.h>
 #include <x86intrin.h>
 
 int main();
@@ -90,57 +91,60 @@ void run_args(int argc, char **argv, struct redir *redir) {
 		return;
 	}
 
-	if (fork()) {
-		_sys_await();
+	int pid = fork();
+	if (pid < 0) {
+		warn("fork");
 		return;
-	}
+	} else if (pid == 0) {
+		if (redir && redir->stdout) {
+			FILE *f = fopen(redir->stdout, redir->append ? "a" : "w");
+			if (!f) {
+				err(1, "couldn't open %s for redirection", redir->stdout);
+			}
 
-	if (redir && redir->stdout) {
-		FILE *f = fopen(redir->stdout, redir->append ? "a" : "w");
-		if (!f) {
-			err(1, "couldn't open %s for redirection", redir->stdout);
-		}
+			/* a workaround for file offsets not being preserved across exec()s.
+			 * TODO document that weird behaviour of exec() */
+			hid_t p[2];
+			if (_sys_pipe(p, 0) < 0) {
+				errx(1, "couldn't create redirection pipe");
+			}
+			if (!_sys_fork(FORK_NOREAP, NULL)) {
+				/* the child forwards data from the pipe to the file */
+				const size_t buflen = 512;
+				char *buf = malloc(buflen);
+				if (!buf) err(1, "when redirecting");
+				close(p[1]);
+				for (;;) {
+					long len = _sys_read(p[0], buf, buflen, 0);
+					if (len <= 0) exit(0);
+					fwrite(buf, 1, len, f);
+					if (ferror(f)) exit(0);
+				}
+			}
 
-		/* a workaround for file offsets not being preserved across exec()s.
-		 * TODO document that weird behaviour of exec() */
-		hid_t p[2];
-		if (_sys_pipe(p, 0) < 0) {
-			errx(1, "couldn't create redirection pipe");
-		}
-		if (!_sys_fork(FORK_NOREAP, NULL)) {
-			/* the child forwards data from the pipe to the file */
-			const size_t buflen = 512;
-			char *buf = malloc(buflen);
-			if (!buf) err(1, "when redirecting");
-			close(p[1]);
-			for (;;) {
-				long len = _sys_read(p[0], buf, buflen, 0);
-				if (len <= 0) exit(0);
-				fwrite(buf, 1, len, f);
-				if (ferror(f)) exit(0);
+			fclose(f);
+			close(p[0]);
+			if (_sys_dup(p[1], 1, 0) < 0) {
+				errx(1, "dup() failed when redirecting");
 			}
 		}
 
-		fclose(f);
-		close(p[0]);
-		if (_sys_dup(p[1], 1, 0) < 0) {
-			errx(1, "dup() failed when redirecting");
+		for (struct builtin *iter = builtins; iter->name; iter++) {
+			if (!strcmp(argv[0], iter->name)) {
+				setprogname(argv[0]);
+				iter->fn(argc, argv);
+				exit(0);
+			}
 		}
-	}
 
-	for (struct builtin *iter = builtins; iter->name; iter++) {
-		if (!strcmp(argv[0], iter->name)) {
-			setprogname(argv[0]);
-			iter->fn(argc, argv);
-			exit(0);
+		execp(argv);
+		if (errno == EINVAL) {
+			errx(1, "%s isn't a valid executable", argv[0]);
+		} else {
+			errx(1, "unknown command: %s", argv[0]);
 		}
-	}
-
-	execp(argv);
-	if (errno == EINVAL) {
-		errx(1, "%s isn't a valid executable", argv[0]);
 	} else {
-		errx(1, "unknown command: %s", argv[0]);
+		waitpid(pid, NULL, 0);
 	}
 }
 
