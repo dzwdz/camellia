@@ -17,35 +17,37 @@ struct malloc_hdr {
 
 struct malloc_hdr *malloc_last = NULL;
 
-extern uint8_t pbitmap[], pbitmap_start[]; /* linker.ld */
-static size_t pbitmap_len;
-static size_t pbitmap_searchstart = 0;
-static size_t pbitmap_taken = 0;
+extern uint8_t pbitmap[]; /* linker.ld */
+static size_t pbitmap_len; /* in bytes */
+static size_t pbitmap_firstfree = 0;
 
 
-static bool bitmap_get(size_t i) {
-	size_t b = i / 8;
-	assert(b < pbitmap_len);
-	return 0 < (pbitmap[b] & (1 << (i&7)));
-}
-
-static void bitmap_set(size_t i, bool v) {
+static bool bitmap_get(long i) {
+	assert(i >= 0);
 	size_t b = i / 8;
 	uint8_t m = 1 << (i&7);
 	assert(b < pbitmap_len);
-	if ((pbitmap[b] & m) ^ v) {
-		/* value changes */
-		if (v) pbitmap_taken++;
-		else   pbitmap_taken--;
-	}
+	return (pbitmap[b]&m) != 0;
+}
+
+static bool bitmap_set(long i, bool v) {
+	assert(i >= 0);
+	size_t b = i / 8;
+	uint8_t m = 1 << (i&7);
+	assert(b < pbitmap_len);
+	bool prev = (pbitmap[b]&m) != 0;
 	if (v) pbitmap[b] |=  m;
 	else   pbitmap[b] &= ~m;
+	return prev;
+}
+
+static long toindex(void *p) {
+	return ((long)p - (long)pbitmap) / PAGE_SIZE;
 }
 
 void mem_init(void *memtop) {
 	kprintf("memory   %8x -> %8x\n", &_bss_end, memtop);
-	size_t pageamt = ((uintptr_t)memtop - (uintptr_t)pbitmap_start) / PAGE_SIZE;
-	pbitmap_len = pageamt / 8;
+	pbitmap_len = toindex(memtop) / 8;
 	memset(pbitmap, 0, pbitmap_len);
 	mem_reserve(pbitmap, pbitmap_len);
 }
@@ -57,12 +59,10 @@ void mem_reserve(void *addr, size_t len) {
 	size_t off = (uintptr_t)addr & PAGE_MASK;
 	addr -= off;
 	len += off;
-	size_t first = ((uintptr_t)addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
+	size_t first = toindex(addr);
 	for (size_t i = 0; i * PAGE_SIZE < len; i++) {
 		if ((first + i) / 8 >= pbitmap_len)
 			break;
-		if (bitmap_get(first + i))
-			panic_invalid_state();
 		bitmap_set(first + i, true);
 	}
 }
@@ -79,13 +79,12 @@ void mem_debugprint(void) {
 		total++;
 	}
 	kprintf("  total 0x%x\n", total);
-	kprintf("pbitmap usage %u/%u\n", pbitmap_taken, pbitmap_len * 8);
 }
 
 void *page_alloc(size_t pages) {
 	/* i do realize how painfully slow this is */
 	size_t streak = 0;
-	for (size_t i = pbitmap_searchstart; i < pbitmap_len * 8; i++) {
+	for (size_t i = pbitmap_firstfree; i < pbitmap_len * 8; i++) {
 		if (bitmap_get(i)) {
 			streak = 0;
 			continue;
@@ -95,8 +94,8 @@ void *page_alloc(size_t pages) {
 			i = i + 1 - streak;
 			for (size_t j = 0; j < streak; j++)
 				bitmap_set(i + j, true);
-			pbitmap_searchstart = i + streak - 1;
-			return pbitmap_start + i * PAGE_SIZE;
+			pbitmap_firstfree = i + streak - 1;
+			return pbitmap + i * PAGE_SIZE;
 		}
 	}
 	kprintf("we ran out of memory :(\ngoodbye.\n");
@@ -110,14 +109,16 @@ void *page_zalloc(size_t pages) {
 }
 
 // frees `pages` consecutive pages starting from *first
-void page_free(void *first_addr, size_t pages) {
-	assert(first_addr >= (void*)pbitmap_start);
-	size_t first = ((uintptr_t)first_addr - (uintptr_t)pbitmap_start) / PAGE_SIZE;
-	if (pbitmap_searchstart > first)
-		pbitmap_searchstart = first;
+void page_free(void *addr, size_t pages) {
+	assert(addr >= (void*)pbitmap);
+	size_t first = toindex(addr);
 	for (size_t i = 0; i < pages; i++) {
-		assert(bitmap_get(first + i));
-		bitmap_set(first + i, false);
+		if (bitmap_set(first + i, false) == false) {
+			panic_invalid_state();
+		}
+	}
+	if (pbitmap_firstfree > first) {
+		pbitmap_firstfree = first;
 	}
 }
 
