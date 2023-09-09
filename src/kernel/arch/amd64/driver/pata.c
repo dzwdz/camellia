@@ -13,7 +13,7 @@ static const int root_id = 100;
 static void accept(VfsReq *req);
 void pata_init(void) {
 	ata_init();
-	vfs_root_register("/kdev/ata", accept);
+	vfs_root_register("/kdev/ata/", accept);
 }
 
 static void accept(VfsReq *req) {
@@ -23,11 +23,11 @@ static void accept(VfsReq *req) {
 	size_t len;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			     if (reqpathcmp(req, "/"))  ret = root_id;
-			else if (reqpathcmp(req, "/0")) ret = 0;
-			else if (reqpathcmp(req, "/1")) ret = 1;
-			else if (reqpathcmp(req, "/2")) ret = 2;
-			else if (reqpathcmp(req, "/3")) ret = 3;
+			     if (reqpathcmp(req, ""))  ret = root_id;
+			else if (reqpathcmp(req, "0")) ret = 0;
+			else if (reqpathcmp(req, "1")) ret = 1;
+			else if (reqpathcmp(req, "2")) ret = 2;
+			else if (reqpathcmp(req, "3")) ret = 3;
 			else ret = -ENOENT;
 			// TODO don't allow opening nonexistent drives
 			vfsreq_finish_short(req, ret);
@@ -70,6 +70,7 @@ static void accept(VfsReq *req) {
 
 		case VFSOP_GETSIZE:
 			if (id == root_id) {
+				// TODO getsize for all kernel provided directories
 				panic_unimplemented();
 			}
 			vfsreq_finish_short(req, ata_size(id));

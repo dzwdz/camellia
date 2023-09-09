@@ -21,9 +21,9 @@ static int handle(VfsReq *req) {
 	switch (req->type) {
 		case VFSOP_OPEN:
 			if (!req->input.kern) panic_invalid_state();
-			if (req->input.len == 1) {
+			if (req->input.len == 0) {
 				return H_ROOT;
-			} else if (req->input.len == namelen + 1 && !memcmp(req->input.buf_kern + 1, namebuf, namelen)) {
+			} else if (req->input.len == namelen && !memcmp(req->input.buf_kern, namebuf, namelen)) {
 				return H_FB;
 			} else {
 				return -1;
@@ -65,5 +65,5 @@ void video_init(GfxInfo fb_) {
 	fb = fb_;
 	snprintf(namebuf, sizeof namebuf, "%ux%ux%u", fb.width, fb.height, fb.bpp);
 	namelen = strlen(namebuf);
-	vfs_root_register("/kdev/video", accept);
+	vfs_root_register("/kdev/video/", accept);
 }

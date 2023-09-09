@@ -45,6 +45,11 @@ VfsMount *vfs_mount_resolve(
 			break;
 		if (path[top->prefix_len] == '/')
 			break;
+
+		/* Also valid if prefix ends with '/'. Can only happen with kernel-
+		 * provided mounts. */
+		if (top->prefix_len != 0 && path[top->prefix_len-1] == '/')
+			break;
 	}
 	return top;
 }

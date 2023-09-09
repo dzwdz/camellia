@@ -58,7 +58,7 @@ void ps2_init(void) {
 	irq_fn[IRQ_PS2KB] = ps2_irq;
 	irq_fn[IRQ_PS2MOUSE] = ps2_irq;
 
-	vfs_root_register("/kdev/ps2", accept);
+	vfs_root_register("/kdev/ps2/", accept);
 }
 
 static void ps2_irq(void) {
@@ -86,10 +86,10 @@ static void accept(VfsReq *req) {
 	int ret;
 	switch (req->type) {
 		case VFSOP_OPEN:
-			     if (reqpathcmp(req, "/"))      ret = H_ROOT;
-			else if (reqpathcmp(req, "/kb"))    ret = H_KB;
-			else if (reqpathcmp(req, "/mouse")) ret = H_MOUSE;
-			else                                ret = -ENOENT;
+			     if (reqpathcmp(req, ""))      ret = H_ROOT;
+			else if (reqpathcmp(req, "kb"))    ret = H_KB;
+			else if (reqpathcmp(req, "mouse")) ret = H_MOUSE;
+			else                               ret = -ENOENT;
 			vfsreq_finish_short(req, ret);
 			break;
 		case VFSOP_READ:

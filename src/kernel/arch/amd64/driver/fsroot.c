@@ -2,59 +2,90 @@
 #include <camellia/fsutil.h>
 #include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/util.h>
+#include <kernel/malloc.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 #include <kernel/util.h>
+#include <kernel/vfs/mount.h>
 #include <kernel/vfs/request.h>
 #include <shared/mem.h>
 
-static long handle(VfsReq *req) {
-	// TODO document directory read format
-	// TODO don't hardcode
-	static const char base[] = "kdev/";
-	static const char dir[] =
-		"com1\0"
-		"ps2/\0"
-		"ata/\0"
-		"eth\0"
-		"video/";
-	const char *id;
-	int len;
+enum {
+	Hbase,
+	Hkdev,
+};
+
+static int
+get_kdev(char *lst)
+{
+	int len = 0;
+	for (VfsMount *m = vfs_mount_seed(); m; m = m->prev) {
+		if (m->prefix_len == 0) {
+			continue; /* that's us */
+		}
+		assert(m->prefix_len > 6);
+		assert(memcmp(m->prefix, "/kdev/", 6) == 0);
+		len += m->prefix_len - 6 + 1;
+		if (lst) {
+			memcpy(lst, m->prefix + 6, m->prefix_len - 6);
+			lst += m->prefix_len - 6;
+			*lst++ = '\0';
+		}
+	}
+	return len;
+}
+
+static long
+handle(VfsReq *req)
+{
+	static char *kdev = NULL;
+	static int kdev_len = 0;
+	const char *lst = NULL;
+	int len = 0;
 
 	if (!req->caller) return -1;
 	if (req->type != VFSOP_OPEN) {
-		/* otherwise, uninitialized, to cause compiler warnings if used */
-		/* this operates under the assumption that base and dir never change
-		 * but even if they do, that will just result in a crash. */
-		id = (void *__force)req->id;
-		if (id == base) {
-			len = sizeof base;
-		} else if (id == dir) {
-			len = sizeof dir;
-		} else {
-			kprintf("%p %p %p\n", base, dir, id);
+		switch ((uintptr_t __force)req->id) {
+		case Hbase:
+			lst = "kdev/";
+			len = strlen(lst) + 1;
+			break;
+		case Hkdev:
+			if (!kdev) {
+				kdev_len = get_kdev(NULL);
+				kdev = kmalloc(kdev_len);
+				get_kdev(kdev);
+			}
+			lst = kdev;
+			len = kdev_len;
+			break;
+		default:
 			assert(false);
 		}
 	}
 
 	switch (req->type) {
-		case VFSOP_OPEN:
-			if (reqpathcmp(req, "/")) return (long)base;
-			if (reqpathcmp(req, "/kdev/")) return (long)dir;
-			return -ENOENT;
-
-		case VFSOP_READ:
-			return req_readcopy(req, id, len);
-		// TODO getsize for the other kernel provided directories
-		case VFSOP_GETSIZE:
-			return len;
-		default:
-			return -ENOSYS;
+	case VFSOP_OPEN:
+		if (reqpathcmp(req, "/")) return Hbase;
+		if (reqpathcmp(req, "/kdev/")) return Hkdev;
+		return -ENOENT;
+	case VFSOP_READ:
+		return req_readcopy(req, lst, len);
+	case VFSOP_GETSIZE:
+		return len;
+	default:
+		return -ENOSYS;
 	}
 }
 
-static void accept(VfsReq *req) {
+static void
+accept(VfsReq *req)
+{
 	vfsreq_finish_short(req, handle(req));
 }
 
-void vfs_root_init(void) { vfs_root_register("", accept); }
+void
+vfs_root_init(void)
+{
+	vfs_root_register("", accept);
+}
