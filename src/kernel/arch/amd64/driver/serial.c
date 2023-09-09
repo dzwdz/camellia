@@ -12,17 +12,27 @@ static volatile ring_t backlog = {(void*)backlog_buf, sizeof backlog_buf, 0, 0};
 
 static const int COM1 = 0x3f8;
 
+static bool COM1_exists = false;
+
 static void accept(VfsReq *req);
 static void serial_irq(void);
 static VfsReq *hung_reads = NULL;
-void serial_init(void) { vfs_root_register("/kdev/com1", accept); }
 
+void serial_init(void) {
+	if (COM1_exists) {
+		vfs_root_register("/kdev/com1", accept);
+	}
+}
 
-static void serial_selftest(void) {
-	char b = 0x69;
+static bool serial_selftest(void) {
 	port_out8(COM1 + 4, 0b00011110); // enable loopback mode
-	port_out8(COM1, b);
-	assert(port_in8(COM1) == b);
+	for (int i = 0; i < 16; i++) {
+		port_out8(COM1, i);
+		if (port_in8(COM1) != i) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void serial_preinit(void) {
@@ -38,9 +48,10 @@ void serial_preinit(void) {
 	port_out8(COM1 + 1, 0x01);       // enable the Data Ready IRQ
 	port_out8(COM1 + 2, 0b11000111); // enable FIFO with 14-bit trigger level (???)
 
-	serial_selftest();
-
-	port_out8(COM1 + 4, 0b00001111); // enable everything in the MCR
+	if (serial_selftest()) {
+		COM1_exists = true;
+		port_out8(COM1 + 4, 0b00001111); // enable everything in the MCR
+	}
 }
 
 

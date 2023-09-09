@@ -47,6 +47,9 @@ for opt; do
 		QTTY="-serial pipe:out/qemu"
 		POST="cat out/qemu.out"
 		;;
+	--no-serial)
+		QTTY="-serial none"
+		;;
 	*)
 		echo "unknown option $opt"
 		exit 1
