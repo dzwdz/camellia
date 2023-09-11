@@ -58,7 +58,7 @@ void ps2_init(void) {
 	irq_fn[IRQ_PS2KB] = ps2_irq;
 	irq_fn[IRQ_PS2MOUSE] = ps2_irq;
 
-	vfs_root_register("/kdev/ps2/", accept);
+	vfs_root_register("/dev/ps2/", accept);
 }
 
 static void ps2_irq(void) {

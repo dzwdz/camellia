@@ -13,7 +13,7 @@ static const int root_id = 100;
 static void accept(VfsReq *req);
 void pata_init(void) {
 	ata_init();
-	vfs_root_register("/kdev/ata/", accept);
+	vfs_root_register("/dev/ata/", accept);
 }
 
 static void accept(VfsReq *req) {

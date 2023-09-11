@@ -1,3 +1,4 @@
+#include <camellia.h>
 #include <camellia/syscalls.h>
 #include <shared/ring.h>
 #include <stdbool.h>
@@ -39,11 +40,11 @@ static void kb_thread(void *arg) {
 }
 
 void DG_Init(void) {
-	if (fb_setup(&fb, "/kdev/video/") < 0) {
+	if (fb_setup(&fb, "/dev/video/") < 0) {
 		puts("DG_Init: fb_setup error");
 		abort();
 	}
-	kb = _sys_open("/kdev/ps2/kb", 12, 0);
+	kb = camellia_open("/dev/ps2/kb", OPEN_READ);
 	if (kb < 0) {
 		puts("DG_Init: can't open keyboard");
 		abort();

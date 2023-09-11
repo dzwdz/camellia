@@ -12,23 +12,23 @@
 
 enum {
 	Hbase,
-	Hkdev,
+	Hdev,
 };
 
 static int
-get_kdev(char *lst)
+get_dev(char *lst)
 {
 	int len = 0;
 	for (VfsMount *m = vfs_mount_seed(); m; m = m->prev) {
 		if (m->prefix_len == 0) {
 			continue; /* that's us */
 		}
-		assert(m->prefix_len > 6);
-		assert(memcmp(m->prefix, "/kdev/", 6) == 0);
-		len += m->prefix_len - 6 + 1;
+		assert(m->prefix_len > 5);
+		assert(memcmp(m->prefix, "/dev/", 5) == 0);
+		len += m->prefix_len - 5 + 1;
 		if (lst) {
-			memcpy(lst, m->prefix + 6, m->prefix_len - 6);
-			lst += m->prefix_len - 6;
+			memcpy(lst, m->prefix + 5, m->prefix_len - 5);
+			lst += m->prefix_len - 5;
 			*lst++ = '\0';
 		}
 	}
@@ -38,8 +38,8 @@ get_kdev(char *lst)
 static long
 handle(VfsReq *req)
 {
-	static char *kdev = NULL;
-	static int kdev_len = 0;
+	static char *dev = NULL;
+	static int dev_len = 0;
 	const char *lst = NULL;
 	int len = 0;
 
@@ -47,17 +47,17 @@ handle(VfsReq *req)
 	if (req->type != VFSOP_OPEN) {
 		switch ((uintptr_t __force)req->id) {
 		case Hbase:
-			lst = "kdev/";
+			lst = "dev/";
 			len = strlen(lst) + 1;
 			break;
-		case Hkdev:
-			if (!kdev) {
-				kdev_len = get_kdev(NULL);
-				kdev = kmalloc(kdev_len);
-				get_kdev(kdev);
+		case Hdev:
+			if (!dev) {
+				dev_len = get_dev(NULL);
+				dev = kmalloc(dev_len);
+				get_dev(dev);
 			}
-			lst = kdev;
-			len = kdev_len;
+			lst = dev;
+			len = dev_len;
 			break;
 		default:
 			assert(false);
@@ -67,7 +67,7 @@ handle(VfsReq *req)
 	switch (req->type) {
 	case VFSOP_OPEN:
 		if (reqpathcmp(req, "/")) return Hbase;
-		if (reqpathcmp(req, "/kdev/")) return Hkdev;
+		if (reqpathcmp(req, "/dev/")) return Hdev;
 		return -ENOENT;
 	case VFSOP_READ:
 		return req_readcopy(req, lst, len);

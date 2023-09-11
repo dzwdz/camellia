@@ -1,5 +1,6 @@
 #include "driver.h"
 #include <assert.h>
+#include <camellia.h>
 #include <camellia/compat.h>
 #include <camellia/syscalls.h>
 #include <err.h>
@@ -94,7 +95,7 @@ static void kb_thread(void *unused) {
 	int fd;
 	(void)unused;
 
-	fd = _sys_open("/kdev/ps2/kb", 12, 0);
+	fd = camellia_open("/dev/ps2/kb", OPEN_READ);
 	if (fd < 0) err(1, "open");
 
 	while (true) {

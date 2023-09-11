@@ -44,8 +44,8 @@ void redirect(const char *exe, const char *out, const char *in) {
 int main(void) {
 	hid_t killswitch_pipe[2];
 
-	freopen("/kdev/com1", "a+", stdout);
-	freopen("/kdev/com1", "a+", stderr);
+	freopen("/dev/com1", "a+", stdout);
+	freopen("/dev/com1", "a+", stderr);
 
 	MOUNT_AT("/") {
 		fs_dirinject2((const char*[]){
@@ -62,7 +62,7 @@ int main(void) {
 	}
 
 	MOUNT_AT("/keyboard") {
-		MOUNT_AT("/") { fs_whitelist((const char*[]){"/kdev/ps2/kb", NULL}); }
+		MOUNT_AT("/") { fs_whitelist((const char*[]){"/dev/ps2/kb", NULL}); }
 		ps2_drv();
 	}
 	MOUNT_AT("/usr/") {
@@ -99,14 +99,14 @@ int main(void) {
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/vtty") {
-		const char *allow[] = {"/bin/vterm", "/kdev/video/", "/keyboard", "/init/usr/share/fonts/", NULL};
+		const char *allow[] = {"/bin/vterm", "/dev/video/", "/keyboard", "/init/usr/share/fonts/", NULL};
 		const char *argv[] = {"/bin/vterm", NULL};
 		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
 	MOUNT_AT("/net/") {
-		const char *allow[] = {"/bin/netstack", "/kdev/eth", NULL};
-		const char *argv[] = {"/bin/netstack", "/kdev/eth", "192.168.0.11", "192.168.0.2", NULL};
+		const char *allow[] = {"/bin/netstack", "/dev/eth", NULL};
+		const char *argv[] = {"/bin/netstack", "/dev/eth", "192.168.0.11", "192.168.0.2", NULL};
 		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
@@ -124,7 +124,7 @@ int main(void) {
 	if (!fork()) {
 		// TODO close on exec
 		close(killswitch_pipe[0]);
-		redirect("/bin/shell", "/kdev/com1", "/kdev/com1");
+		redirect("/bin/shell", "/dev/com1", "/dev/com1");
 		redirect("/bin/shell", "/vtty", "/keyboard");
 		exit(1);
 	}

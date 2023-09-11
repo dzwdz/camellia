@@ -37,7 +37,7 @@ void in_char(char c) {
 }
 
 int main(void) {
-	if (fb_setup(&fb, "/kdev/video/") < 0) {
+	if (fb_setup(&fb, "/dev/video/") < 0) {
 		err(1, "fb_setup");
 		return 1;
 	}

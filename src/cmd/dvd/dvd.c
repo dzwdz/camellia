@@ -21,7 +21,7 @@ void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t col) {
 }
 
 int main(void) {
-	if (fb_setup(&fb, "/kdev/video/") < 0) {
+	if (fb_setup(&fb, "/dev/video/") < 0) {
 		err(1, "fb_setup");
 		return 1;
 	}

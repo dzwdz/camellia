@@ -49,13 +49,13 @@ struct packet {
 
 int main(void) {
 	char buf[64];
-	hid_t fd = camellia_open("/kdev/ps2/mouse", OPEN_READ);
+	hid_t fd = camellia_open("/dev/ps2/mouse", OPEN_READ);
 	if (fd < 0) {
 		err(1, "open");
 		return 1;
 	}
 
-	if (fb_setup(&fb, "/kdev/video/") < 0) {
+	if (fb_setup(&fb, "/dev/video/") < 0) {
 		err(1, "fb_setup");
 		return 1;
 	}

@@ -80,7 +80,7 @@ void rtl8139_init(uint32_t bdf) {
 
 	rx_irq_enable(false);
 
-	vfs_root_register("/kdev/eth", accept);
+	vfs_root_register("/dev/eth", accept);
 }
 
 static void rtl8139_irq(void) {

@@ -20,7 +20,7 @@ static VfsReq *hung_reads = NULL;
 
 void serial_init(void) {
 	if (COM1_exists) {
-		vfs_root_register("/kdev/com1", accept);
+		vfs_root_register("/dev/com1", accept);
 	}
 }
 
