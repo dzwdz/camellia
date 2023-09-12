@@ -45,7 +45,6 @@ for opt; do
 		mkfifo out/qemu.in out/qemu.out
 		TEST_RUN=1
 		QTTY="-serial pipe:out/qemu"
-		POST="cat out/qemu.out"
 		;;
 	--no-serial)
 		QTTY="-serial none"
@@ -63,6 +62,8 @@ if [ -n "$DRY_RUN" ]; then
 elif [ -n "$TEST_RUN" ]; then
 	echo "$CMD &"
 	$CMD &
+
+	sleep 1 # dunno
 
 	# something eats the first character sent, so let's send a sacrificial newline
 	echo > out/qemu.in

@@ -394,8 +394,15 @@ void proc_tryreap(Proc *dead) {
 	}
 }
 
+void proc_tryintr(Proc *p) {
+	if (p->state == PS_WAITS4TIMER) {
+		timer_deschedule(p);
+	}
+}
+
 void proc_intr(Proc *p) {
 	if (!p->intr_fn) return;
+	proc_tryintr(p);
 
 	/* save old rsp,rip */
 	struct intr_data d;

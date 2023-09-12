@@ -48,6 +48,7 @@ void timer_deschedule(Proc *p) {
 	assert(*slot);
 	*slot = p->waits4timer.next;
 
+	proc_setstate(p, PS_RUNNING);
 	update_goal();
 }
 

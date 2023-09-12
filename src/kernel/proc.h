@@ -119,6 +119,10 @@ void proc_filicide(Proc *proc, int ret);
 /** Tries to reap a dead process / free a tombstone. */
 void proc_tryreap(Proc *dead);
 
+/** Try to interrupt whatever the process is doing instead of PS_RUNNING. */
+void proc_tryintr(Proc *p);
+
+/** Send an interupt to a process. */
 void proc_intr(Proc *proc);
 
 /** Switches execution to any running process. */

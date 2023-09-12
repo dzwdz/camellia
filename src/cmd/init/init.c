@@ -1,19 +1,18 @@
 #include "driver/driver.h"
 #include <camellia/compat.h>
 #include <camellia/flags.h>
+#include <camellia/fs/misc.h>
+#include <camellia/intr.h>
 #include <camellia/syscalls.h>
+#include <err.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <camellia/fs/misc.h>
-
-#define die(fmt, ...) do { fprintf(stderr, "init: " fmt, __VA_ARGS__); exit(1); } while (0)
-
-static char title[128];
 
 void redirect(const char *exe, const char *out, const char *in) {
 	if (!fork()) {
+		static char title[128];
 		snprintf(title, sizeof title, "sh >%s", out);
 		setproctitle(title);
 
@@ -22,9 +21,9 @@ void redirect(const char *exe, const char *out, const char *in) {
 			exit(1);
 		}
 		if (!freopen(out, "a+", stdout))
-			die("couldn't open %s\n", out);
+			err(1, "couldn't open %s", out);
 		if (!freopen(in, "r", stdin))
-			die(" couldn't open %s\n", in);
+			err(1, "couldn't open %s", in);
 
 		for (;;) {
 			if (!fork()) {
@@ -41,9 +40,17 @@ void redirect(const char *exe, const char *out, const char *in) {
 	}
 }
 
-int main(void) {
-	hid_t killswitch_pipe[2];
+void shutdown(void) {
+	printf("[init] intr\n");
+	_sys_intr();
+	_sys_sleep(1000);
+	printf("[init] filicide\n");
+	_sys_filicide();
+	printf("[init] goodbye\n");
+	exit(0);
+}
 
+int main(void) {
 	freopen("/dev/com1", "a+", stdout);
 	freopen("/dev/com1", "a+", stderr);
 
@@ -56,7 +63,6 @@ int main(void) {
 			"/tmp/",
 			"/vtty",
 			"/net/",
-			"/initctl",
 			NULL
 		});
 	}
@@ -111,40 +117,16 @@ int main(void) {
 		execv(argv[0], (void*)argv);
 	}
 
-	if (_sys_pipe(killswitch_pipe, 0) < 0) {
-		printf("couldn't create the killswitch pipe, quitting...\n");
-		return 1;
-	}
-	MOUNT_AT("/initctl") {
-		close(killswitch_pipe[0]);
-		initctl_drv(killswitch_pipe[1]);
-	}
-	close(killswitch_pipe[1]);
-
 	if (!fork()) {
-		// TODO close on exec
-		close(killswitch_pipe[0]);
 		redirect("/bin/shell", "/dev/com1", "/dev/com1");
 		redirect("/bin/shell", "/vtty", "/keyboard");
 		exit(1);
 	}
 
-	char buf[128];
+	intr_set(shutdown);
 	for (;;) {
-		if (_sys_read(killswitch_pipe[0], buf, 128, 0) != 4) {
-			break;
-		}
-		if (memcmp(buf, "intr", 4) == 0) {
-			_sys_intr();
-		} else if (memcmp(buf, "halt", 4) == 0) {
-			break;
-		}
+		// TODO sleep(-1) to sleep forever
+		// TODO maybe init should collect dead children?
+		_sys_sleep(86400000);
 	}
-	printf("[init] intr\n");
-	_sys_intr();
-	_sys_sleep(1000);
-	printf("[init] filicide\n");
-	_sys_filicide();
-	printf("[init] goodbye\n");
-	return 0;
 }

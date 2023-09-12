@@ -1,2 +1,2 @@
 #!/bin/shell
-echo halt > /initctl
+echo "Die monster. You don't belong in this world!" > /proc/1/intr
