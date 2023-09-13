@@ -56,18 +56,15 @@ int main(void) {
 
 	MOUNT_AT("/") {
 		fs_dirinject2((const char*[]){
-			"/keyboard/",
 			"/usr/",
 			"/bin/",
-			"/Users/",
 			"/tmp/",
-			"/vtty",
 			"/net/",
 			NULL
 		});
 	}
 
-	MOUNT_AT("/keyboard") {
+	MOUNT_AT("/dev/keyboard") {
 		MOUNT_AT("/") { fs_whitelist((const char*[]){"/dev/ps2/kb", NULL}); }
 		ps2_drv();
 	}
@@ -86,26 +83,14 @@ int main(void) {
 			NULL
 		});
 	}
-	MOUNT_AT("/Users/") {
-		MOUNT_AT("/tmp/") {
-			const char *argv[] = {"/bin/tmpfs", NULL};
-			execv(argv[0], (void*)argv);
-		}
-		// TODO a simple union isn't enough here
-		fs_union((const char*[]){
-			"/tmp/",
-			"/init/Users/",
-			NULL
-		});
-	}
 	MOUNT_AT("/tmp/") {
 		const char *allow[] = {"/bin/tmpfs", NULL};
 		const char *argv[] = {"/bin/tmpfs", NULL};
 		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
 	}
-	MOUNT_AT("/vtty") {
-		const char *allow[] = {"/bin/vterm", "/dev/video/", "/keyboard", "/init/usr/share/fonts/", NULL};
+	MOUNT_AT("/dev/vtty") {
+		const char *allow[] = {"/bin/vterm", "/dev/video/", "/dev/keyboard", "/init/usr/share/fonts/", NULL};
 		const char *argv[] = {"/bin/vterm", NULL};
 		MOUNT_AT("/") { fs_whitelist(allow); }
 		execv(argv[0], (void*)argv);
@@ -119,7 +104,7 @@ int main(void) {
 
 	if (!fork()) {
 		redirect("/bin/shell", "/dev/com1", "/dev/com1");
-		redirect("/bin/shell", "/vtty", "/keyboard");
+		redirect("/bin/shell", "/dev/vtty", "/dev/keyboard");
 		exit(1);
 	}
 
