@@ -75,8 +75,9 @@ void gdt_init(void) {
 
 	gdt_fillout(&GDT[SEG_r0code], 0, true);
 	gdt_fillout(&GDT[SEG_r0data], 0, false);
-	gdt_fillout(&GDT[SEG_r3code], 3, true);
+	gdt_fillout(&GDT[SEG_r3code32], 3, true);
 	gdt_fillout(&GDT[SEG_r3data], 3, false);
+	gdt_fillout(&GDT[SEG_r3code], 3, true);
 
 	lgdt_arg.limit = sizeof(GDT) - 1;
 	lgdt_arg.base = (uint64_t)&GDT;

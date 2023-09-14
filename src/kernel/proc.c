@@ -44,7 +44,9 @@ Proc *proc_seed(void *data, size_t datalen) {
 	void __user *init_base = (userptr_t)0x200000;
 	for (uintptr_t off = 0; off < datalen; off += PAGE_SIZE)
 		pagedir_map(proc_first->pages, init_base + off, data + off, true, true);
+
 	proc_first->regs.rcx = (uintptr_t)init_base; // SYSRET jumps to %rcx
+	// proc_first->regs.r11 |= 1<<9; /* enable interrupts */
 
 	return proc_first;
 }

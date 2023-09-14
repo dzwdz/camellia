@@ -1,7 +1,7 @@
 .global boot64
 boot64:
 	lgdt (lgdt_arg) // try reloading gdt again
-	mov $(5 << 3 | 3), %ax // SEG_TSS
+	mov $(6 << 3 | 3), %ax // SEG_TSS
 	ltr %ax
 
 	push %rdi // preserve multiboot struct

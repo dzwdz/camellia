@@ -1,6 +1,6 @@
 // gdt.h
 .set SEG_r0code, 1
-.set SEG_r3code, 3
+.set SEG_r3code32, 3
 .set SEG_r3data, 4
 
 .set IA32_STAR, 0xC0000081
@@ -15,7 +15,7 @@ sysenter_setup:
 
 	// the intel docs don't mention the lower 32 bits
 	mov $0, %eax
-	mov $( ((SEG_r3code << 3 | 3) << 16) | (SEG_r0code << 3) ), %edx
+	mov $( ((SEG_r3code32 << 3 | 3) << 16) | (SEG_r0code << 3) ), %edx
 	mov $IA32_STAR, %rcx
 	wrmsr
 
