@@ -347,8 +347,7 @@ long _sys_pipe(hid_t __user user_ends[2], int flags) {
 }
 
 void _sys_sleep(long ms) {
-	// TODO no overflow check - can leak current uptime
-	timer_schedule(proc_cur, uptime_ms() + ms);
+	timer_schedule(proc_cur, ms * 1000000);
 }
 
 void _sys_filicide(void) {

@@ -1,4 +1,5 @@
 #include <kernel/arch/amd64/3rdparty/multiboot2.h>
+#include <kernel/arch/amd64/acpi.h>
 #include <kernel/arch/amd64/boot.h>
 #include <kernel/arch/amd64/driver/driver.h>
 #include <kernel/arch/amd64/driver/serial.h>
@@ -70,6 +71,12 @@ void kmain_early(void *mbi) {
 	serial_init();
 	video_init(vid);
 	pata_init();
+
+	{
+		struct multiboot_tag_old_acpi *mod;
+		mod = mbi_tag(mbi, MULTIBOOT_TAG_TYPE_ACPI_OLD);
+		acpi_parse(mod->rsdp);
+	}
 
 	kprintf("pci...\n");
 	pci_init();

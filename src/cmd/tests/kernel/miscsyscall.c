@@ -271,7 +271,11 @@ static void test_sleep(void) {
 			long ret = _sys_read(reader, buf, sizeof buf, 0);
 			if (ret == 0) break;
 			test(pos + ret <= target);
-			test(memcmp(buf, expected + pos, ret) == 0);
+			if (memcmp(buf, expected + pos, ret) != 0) {
+				buf[ret] = '\0';
+				printf("got %s\n", buf);
+				test(0);
+			}
 			pos += ret;
 		}
 		test(pos == target);

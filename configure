@@ -72,7 +72,7 @@ t('out/boot.iso', 'out/fs/boot/kernel out/fs/boot/grub/grub.cfg out/fs/boot/init
 ])
 
 t('out/fs/boot/kernel', 'src/kernel/arch/amd64/linker.ld' + srcobj('src/kernel/') + srcobj('src/libk/'), [
-	'$(CC) -nostdlib -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch -Wl,-no-pie -T $^ -o $@',
+	'$(CC) -nostdlib -Wl,-zmax-page-size=4096 -Wl,--no-warn-mismatch -Wl,-no-pie -T $^ -o $@ -lgcc',
 	'grub-file --is-x86-multiboot2 $@ || echo "$@ has an invalid multiboot2 header"',
 	'grub-file --is-x86-multiboot2 $@ || rm $@; test -e $@'
 ])

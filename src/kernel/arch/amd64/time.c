@@ -1,31 +1,49 @@
+#include <kernel/arch/amd64/acpi.h>
 #include <kernel/arch/amd64/boot.h>
 #include <kernel/arch/amd64/interrupts.h>
-#include <kernel/arch/amd64/time.h>
 #include <kernel/panic.h>
 #include <kernel/proc.h>
 
-static uint64_t uptime = 0, goal = ~0;
 static Proc *scheduled = NULL;
 
-uint64_t uptime_ms(void) { return uptime; }
+static void *hpet = NULL;
+static uint64_t hpet_period;
 
-static void update_goal(void) {
-	goal = scheduled ? scheduled->waits4timer.goal : ~(uint64_t)0;
+void hpet_init(void *base) {
+	if (hpet) panic_invalid_state();
+	hpet = base;
+
+	uint64_t *info = hpet;
+	uint64_t *cfg = hpet + 0x10;
+	hpet_period = *info >> 32;
+	*cfg |= 1<<0; /* enable */
 }
 
-void pit_irq(void) {
-	// TODO inefficient - getting here executes a lot of code which could just be a few lines of asm
-	uptime++;
-	if (uptime < goal) return;
+uint64_t uptime_ns(void) {
+	if (hpet == NULL) panic_invalid_state();
+	uint64_t *counter = hpet + 0xF0;
+	unsigned __int128 femto = *counter * hpet_period;
+	uint64_t nano = femto / 1000000;
+	return nano;
+}
 
+static void pit_irq(void) {
 	Proc *p = scheduled;
-	assert(p);
-	scheduled = p->waits4timer.next;
-	proc_setstate(p, PS_RUNNING);
-	update_goal();
+	if (p && p->waits4timer.goal < uptime_ns()) {
+		scheduled = p->waits4timer.next;
+		proc_setstate(p, PS_RUNNING);
+	}
 }
+
 
 void timer_schedule(Proc *p, uint64_t time) {
+	uint64_t now = uptime_ns();
+	/* to prevent leaking the current uptime, saturate instead of overflowing */
+	time = now + time;
+	if (time < now) {
+		time = ~0;
+	}
+
 	proc_setstate(p, PS_WAITS4TIMER);
 	p->waits4timer.goal = time;
 
@@ -36,7 +54,6 @@ void timer_schedule(Proc *p, uint64_t time) {
 	}
 	p->waits4timer.next = *slot;
 	*slot = p;
-	update_goal();
 }
 
 void timer_deschedule(Proc *p) {
@@ -49,7 +66,6 @@ void timer_deschedule(Proc *p) {
 	*slot = p->waits4timer.next;
 
 	proc_setstate(p, PS_RUNNING);
-	update_goal();
 }
 
 void timer_init(void) {

@@ -23,8 +23,8 @@ void shutdown(void);
 /** on x86: waits for an IRQ */
 void cpu_pause(void);
 
-uint64_t uptime_ms(void);
-void timer_schedule(Proc *p, uint64_t time);
+uint64_t uptime_ns(void);
+void timer_schedule(Proc *p, uint64_t ns);
 void timer_deschedule(Proc *p);
 
 // src/arch/i386/sysenter.s
