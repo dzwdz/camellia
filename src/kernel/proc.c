@@ -19,7 +19,6 @@ static uint32_t next_pid = 1;
 /** Removes a process from the process tree. */
 static void proc_forget(Proc *p);
 static void proc_free_forgotten(void);
-static _Noreturn void proc_switch(Proc *proc);
 
 
 Proc *proc_seed(void *data, size_t datalen) {
@@ -452,31 +451,34 @@ static void proc_free_forgotten(void) {
 	}
 }
 
-static _Noreturn void proc_switch(Proc *proc) {
-	assert(proc->state == PS_RUNNING);
-	proc_cur = proc;
-	pagedir_switch(proc->pages);
-	if (proc->execbuf.buf)
-		execbuf_run(proc);
-	else
-		sysexit(proc->regs);
-}
-
 _Noreturn void proc_switch_any(void) {
 	/* At this point there will be no leftover pointers to forgotten
 	 * processes on the stack, so it's safe to free them. */
 	proc_free_forgotten();
 
 	for (;;) {
-		if (proc_cur && proc_cur->state == PS_RUNNING)
-			proc_switch(proc_cur);
-
-		for (Proc *p = proc_first; p; p = proc_next(p, NULL)) {
-			if (p->state == PS_RUNNING)
-				proc_switch(p);
+		Proc *p = NULL;
+		if (proc_cur && proc_cur->state == PS_RUNNING) {
+			p = proc_cur;
+		} else {
+			for (p = proc_first; p; p = proc_next(p, NULL)) {
+				if (p->state == PS_RUNNING) {
+					break;
+				}
+			}
 		}
-
-		cpu_pause();
+		if (p) {
+			assert(p->state == PS_RUNNING);
+			proc_cur = p;
+			pagedir_switch(p->pages);
+			if (p->execbuf.buf) {
+				execbuf_run(p);
+			} else {
+				sysexit(p->regs);
+			}
+		} else {
+			cpu_pause();
+		}
 	}
 }
 
