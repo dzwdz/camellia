@@ -22,6 +22,7 @@
 #define _SYS_GETPPID 20
 #define _SYS_WAIT2 21
 #define _SYS_GETPROCFS 22
+#define _SYS_TIME 23
 
 #define _SYS_EXECBUF 100
 #define _SYS_DEBUG_KLOG 101
@@ -83,6 +84,9 @@ uint32_t _sys_getppid(void);
 int _sys_wait2(int pid, int flags, struct sys_wait2 __user *out);
 
 hid_t _sys_getprocfs(int flags);
+
+/** Returns the time in nanoseconds since the first _sys_time call in the process */
+uint64_t _sys_time(int flags);
 
 /* see shared/execbuf.h */
 long _sys_execbuf(void __user *buf, size_t len);

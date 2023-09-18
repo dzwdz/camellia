@@ -94,6 +94,10 @@ hid_t _sys_getprocfs(int flags) {
 	return (hid_t)_syscall(_SYS_GETPROCFS, (long)flags, 0, 0, 0, 0);
 }
 
+uint64_t _sys_time(int flags) {
+	return (uint64_t)_syscall(_SYS_TIME, (long)flags, 0, 0, 0, 0);
+}
+
 long _sys_execbuf(void __user *buf, size_t len) {
 	return _syscall(_SYS_EXECBUF, (long)buf, (long)len, 0, 0, 0);
 }

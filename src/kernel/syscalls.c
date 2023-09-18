@@ -418,6 +418,18 @@ hid_t _sys_getprocfs(int flags) {
 	SYSCALL_RETURN(hid);
 }
 
+uint64_t _sys_time(int flags) {
+	if (flags != 0) {
+		SYSCALL_RETURN(-ENOSYS);
+	}
+
+	uint64_t now = uptime_ns();
+	if (proc_cur->basetime == 0) {
+		proc_cur->basetime = now;
+	}
+	SYSCALL_RETURN(now - proc_cur->basetime);
+}
+
 long _sys_execbuf(void __user *ubuf, size_t len) {
 	if (len == 0) SYSCALL_RETURN(0);
 	if (len > EXECBUF_MAX_LEN)
@@ -473,6 +485,7 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_GETPPID:	_sys_getppid();
 		break; case _SYS_WAIT2:	_sys_wait2(a, b, (userptr_t)c);
 		break; case _SYS_GETPROCFS:	_sys_getprocfs(a);
+		break; case _SYS_TIME:	_sys_time(a);
 		break; case _SYS_EXECBUF:	_sys_execbuf((userptr_t)a, b);
 		break; case _SYS_DEBUG_KLOG:	_sys_debug_klog((userptr_t)a, b);
 		break;

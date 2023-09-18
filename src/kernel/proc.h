@@ -98,6 +98,9 @@ struct Proc {
 		size_t len;
 		size_t pos;
 	} execbuf;
+
+	/* Time of the first _sys_time() call. 0 if not called yet. */
+	uint64_t basetime;
 };
 
 extern Proc *proc_cur;

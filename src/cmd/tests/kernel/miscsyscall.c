@@ -287,6 +287,23 @@ static void test_badopen(void) {
 	test(_sys_open(TMPFILEPATH, strlen(TMPFILEPATH), OPEN_CREATE) == -EINVAL);
 }
 
+static void test_timer(void) {
+	uint64_t start = _sys_time(0);
+	test(start == 0);
+	_sys_sleep(10);
+	uint64_t delay = _sys_time(0) - start;
+	test(delay >= 10 * 1000000);
+	if (!fork()) {
+		uint64_t start = _sys_time(0);
+		test(start == 0);
+		_sys_sleep(10);
+		uint64_t delay = _sys_time(0) - start;
+		test(delay >= 10 * 1000000);
+	} else {
+		_sys_await();
+	}
+}
+
 void r_k_miscsyscall(void) {
 	run_test(test_await);
 	run_test(test_await2);
@@ -297,4 +314,5 @@ void r_k_miscsyscall(void) {
 	run_test(test_execbuf);
 	run_test(test_sleep);
 	run_test(test_badopen);
+	run_test(test_timer);
 }
