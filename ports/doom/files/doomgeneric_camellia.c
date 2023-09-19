@@ -66,15 +66,13 @@ void DG_DrawFrame(void) {
 	dirty_flush(&d, &fb);
 }
 
-static uint32_t timer = 0;
 void DG_SleepMs(uint32_t ms) {
-	timer += ms;
 	_sys_sleep(ms);
 }
 
 uint32_t DG_GetTicksMs(void) {
-	/* if it's stupid and it works... */
-	return timer;
+	uint32_t ret = _sys_time(0) / 1000000;
+	return ret;
 }
 
 int DG_GetKey(int *pressed, unsigned char *key) {
