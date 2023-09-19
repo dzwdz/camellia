@@ -35,7 +35,6 @@ void kmain_early(void *mbi) {
 	idt_init();
 	kprintf("irq...");
 	irq_init();
-	timer_init();
 
 	{
 		kprintf("mem...\n");

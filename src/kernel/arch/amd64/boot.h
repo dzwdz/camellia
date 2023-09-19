@@ -17,7 +17,6 @@ enum gdt_segs {
 void kmain_early(void *mbi);
 void gdt_init(void);
 void idt_init(void);
-void timer_init(void);
 
 /* used from asm */
 extern struct lgdt_arg lgdt_arg;
