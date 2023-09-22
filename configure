@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 from glob import glob
+import os
 
 file = open('Makefile', 'w', encoding='utf-8')
 def raw(s):
 	print(s, file=file)
 
 def srcobj(path):
-	srcs = glob(path + '/**/*.[csS]', recursive=True)
+	srcs = None
+	if os.path.isfile(path):
+		srcs = [path]
+	else:
+		srcs = glob(path + '/**/*.[csS]', recursive=True)
 	objs = ['out/obj/' + src.removeprefix('src/') + '.o' for src in srcs]
 	return ' ' + ' '.join(objs) + ' '
 
@@ -95,13 +100,15 @@ t('out/fs/boot/grub/grub.cfg', 'src/kernel/arch/amd64/grub.cfg', ['cp $< $@'])
 
 t('out/fs.e2', '', ['mkfs.ext2 $@ 1024 >/dev/null'])
 
-userbins = glob('*', root_dir='src/cmd/')
-raw("USERBINS = " + " ".join(userbins))
-
-for cmd in userbins:
-	t(f'out/initrd/bin/amd64/{cmd}', '$(LIB) ' + srcobj(f'src/cmd/{cmd}'), [
+userbins = []
+for src in glob('*', root_dir='src/cmd/'):
+	cmd = src.removesuffix('.c')
+	t(f'out/initrd/bin/amd64/{cmd}', '$(LIB) ' + srcobj(f'src/cmd/{src}'), [
 		'$(CC) $^ -o $@'
 	])
+	userbins.append(cmd)
+
+raw("USERBINS = " + " ".join(userbins))
 
 # don't build the example implementation from libext2
 t('out/obj/cmd/ext2fs/ext2/example.c.o', '', ['touch $@'])
