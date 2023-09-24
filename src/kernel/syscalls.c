@@ -490,7 +490,6 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_MEMFLAG:	_sys_memflag((userptr_t)a, b, c);
 		break; case _SYS_PIPE:	_sys_pipe((userptr_t)a, b);
 		break; case _SYS_SLEEP:	_sys_sleep(a);
-		break; case _SYS_FILICIDE:	_sys_filicide();
 		break; case _SYS_INTR:	_sys_intr((userptr_t)a, b);
 		break; case _SYS_INTR_SET:	_sys_intr_set((userptr_t)a);
 		break; case _SYS_GETPID:	_sys_getpid();

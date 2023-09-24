@@ -15,7 +15,6 @@
 #define _SYS_MEMFLAG 13
 #define _SYS_PIPE 14
 #define _SYS_SLEEP 15
-#define _SYS_FILICIDE 16
 #define _SYS_INTR 17
 #define _SYS_INTR_SET 18
 #define _SYS_GETPID 19
@@ -74,7 +73,6 @@ long _sys_pipe(hid_t __user user_ends[2], int flags);
 
 void _sys_sleep(long ms);
 
-void _sys_filicide(void);
 int _sys_intr(const char __user *msg, size_t len);
 void _sys_intr_set(void __user *ip);
 

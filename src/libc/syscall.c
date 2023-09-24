@@ -66,10 +66,6 @@ void _sys_sleep(long ms) {
 	return (void)_syscall(_SYS_SLEEP, ms, 0, 0, 0, 0);
 }
 
-void _sys_filicide(void) {
-	return (void)_syscall(_SYS_FILICIDE, 0, 0, 0, 0, 0);
-}
-
 int _sys_intr(const char __user *msg, size_t len) {
 	return (int)_syscall(_SYS_INTR, (long)msg, (long)len, 0, 0, 0);
 }

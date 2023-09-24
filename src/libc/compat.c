@@ -17,11 +17,14 @@ long c0_fs_respond(void *buf, long ret, int flags) {
 	return ret;
 }
 
-/* old syscall */
 long _sys_await(void) {
 	struct sys_wait2 res;
 	if (_sys_wait2(-1, 0, &res) < 0) {
 		return ~0;
 	}
 	return res.status;
+}
+
+void _sys_filicide(void) {
+	_sys_intr("kill", 4);
 }
