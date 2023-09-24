@@ -351,7 +351,9 @@ void _sys_sleep(long ms) {
 }
 
 void _sys_filicide(void) {
-	proc_filicide(proc_cur, -1);
+	for (Proc *p = proc_cur->child; p; p = proc_next(p, proc_cur)) {
+		proc_kill(p, -1);
+	}
 }
 
 void _sys_intr(void) {

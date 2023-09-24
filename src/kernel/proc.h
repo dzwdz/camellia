@@ -12,9 +12,7 @@ enum proc_state {
 	PS_DYING, /* during proc_kill - mostly treated as alive */
 	PS_TOREAP, /* return message not collected */
 	PS_TOMBSTONE, /* fully dead, supports alive children */
-	/* not in the process tree, waits for free.
-	 * *sibling holds a linked list of all the FORGOTTEN processes */
-	PS_FORGOTTEN,
+	PS_DEADLEAF,
 	PS_FREED, /* only meant to detect double frees */
 
 	PS_WAITS4CHILDDEATH,
@@ -29,7 +27,7 @@ enum proc_state {
 #define proc_alive(p) (p \
 		&& p->state != PS_TOREAP \
 		&& p->state != PS_TOMBSTONE \
-		&& p->state != PS_FORGOTTEN \
+		&& p->state != PS_DEADLEAF \
 		&& p->state != PS_FREED \
 		)
 
@@ -64,6 +62,7 @@ struct Proc {
 			uint64_t goal;
 			Proc *next;
 		} waits4timer;
+		Proc *deadleaf_next;
 	};
 
 	VfsMount *mount;
@@ -117,8 +116,6 @@ Proc *proc_ns_next(Proc *ns, Proc *p);
 void proc_ns_create(Proc *proc);
 
 void proc_kill(Proc *proc, int ret);
-/** Kills all descendants. */
-void proc_filicide(Proc *proc, int ret);
 /** Tries to reap a dead process / free a tombstone. */
 void proc_tryreap(Proc *dead);
 

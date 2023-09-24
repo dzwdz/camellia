@@ -10,16 +10,12 @@
 #include <stdint.h>
 
 static Proc *proc_first = NULL;
-static Proc *proc_forgotten = NULL; /* linked list */
+static Proc *dead_leaves = NULL; /* linked list */
 Proc *proc_cur;
 
 static uint32_t next_pid = 1;
 
-
-/** Removes a process from the process tree. */
-static void proc_forget(Proc *p);
-static void proc_free_forgotten(void);
-
+static void proc_prune_leaves(void);
 
 Proc *proc_seed(void *data, size_t datalen) {
 	assert(!proc_first);
@@ -305,35 +301,14 @@ void proc_kill(Proc *p, int ret) {
 			proc_setstate(p, PS_TOMBSTONE);
 		}
 	}
-	if (p == proc_first && p->child) {
-		_panic("init killed prematurely");
-	}
-	proc_tryreap(p);
-
 	if (p == proc_first) {
-		proc_free_forgotten();
+		proc_prune_leaves();
+		if (p->child) {
+			_panic("init killed prematurely");
+		}
 		shutdown();
-	}
-}
-
-void proc_filicide(Proc *parent, int ret) {
-	/* Kill deeper descendants. */
-	Proc *child, *child2;
-	for (child = parent->child; child; child = child2) {
-		child2 = child->sibling;
-
-		// O(n^2), but doable in linear time
-		while (child->child) {
-			Proc *p = child->child;
-			while (p->child) p = p->child;
-			p->noreap = true;
-			proc_kill(p, ret);
-		}
-
-		if (proc_alive(child)) {
-			proc_kill(child, ret);
-		}
-		child = NULL;
+	} else {
+		proc_tryreap(p);
 	}
 }
 
@@ -368,30 +343,36 @@ void proc_tryreap(Proc *dead) {
 		dead->noreap = true;
 	}
 
-	assert(dead->state == PS_TOMBSTONE);
-	for (Proc *p = dead->child; p; p = p->sibling) {
-		assert(p->state != PS_TOREAP);
-	}
-
 	if (dead->child) {
+		assert(dead->state == PS_TOMBSTONE);
+		for (Proc *p = dead->child; p; p = p->sibling) {
+			assert(p->state != PS_TOREAP);
+		}
+
 		Proc *p = dead->child;
-		while (p->child) p = p->child;
+		while (p->child) {
+			p = p->child;
+		}
 		if (p->state == PS_TOREAP) {
 			assert(proc_alive(p->parent));
 		} else {
-			assert(proc_alive(p));
+			assert(proc_alive(p) || p->state == PS_DEADLEAF);
 		}
+
 		return; /* keep the tombstone */
 	}
 
+	if (!parent) return; /* not applicable to init */
 	assert(dead->refcount == 0);
-	if (parent) { /* not applicable to init */
-		proc_forget(dead);
 
-		// TODO force gcc to optimize the tail call here
-		if (!proc_alive(parent)) {
-			proc_tryreap(parent);
-		}
+	if (dead->state == PS_TOMBSTONE) {
+		proc_setstate(dead, PS_DEADLEAF);
+		/* not altering the process tree right now to prevent breaking tree
+		 * traversals */
+		dead->deadleaf_next = dead_leaves;
+		dead_leaves = dead;
+	} else {
+		assert(dead->state == PS_DEADLEAF);
 	}
 }
 
@@ -417,44 +398,42 @@ void proc_intr(Proc *p) {
 	p->regs.rsp = sp;
 }
 
-/** Removes a process from the process tree. */
-static void proc_forget(Proc *p) {
-	assert(p->parent);
-	assert(p->parent->child);
-	assert(!p->child);
+static void proc_prune_leaves(void) {
+	while (dead_leaves) {
+		Proc *p = dead_leaves;
+		Proc *parent = p->parent;
 
-	if (p->parent->child == p) {
-		p->parent->child = p->sibling;
-	} else {
-		// this would be simpler if siblings were a doubly linked list
-		Proc *prev = p->parent->child;
-		while (prev->sibling != p) {
-			prev = prev->sibling;
-			assert(prev);
+		dead_leaves = p->deadleaf_next;
+		assert(p->state == PS_DEADLEAF);
+
+		assert(p->parent);
+		assert(p->parent->child);
+		assert(!p->child);
+		if (p->parent->child == p) {
+			p->parent->child = p->sibling;
+		} else {
+			// this would be simpler if siblings were a doubly linked list
+			Proc *prev = p->parent->child;
+			while (prev->sibling != p) {
+				prev = prev->sibling;
+				assert(prev);
+			}
+			prev->sibling = p->sibling;
 		}
-		prev->sibling = p->sibling;
-	}
-
-	p->parent = NULL;
-	p->sibling = proc_forgotten;
-	proc_forgotten = p;
-	proc_setstate(p, PS_FORGOTTEN);
-}
-
-static void proc_free_forgotten(void) {
-	while (proc_forgotten) {
-		Proc *p = proc_forgotten;
-		proc_forgotten = p->sibling;
 
 		proc_setstate(p, PS_FREED);
 		kfree(p);
+
+		if (!proc_alive(parent)) {
+			proc_tryreap(parent);
+		}
 	}
 }
 
 _Noreturn void proc_switch_any(void) {
 	/* At this point there will be no leftover pointers to forgotten
 	 * processes on the stack, so it's safe to free them. */
-	proc_free_forgotten();
+	proc_prune_leaves();
 
 	for (;;) {
 		Proc *p = NULL;
@@ -581,8 +560,8 @@ hid_t proc_handle_put(Proc *p, Handle *h) {
 void proc_setstate(Proc *p, enum proc_state state) {
 	assert(p->state != PS_FREED);
 	if (state == PS_FREED) {
-		assert(p->state == PS_FORGOTTEN);
-	} else if (state == PS_FORGOTTEN) {
+		assert(p->state == PS_DEADLEAF);
+	} else if (state == PS_DEADLEAF) {
 		assert(p->state == PS_TOMBSTONE);
 	} else if (state == PS_TOMBSTONE) {
 		assert(p->state == PS_TOREAP || p->state == PS_DYING);
