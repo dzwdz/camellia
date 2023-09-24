@@ -382,7 +382,14 @@ void proc_tryintr(Proc *p) {
 	}
 }
 
-void proc_intr(Proc *p) {
+void proc_intr(Proc *p, const char *buf, size_t len) {
+	assert(buf != NULL || len == 0);
+
+	if (4 <= len && memcmp(buf, "kill", 4) == 0) {
+		proc_kill(p, EINTR);
+		return;
+	}
+
 	if (!p->intr_fn) return;
 	proc_tryintr(p);
 

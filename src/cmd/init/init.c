@@ -34,7 +34,7 @@ void redirect(const char *exe, const char *out, const char *in) {
 				exit(1);
 			}
 			_sys_await();
-			_sys_intr();
+			_sys_intr(NULL, 0);
 			_sys_sleep(1000);
 		}
 	}
@@ -42,7 +42,7 @@ void redirect(const char *exe, const char *out, const char *in) {
 
 void shutdown(void) {
 	printf("[init] intr\n");
-	_sys_intr();
+	_sys_intr(NULL, 0);
 	_sys_sleep(1000);
 	printf("[init] filicide\n");
 	_sys_filicide();

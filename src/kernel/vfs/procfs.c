@@ -146,7 +146,9 @@ procfs_accept(VfsReq *req)
 		);
 		vfsreq_finish_short(req, res);
 	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
-		proc_intr(p);
+		size_t len = min(sizeof buf, req->input.len);
+		len = pcpy_from(req->caller, buf, req->input.buf, len);
+		proc_intr(p, buf, len);
 		vfsreq_finish_short(req, req->input.len);
 	} else {
 		vfsreq_finish_short(req, -ENOSYS);

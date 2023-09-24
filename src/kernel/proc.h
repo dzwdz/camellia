@@ -123,7 +123,7 @@ void proc_tryreap(Proc *dead);
 void proc_tryintr(Proc *p);
 
 /** Send an interupt to a process. */
-void proc_intr(Proc *proc);
+void proc_intr(Proc *p, const char *buf, size_t len);
 
 /** Switches execution to any running process. */
 _Noreturn void proc_switch_any(void);

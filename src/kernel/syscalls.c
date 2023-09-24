@@ -356,10 +356,20 @@ void _sys_filicide(void) {
 	}
 }
 
-void _sys_intr(void) {
-	for (Proc *p = proc_cur->child; p; p = proc_next(p, proc_cur)) {
-		proc_intr(p);
+int _sys_intr(const char __user *msg, size_t len) {
+	char buf[INTR_MAX];
+	int count = 0;
+	if (INTR_MAX < len) {
+		SYSCALL_RETURN(-EINVAL);
 	}
+	if (pcpy_from(proc_cur, buf, msg, len) < len) {
+		SYSCALL_RETURN(-EFAULT);
+	}
+	for (Proc *p = proc_cur->child; p; p = proc_next(p, proc_cur)) {
+		proc_intr(p, buf, len);
+		count++;
+	}
+	SYSCALL_RETURN(count);
 }
 
 void _sys_intr_set(void __user *ip) {
@@ -481,7 +491,7 @@ long _syscall(long num, long a, long b, long c, long d, long e) {
 		break; case _SYS_PIPE:	_sys_pipe((userptr_t)a, b);
 		break; case _SYS_SLEEP:	_sys_sleep(a);
 		break; case _SYS_FILICIDE:	_sys_filicide();
-		break; case _SYS_INTR:	_sys_intr();
+		break; case _SYS_INTR:	_sys_intr((userptr_t)a, b);
 		break; case _SYS_INTR_SET:	_sys_intr_set((userptr_t)a);
 		break; case _SYS_GETPID:	_sys_getpid();
 		break; case _SYS_GETPPID:	_sys_getppid();
