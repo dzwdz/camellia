@@ -11,6 +11,7 @@ enum phandle_type {
 	PhRoot,
 	PhDir,
 	PhIntr,
+	PhIntrDown,
 	PhMem,
 };
 
@@ -55,6 +56,8 @@ openpath(const char *path, size_t len, Proc *root)
 			type = PhDir;
 		} else if (len == 4 && memcmp(path, "intr", 4) == 0) {
 			type = PhIntr;
+		} else if (len == 8 && memcmp(path, "intrdown", 8) == 0) {
+			type = PhIntrDown;
 		} else if (len == 3 && memcmp(path, "mem", 3) == 0) {
 			type = PhMem;
 		} else {
@@ -145,10 +148,18 @@ procfs_accept(VfsReq *req)
 				req->output.len
 		);
 		vfsreq_finish_short(req, res);
-	} else if (req->type == VFSOP_WRITE && h->type == PhIntr) {
+	} else if (req->type == VFSOP_WRITE &&
+		(h->type == PhIntr || h->type == PhIntrDown))
+	{
 		size_t len = min(sizeof buf, req->input.len);
 		len = pcpy_from(req->caller, buf, req->input.buf, len);
-		proc_intr(p, buf, len);
+		if (h->type == PhIntr) {
+			proc_intr(p, buf, len);
+		} else {
+			for (Proc *it = p->child; it; it = proc_next(it, p)) {
+				proc_intr(it, buf, len);
+			}
+		}
 		vfsreq_finish_short(req, req->input.len);
 	} else {
 		vfsreq_finish_short(req, -ENOSYS);
